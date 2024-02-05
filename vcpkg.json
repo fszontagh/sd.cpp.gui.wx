@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "fmt",
+    "wxwidgets",
+    "cuda",
+    "nlohmann-json",
+    "opencv",
+    "restclient-cpp"
+  ]
+}

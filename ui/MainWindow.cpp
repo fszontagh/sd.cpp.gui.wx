@@ -1,0 +1,617 @@
+///////////////////////////////////////////////////////////////////////////
+// C++ code generated with wxFormBuilder (version 4.0.0-0-g0efcecf)
+// http://www.wxformbuilder.org/
+//
+// PLEASE DO *NOT* EDIT THIS FILE!
+///////////////////////////////////////////////////////////////////////////
+
+#include "MainWindow.h"
+
+#include "../../sd.cpp.ui2/ui/embended_files/cube.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/dice_four.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/disk.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/file_import.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/forward.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/images.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/palette.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/pause.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/picture.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/play.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/refresh.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/replace.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/settings.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/text_box_dots.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/trash.png.h"
+
+///////////////////////////////////////////////////////////////////////////
+
+UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* sizer0001;
+	sizer0001 = new wxBoxSizer( wxVERTICAL );
+
+	sizer0001->SetMinSize( wxSize( 800,600 ) );
+	m_all_panel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* sizer0002;
+	sizer0002 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* sizer0021;
+	sizer0021 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_settings = new wxButton( m_all_panel, wxID_ANY, wxT("Settings"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_settings->SetBitmap( settings_png_to_wx_bitmap() );
+	m_settings->SetMinSize( wxSize( 70,-1 ) );
+
+	sizer0021->Add( m_settings, 0, wxALL, 5 );
+
+	m_refresh = new wxButton( m_all_panel, wxID_ANY, wxT("Refresh"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_refresh->SetBitmap( refresh_png_to_wx_bitmap() );
+	m_refresh->SetMinSize( wxSize( 70,-1 ) );
+
+	sizer0021->Add( m_refresh, 0, wxALL, 5 );
+
+	m_staticText160 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Model:"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText160->Wrap( 0 );
+	m_staticText160->SetMinSize( wxSize( 50,-1 ) );
+
+	sizer0021->Add( m_staticText160, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_modelChoices;
+	m_model = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_modelChoices, 0 );
+	m_model->SetSelection( 0 );
+	m_model->Enable( false );
+	m_model->SetMinSize( wxSize( 200,-1 ) );
+
+	sizer0021->Add( m_model, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText161 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Vae:"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText161->Wrap( 0 );
+	m_staticText161->SetMinSize( wxSize( 50,-1 ) );
+
+	sizer0021->Add( m_staticText161, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_vaeChoices;
+	m_vae = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_vaeChoices, 0 );
+	m_vae->SetSelection( 0 );
+	m_vae->Enable( false );
+	m_vae->SetMinSize( wxSize( 200,-1 ) );
+
+	sizer0021->Add( m_vae, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer0002->Add( sizer0021, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* sizer0003;
+	sizer0003 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText233 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Seed:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText233->Wrap( 0 );
+	sizer0003->Add( m_staticText233, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_seed = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("44"), wxDefaultPosition, wxDefaultSize, 0, -1, 99999999999, 44 );
+	m_seed->SetMinSize( wxSize( 110,-1 ) );
+
+	sizer0003->Add( m_seed, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_random_seed = new wxButton( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+
+	m_random_seed->SetBitmap( dice_four_png_to_wx_bitmap() );
+	m_random_seed->SetToolTip( wxT("Generate random seed") );
+
+	sizer0003->Add( m_random_seed, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText14 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Steps:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText14->Wrap( -1 );
+	m_staticText14->SetToolTip( wxT("number of sample steps (default: 20)") );
+
+	sizer0003->Add( m_staticText14, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_steps = new wxSpinCtrl( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0 );
+	m_steps->SetToolTip( wxT("number of sample steps (default: 20)") );
+	m_steps->SetMinSize( wxSize( 45,-1 ) );
+
+	sizer0003->Add( m_steps, 0, wxALL, 5 );
+
+	m_staticLine236 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+	sizer0003->Add( m_staticLine236, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText237 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Width:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText237->Wrap( 0 );
+	sizer0003->Add( m_staticText237, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_width = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("512"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 128, 2048, 512 );
+	sizer0003->Add( m_width, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText239 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Height:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText239->Wrap( 0 );
+	sizer0003->Add( m_staticText239, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_height = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("512"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 128, 2048, 512 );
+	sizer0003->Add( m_height, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_button7 = new wxButton( m_all_panel, wxID_ANY, wxT("Swap"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_button7->SetBitmap( replace_png_to_wx_bitmap() );
+	m_button7->SetToolTip( wxT("Swap width and height") );
+
+	sizer0003->Add( m_button7, 0, wxALL, 5 );
+
+
+	sizer0002->Add( sizer0003, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer22;
+	bSizer22 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText231 = new wxStaticText( m_all_panel, wxID_ANY, wxT("CFG:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText231->Wrap( 0 );
+	bSizer22->Add( m_staticText231, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_cfg = new wxSpinCtrlDouble( m_all_panel, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 15, 0, 0.1 );
+	m_cfg->SetDigits( 1 );
+	m_cfg->SetMinSize( wxSize( 45,-1 ) );
+
+	bSizer22->Add( m_cfg, 0, wxALL, 5 );
+
+	m_staticText234 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Clip skip:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText234->Wrap( 0 );
+	m_staticText234->SetToolTip( wxT("ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)\n<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x") );
+
+	bSizer22->Add( m_staticText234, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_clip_skip = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("0"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1, 2, 0 );
+	m_clip_skip->SetToolTip( wxT("ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)\n<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x") );
+	m_clip_skip->SetMinSize( wxSize( 45,-1 ) );
+
+	bSizer22->Add( m_clip_skip, 0, wxALL, 5 );
+
+
+	sizer0002->Add( bSizer22, 0, wxEXPAND|wxALL, 5 );
+
+	m_notebook1302 = new wxNotebook( m_all_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,200 ), wxBK_DEFAULT );
+	m_notebook1302->SetMinSize( wxSize( -1,200 ) );
+
+	m_jobs_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer17;
+	bSizer17 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer18;
+	bSizer18 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_start_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Start jobs"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_start_jobs->SetBitmap( forward_png_to_wx_bitmap() );
+	m_start_jobs->Enable( false );
+
+	bSizer18->Add( m_start_jobs, 0, wxALL, 5 );
+
+	m_pause_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Pause"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_pause_jobs->SetBitmap( pause_png_to_wx_bitmap() );
+	m_pause_jobs->Enable( false );
+
+	bSizer18->Add( m_pause_jobs, 0, wxALL, 5 );
+
+	m_delete_all_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Delete all"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_delete_all_jobs->SetBitmap( trash_png_to_wx_bitmap() );
+	m_delete_all_jobs->Enable( false );
+
+	bSizer18->Add( m_delete_all_jobs, 0, wxALL, 5 );
+
+
+	bSizer17->Add( bSizer18, 0, wxEXPAND, 5 );
+
+	m_joblist = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer17->Add( m_joblist, 1, wxALL|wxEXPAND, 5 );
+
+
+	m_jobs_panel->SetSizer( bSizer17 );
+	m_jobs_panel->Layout();
+	bSizer17->Fit( m_jobs_panel );
+	m_notebook1302->AddPage( m_jobs_panel, wxT("Jobs and Images"), false );
+	m_text2img_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* sizer0004;
+	sizer0004 = new wxBoxSizer( wxHORIZONTAL );
+
+	sizer0004->SetMinSize( wxSize( -1,120 ) );
+	m_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_WORDWRAP|wxTE_PROCESS_ENTER|wxTE_MULTILINE );
+	m_prompt->SetMinSize( wxSize( -1,150 ) );
+
+	sizer0004->Add( m_prompt, 1, wxALL|wxEXPAND, 1 );
+
+	m_neg_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_WORDWRAP|wxTE_PROCESS_ENTER|wxTE_MULTILINE );
+	m_neg_prompt->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxT("Arial") ) );
+	m_neg_prompt->SetMinSize( wxSize( -1,150 ) );
+
+	sizer0004->Add( m_neg_prompt, 1, wxALL|wxEXPAND, 1 );
+
+
+	m_text2img_panel->SetSizer( sizer0004 );
+	m_text2img_panel->Layout();
+	sizer0004->Fit( m_text2img_panel );
+	m_notebook1302->AddPage( m_text2img_panel, wxT("Text2IMG"), true );
+	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_notebook1302->AddPage( m_image2image_panel, wxT("Image2image"), false );
+	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer20;
+	bSizer20 = new wxBoxSizer( wxVERTICAL );
+
+	m_data_model_list = new wxDataViewListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0|wxFULL_REPAINT_ON_RESIZE );
+	bSizer20->Add( m_data_model_list, 1, wxALL|wxEXPAND, 5 );
+
+
+	m_models_panel->SetSizer( bSizer20 );
+	m_models_panel->Layout();
+	bSizer20->Fit( m_models_panel );
+	m_notebook1302->AddPage( m_models_panel, wxT("Models"), false );
+
+	sizer0002->Add( m_notebook1302, 1, wxALIGN_TOP|wxEXPAND, 0 );
+
+	m_staticLine156 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+	sizer0002->Add( m_staticLine156, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_generate = new wxButton( m_all_panel, wxID_ANY, wxT("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_generate->SetBitmap( play_png_to_wx_bitmap() );
+	m_generate->Enable( false );
+
+	bSizer9->Add( m_generate, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText15 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Batch:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText15->Wrap( -1 );
+	m_staticText15->SetToolTip( wxT("number of images to generate.") );
+
+	bSizer9->Add( m_staticText15, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_batch_count = new wxSpinCtrl( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 1000, 1 );
+	m_batch_count->SetToolTip( wxT("number of images to generate.") );
+
+	bSizer9->Add( m_batch_count, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText163 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Sampler"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText163->Wrap( 0 );
+	m_staticText163->SetToolTip( wxT("sampling method (default: \"euler_a\")") );
+
+	bSizer9->Add( m_staticText163, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_samplerChoices;
+	m_sampler = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_samplerChoices, 0 );
+	m_sampler->SetSelection( 0 );
+	m_sampler->SetToolTip( wxT("sampling method (default: \"euler_a\")") );
+	m_sampler->SetMinSize( wxSize( 100,-1 ) );
+
+	bSizer9->Add( m_sampler, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticline5 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+	bSizer9->Add( m_staticline5, 0, wxEXPAND | wxALL, 5 );
+
+	m_staticText17 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Presets:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText17->Wrap( -1 );
+	bSizer9->Add( m_staticText17, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_save_preset = new wxButton( m_all_panel, wxID_ANY, wxT("Save"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_save_preset->SetBitmap( disk_png_to_wx_bitmap() );
+	bSizer9->Add( m_save_preset, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_load_preset = new wxButton( m_all_panel, wxID_ANY, wxT("Load"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_load_preset->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_load_preset->Enable( false );
+
+	bSizer9->Add( m_load_preset, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_preset_listChoices;
+	m_preset_list = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_preset_listChoices, 0 );
+	m_preset_list->SetSelection( 0 );
+	m_preset_list->Enable( false );
+
+	bSizer9->Add( m_preset_list, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_delete_preset = new wxButton( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+
+	m_delete_preset->SetBitmap( trash_png_to_wx_bitmap() );
+	m_delete_preset->Enable( false );
+
+	bSizer9->Add( m_delete_preset, 0, wxALL, 5 );
+
+
+	sizer0002->Add( bSizer9, 0, wxEXPAND, 5 );
+
+	logs = new wxTextCtrl( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL|wxFULL_REPAINT_ON_RESIZE );
+	logs->SetMinSize( wxSize( -1,100 ) );
+
+	sizer0002->Add( logs, 0, wxALL|wxEXPAND, 5 );
+
+
+	m_all_panel->SetSizer( sizer0002 );
+	m_all_panel->Layout();
+	sizer0002->Fit( m_all_panel );
+	sizer0001->Add( m_all_panel, 1, wxEXPAND, 5 );
+
+
+	this->SetSizer( sizer0001 );
+	this->Layout();
+	m_statusBar166 = this->CreateStatusBar( 1, wxSTB_DEFAULT_STYLE, wxID_ANY );
+
+	this->Centre( wxBOTH );
+
+	// Connect Events
+	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
+	m_refresh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
+	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
+	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
+	m_button7->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
+	m_start_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsStart ), NULL, this );
+	m_pause_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsPause ), NULL, this );
+	m_delete_all_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_generate->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
+	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
+	m_save_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
+	m_load_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );
+	m_preset_list->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSelectPreset ), NULL, this );
+	m_delete_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onDeletePreset ), NULL, this );
+}
+
+UI::~UI()
+{
+	// Disconnect Events
+	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
+	m_refresh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
+	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
+	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
+	m_button7->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
+	m_start_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsStart ), NULL, this );
+	m_pause_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsPause ), NULL, this );
+	m_delete_all_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_generate->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
+	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
+	m_save_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
+	m_load_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );
+	m_preset_list->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSelectPreset ), NULL, this );
+	m_delete_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onDeletePreset ), NULL, this );
+
+}
+
+Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* sizer2010;
+	sizer2010 = new wxBoxSizer( wxVERTICAL );
+
+	m_notebook1696 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_DEFAULT );
+	m_path_panel = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* sizer2011;
+	sizer2011 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer16;
+	bSizer16 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText172410 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Models path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText172410->Wrap( 0 );
+	m_staticText172410->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer16->Add( m_staticText172410, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_model_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_model_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer16->Add( m_model_dir, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2011->Add( bSizer16, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer19;
+	bSizer19 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText18013172027 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Lora path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText18013172027->Wrap( 0 );
+	m_staticText18013172027->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer19->Add( m_staticText18013172027, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_lora_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_lora_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer19->Add( m_lora_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	sizer2011->Add( bSizer19, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer17;
+	bSizer17 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText18013 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Vae path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText18013->Wrap( 0 );
+	m_staticText18013->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer17->Add( m_staticText18013, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_vae_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_vae_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer17->Add( m_vae_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	sizer2011->Add( bSizer17, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer18;
+	bSizer18 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText1801317202731 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Embedding path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1801317202731->Wrap( 0 );
+	m_staticText1801317202731->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer18->Add( m_staticText1801317202731, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_embedding_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_embedding_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer18->Add( m_embedding_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	sizer2011->Add( bSizer18, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer20;
+	bSizer20 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText19 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Presets path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText19->Wrap( -1 );
+	m_staticText19->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer20->Add( m_staticText19, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_presets_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE|wxDIRP_SMALL );
+	m_presets_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer20->Add( m_presets_dir, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2011->Add( bSizer20, 0, wxEXPAND, 5 );
+
+	m_staticLine223 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+	sizer2011->Add( m_staticLine223, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer21;
+	bSizer21 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText180131720 = new wxStaticText( m_path_panel, wxID_ANY, wxT("Images output"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText180131720->Wrap( 0 );
+	m_staticText180131720->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer21->Add( m_staticText180131720, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_images_output = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_images_output->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer21->Add( m_images_output, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	sizer2011->Add( bSizer21, 0, wxEXPAND, 5 );
+
+
+	m_path_panel->SetSizer( sizer2011 );
+	m_path_panel->Layout();
+	sizer2011->Fit( m_path_panel );
+	m_notebook1696->AddPage( m_path_panel, wxT("Paths"), false );
+	m_settings = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* sizer2017;
+	sizer2017 = new wxBoxSizer( wxVERTICAL );
+
+	wxGridSizer* sizer2018;
+	sizer2018 = new wxGridSizer( 0, 2, 0, 0 );
+
+	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_model_in_memory->SetValue(true);
+	m_keep_model_in_memory->SetMinSize( wxSize( 230,-1 ) );
+
+	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL, 5 );
+
+
+	sizer2017->Add( sizer2018, 0, wxALL|wxEXPAND, 5 );
+
+	wxGridSizer* sizer2019;
+	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
+
+	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediat images)"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_save_all_image->SetValue(true);
+	m_save_all_image->SetMinSize( wxSize( 230,-1 ) );
+
+	sizer2019->Add( m_save_all_image, 0, wxALIGN_LEFT|wxALL, 5 );
+
+
+	sizer2017->Add( sizer2019, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer10;
+	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText16 = new wxStaticText( m_settings, wxID_ANY, wxT("Output images format"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText16->Wrap( -1 );
+	m_staticText16->SetMinSize( wxSize( 230,-1 ) );
+
+	bSizer10->Add( m_staticText16, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxString m_choice4Choices[] = { wxT(".png"), wxT(".jpg") };
+	int m_choice4NChoices = sizeof( m_choice4Choices ) / sizeof( wxString );
+	m_choice4 = new wxChoice( m_settings, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choice4NChoices, m_choice4Choices, 0 );
+	m_choice4->SetSelection( 0 );
+	bSizer10->Add( m_choice4, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+
+
+	sizer2017->Add( bSizer10, 0, wxEXPAND, 5 );
+
+
+	m_settings->SetSizer( sizer2017 );
+	m_settings->Layout();
+	sizer2017->Fit( m_settings );
+	m_notebook1696->AddPage( m_settings, wxT("Diffusion"), false );
+
+	sizer2010->Add( m_notebook1696, 1, wxALL|wxEXPAND, 5 );
+
+	m_save = new wxButton( this, wxID_ANY, wxT("Save"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_save->SetBitmap( disk_png_to_wx_bitmap() );
+	sizer2010->Add( m_save, 0, wxALL, 5 );
+
+
+	this->SetSizer( sizer2010 );
+	this->Layout();
+
+	this->Centre( wxBOTH );
+
+	// Connect Events
+	m_save->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
+}
+
+Settings::~Settings()
+{
+	// Disconnect Events
+	m_save->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
+
+}
+
+ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxSize( 512,512 ), wxDefaultSize );
+
+	wxBoxSizer* ImageViewerbSizer11;
+	ImageViewerbSizer11 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_bitmap = new wxStaticBitmap( this, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
+	m_bitmap->SetMinSize( wxSize( 512,512 ) );
+
+	ImageViewerbSizer11->Add( m_bitmap, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_textCtrl4 = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,80 ), wxTE_MULTILINE|wxTE_READONLY|wxTE_WORDWRAP );
+	m_textCtrl4->SetMinSize( wxSize( -1,80 ) );
+
+	ImageViewerbSizer11->Add( m_textCtrl4, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5 );
+
+
+	this->SetSizer( ImageViewerbSizer11 );
+	this->Layout();
+
+	this->Centre( wxBOTH );
+}
+
+ImageViewer::~ImageViewer()
+{
+}
