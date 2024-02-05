@@ -36,6 +36,7 @@ No licence yet...
 
 ![](https://fsociety.hu/sd.cpp.gui.wx/sd.cpp.gui.wx_queue.png)
 
+
 ------------
 **simple settings**
 
