@@ -6,11 +6,68 @@ Created by Ferenc Szontágh <szf@fsociety.hu> @2024-01-30
 
 No licence yet... 
 
+### ScreenShow!!!
+#### Features: 
+
+- text2img generation
+- random seed selection by ui
+- model & vae selection
+- all generation config on ui (except some: tiled vae, rng generator ...)
+- preset management (save / restore some config from UI)
+- mode list with 1level subfolders
+- queue & queue list (management WIP)
+- progress bar in the queuelist, speed (it/s or s/it)
+- restore last queue list, auto start last pending job
+
+#### Some screenshots
+
+**text2img** 
+
+![](https://fsociety.hu/sd.cpp.gui.wx/sd.cpp.gui.wx_text2img.png)
+
+------------
+
+**model list** 
+
+![](https://fsociety.hu/sd.cpp.gui.wx/sd.cpp.gui.wx_models.png)
+
+------------
+**queue management**
+
+![](https://fsociety.hu/sd.cpp.gui.wx/sd.cpp.gui.wx_queue.png)
+
+------------
+**simple settings**
+
+![](https://fsociety.hu/sd.cpp.gui.wx/sd.cpp.gui.wx_settings.png)
+
+### Compatibility
+
+Only tested on win11, yet with latest Cuda toolkit. 
+
+
 ### - Prepare
 
 * install vcpkg on your system... 
-* configure the vcpkg in CMakePresets.json and CMakeUserPresets.json
-* run configure, itt will be ~15mins to download and configure the dependencies
+* ~~configure the vcpkg in CMakePresets.json and CMakeUserPresets.json~~
+* To progressbar support, clone this repo: https://github.com/fszontagh/stable-diffusion.cpp and build dlls and libs (see section: "Build stable-diffusion.cpp")
+
+### Configure & build from commandline
+Clone the repo:
+```Bash
+git clone https://github.com/fszontagh/sd.cpp.gui.wx.git
+cd sd.cpp.gui.wx
+mkdir build
+```
+
+Configure
+ ```Bash
+ cmake -B build/ -S . -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake 
+ ```
+Build
+ ```Bash
+ cmake --build build/
+ ```
 
 ### - Externals!
 
@@ -41,8 +98,13 @@ cmake --build . --config Debug
 
 
 ## - TO-DOs
-See @git.spamming.hu ticketing system
+* img2img
+* upscaler
+* details of finished jobs / previews
+* civitai.com client (download model, lora, infos, previews)
 
+
+## FMI
 ### Hash generation from binary
 Repo: [okdshin/PicoSHA2](https://github.com/okdshin/PicoSHA2)
 
