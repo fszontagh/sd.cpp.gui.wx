@@ -72,8 +72,11 @@ Build
 
 ### - Externals!
 
-in the external forlder, you can find the precompuled stable-diffusion.cpp and ggml as submodulde to it. 
-The default libs are configured with only CUDA, the release is Debug and Release. To use with another version (for example cpu only), you need to compile and overwrite 
+Into the externals folder, place the compiled libs: 
+* external/CUDA/stable-diffusion.dll 
+* external/CUDA/ggml.dll
+
+The cmake looking for it!
 
 #### Build stable-diffusion.cpp
 ```Bash
@@ -104,6 +107,10 @@ cmake --build . --config Debug
 * details of finished jobs / previews
 * civitai.com client (download model, lora, infos, previews)
 
+## - Known Bugs
+* In Debug build, some BoxSizer triggering exception on settings window is open (fyi: never press the stop :) )
+* The App is just exiting if an unsoported Lora / embedding is loaded, eg. CUDA out of memory. This is a stable-diffusion.cpp limitation...
+* SDXL is just generating black images. See: [issues/167](https://github.com/leejet/stable-diffusion.cpp/issues/167)
 
 ## FMI
 ### Hash generation from binary
