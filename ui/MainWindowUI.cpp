@@ -899,7 +899,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     {
         QM::QueueItem *myjob = e.GetPayload<QM::QueueItem *>();
 
-        if (myjob == nullprt || myjob == NULL)
+        if (myjob == nullptr || myjob == NULL)
         {
             return;
         }
