@@ -106,6 +106,7 @@ cmake --build . --config Debug
 * upscaler
 * details of finished jobs / previews
 * civitai.com client (download model, lora, infos, previews)
+* on cpu, detect the number of physical cores [issue3](https://github.com/fszontagh/sd.cpp.gui.wx/issues/3)
 
 ## - Known Bugs
 * In Debug build, some BoxSizer triggering exception on settings window is open (fyi: never press the stop :) )

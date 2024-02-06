@@ -4270,7 +4270,7 @@
                   <property name="permission">none</property>
                   <object class="sizeritem" expanded="true">
                     <property name="border">5</property>
-                    <property name="flag">wxALL|wxEXPAND</property>
+                    <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
                     <object class="wxGridSizer" expanded="true">
                       <property name="cols">2</property>
@@ -4349,7 +4349,7 @@
                   </object>
                   <object class="sizeritem" expanded="true">
                     <property name="border">5</property>
-                    <property name="flag">wxALL|wxEXPAND</property>
+                    <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
                     <object class="wxGridSizer" expanded="true">
                       <property name="cols">2</property>
