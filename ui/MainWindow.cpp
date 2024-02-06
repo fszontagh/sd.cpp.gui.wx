@@ -521,24 +521,26 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_keep_model_in_memory->SetValue(true);
+	m_keep_model_in_memory->Enable( false );
 	m_keep_model_in_memory->SetMinSize( wxSize( 230,-1 ) );
 
 	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL, 5 );
 
 
-	sizer2017->Add( sizer2018, 0, wxALL|wxEXPAND, 5 );
+	sizer2017->Add( sizer2018, 0, wxEXPAND, 5 );
 
 	wxGridSizer* sizer2019;
 	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
 
 	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediat images)"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_save_all_image->SetValue(true);
+	m_save_all_image->Enable( false );
 	m_save_all_image->SetMinSize( wxSize( 230,-1 ) );
 
 	sizer2019->Add( m_save_all_image, 0, wxALIGN_LEFT|wxALL, 5 );
 
 
-	sizer2017->Add( sizer2019, 0, wxALL|wxEXPAND, 5 );
+	sizer2017->Add( sizer2019, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
@@ -553,10 +555,27 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	int m_choice4NChoices = sizeof( m_choice4Choices ) / sizeof( wxString );
 	m_choice4 = new wxChoice( m_settings, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choice4NChoices, m_choice4Choices, 0 );
 	m_choice4->SetSelection( 0 );
+	m_choice4->Enable( false );
+
 	bSizer10->Add( m_choice4, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
 
 
 	sizer2017->Add( bSizer10, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer22;
+	bSizer22 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText191 = new wxStaticText( m_settings, wxID_ANY, wxT("Number of CPU cores"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText191->Wrap( -1 );
+	m_staticText191->SetMinSize( wxSize( 230,-1 ) );
+
+	bSizer22->Add( m_staticText191, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_threads = new wxSpinCtrl( m_settings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1, 100, 2 );
+	bSizer22->Add( m_threads, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2017->Add( bSizer22, 0, wxEXPAND, 5 );
 
 
 	m_settings->SetSizer( sizer2017 );

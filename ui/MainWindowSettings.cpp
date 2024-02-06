@@ -21,6 +21,7 @@ this->fileConfig->Write("/paths/embedding", this->m_embedding_dir->GetPath());
 this->fileConfig->Write("/paths/presets", this->m_presets_dir->GetPath());
 this->fileConfig->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
 this->fileConfig->Write("/save_all_image", this->m_save_all_image->GetValue());
+this->fileConfig->Write("/n_threads", this->m_threads->GetValue());
 this->fileConfig->Flush();
 this->Close();
 }
@@ -54,6 +55,7 @@ void MainWindowSettings::InitConfig()
     this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
     this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
     this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
 
     this->m_lora_dir->SetPath(this->cfg->lora);
     this->m_model_dir->SetPath(this->cfg->model);
@@ -63,11 +65,5 @@ void MainWindowSettings::InitConfig()
     this->m_images_output->SetPath(this->cfg->output);
     this->m_keep_model_in_memory->SetValue(this->cfg->keep_model_in_memory);
     this->m_save_all_image->SetValue(this->cfg->save_all_image);
-
-    // hide unusable configs...
-    if (SD_CPP_VERSION == "c6071fa")
-    {
-        this->m_embedding_dir->Hide();
-        this->m_staticText18013172027->Hide();
-    }
+    this->m_threads->SetValue(this->cfg->n_threads);
 }

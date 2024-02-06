@@ -12,9 +12,9 @@ option(SD_CUBLAS                     "sd: cuda backend" ON)
 option(SD_HIPBLAS                    "sd: rocm backend" OFF)
 option(SD_METAL                      "sd: metal backend" OFF)
 
-IF(MSVC)
+IF(WIN32)
     SET(OPTIONS WIN32)
-ENDIF(MSVC)
+ENDIF(WIN32)
 
 if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE Debug)
@@ -35,10 +35,12 @@ include_directories(${CMAKE_SOURCE_DIR}/external/stable-diffusion.cpp/include)
 link_directories(${STABLE_DIFFUSION_DIR}/${CMAKE_BUILD_TYPE})
 
 
-IF(MSVC)
+IF(WIN32)
 
     if(SD_CUBLAS)
     set(CUDA_PATH "$ENV{CUDA_PATH}")
+    message("-- CUDA_PATH=" ${CUDA_PATH})
+    find_package(CUDAToolkit REQUIRED)
     endif(SD_CUBLAS)
 
     add_library(stable-diffusion SHARED IMPORTED)
@@ -73,7 +75,7 @@ IF(MSVC)
 
         set(OpenCV_DIR "${VCPKG_INSTALLED_DIR}/x64-windows/share/opencv4")
 
-ENDIF(MSVC)
+ENDIF(WIN32)
 
 find_package(OpenCV REQUIRED)
 
@@ -86,9 +88,9 @@ find_package(restclient-cpp CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-IF(SD_CUBLAS)
-find_package(CUDAToolkit REQUIRED)
-ENDIF()
+
+
+
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${wxWidgets_DEFINITIONS} "$<$<CONFIG:DEBUG>:${wxWidgets_DEFINITIONS_DEBUG}>")
 target_include_directories(${PROJECT_NAME} PRIVATE ${wxWidgets_INCLUDE_DIRS})
@@ -96,13 +98,25 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${wxWidgets_INCLUDE_DIRS})
 
 
 IF(SD_CUBLAS)
-set(CUDA_MODULES "CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver")
-target_link_libraries(${PROJECT_NAME} ${CUDA_LIBRARIES})
+enable_language(CUDA) 
+
+include(FindCUDA/select_compute_arch)
+CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver stable-diffusion ggml restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+
 else()
 set(CUDA_MODULES "")
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 ENDIF()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui ${CUDA_MODULES})
+
+
+
 
 include_directories(ui)
 

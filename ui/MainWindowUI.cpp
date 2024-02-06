@@ -173,6 +173,7 @@ void MainWindowUI::onJoblistSelectionChanged(wxDataViewEvent &event)
 
 void MainWindowUI::onGenerate(wxCommandEvent &event)
 {
+    this->initConfig();
     // prepare params
     this->sd_params->model_path = this->ModelFiles.at(this->m_model->GetStringSelection().ToStdString());
     this->sd_params->lora_model_dir = this->cfg->lora;
@@ -192,6 +193,7 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
 
     this->sd_params->width = this->m_width->GetValue();
     this->sd_params->height = this->m_height->GetValue();
+    
     QM::QueueItem item;
     item.params = *this->sd_params;
     item.model = this->m_model->GetStringSelection().ToStdString();
@@ -635,10 +637,11 @@ void MainWindowUI::initConfig()
     this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
     this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
     this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
 
     // populate data from sd_params as default...
 
-    if (!this->modelLoaded)
+    if (!this->modelLoaded && this->firstCfgInit)
     {
         this->m_cfg->SetValue(static_cast<double>(this->sd_params->cfg_scale));
         this->m_seed->SetValue(static_cast<int>(this->sd_params->seed));
@@ -648,6 +651,7 @@ void MainWindowUI::initConfig()
         this->m_height->SetValue(this->sd_params->height);
         this->m_batch_count->SetValue(this->sd_params->batch_count);
     }
+    this->firstCfgInit = false;
 }
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
@@ -725,14 +729,6 @@ void MainWindowUI::loadModelList()
 
 void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 {
-
-    // here starts the trhead
-    // this->threads.push_back(std::thread(std::bind(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob)));
-
-    // this->threads.emplace_back(std::thread(std::bind(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob)));
-    // this->threads.emplace_back(std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob));
-    // std::thread j(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
-    // std::thread *p(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
     std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
     this->threads.emplace_back(p);
 }
@@ -916,34 +912,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
     if (token == "GENERATION_DONE")
     {
-        // this->m_generate->Enable();
-        // this->m_model->Enable();
-        // this->m_vae->Enable();
-        // this->m_refresh->Enable();
-        // sd_image_t *results = e.GetPayload<sd_image_t *>();
-        // show images in new window...
-        /* for (int i = 0; i < this->sd_params->batch_count; i++)
-         {
-             MainWindowImageViewer *imgWindow = new MainWindowImageViewer(this);
-             // wxBitmap *img = new wxBitmap(results[i].data, (int)results[i].width, (int)results[i].height, (int)results[i].channel);
-             wxImage img(results[i].width, results[i].height, results[i].data);
 
-             wxBitmapBundle wxBmapB(img);
-             imgWindow->m_bitmap->SetBitmap(wxBmapB);
-             imgWindow->m_bitmap->SetSize(results[i].width, results[i].height);
-             imgWindow->SetSize(results[i].width + 200, results[i].height);
-
-             std::string details = fmt::format("Prompt:\n\n{}\n\nNegative prompt: \n\n{}\n\nSeed: {} \nCfg scale: {}\nClip skip: {}\nSampler: {}\nSteps: {}\nWidth: {} Height: {}",
-                                               this->sd_params->prompt, this->sd_params->negative_prompt,
-                                               this->sd_params->seed + i, this->sd_params->cfg_scale,
-                                               this->sd_params->clip_skip, sd_gui_utils::sample_method_str[this->sd_params->sample_method], this->sd_params->sample_steps,
-                                               results[i].width, results[i].height);
-             imgWindow->m_textCtrl4->AppendText(wxString(details));
-             imgWindow->Show();
-
-             // imgWindow->m_bitmap->SetBitmap(img);
-             /// imgWindow->m_bitmap->Set
-         }*/
     }
     if (token == "GENERATION_ERROR")
     {

@@ -91,6 +91,7 @@ namespace sd_gui_utils
         std::string jobs = "";
         bool keep_model_in_memory = true;
         bool save_all_image = true;
+        int n_threads = 2;
     };
     inline std::string formatUnixTimestampToDate(long timestamp)
     {

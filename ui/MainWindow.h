@@ -150,6 +150,8 @@ class Settings : public wxFrame
 		wxCheckBox* m_save_all_image;
 		wxStaticText* m_staticText16;
 		wxChoice* m_choice4;
+		wxStaticText* m_staticText191;
+		wxSpinCtrl* m_threads;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
