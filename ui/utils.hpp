@@ -86,6 +86,7 @@ namespace sd_gui_utils
         std::string vae = "";
         std::string lora = "";
         std::string embedding = "";
+        std::string taesd = "";
         std::string presets = "";
         std::string output = "";
         std::string jobs = "";
@@ -111,7 +112,9 @@ namespace sd_gui_utils
         VAE,
         PRESETS,
         PROMPTS,
-        NEG_PROMPTS
+        NEG_PROMPTS,
+        TAESD,
+        ESRGAN
     };
     struct generator_preset
     {
@@ -246,6 +249,7 @@ namespace sd_gui_utils
         rng_type_t rng_type = CUDA_RNG;
         int64_t seed = 42;
         bool verbose = false;
+        bool vae_decode_only = true; // on img2img is false
         bool vae_tiling = false;
         bool control_net_cpu = false;
         bool canny_preprocess = false;

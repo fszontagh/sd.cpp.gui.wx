@@ -39,6 +39,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->LoadPresets();
     this->loadModelList();
     this->loadVaeList();
+    this->loadTaesdList();
+
     if (this->ModelFiles.size() > 0)
     {
         this->m_model->Enable();
@@ -46,6 +48,10 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     if (this->VaeFiles.size() > 0)
     {
         this->m_vae->Enable();
+    }
+    if (this->TaesdFiles.size() > 0)
+    {
+        this->m_taesd->Enable();
     }
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 }
@@ -54,13 +60,15 @@ void MainWindowUI::onSettings(wxCommandEvent &event)
 {
     this->settingsWindow = new MainWindowSettings(this);
     this->settingsWindow->Bind(wxEVT_CLOSE_WINDOW, &MainWindowUI::OnCloseSettings, this);
-    settingsWindow->Show();
+    this->settingsWindow->Show();
 }
 
 void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
 {
     this->loadModelList();
     this->loadVaeList();
+    this->loadTaesdList();
+
     if (this->ModelFiles.size() > 0)
     {
         this->m_model->Enable();
@@ -68,6 +76,10 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
     if (this->VaeFiles.size() > 0)
     {
         this->m_vae->Enable();
+    }
+    if (this->TaesdFiles.size() > 0)
+    {
+        this->m_taesd->Enable();
     }
 }
 
@@ -92,17 +104,6 @@ void MainWindowUI::onModelSelect(wxCommandEvent &event)
 
 void MainWindowUI::onVaeSelect(wxCommandEvent &event)
 {
-    auto selection = this->m_vae->GetStringSelection();
-    if (selection == "-none-")
-    {
-        // remove the vae
-        this->sd_params->vae_path = std::string("");
-    }
-    else
-    {
-        // add the selected vae
-        this->sd_params->vae_path = this->VaeFiles.at(selection.ToStdString());
-    }
 }
 
 void MainWindowUI::onRandomGenerateButton(wxCommandEvent &event)
@@ -176,6 +177,24 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
     this->initConfig();
     // prepare params
     this->sd_params->model_path = this->ModelFiles.at(this->m_model->GetStringSelection().ToStdString());
+
+    if (this->m_taesd->GetCurrentSelection() > 0)
+    {
+        this->sd_params->taesd_path = this->TaesdFiles.at(this->m_taesd->GetStringSelection().ToStdString());
+    }
+    else
+    {
+        this->sd_params->taesd_path = "";
+    }
+    if (this->m_vae->GetCurrentSelection() > 0)
+    {
+        this->sd_params->vae_path = this->VaeFiles.at(this->m_vae->GetStringSelection().ToStdString());
+    }
+    else
+    {
+        this->sd_params->vae_path = "";
+    }
+
     this->sd_params->lora_model_dir = this->cfg->lora;
     this->sd_params->embeddings_path = this->cfg->embedding;
 
@@ -193,7 +212,12 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
 
     this->sd_params->width = this->m_width->GetValue();
     this->sd_params->height = this->m_height->GetValue();
-    
+
+    // this->sd_params->vae_tiling
+    this->sd_params->vae_tiling = this->m_vae_tiling->GetValue();
+    // at img2img is false
+    // this->sd_params->vae_decode_only = this->m_vae_decode_only->GetValue();
+
     QM::QueueItem item;
     item.params = *this->sd_params;
     item.model = this->m_model->GetStringSelection().ToStdString();
@@ -222,8 +246,8 @@ void MainWindowUI::onSavePreset(wxCommandEvent &event)
 
         wxString preset_name = dlg.GetValue();
         preset.cfg = this->m_cfg->GetValue();
-
-        preset.seed = this->m_seed->GetValue();
+        // do not save the seed
+        // preset.seed = this->m_seed->GetValue();
         preset.clip_skip = this->m_clip_skip->GetValue();
         preset.steps = this->m_steps->GetValue();
         preset.width = this->m_width->GetValue();
@@ -247,17 +271,6 @@ void MainWindowUI::onSavePreset(wxCommandEvent &event)
 
 void MainWindowUI::onLoadPreset(wxCommandEvent &event)
 {
-    /* auto preset_name = this->m_preset_list->GetString(this->m_preset_list->GetCurrentSelection());
-
-    this->m_cfg->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/cfg", this->sd_params->cfg_scale));
-    this->m_seed->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/seed", this->sd_params->seed));
-    this->m_clip_skip->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/clip_skip", this->sd_params->clip_skip));
-    this->m_steps->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/steps", this->sd_params->sample_steps));
-    this->m_width->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/width", this->sd_params->width));
-    this->m_height->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/height", this->sd_params->height));
-    this->m_sampler->Select(this->fileConfig->Read("/presets/" + preset_name + "/sampler", (int)this->sd_params->sample_method));
-    this->m_batch_count->SetValue(this->fileConfig->Read("/presets/" + preset_name + "/batch", this->sd_params->batch_count));
-    */
     auto selected = this->m_preset_list->GetCurrentSelection();
     auto name = this->m_preset_list->GetString(selected);
 
@@ -267,7 +280,8 @@ void MainWindowUI::onLoadPreset(wxCommandEvent &event)
         {
             this->m_cfg->SetValue(preset.second.cfg);
             this->m_clip_skip->SetValue(preset.second.clip_skip);
-            this->m_seed->SetValue(preset.second.seed);
+            // do not save seed
+            // this->m_seed->SetValue(preset.second.seed);
             this->m_steps->SetValue(preset.second.steps);
             this->m_width->SetValue(preset.second.width);
             this->m_height->SetValue(preset.second.height);
@@ -334,6 +348,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
         this->m_preset_list->Select(0);
         basepath = this->cfg->presets;
         break;
+    case sd_gui_utils::DirTypes::TAESD:
+    {
+        this->m_taesd->Clear();
+        this->m_taesd->Append("-none-");
+        this->m_taesd->Select(0);
+        basepath = this->cfg->taesd;
+    }
     }
     if (!std::filesystem::exists(basepath))
     {
@@ -352,16 +373,32 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
 
         std::string ext = path.extension().string();
 
-        if (type == sd_gui_utils::DirTypes::CHECKPOINT || type == sd_gui_utils::DirTypes::VAE)
+        if (type == sd_gui_utils::DirTypes::CHECKPOINT)
+        {
+            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf")
+            {
+                continue;
+            }
+        }
+        if (type == sd_gui_utils::DirTypes::VAE)
         {
             if (ext != ".safetensors" && ext != ".ckpt")
             {
                 continue;
             }
         }
+
         if (type == sd_gui_utils::DirTypes::PRESETS)
         {
             if (ext != ".json")
+            {
+                continue;
+            }
+        }
+
+        if (type == sd_gui_utils::DirTypes::TAESD)
+        {
+            if (ext != ".pth" && ext != ".safetensors" && ext != ".gguf")
             {
                 continue;
             }
@@ -405,6 +442,11 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
                 std::cerr << e.what() << '\n';
             }
         }
+        if (type == sd_gui_utils::TAESD)
+        {
+            this->m_taesd->Append(name);
+            this->TaesdFiles.emplace(name, dir_entry.path().string());
+        }
     }
 
     if (type == sd_gui_utils::CHECKPOINT)
@@ -422,6 +464,10 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
         {
             this->m_preset_list->Enable();
         }
+    }
+    if (type == sd_gui_utils::TAESD)
+    {
+        this->logs->AppendText(fmt::format("Loaded taesd: {}\n", this->TaesdFiles.size()));
     }
 }
 
@@ -463,15 +509,49 @@ MainWindowUI::~MainWindowUI()
 
 void MainWindowUI::loadVaeList()
 {
-    if (!std::filesystem::exists(this->cfg->vae))
-    {
-        std::filesystem::create_directories(this->cfg->vae);
-    }
+
     this->LoadFileList(sd_gui_utils::DirTypes::VAE);
 }
 
 void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
 {
+}
+
+void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
+{
+    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+}
+
+void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
+{
+    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
+    {
+        auto *eventHandler = (wxEvtHandler *)data;
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
+        e->SetPayload(level);
+        wxQueueEvent(eventHandler, e);
+    }
+}
+
+void MainWindowUI::loadTaesdList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
+}
+
+void MainWindowUI::loadSamplerList()
+{
+    this->m_sampler->Clear();
+    for (auto sampler : sd_gui_utils::sample_method_str)
+    {
+        int _u = this->m_sampler->Append(sampler);
+
+        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
+        {
+            this->m_sampler->Select(_u);
+        }
+    }
 }
 
 void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -487,10 +567,11 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
         this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
         this->currentModel = myItem.params.model_path;
         this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
     }
     else
-    {
-        if (myItem.params.model_path != this->currentModel || this->currentVaeModel != myItem.params.vae_path)
+    { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
+        if (myItem.params.model_path != this->currentModel || this->currentVaeModel != myItem.params.vae_path || this->currentTaesdModel != myItem.params.taesd_path)
         {
             free_sd_ctx(this->sd_ctx);
             this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
@@ -620,6 +701,9 @@ void MainWindowUI::initConfig()
     wxString embedding_path = datapath;
     embedding_path.append("embedding");
 
+    wxString taesd_path = datapath;
+    taesd_path.append("taesd");
+
     wxString presets_path = datapath;
     presets_path.append("presets");
 
@@ -630,6 +714,7 @@ void MainWindowUI::initConfig()
     this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
     this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
     this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
+    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
     this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
 
     this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
@@ -650,6 +735,7 @@ void MainWindowUI::initConfig()
         this->m_width->SetValue(this->sd_params->width);
         this->m_height->SetValue(this->sd_params->height);
         this->m_batch_count->SetValue(this->sd_params->batch_count);
+        this->loadSamplerList();
     }
     this->firstCfgInit = false;
 }
@@ -658,23 +744,6 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
 {
     this->initConfig();
     this->settingsWindow->Destroy();
-}
-
-void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
-{
-    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
-}
-
-void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
-{
-    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
-    {
-        auto *eventHandler = (wxEvtHandler *)data;
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-        e->SetPayload(level);
-        wxQueueEvent(eventHandler, e);
-    }
 }
 
 void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
@@ -699,19 +768,9 @@ void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
 
 void MainWindowUI::loadModelList()
 {
-    this->m_sampler->Clear();
-    for (auto sampler : sd_gui_utils::sample_method_str)
-    {
-        int _u = this->m_sampler->Append(sampler);
-
-        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
-        {
-            this->m_sampler->Select(_u);
-        }
-    }
 
     this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
-
+    // clear the table
     for (auto model : this->ModelFiles)
     {
         // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
@@ -731,28 +790,6 @@ void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 {
     std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
     this->threads.emplace_back(p);
-}
-
-void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
-{
-    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
-    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
-    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
-    myItem->step = step;
-    myItem->steps = steps;
-    myItem->time = time;
-    /*
-        format it/s
-        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-               progress.c_str(), step, steps,
-               time > 1.0f || time == 0 ? time : (1.0f / time)
-    */
-
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
-
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
 }
 
 void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
@@ -861,6 +898,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     if (token == "GENERATION_PROGRESS")
     {
         QM::QueueItem *myjob = e.GetPayload<QM::QueueItem *>();
+
+        if (myjob == nullprt || myjob == NULL)
+        {
+            return;
+        }
         // update column
         auto store = this->m_joblist->GetStore();
         // -1 the last (status)
@@ -912,7 +954,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
     if (token == "GENERATION_DONE")
     {
-
     }
     if (token == "GENERATION_ERROR")
     {
@@ -984,6 +1025,7 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
         this->modelLoaded = true;
         this->currentModel = myItem.params.model_path;
         this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
     }
     return sd_ctx_;
 }
@@ -991,4 +1033,26 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
 void MainWindowUI::LoadPresets()
 {
     this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+}
+
+void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
+{
+    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
+    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
+    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
+    myItem->step = step;
+    myItem->steps = steps;
+    myItem->time = time;
+    /*
+        format it/s
+        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
+               progress.c_str(), step, steps,
+               time > 1.0f || time == 0 ? time : (1.0f / time)
+    */
+
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
+
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
 }

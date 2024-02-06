@@ -73,6 +73,7 @@ private:
 
 	std::map<std::string, std::string> ModelFiles;
 	std::map<std::string, std::string> VaeFiles;
+	std::map<std::string, std::string> TaesdFiles;
 	std::map<std::string, sd_gui_utils::generator_preset> Presets;
 
 	// the queue manager
@@ -81,6 +82,7 @@ private:
 	bool firstCfgInit = true;
 	std::string currentModel;
 	std::string currentVaeModel;
+	std::string currentTaesdModel;
 	sd_ctx_t *sd_ctx;
 	std::streambuf *buffer;
 	std::vector<std::thread*> threads;
@@ -92,6 +94,8 @@ private:
 	void initConfig();
 	void loadModelList();
 	void loadVaeList();
+	void loadTaesdList();
+	void loadSamplerList();
 	void OnCloseSettings(wxCloseEvent &event);
 	void OnPopupClick(wxCommandEvent &evt);
 	void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);
@@ -114,6 +118,11 @@ private:
 	void OnQueueItemManagerItemStatusChanged(QM::QueueItem item);
 
 	wxNotificationMessage *notification;
+
+
+
+
+
 
 
 

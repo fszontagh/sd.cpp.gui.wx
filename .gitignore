@@ -22,3 +22,4 @@
 vcpkg_installed
 build/
 external/stable-diffusion.cpp/**
+.vscode/c_cpp_properties.json

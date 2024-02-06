@@ -13,6 +13,7 @@
 #include "../../sd.cpp.ui2/ui/embended_files/file_import.png.h"
 #include "../../sd.cpp.ui2/ui/embended_files/forward.png.h"
 #include "../../sd.cpp.ui2/ui/embended_files/images.png.h"
+#include "../../sd.cpp.ui2/ui/embended_files/interrogation.png.h"
 #include "../../sd.cpp.ui2/ui/embended_files/palette.png.h"
 #include "../../sd.cpp.ui2/ui/embended_files/pause.png.h"
 #include "../../sd.cpp.ui2/ui/embended_files/picture.png.h"
@@ -167,6 +168,37 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_clip_skip->SetMinSize( wxSize( 45,-1 ) );
 
 	bSizer22->Add( m_clip_skip, 0, wxALL, 5 );
+
+	m_staticline51 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+	bSizer22->Add( m_staticline51, 0, wxALL|wxEXPAND, 5 );
+
+	m_vae_tiling = new wxCheckBox( m_all_panel, wxID_ANY, wxT("VAE tiling"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_vae_tiling->SetToolTip( wxT("Process vae in tiles to reduce memory usage") );
+
+	bSizer22->Add( m_vae_tiling, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_vae_decode_only = new wxCheckBox( m_all_panel, wxID_ANY, wxT("VAE decode only"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_vae_decode_only->SetValue(true);
+	m_vae_decode_only->Enable( false );
+
+	bSizer22->Add( m_vae_decode_only, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticline6 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+	bSizer22->Add( m_staticline6, 0, wxEXPAND | wxALL, 5 );
+
+	m_staticText20 = new wxStaticText( m_all_panel, wxID_ANY, wxT("TAESD encoder:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText20->Wrap( -1 );
+	m_staticText20->SetToolTip( wxT("Using Tiny AutoEncoder for fast decoding (low quality)") );
+
+	bSizer22->Add( m_staticText20, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_taesdChoices;
+	m_taesd = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_taesdChoices, 0 );
+	m_taesd->SetSelection( 0 );
+	m_taesd->Enable( false );
+	m_taesd->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer22->Add( m_taesd, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer0002->Add( bSizer22, 0, wxEXPAND|wxALL, 5 );
@@ -469,6 +501,33 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 
 	sizer2011->Add( bSizer18, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer23;
+	bSizer23 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText21 = new wxStaticText( m_path_panel, wxID_ANY, wxT("TAESD path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText21->Wrap( -1 );
+	m_staticText21->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer23->Add( m_staticText21, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_taesd_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE|wxDIRP_DIR_MUST_EXIST|wxDIRP_SMALL );
+	m_taesd_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer23->Add( m_taesd_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_bpButton1 = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_bpButton1->SetBitmap( interrogation_png_to_wx_bitmap() );
+	m_bpButton1->SetToolTip( wxT("TAESD models you can download from here: https://github.com/madebyollin/taesd/tree/main") );
+
+	bSizer23->Add( m_bpButton1, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2011->Add( bSizer23, 0, wxEXPAND, 5 );
+
+	m_staticline7 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
+	sizer2011->Add( m_staticline7, 0, wxEXPAND | wxALL, 5 );
 
 	wxBoxSizer* bSizer20;
 	bSizer20 = new wxBoxSizer( wxHORIZONTAL );

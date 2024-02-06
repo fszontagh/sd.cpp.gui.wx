@@ -23,6 +23,7 @@
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/statline.h>
+#include <wx/checkbox.h>
 #include <wx/dataview.h>
 #include <wx/panel.h>
 #include <wx/textctrl.h>
@@ -30,7 +31,7 @@
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/filepicker.h>
-#include <wx/checkbox.h>
+#include <wx/bmpbuttn.h>
 #include <wx/statbmp.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,12 @@ class UI : public wxFrame
 		wxSpinCtrlDouble* m_cfg;
 		wxStaticText* m_staticText234;
 		wxSpinCtrl* m_clip_skip;
+		wxStaticLine* m_staticline51;
+		wxCheckBox* m_vae_tiling;
+		wxCheckBox* m_vae_decode_only;
+		wxStaticLine* m_staticline6;
+		wxStaticText* m_staticText20;
+		wxChoice* m_taesd;
 		wxNotebook* m_notebook1302;
 		wxPanel* m_jobs_panel;
 		wxButton* m_start_jobs;
@@ -140,6 +147,10 @@ class Settings : public wxFrame
 		wxDirPickerCtrl* m_vae_dir;
 		wxStaticText* m_staticText1801317202731;
 		wxDirPickerCtrl* m_embedding_dir;
+		wxStaticText* m_staticText21;
+		wxDirPickerCtrl* m_taesd_dir;
+		wxBitmapButton* m_bpButton1;
+		wxStaticLine* m_staticline7;
 		wxStaticText* m_staticText19;
 		wxDirPickerCtrl* m_presets_dir;
 		wxStaticLine* m_staticLine223;
