@@ -50,6 +50,7 @@ class UI : public wxFrame
 		wxButton* m_refresh;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
+		wxChoice* m_type;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
 		wxStaticText* m_staticText233;
@@ -104,6 +105,7 @@ class UI : public wxFrame
 		virtual void onSettings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }

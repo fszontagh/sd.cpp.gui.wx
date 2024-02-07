@@ -102,8 +102,18 @@ void MainWindowUI::onModelSelect(wxCommandEvent &event)
     // this->StartLoadModel();
 }
 
+void MainWindowUI::onTypeSelect(wxCommandEvent &event)
+{
+    wxChoice *c = (wxChoice *)event.GetEventObject();
+    if (c->GetStringSelection() == "Q4_2 - not supported" || c->GetStringSelection() == "Q4_5 - not supported")
+    {
+        c->SetSelection(sizeof(sd_gui_utils::sd_type_names[0]) - 1);
+    }
+}
+
 void MainWindowUI::onVaeSelect(wxCommandEvent &event)
 {
+    // TODO: Implement onVaeSelect
 }
 
 void MainWindowUI::onRandomGenerateButton(wxCommandEvent &event)
@@ -207,6 +217,22 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
     this->sd_params->sample_steps = this->m_steps->GetValue();
 
     this->sd_params->sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
+
+    if (this->m_type->GetCurrentSelection() != 0)
+    {
+        auto selected = this->m_type->GetStringSelection();
+        for (auto types : sd_gui_utils::sd_type_gui_names)
+        {
+            if (types.second == selected)
+            {
+                this->sd_params->wtype = (sd_type_t)types.first;
+            }
+        }
+    }
+    else
+    {
+        this->sd_params->wtype = sd_type_t::SD_TYPE_COUNT;
+    }
 
     this->sd_params->batch_count = this->m_batch_count->GetValue();
 
@@ -318,432 +344,22 @@ void MainWindowUI::onDeletePreset(wxCommandEvent &event)
     }
 }
 
-void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
+void MainWindowUI::loadTypeList()
 {
-    std::string basepath;
+    this->m_type->Clear();
 
-    switch (type)
+    for (auto type : sd_gui_utils::sd_type_gui_names)
     {
-    case sd_gui_utils::DirTypes::VAE:
-        this->VaeFiles.clear();
-        this->m_vae->Clear();
-        this->m_vae->Append("-none-");
-        this->m_vae->Select(0);
-        basepath = this->cfg->vae;
-        break;
-    case sd_gui_utils::DirTypes::LORA:
-        basepath = this->cfg->lora;
-        break;
-    case sd_gui_utils::DirTypes::CHECKPOINT:
-        this->ModelFiles.clear();
-        this->m_model->Clear();
-        this->m_model->Append("-none-");
-        this->m_model->Select(0);
-        basepath = this->cfg->model;
-        break;
-    case sd_gui_utils::DirTypes::PRESETS:
-        this->Presets.clear();
-        this->m_preset_list->Clear();
-        this->m_preset_list->Append("-none-");
-        this->m_preset_list->Select(0);
-        basepath = this->cfg->presets;
-        break;
-    case sd_gui_utils::DirTypes::TAESD:
-    {
-        this->m_taesd->Clear();
-        this->m_taesd->Append("-none-");
-        this->m_taesd->Select(0);
-        basepath = this->cfg->taesd;
-    }
-    }
-    if (!std::filesystem::exists(basepath))
-    {
-        std::filesystem::create_directories(basepath);
+        this->m_type->Append(type.second);
     }
 
-    int i = 0;
-    for (auto const &dir_entry : std::filesystem::recursive_directory_iterator(basepath))
-    {
-        if (!dir_entry.exists() || !dir_entry.is_regular_file() || !dir_entry.path().has_extension())
-        {
-            continue;
-        }
-
-        std::filesystem::path path = dir_entry.path();
-
-        std::string ext = path.extension().string();
-
-        if (type == sd_gui_utils::DirTypes::CHECKPOINT)
-        {
-            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf")
-            {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::VAE)
-        {
-            if (ext != ".safetensors" && ext != ".ckpt")
-            {
-                continue;
-            }
-        }
-
-        if (type == sd_gui_utils::DirTypes::PRESETS)
-        {
-            if (ext != ".json")
-            {
-                continue;
-            }
-        }
-
-        if (type == sd_gui_utils::DirTypes::TAESD)
-        {
-            if (ext != ".pth" && ext != ".safetensors" && ext != ".gguf")
-            {
-                continue;
-            }
-        }
-        std::string name = path.filename().replace_extension("").string();
-        // prepend the subdirectory to the modelname
-        // // wxFileName::GetPathSeparator()
-        auto path_name = path.string();
-        sd_gui_utils::replace(path_name, basepath, "");
-        sd_gui_utils::replace(path_name, "//", "");
-        sd_gui_utils::replace(path_name, "\\\\", "");
-        sd_gui_utils::replace(path_name, ext, "");
-
-        name = path_name.substr(1);
-
-        if (type == sd_gui_utils::CHECKPOINT)
-        {
-            this->m_model->Append(name);
-            this->ModelFiles.emplace(name, dir_entry.path().string());
-        }
-        if (type == sd_gui_utils::VAE)
-        {
-            this->m_vae->Append(name);
-            this->VaeFiles.emplace(name, dir_entry.path().string());
-        }
-        if (type == sd_gui_utils::PRESETS)
-        {
-            sd_gui_utils::generator_preset preset;
-            std::ifstream f(path.string());
-            try
-            {
-                nlohmann::json data = nlohmann::json::parse(f);
-                preset = data;
-                preset.path = path.string();
-                this->m_preset_list->Append(preset.name);
-                this->Presets.emplace(preset.name, preset);
-            }
-            catch (const std::exception &e)
-            {
-                std::remove(path.string().c_str());
-                std::cerr << e.what() << '\n';
-            }
-        }
-        if (type == sd_gui_utils::TAESD)
-        {
-            this->m_taesd->Append(name);
-            this->TaesdFiles.emplace(name, dir_entry.path().string());
-        }
-    }
-
-    if (type == sd_gui_utils::CHECKPOINT)
-    {
-        this->logs->AppendText(fmt::format("Loaded checkpoints: {}\n", this->ModelFiles.size()));
-    }
-    if (type == sd_gui_utils::VAE)
-    {
-        this->logs->AppendText(fmt::format("Loaded vaes: {}\n", this->VaeFiles.size()));
-    }
-    if (type == sd_gui_utils::PRESETS)
-    {
-        this->logs->AppendText(fmt::format("Loaded presets: {}\n", this->Presets.size()));
-        if (this->Presets.size() > 0)
-        {
-            this->m_preset_list->Enable();
-        }
-    }
-    if (type == sd_gui_utils::TAESD)
-    {
-        this->logs->AppendText(fmt::format("Loaded taesd: {}\n", this->TaesdFiles.size()));
-    }
+    this->m_type->Select(0);
 }
 
-void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
+void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 {
-    wxVector<wxVariant> data;
-
-    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
-
-    data.push_back(wxVariant(std::to_string(item.id)));
-    data.push_back(wxVariant(created_at));
-    data.push_back(wxVariant(item.model));
-    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
-    data.push_back(wxVariant(std::to_string(item.params.seed)));
-    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
-    data.push_back(wxString("-.--it/s"));                           // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
-
-    auto store = this->m_joblist->GetStore();
-
-    QM::QueueItem *nItem = new QM::QueueItem(item);
-
-    this->JobTableItems[item.id] = nItem;
-    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-}
-
-MainWindowUI::~MainWindowUI()
-{
-    if (this->modelLoaded)
-    {
-        free_sd_ctx(this->sd_ctx);
-    }
-    for (auto &t : this->threads)
-    {
-        t->join();
-    }
-}
-
-void MainWindowUI::loadVaeList()
-{
-
-    this->LoadFileList(sd_gui_utils::DirTypes::VAE);
-}
-
-void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
-{
-}
-
-void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
-{
-    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
-}
-
-void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
-{
-    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
-    {
-        auto *eventHandler = (wxEvtHandler *)data;
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-        e->SetPayload(level);
-        wxQueueEvent(eventHandler, e);
-    }
-}
-
-void MainWindowUI::loadTaesdList()
-{
-
-    this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
-}
-
-void MainWindowUI::loadSamplerList()
-{
-    this->m_sampler->Clear();
-    for (auto sampler : sd_gui_utils::sample_method_str)
-    {
-        int _u = this->m_sampler->Append(sampler);
-
-        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
-        {
-            this->m_sampler->Select(_u);
-        }
-    }
-}
-
-void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
-{
-    sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
-    vparams->p1 = (void *)this->GetEventHandler();
-    vparams->p2 = (void *)&myItem;
-
-    sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void *)vparams);
-
-    if (!this->modelLoaded)
-    {
-        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
-        this->currentModel = myItem.params.model_path;
-        this->currentVaeModel = myItem.params.vae_path;
-        this->currentTaesdModel = myItem.params.taesd_path;
-    }
-    else
-    { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
-        if (myItem.params.model_path != this->currentModel || this->currentVaeModel != myItem.params.vae_path || this->currentTaesdModel != myItem.params.taesd_path)
-        {
-            free_sd_ctx(this->sd_ctx);
-            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
-        }
-    }
-    if (!this->modelLoaded || this->sd_ctx == nullptr)
-    {
-        wxThreadEvent *f = new wxThreadEvent();
-        f->SetString("GENERATION_ERROR:Model load failed...");
-        f->SetPayload(myItem);
-        wxQueueEvent(eventHandler, f);
-        return;
-    }
-
-    auto start = std::chrono::system_clock::now();
-
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_START:%s", this->sd_params->model_path));
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
-
-    sd_image_t *control_image = NULL;
-    sd_image_t *results;
-
-    // std::lock_guard<std::mutex> guard(this->sdMutex);
-    results = txt2img(this->sd_ctx,
-                      myItem.params.prompt.c_str(),
-                      myItem.params.negative_prompt.c_str(),
-                      myItem.params.clip_skip,
-                      myItem.params.cfg_scale,
-                      myItem.params.width,
-                      myItem.params.height,
-                      myItem.params.sample_method,
-                      myItem.params.sample_steps,
-                      myItem.params.seed,
-                      myItem.params.batch_count,
-                      control_image,
-                      myItem.params.control_strength);
-
-    if (results == NULL)
-    {
-        wxThreadEvent *f = new wxThreadEvent();
-        f->SetString("GENERATION_ERROR:Something wrong happened at image generation...");
-        f->SetPayload(myItem);
-        wxQueueEvent(eventHandler, f);
-        return;
-    }
-    if (!std::filesystem::exists(this->cfg->output))
-    {
-        std::filesystem::create_directories(this->cfg->output);
-    }
-    /* save image(s) */
-
-    const auto p1 = std::chrono::system_clock::now();
-    auto ctime = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
-
-    for (int i = 0; i < this->sd_params->batch_count; i++)
-    {
-        if (results[i].data == NULL)
-        {
-            continue;
-        }
-
-        // handle data??
-        wxImage *img = new wxImage(results[i].width, results[i].height, results[i].data);
-        std::string filename = this->cfg->output;
-        std::string extension = ".png";
-
-        if (this->sd_params->batch_count > 1)
-        {
-            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + "_" + std::to_string(i) + extension;
-        }
-        else
-        {
-            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + extension;
-        }
-        if (!img->SaveFile(filename))
-        {
-            wxThreadEvent *g = new wxThreadEvent();
-            g->SetString(wxString::Format("GENERATION_ERROR:Failed to save image into %s", filename));
-            g->SetPayload(myItem);
-            wxQueueEvent(eventHandler, g);
-        }
-        else
-        {
-            myItem.images.emplace_back(filename);
-        }
-        // handle data??
-    }
-
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-
-    // send to notify the user...
-    wxThreadEvent *h = new wxThreadEvent();
-    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
-    h->SetString(wxString(msg.c_str()));
-    // h->SetPayload(myItem);
-    wxQueueEvent(eventHandler, h);
-
-    wxThreadEvent *i = new wxThreadEvent();
-    i->SetString(wxString::Format("GENERATION_DONE:ok"));
-    i->SetPayload(results);
-    wxQueueEvent(eventHandler, i);
-
-    // send to the queue manager
-    wxThreadEvent *j = new wxThreadEvent();
-    j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
-    j->SetPayload(myItem);
-    wxQueueEvent(eventHandler, j);
-}
-
-void MainWindowUI::initConfig()
-{
-    wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
-    wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
-
-    wxString model_path = datapath;
-    model_path.append("checkpoints");
-
-    wxString vae_path = datapath;
-    vae_path.append("vae");
-
-    wxString lora_path = datapath;
-    lora_path.append("lora");
-
-    wxString embedding_path = datapath;
-    embedding_path.append("embedding");
-
-    wxString taesd_path = datapath;
-    taesd_path.append("taesd");
-
-    wxString presets_path = datapath;
-    presets_path.append("presets");
-
-    wxString jobs_path = datapath;
-    jobs_path.append("queue_jobs");
-
-    this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
-    this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
-    this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
-    this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
-    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
-    this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
-
-    this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
-
-    this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
-    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
-
-    // populate data from sd_params as default...
-
-    if (!this->modelLoaded && this->firstCfgInit)
-    {
-        this->m_cfg->SetValue(static_cast<double>(this->sd_params->cfg_scale));
-        this->m_seed->SetValue(static_cast<int>(this->sd_params->seed));
-        this->m_clip_skip->SetValue(this->sd_params->clip_skip);
-        this->m_steps->SetValue(this->sd_params->sample_steps);
-        this->m_width->SetValue(this->sd_params->width);
-        this->m_height->SetValue(this->sd_params->height);
-        this->m_batch_count->SetValue(this->sd_params->batch_count);
-        this->loadSamplerList();
-    }
-    this->firstCfgInit = false;
-}
-
-void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
-{
-    this->initConfig();
-    this->settingsWindow->Destroy();
+    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
+    this->threads.emplace_back(p);
 }
 
 void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
@@ -784,12 +400,6 @@ void MainWindowUI::loadModelList()
         this->m_data_model_list->AppendItem(data);
     }
     this->m_data_model_list->Refresh();
-}
-
-void MainWindowUI::StartGeneration(QM::QueueItem myJob)
-{
-    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
-    this->threads.emplace_back(p);
 }
 
 void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
@@ -987,6 +597,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
 }
 
+void MainWindowUI::LoadPresets()
+{
+    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+}
+
 sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
     wxThreadEvent *e = new wxThreadEvent();
@@ -1026,13 +641,214 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
         this->currentModel = myItem.params.model_path;
         this->currentVaeModel = myItem.params.vae_path;
         this->currentTaesdModel = myItem.params.taesd_path;
+        this->currentwType = myItem.params.wtype;
     }
     return sd_ctx_;
 }
 
-void MainWindowUI::LoadPresets()
+void MainWindowUI::loadSamplerList()
 {
-    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+    this->m_sampler->Clear();
+    for (auto sampler : sd_gui_utils::sample_method_str)
+    {
+        int _u = this->m_sampler->Append(sampler);
+
+        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
+        {
+            this->m_sampler->Select(_u);
+        }
+    }
+}
+
+void MainWindowUI::initConfig()
+{
+    wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
+    wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
+
+    wxString model_path = datapath;
+    model_path.append("checkpoints");
+
+    wxString vae_path = datapath;
+    vae_path.append("vae");
+
+    wxString lora_path = datapath;
+    lora_path.append("lora");
+
+    wxString embedding_path = datapath;
+    embedding_path.append("embedding");
+
+    wxString taesd_path = datapath;
+    taesd_path.append("taesd");
+
+    wxString presets_path = datapath;
+    presets_path.append("presets");
+
+    wxString jobs_path = datapath;
+    jobs_path.append("queue_jobs");
+
+    this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
+    this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
+    this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
+    this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
+    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
+
+    this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
+
+    this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
+    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
+    this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
+
+    // populate data from sd_params as default...
+
+    if (!this->modelLoaded && this->firstCfgInit)
+    {
+        this->m_cfg->SetValue(static_cast<double>(this->sd_params->cfg_scale));
+        this->m_seed->SetValue(static_cast<int>(this->sd_params->seed));
+        this->m_clip_skip->SetValue(this->sd_params->clip_skip);
+        this->m_steps->SetValue(this->sd_params->sample_steps);
+        this->m_width->SetValue(this->sd_params->width);
+        this->m_height->SetValue(this->sd_params->height);
+        this->m_batch_count->SetValue(this->sd_params->batch_count);
+        this->loadSamplerList();
+        this->loadTypeList();
+    }
+    this->firstCfgInit = false;
+}
+
+void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
+{
+    sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
+    vparams->p1 = (void *)this->GetEventHandler();
+    vparams->p2 = (void *)&myItem;
+
+    sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void *)vparams);
+
+    if (!this->modelLoaded)
+    {
+        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        this->currentModel = myItem.params.model_path;
+        this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
+        this->currentwType = myItem.params.wtype;
+    }
+    else
+    { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
+        if (myItem.params.model_path != this->currentModel ||
+            this->currentVaeModel != myItem.params.vae_path ||
+            this->currentTaesdModel != myItem.params.taesd_path ||
+            this->currentwType != myItem.params.wtype)
+        {
+            free_sd_ctx(this->sd_ctx);
+            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        }
+    }
+    if (!this->modelLoaded || this->sd_ctx == nullptr)
+    {
+        wxThreadEvent *f = new wxThreadEvent();
+        f->SetString("GENERATION_ERROR:Model load failed...");
+        f->SetPayload(myItem);
+        wxQueueEvent(eventHandler, f);
+        return;
+    }
+
+    auto start = std::chrono::system_clock::now();
+
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("GENERATION_START:%s", this->sd_params->model_path));
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
+
+    sd_image_t *control_image = NULL;
+    sd_image_t *results;
+
+    // std::lock_guard<std::mutex> guard(this->sdMutex);
+    results = txt2img(this->sd_ctx,
+                      myItem.params.prompt.c_str(),
+                      myItem.params.negative_prompt.c_str(),
+                      myItem.params.clip_skip,
+                      myItem.params.cfg_scale,
+                      myItem.params.width,
+                      myItem.params.height,
+                      myItem.params.sample_method,
+                      myItem.params.sample_steps,
+                      myItem.params.seed,
+                      myItem.params.batch_count,
+                      control_image,
+                      myItem.params.control_strength);
+
+    if (results == NULL)
+    {
+        wxThreadEvent *f = new wxThreadEvent();
+        f->SetString("GENERATION_ERROR:Something wrong happened at image generation...");
+        f->SetPayload(myItem);
+        wxQueueEvent(eventHandler, f);
+        return;
+    }
+    if (!std::filesystem::exists(this->cfg->output))
+    {
+        std::filesystem::create_directories(this->cfg->output);
+    }
+    /* save image(s) */
+
+    const auto p1 = std::chrono::system_clock::now();
+    auto ctime = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+
+    for (int i = 0; i < this->sd_params->batch_count; i++)
+    {
+        if (results[i].data == NULL)
+        {
+            continue;
+        }
+
+        // handle data??
+        wxImage *img = new wxImage(results[i].width, results[i].height, results[i].data);
+        std::string filename = this->cfg->output;
+        std::string extension = ".png";
+
+        if (this->sd_params->batch_count > 1)
+        {
+            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + "_" + std::to_string(i) + extension;
+        }
+        else
+        {
+            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + extension;
+        }
+        if (!img->SaveFile(filename))
+        {
+            wxThreadEvent *g = new wxThreadEvent();
+            g->SetString(wxString::Format("GENERATION_ERROR:Failed to save image into %s", filename));
+            g->SetPayload(myItem);
+            wxQueueEvent(eventHandler, g);
+        }
+        else
+        {
+            myItem.images.emplace_back(filename);
+        }
+        // handle data??
+    }
+
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    // send to notify the user...
+    wxThreadEvent *h = new wxThreadEvent();
+    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
+    h->SetString(wxString(msg.c_str()));
+    // h->SetPayload(myItem);
+    wxQueueEvent(eventHandler, h);
+
+    wxThreadEvent *i = new wxThreadEvent();
+    i->SetString(wxString::Format("GENERATION_DONE:ok"));
+    i->SetPayload(results);
+    wxQueueEvent(eventHandler, i);
+
+    // send to the queue manager
+    wxThreadEvent *j = new wxThreadEvent();
+    j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
+    j->SetPayload(myItem);
+    wxQueueEvent(eventHandler, j);
 }
 
 void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
@@ -1055,4 +871,232 @@ void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
 
     e->SetPayload(myItem);
     wxQueueEvent(eventHandler, e);
+}
+
+void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
+{
+    this->initConfig();
+    this->settingsWindow->Destroy();
+}
+
+void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
+{
+    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
+    {
+        auto *eventHandler = (wxEvtHandler *)data;
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
+        e->SetPayload(level);
+        wxQueueEvent(eventHandler, e);
+    }
+}
+
+void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
+{
+    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+}
+
+void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
+{
+}
+
+void MainWindowUI::loadVaeList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::VAE);
+}
+
+MainWindowUI::~MainWindowUI()
+{
+    if (this->modelLoaded)
+    {
+        free_sd_ctx(this->sd_ctx);
+    }
+    for (auto &t : this->threads)
+    {
+        t->join();
+    }
+}
+
+void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
+{
+    wxVector<wxVariant> data;
+
+    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
+
+    data.push_back(wxVariant(std::to_string(item.id)));
+    data.push_back(wxVariant(created_at));
+    data.push_back(wxVariant(item.model));
+    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
+    data.push_back(wxVariant(std::to_string(item.params.seed)));
+    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
+    data.push_back(wxString("-.--it/s"));                           // speed
+    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
+
+    auto store = this->m_joblist->GetStore();
+
+    QM::QueueItem *nItem = new QM::QueueItem(item);
+
+    this->JobTableItems[item.id] = nItem;
+    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+}
+
+void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
+{
+    std::string basepath;
+
+    switch (type)
+    {
+    case sd_gui_utils::DirTypes::VAE:
+        this->VaeFiles.clear();
+        this->m_vae->Clear();
+        this->m_vae->Append("-none-");
+        this->m_vae->Select(0);
+        basepath = this->cfg->vae;
+        break;
+    case sd_gui_utils::DirTypes::LORA:
+        basepath = this->cfg->lora;
+        break;
+    case sd_gui_utils::DirTypes::CHECKPOINT:
+        this->ModelFiles.clear();
+        this->m_model->Clear();
+        this->m_model->Append("-none-");
+        this->m_model->Select(0);
+        basepath = this->cfg->model;
+        break;
+    case sd_gui_utils::DirTypes::PRESETS:
+        this->Presets.clear();
+        this->m_preset_list->Clear();
+        this->m_preset_list->Append("-none-");
+        this->m_preset_list->Select(0);
+        basepath = this->cfg->presets;
+        break;
+    case sd_gui_utils::DirTypes::TAESD:
+    {
+        this->m_taesd->Clear();
+        this->m_taesd->Append("-none-");
+        this->m_taesd->Select(0);
+        basepath = this->cfg->taesd;
+    }
+    }
+    if (!std::filesystem::exists(basepath))
+    {
+        std::filesystem::create_directories(basepath);
+    }
+
+    int i = 0;
+    for (auto const &dir_entry : std::filesystem::recursive_directory_iterator(basepath))
+    {
+        if (!dir_entry.exists() || !dir_entry.is_regular_file() || !dir_entry.path().has_extension())
+        {
+            continue;
+        }
+
+        std::filesystem::path path = dir_entry.path();
+
+        std::string ext = path.extension().string();
+
+        if (type == sd_gui_utils::DirTypes::CHECKPOINT)
+        {
+            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf")
+            {
+                continue;
+            }
+        }
+        if (type == sd_gui_utils::DirTypes::VAE)
+        {
+            if (ext != ".safetensors" && ext != ".ckpt")
+            {
+                continue;
+            }
+        }
+
+        if (type == sd_gui_utils::DirTypes::PRESETS)
+        {
+            if (ext != ".json")
+            {
+                continue;
+            }
+        }
+
+        if (type == sd_gui_utils::DirTypes::TAESD)
+        {
+            if (ext != ".pth" && ext != ".safetensors" && ext != ".gguf")
+            {
+                continue;
+            }
+        }
+        std::string name = path.filename().replace_extension("").string();
+        // prepend the subdirectory to the modelname
+        // // wxFileName::GetPathSeparator()
+        auto path_name = path.string();
+        sd_gui_utils::replace(path_name, basepath, "");
+        sd_gui_utils::replace(path_name, "//", "");
+        sd_gui_utils::replace(path_name, "\\\\", "");
+        sd_gui_utils::replace(path_name, ext, "");
+
+        name = path_name.substr(1);
+
+        if (type == sd_gui_utils::CHECKPOINT)
+        {
+            this->m_model->Append(name);
+            this->ModelFiles.emplace(name, dir_entry.path().string());
+        }
+        if (type == sd_gui_utils::VAE)
+        {
+            this->m_vae->Append(name);
+            this->VaeFiles.emplace(name, dir_entry.path().string());
+        }
+        if (type == sd_gui_utils::PRESETS)
+        {
+            sd_gui_utils::generator_preset preset;
+            std::ifstream f(path.string());
+            try
+            {
+                nlohmann::json data = nlohmann::json::parse(f);
+                preset = data;
+                preset.path = path.string();
+                this->m_preset_list->Append(preset.name);
+                this->Presets.emplace(preset.name, preset);
+            }
+            catch (const std::exception &e)
+            {
+                std::remove(path.string().c_str());
+                std::cerr << e.what() << '\n';
+            }
+        }
+        if (type == sd_gui_utils::TAESD)
+        {
+            this->m_taesd->Append(name);
+            this->TaesdFiles.emplace(name, dir_entry.path().string());
+        }
+    }
+
+    if (type == sd_gui_utils::CHECKPOINT)
+    {
+        this->logs->AppendText(fmt::format("Loaded checkpoints: {}\n", this->ModelFiles.size()));
+    }
+    if (type == sd_gui_utils::VAE)
+    {
+        this->logs->AppendText(fmt::format("Loaded vaes: {}\n", this->VaeFiles.size()));
+    }
+    if (type == sd_gui_utils::PRESETS)
+    {
+        this->logs->AppendText(fmt::format("Loaded presets: {}\n", this->Presets.size()));
+        if (this->Presets.size() > 0)
+        {
+            this->m_preset_list->Enable();
+        }
+    }
+    if (type == sd_gui_utils::TAESD)
+    {
+        this->logs->AppendText(fmt::format("Loaded taesd: {}\n", this->TaesdFiles.size()));
+    }
+}
+
+void MainWindowUI::loadTaesdList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
 }

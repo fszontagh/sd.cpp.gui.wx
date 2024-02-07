@@ -5,6 +5,8 @@
 #include <iostream>
 #include <random>
 
+#include <unordered_map>
+
 #include <opencv2/opencv.hpp>
 #include <stable-diffusion.h>
 
@@ -39,8 +41,7 @@ namespace sd_gui_utils
             {"poster", p.poster},
             {"sha256", p.sha256},
             {"size", p.size},
-            {"size_f", p.size_f}
-        };
+            {"size_f", p.size_f}};
     }
 
     inline void from_json(const nlohmann::json &j, ModelFileInfo &p)
@@ -215,6 +216,18 @@ namespace sd_gui_utils
         CONVERT,
         MODE_COUNT
     };
+
+    // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
+    inline std::unordered_map<int, std::string> sd_type_gui_names = {{20, "Default"}, {0, "F32"}, {1, "F16"}, {2, "Q4_0"}, {3, "Q4_1"}, {6, "Q5_0"}, {7, "Q5_1"}, {8, "Q8_0"}};
+
+    inline const char *sd_type_names[] = {"F32", "F16", "Q4_0", "Q4_1",
+                                          "Q4_2 - not supported", // Q4_2
+                                          "Q4_5 - not supported", // Q4_5
+                                          "Q5_0", "Q5_1", "Q8_0",
+                                          "Q8_1", "Q2_K", "Q3_K",
+                                          "Q4_K", "Q5_K", "Q6_K",
+                                          "Q8_K", "IQ2_XXS", "I8",
+                                          "I16", "I32", "Default"};
 
     struct SDParams
     {

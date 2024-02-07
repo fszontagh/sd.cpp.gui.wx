@@ -69,6 +69,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	sizer0021->Add( m_model, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	wxArrayString m_typeChoices;
+	m_type = new wxChoice( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_typeChoices, 0 );
+	m_type->SetSelection( 0 );
+	m_type->SetToolTip( wxT("Weight type. If not specified, the default is the type of the weight file.") );
+
+	sizer0021->Add( m_type, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
 	m_staticText161 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Vae:"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
 	m_staticText161->Wrap( 0 );
 	m_staticText161->SetMinSize( wxSize( 50,-1 ) );
@@ -379,6 +386,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
 	m_refresh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
+	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
 	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
 	m_button7->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
@@ -403,6 +411,7 @@ UI::~UI()
 	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
 	m_refresh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
+	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
 	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
 	m_button7->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
