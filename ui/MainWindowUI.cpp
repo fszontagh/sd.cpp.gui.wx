@@ -5,10 +5,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
 {
     this->ini_path = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
     this->sd_params = new sd_gui_utils::SDParams;
-    this->notification = new wxNotificationMessage();
-    // this->JobTableItems = new std::map<int, QM::QueueItem>();
-
-    this->notification->SetParent(this);
+    this->currentInitialImage = new wxImage();
+    this->currentInitialImagePreview = new wxImage();
 
     // prepare data list views
     this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
@@ -25,6 +23,16 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->m_joblist->AppendTextColumn("Status");       // status
 
     this->SetTitle(this->GetTitle() + SD_GUI_VERSION);
+    this->TaskBar = new wxTaskBarIcon();
+
+    // this->TaskBarMenu = new wxMenu();
+
+    auto bitmap = app_png_to_wx_bitmap();
+    TaskBar->SetIcon(bitmap, this->GetTitle());
+
+    wxIcon icon;
+    icon.CopyFromBitmap(bitmap);
+    this->SetIcon(icon);
 
     this->cfg = new sd_gui_utils::config;
     this->fileConfig = new wxFileConfig("sd.cpp.ui", wxEmptyString, this->ini_path);
@@ -54,6 +62,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
         this->m_taesd->Enable();
     }
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
+    const char * system_info = sd_get_system_info();
+    this->logs->AppendText(system_info);
 }
 
 void MainWindowUI::onSettings(wxCommandEvent &event)
@@ -180,6 +190,47 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 void MainWindowUI::onJoblistSelectionChanged(wxDataViewEvent &event)
 {
     // TODO: Implement onJoblistSelectionChanged
+}
+
+void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
+{
+
+    std::cout << "Path: " << event.GetPath() << " \n";
+
+    wxImage img;
+    img.LoadFile(event.GetPath());
+    auto targetSize = this->m_img2img_preview->GetSize().GetHeight();
+
+    auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
+
+    this->currentInitialImage = new wxImage(img);
+    this->currentInitialImagePreview = new wxImage(preview);
+
+    this->m_img2img_preview->SetBitmap(preview);
+    this->m_img2im_preview_img->Enable();
+    this->m_delete_initial_img->Enable();
+}
+
+void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
+{
+    MainWindowImageDialog *dialog = new MainWindowImageDialog(this);
+    wxImage img(*this->currentInitialImage);
+    auto size = img.GetSize();
+    
+    dialog->SetSize(size.GetWidth() + 100, size.GetHeight() + 100);
+    dialog->SetTitle("IMG2IMG - original image");
+    dialog->m_bitmap->SetBitmap(img);
+    dialog->ShowModal();
+}
+
+void MainWindowUI::OnDeleteInitialImage(wxCommandEvent &event)
+{
+    // TODO: Implement OnDeleteInitialImage
+    this->currentInitialImage = NULL;
+    this->currentInitialImagePreview = NULL;
+    this->m_img2img_preview->SetBitmap(wxBitmap());
+    this->m_img2im_preview_img->Disable();
+    this->m_delete_initial_img->Disable();
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent &event)
@@ -345,539 +396,22 @@ void MainWindowUI::onDeletePreset(wxCommandEvent &event)
     }
 }
 
-void MainWindowUI::loadTypeList()
+MainWindowUI::~MainWindowUI()
 {
-    this->m_type->Clear();
-
-    for (auto type : sd_gui_utils::sd_type_gui_names)
+    if (this->modelLoaded)
     {
-        this->m_type->Append(type.second);
+        free_sd_ctx(this->sd_ctx);
     }
-
-    this->m_type->Select(0);
+    for (auto &t : this->threads)
+    {
+        t->join();
+    }
+    this->TaskBar->Destroy();
 }
 
-void MainWindowUI::StartGeneration(QM::QueueItem myJob)
+void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
 {
-    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
-    this->threads.emplace_back(p);
-}
-
-void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
-{
-    auto store = this->m_joblist->GetStore();
-
-    int lastCol = this->m_joblist->GetColumnCount() - 1;
-
-    for (unsigned int i = 0; i < store->GetItemCount(); i++)
-    {
-        auto _item = store->GetItem(i);
-        auto _item_data = store->GetItemData(_item);
-        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
-        if (_qitem->id == item.id)
-        {
-            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
-            this->m_joblist->Refresh();
-            break;
-        }
-    }
-}
-
-void MainWindowUI::loadModelList()
-{
-
-    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
-    // clear the table
-    for (auto model : this->ModelFiles)
-    {
-        // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
-        uintmax_t size = std::filesystem::file_size(model.second);
-        auto humanSize = sd_gui_utils::humanReadableFileSize(size);
-        auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
-        wxVector<wxVariant> data;
-        data.push_back(wxVariant(model.first));
-        data.push_back(hs);
-        data.push_back("--");
-        this->m_data_model_list->AppendItem(data);
-    }
-    this->m_data_model_list->Refresh();
-}
-
-void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
-{
-    if (e.GetSkipped() == false)
-    {
-        e.Skip();
-    }
-    auto msg = e.GetString().ToStdString();
-
-    std::string token = msg.substr(0, msg.find(":"));
-    std::string content = msg.substr(msg.find(":") + 1);
-
-    // this->logs->AppendText(fmt::format("Got thread message: {}\n", e.GetString().ToStdString()));
-    if (token == "QUEUE")
-    {
-        // only numbers here...
-        QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
-        // only handle the QUEUE messages, what this class generate
-        // alway QM::EueueItem the payload, with the new data
-        QM::QueueItem payload;
-        payload = e.GetPayload<QM::QueueItem>();
-        switch (event)
-        {
-            // new item added
-        case QM::QueueEvents::ITEM_ADDED:
-            this->OnQueueItemManagerItemAdded(payload);
-            break;
-            // item status changed
-        case QM::QueueEvents::ITEM_STATUS_CHANGED:
-            this->OnQueueItemManagerItemStatusChanged(payload);
-            break;
-            // item updated... ? ? ?
-        case QM::QueueEvents::ITEM_UPDATED:
-            this->OnQueueItemManagerItemUpdated(payload);
-            break;
-        case QM::QueueEvents::ITEM_START:
-            this->StartGeneration(payload);
-            break;
-
-        default:
-            break;
-        }
-    }
-    if (token == "MODEL_LOAD_DONE")
-    {
-        // this->m_generate->Enable();
-        // this->m_model->Enable();
-        // this->m_vae->Enable();
-        // this->m_refresh->Enable();
-
-        // this->logs->AppendText(fmt::format("Model loaded: {}\n", content));
-        this->modelLoaded = true;
-        // std::lock_guard<std::mutex> guard(this->sdMutex);
-        // this->sd_ctx = e.GetPayload<sd_ctx_t *>();
-        if (!this->IsShownOnScreen())
-        {
-            this->notification->SetFlags(wxICON_INFORMATION);
-            this->notification->SetTitle("SD Gui");
-            this->notification->SetMessage(content);
-            this->notification->Show(5000);
-        }
-    }
-    if (token == "MODEL_LOAD_START")
-    {
-        // this->m_generate->Disable();
-        // this->m_model->Disable();
-        // this->m_vae->Disable();
-        // this->m_refresh->Disable();
-        this->logs->AppendText(fmt::format("Model load start: {}\n", content));
-    }
-    if (token == "MODEL_LOAD_ERROR")
-    {
-        // this->m_generate->Disable();
-        // this->m_model->Enable();
-        // this->m_vae->Disable();
-        // this->m_refresh->Enable();
-        this->logs->AppendText(fmt::format("Model load error: {}\n", content));
-        this->modelLoaded = false;
-        if (!this->IsShownOnScreen())
-        {
-            this->notification->SetFlags(wxICON_ERROR);
-            this->notification->SetTitle("SD Gui - error");
-            this->notification->SetMessage(content);
-            this->notification->Show(5000);
-        }
-    }
-
-    if (token == "GENERATION_START")
-    {
-        auto myjob = e.GetPayload<QM::QueueItem>();
-
-        // this->m_generate->Disable();
-        // this->m_model->Disable();
-        // this->m_vae->Disable();
-        // this->m_refresh->Disable();
-        this->logs->AppendText(fmt::format("Diffusion started. Seed: {} Batch: {} {}x{}px Cfg: {} Steps: {}\n",
-                                           myjob.params.seed,
-                                           myjob.params.batch_count,
-                                           myjob.params.width,
-                                           myjob.params.height,
-                                           myjob.params.cfg_scale,
-                                           myjob.params.sample_steps));
-    }
-    // in the original SD.cpp the progress callback is not implemented... :(
-    if (token == "GENERATION_PROGRESS")
-    {
-        QM::QueueItem *myjob = e.GetPayload<QM::QueueItem *>();
-
-        if (myjob == nullptr || myjob == NULL)
-        {
-            return;
-        }
-        // update column
-        auto store = this->m_joblist->GetStore();
-        // -1 the last (status)
-        // -2 ...      (speed)
-        // -3 ...      (progressbar)
-
-        // it/s format
-        /*
-        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-               progress.c_str(), step, steps,
-               time > 1.0f || time == 0 ? time : (1.0f / time)
-        */
-        wxString speed = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
-        int progressCol = this->m_joblist->GetColumnCount() - 3;
-        int speedCol = this->m_joblist->GetColumnCount() - 2;
-        float current_progress = 100.f * (static_cast<float>(myjob->step) / static_cast<float>(myjob->steps));
-        if (current_progress < 2.f)
-        {
-            return;
-        }
-
-        for (unsigned int i = 0; i < store->GetItemCount(); i++)
-        {
-            auto _item = store->GetItem(i);
-            auto _item_data = store->GetItemData(_item);
-            auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
-            if (_qitem->id == myjob->id)
-            {
-                store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
-                store->SetValueByRow(speed, i, speedCol);
-                this->m_joblist->Refresh();
-                break;
-            }
-        }
-
-        return;
-        for (auto it = this->JobTableItems.begin(); it != this->JobTableItems.end(); ++it)
-        {
-            if (it->second->id == myjob->id)
-            {
-                // store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), it->first, progressCol);
-                store->SetValueByRow(static_cast<int>(current_progress), it->first, progressCol);
-                store->SetValueByRow(speed, it->first, speedCol);
-                this->m_joblist->Refresh();
-                break;
-            }
-        }
-        // update column
-    }
-    if (token == "GENERATION_DONE")
-    {
-    }
-    if (token == "GENERATION_ERROR")
-    {
-        this->logs->AppendText(fmt::format("Generation error: {}\n", content));
-        if (!this->IsShownOnScreen())
-        {
-            this->notification->SetFlags(wxICON_ERROR);
-            this->notification->SetTitle("SD Gui - error");
-            this->notification->SetMessage(content);
-            this->notification->Show(5000);
-        }
-    }
-    if (token == "SD_MESSAGE")
-    {
-        if (content.length() < 1)
-        {
-            return;
-        }
-        this->logs->AppendText(fmt::format("{}", content));
-    }
-    if (token == "MESSAGE")
-    {
-        this->logs->AppendText(fmt::format("{}\n", content));
-        if (!this->IsShownOnScreen())
-        {
-            this->notification->SetFlags(wxICON_INFORMATION);
-            this->notification->SetTitle("SD Gui");
-            this->notification->SetMessage(content);
-            this->notification->Show(5000);
-        }
-    }
-}
-
-void MainWindowUI::LoadPresets()
-{
-    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
-}
-
-sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
-{
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("MODEL_LOAD_START:%s", myItem.params.model_path));
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
-
-    // std::lock_guard<std::mutex> guard(this->sdMutex);
-    sd_ctx_t *sd_ctx_ = new_sd_ctx(
-        myItem.params.model_path.c_str(),
-        myItem.params.vae_path.c_str(),
-        myItem.params.taesd_path.c_str(),
-        myItem.params.controlnet_path.c_str(),
-        myItem.params.lora_model_dir.c_str(),
-        myItem.params.embeddings_path.c_str(),
-        false, myItem.params.vae_tiling, false,
-        myItem.params.n_threads,
-        myItem.params.wtype,
-        myItem.params.rng_type,
-        myItem.params.schedule, false);
-
-    if (sd_ctx_ == NULL)
-    {
-        wxThreadEvent *c = new wxThreadEvent();
-        c->SetString(wxString::Format("MODEL_LOAD_ERROR:%s", myItem.params.model_path));
-        c->SetPayload(myItem);
-        wxQueueEvent(eventHandler, c);
-        this->modelLoaded = false;
-        return nullptr;
-    }
-    else
-    {
-        wxThreadEvent *c = new wxThreadEvent();
-        c->SetString(wxString::Format("MODEL_LOAD_DONE:%s", myItem.params.model_path));
-        wxQueueEvent(eventHandler, c);
-        this->modelLoaded = true;
-        this->currentModel = myItem.params.model_path;
-        this->currentVaeModel = myItem.params.vae_path;
-        this->currentTaesdModel = myItem.params.taesd_path;
-        this->currentwType = myItem.params.wtype;
-    }
-    return sd_ctx_;
-}
-
-void MainWindowUI::loadSamplerList()
-{
-    this->m_sampler->Clear();
-    for (auto sampler : sd_gui_utils::sample_method_str)
-    {
-        int _u = this->m_sampler->Append(sampler);
-
-        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
-        {
-            this->m_sampler->Select(_u);
-        }
-    }
-}
-
-void MainWindowUI::initConfig()
-{
-    wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
-    wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
-
-    wxString model_path = datapath;
-    model_path.append("checkpoints");
-
-    wxString vae_path = datapath;
-    vae_path.append("vae");
-
-    wxString lora_path = datapath;
-    lora_path.append("lora");
-
-    wxString embedding_path = datapath;
-    embedding_path.append("embedding");
-
-    wxString taesd_path = datapath;
-    taesd_path.append("taesd");
-
-    wxString presets_path = datapath;
-    presets_path.append("presets");
-
-    wxString jobs_path = datapath;
-    jobs_path.append("queue_jobs");
-
-    this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
-    this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
-    this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
-    this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
-    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
-    this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
-
-    this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
-
-    this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
-    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
-
-    // populate data from sd_params as default...
-
-    if (!this->modelLoaded && this->firstCfgInit)
-    {
-        this->m_cfg->SetValue(static_cast<double>(this->sd_params->cfg_scale));
-        this->m_seed->SetValue(static_cast<int>(this->sd_params->seed));
-        this->m_clip_skip->SetValue(this->sd_params->clip_skip);
-        this->m_steps->SetValue(this->sd_params->sample_steps);
-        this->m_width->SetValue(this->sd_params->width);
-        this->m_height->SetValue(this->sd_params->height);
-        this->m_batch_count->SetValue(this->sd_params->batch_count);
-        this->loadSamplerList();
-        this->loadTypeList();
-    }
-    this->firstCfgInit = false;
-}
-
-void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
-{
-    sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
-    vparams->p1 = (void *)this->GetEventHandler();
-    vparams->p2 = (void *)&myItem;
-
-    sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void *)vparams);
-
-    if (!this->modelLoaded)
-    {
-        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
-        this->currentModel = myItem.params.model_path;
-        this->currentVaeModel = myItem.params.vae_path;
-        this->currentTaesdModel = myItem.params.taesd_path;
-        this->currentwType = myItem.params.wtype;
-    }
-    else
-    { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
-        if (myItem.params.model_path != this->currentModel ||
-            this->currentVaeModel != myItem.params.vae_path ||
-            this->currentTaesdModel != myItem.params.taesd_path ||
-            this->currentwType != myItem.params.wtype)
-        {
-            free_sd_ctx(this->sd_ctx);
-            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
-        }
-    }
-    if (!this->modelLoaded || this->sd_ctx == nullptr)
-    {
-        wxThreadEvent *f = new wxThreadEvent();
-        f->SetString("GENERATION_ERROR:Model load failed...");
-        f->SetPayload(myItem);
-        wxQueueEvent(eventHandler, f);
-        return;
-    }
-
-    auto start = std::chrono::system_clock::now();
-
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_START:%s", this->sd_params->model_path));
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
-
-    sd_image_t *control_image = NULL;
-    sd_image_t *results;
-
-    // std::lock_guard<std::mutex> guard(this->sdMutex);
-    results = txt2img(this->sd_ctx,
-                      myItem.params.prompt.c_str(),
-                      myItem.params.negative_prompt.c_str(),
-                      myItem.params.clip_skip,
-                      myItem.params.cfg_scale,
-                      myItem.params.width,
-                      myItem.params.height,
-                      myItem.params.sample_method,
-                      myItem.params.sample_steps,
-                      myItem.params.seed,
-                      myItem.params.batch_count,
-                      control_image,
-                      myItem.params.control_strength);
-
-    if (results == NULL)
-    {
-        wxThreadEvent *f = new wxThreadEvent();
-        f->SetString("GENERATION_ERROR:Something wrong happened at image generation...");
-        f->SetPayload(myItem);
-        wxQueueEvent(eventHandler, f);
-        return;
-    }
-    if (!std::filesystem::exists(this->cfg->output))
-    {
-        std::filesystem::create_directories(this->cfg->output);
-    }
-    /* save image(s) */
-
-    const auto p1 = std::chrono::system_clock::now();
-    auto ctime = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
-
-    for (int i = 0; i < this->sd_params->batch_count; i++)
-    {
-        if (results[i].data == NULL)
-        {
-            continue;
-        }
-
-        // handle data??
-        wxImage *img = new wxImage(results[i].width, results[i].height, results[i].data);
-        std::string filename = this->cfg->output;
-        std::string extension = ".png";
-
-        if (this->sd_params->batch_count > 1)
-        {
-            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + "_" + std::to_string(i) + extension;
-        }
-        else
-        {
-            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + extension;
-        }
-        if (!img->SaveFile(filename))
-        {
-            wxThreadEvent *g = new wxThreadEvent();
-            g->SetString(wxString::Format("GENERATION_ERROR:Failed to save image into %s", filename));
-            g->SetPayload(myItem);
-            wxQueueEvent(eventHandler, g);
-        }
-        else
-        {
-            myItem.images.emplace_back(filename);
-        }
-        // handle data??
-    }
-
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-
-    // send to notify the user...
-    wxThreadEvent *h = new wxThreadEvent();
-    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
-    h->SetString(wxString(msg.c_str()));
-    // h->SetPayload(myItem);
-    wxQueueEvent(eventHandler, h);
-
-    wxThreadEvent *i = new wxThreadEvent();
-    i->SetString(wxString::Format("GENERATION_DONE:ok"));
-    i->SetPayload(results);
-    wxQueueEvent(eventHandler, i);
-
-    // send to the queue manager
-    wxThreadEvent *j = new wxThreadEvent();
-    j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
-    j->SetPayload(myItem);
-    wxQueueEvent(eventHandler, j);
-}
-
-void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
-{
-    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
-    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
-    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
-    myItem->step = step;
-    myItem->steps = steps;
-    myItem->time = time;
-    /*
-        format it/s
-        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-               progress.c_str(), step, steps,
-               time > 1.0f || time == 0 ? time : (1.0f / time)
-    */
-
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
-
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
-}
-
-void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
-{
-    this->initConfig();
-    this->settingsWindow->Destroy();
+    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
 }
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
@@ -889,33 +423,6 @@ void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *dat
         e->SetString(wxString::Format("SD_MESSAGE:%s", text));
         e->SetPayload(level);
         wxQueueEvent(eventHandler, e);
-    }
-}
-
-void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
-{
-    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
-}
-
-void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
-{
-}
-
-void MainWindowUI::loadVaeList()
-{
-
-    this->LoadFileList(sd_gui_utils::DirTypes::VAE);
-}
-
-MainWindowUI::~MainWindowUI()
-{
-    if (this->modelLoaded)
-    {
-        free_sd_ctx(this->sd_ctx);
-    }
-    for (auto &t : this->threads)
-    {
-        t->join();
     }
 }
 
@@ -1096,8 +603,547 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
     }
 }
 
+void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
+{
+}
+
+void MainWindowUI::loadVaeList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::VAE);
+}
+
+void MainWindowUI::OnExit(wxEvent &event)
+{
+    this->Close();
+}
+
+void MainWindowUI::initConfig()
+{
+
+    wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
+    wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
+
+    wxString model_path = datapath;
+    model_path.append("checkpoints");
+
+    wxString vae_path = datapath;
+    vae_path.append("vae");
+
+    wxString lora_path = datapath;
+    lora_path.append("lora");
+
+    wxString embedding_path = datapath;
+    embedding_path.append("embedding");
+
+    wxString taesd_path = datapath;
+    taesd_path.append("taesd");
+
+    wxString presets_path = datapath;
+    presets_path.append("presets");
+
+    wxString jobs_path = datapath;
+    jobs_path.append("queue_jobs");
+
+    this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
+    this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
+    this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
+    this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
+    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
+
+    this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
+
+    this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
+    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
+    this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
+
+    // populate data from sd_params as default...
+
+    if (!this->modelLoaded && this->firstCfgInit)
+    {
+        this->m_cfg->SetValue(static_cast<double>(this->sd_params->cfg_scale));
+        this->m_seed->SetValue(static_cast<int>(this->sd_params->seed));
+        this->m_clip_skip->SetValue(this->sd_params->clip_skip);
+        this->m_steps->SetValue(this->sd_params->sample_steps);
+        this->m_width->SetValue(this->sd_params->width);
+        this->m_height->SetValue(this->sd_params->height);
+        this->m_batch_count->SetValue(this->sd_params->batch_count);
+        this->loadSamplerList();
+        this->loadTypeList();
+    }
+    this->firstCfgInit = false;
+}
+
+void MainWindowUI::loadSamplerList()
+{
+    this->m_sampler->Clear();
+    for (auto sampler : sd_gui_utils::sample_method_str)
+    {
+        int _u = this->m_sampler->Append(sampler);
+
+        if (sampler == sd_gui_utils::sample_method_str[this->sd_params->sample_method])
+        {
+            this->m_sampler->Select(_u);
+        }
+    }
+}
+
 void MainWindowUI::loadTaesdList()
 {
 
     this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
+}
+
+void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
+{
+    sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
+    vparams->p1 = (void *)this->GetEventHandler();
+    vparams->p2 = (void *)&myItem;
+
+    sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void *)vparams);
+
+    if (!this->modelLoaded)
+    {
+        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        this->currentModel = myItem.params.model_path;
+        this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
+        this->currentwType = myItem.params.wtype;
+    }
+    else
+    { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
+        if (myItem.params.model_path != this->currentModel ||
+            this->currentVaeModel != myItem.params.vae_path ||
+            this->currentTaesdModel != myItem.params.taesd_path ||
+            this->currentwType != myItem.params.wtype)
+        {
+            free_sd_ctx(this->sd_ctx);
+            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        }
+    }
+    if (!this->modelLoaded || this->sd_ctx == nullptr)
+    {
+        wxThreadEvent *f = new wxThreadEvent();
+        f->SetString("GENERATION_ERROR:Model load failed...");
+        f->SetPayload(myItem);
+        wxQueueEvent(eventHandler, f);
+        return;
+    }
+
+    auto start = std::chrono::system_clock::now();
+
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("GENERATION_START:%s", this->sd_params->model_path));
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
+
+    sd_image_t *control_image = NULL;
+    sd_image_t *results;
+
+    // std::lock_guard<std::mutex> guard(this->sdMutex);
+    results = txt2img(this->sd_ctx,
+                      myItem.params.prompt.c_str(),
+                      myItem.params.negative_prompt.c_str(),
+                      myItem.params.clip_skip,
+                      myItem.params.cfg_scale,
+                      myItem.params.width,
+                      myItem.params.height,
+                      myItem.params.sample_method,
+                      myItem.params.sample_steps,
+                      myItem.params.seed,
+                      myItem.params.batch_count,
+                      control_image,
+                      myItem.params.control_strength);
+
+    if (results == NULL)
+    {
+        wxThreadEvent *f = new wxThreadEvent();
+        f->SetString("GENERATION_ERROR:Something wrong happened at image generation...");
+        f->SetPayload(myItem);
+        wxQueueEvent(eventHandler, f);
+        return;
+    }
+    if (!std::filesystem::exists(this->cfg->output))
+    {
+        std::filesystem::create_directories(this->cfg->output);
+    }
+    /* save image(s) */
+
+    const auto p1 = std::chrono::system_clock::now();
+    auto ctime = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+
+    for (int i = 0; i < this->sd_params->batch_count; i++)
+    {
+        if (results[i].data == NULL)
+        {
+            continue;
+        }
+
+        // handle data??
+        wxImage *img = new wxImage(results[i].width, results[i].height, results[i].data);
+        std::string filename = this->cfg->output;
+        std::string extension = ".png";
+
+        if (this->sd_params->batch_count > 1)
+        {
+            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + "_" + std::to_string(i) + extension;
+        }
+        else
+        {
+            filename = filename + wxFileName::GetPathSeparator() + std::to_string(ctime) + extension;
+        }
+        if (!img->SaveFile(filename))
+        {
+            wxThreadEvent *g = new wxThreadEvent();
+            g->SetString(wxString::Format("GENERATION_ERROR:Failed to save image into %s", filename));
+            g->SetPayload(myItem);
+            wxQueueEvent(eventHandler, g);
+        }
+        else
+        {
+            myItem.images.emplace_back(filename);
+        }
+        // handle data??
+    }
+
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    // send to notify the user...
+    wxThreadEvent *h = new wxThreadEvent();
+    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
+    h->SetString(wxString(msg.c_str()));
+    // h->SetPayload(myItem);
+    wxQueueEvent(eventHandler, h);
+
+    wxThreadEvent *i = new wxThreadEvent();
+    i->SetString(wxString::Format("GENERATION_DONE:ok"));
+    i->SetPayload(results);
+    wxQueueEvent(eventHandler, i);
+
+    // send to the queue manager
+    wxThreadEvent *j = new wxThreadEvent();
+    j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
+    j->SetPayload(myItem);
+    wxQueueEvent(eventHandler, j);
+}
+
+void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
+{
+    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
+    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
+    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
+    myItem->step = step;
+    myItem->steps = steps;
+    myItem->time = time;
+    /*
+        format it/s
+        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
+               progress.c_str(), step, steps,
+               time > 1.0f || time == 0 ? time : (1.0f / time)
+    */
+
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
+
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
+}
+
+void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
+{
+    this->initConfig();
+    this->settingsWindow->Destroy();
+}
+
+sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
+{
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("MODEL_LOAD_START:%s", myItem.params.model_path));
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
+
+    // std::lock_guard<std::mutex> guard(this->sdMutex);
+    sd_ctx_t *sd_ctx_ = new_sd_ctx(
+        myItem.params.model_path.c_str(),
+        myItem.params.vae_path.c_str(),
+        myItem.params.taesd_path.c_str(),
+        myItem.params.controlnet_path.c_str(),
+        myItem.params.lora_model_dir.c_str(),
+        myItem.params.embeddings_path.c_str(),
+        false, myItem.params.vae_tiling, false,
+        myItem.params.n_threads,
+        myItem.params.wtype,
+        myItem.params.rng_type,
+        myItem.params.schedule, false);
+
+    if (sd_ctx_ == NULL)
+    {
+        wxThreadEvent *c = new wxThreadEvent();
+        c->SetString(wxString::Format("MODEL_LOAD_ERROR:%s", myItem.params.model_path));
+        c->SetPayload(myItem);
+        wxQueueEvent(eventHandler, c);
+        this->modelLoaded = false;
+        return nullptr;
+    }
+    else
+    {
+        wxThreadEvent *c = new wxThreadEvent();
+        c->SetString(wxString::Format("MODEL_LOAD_DONE:%s", myItem.params.model_path));
+        wxQueueEvent(eventHandler, c);
+        this->modelLoaded = true;
+        this->currentModel = myItem.params.model_path;
+        this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
+        this->currentwType = myItem.params.wtype;
+    }
+    return sd_ctx_;
+}
+
+void MainWindowUI::LoadPresets()
+{
+    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+}
+
+void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
+{
+    if (e.GetSkipped() == false)
+    {
+        e.Skip();
+    }
+    auto msg = e.GetString().ToStdString();
+
+    std::string token = msg.substr(0, msg.find(":"));
+    std::string content = msg.substr(msg.find(":") + 1);
+
+    // this->logs->AppendText(fmt::format("Got thread message: {}\n", e.GetString().ToStdString()));
+    if (token == "QUEUE")
+    {
+        // only numbers here...
+        QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
+        // only handle the QUEUE messages, what this class generate
+        // alway QM::EueueItem the payload, with the new data
+        QM::QueueItem payload;
+        payload = e.GetPayload<QM::QueueItem>();
+        switch (event)
+        {
+            // new item added
+        case QM::QueueEvents::ITEM_ADDED:
+            this->OnQueueItemManagerItemAdded(payload);
+            break;
+            // item status changed
+        case QM::QueueEvents::ITEM_STATUS_CHANGED:
+            this->OnQueueItemManagerItemStatusChanged(payload);
+            break;
+            // item updated... ? ? ?
+        case QM::QueueEvents::ITEM_UPDATED:
+            this->OnQueueItemManagerItemUpdated(payload);
+            break;
+        case QM::QueueEvents::ITEM_START:
+            this->StartGeneration(payload);
+            break;
+
+        default:
+            break;
+        }
+    }
+    if (token == "MODEL_LOAD_DONE")
+    {
+        // this->m_generate->Enable();
+        // this->m_model->Enable();
+        // this->m_vae->Enable();
+        // this->m_refresh->Enable();
+
+        // this->logs->AppendText(fmt::format("Model loaded: {}\n", content));
+        this->modelLoaded = true;
+        // std::lock_guard<std::mutex> guard(this->sdMutex);
+        // this->sd_ctx = e.GetPayload<sd_ctx_t *>();
+        if (!this->IsShownOnScreen() || !this->HasFocus())
+        {
+            this->TaskBar->ShowBalloon("Model loaded", content, 0U, wxICON_INFORMATION);
+        }
+    }
+    if (token == "MODEL_LOAD_START")
+    {
+        // this->m_generate->Disable();
+        // this->m_model->Disable();
+        // this->m_vae->Disable();
+        // this->m_refresh->Disable();
+        this->logs->AppendText(fmt::format("Model load start: {}\n", content));
+    }
+    if (token == "MODEL_LOAD_ERROR")
+    {
+        // this->m_generate->Disable();
+        // this->m_model->Enable();
+        // this->m_vae->Disable();
+        // this->m_refresh->Enable();
+        this->logs->AppendText(fmt::format("Model load error: {}\n", content));
+        this->modelLoaded = false;
+        if (!this->IsShownOnScreen() || !this->HasFocus())
+        {
+            this->TaskBar->ShowBalloon("Model load failed!", content, 0U, wxICON_ERROR);
+        }
+    }
+
+    if (token == "GENERATION_START")
+    {
+        auto myjob = e.GetPayload<QM::QueueItem>();
+
+        // this->m_generate->Disable();
+        // this->m_model->Disable();
+        // this->m_vae->Disable();
+        // this->m_refresh->Disable();
+        this->logs->AppendText(fmt::format("Diffusion started. Seed: {} Batch: {} {}x{}px Cfg: {} Steps: {}\n",
+                                           myjob.params.seed,
+                                           myjob.params.batch_count,
+                                           myjob.params.width,
+                                           myjob.params.height,
+                                           myjob.params.cfg_scale,
+                                           myjob.params.sample_steps));
+    }
+    // in the original SD.cpp the progress callback is not implemented... :(
+    if (token == "GENERATION_PROGRESS")
+    {
+        QM::QueueItem *myjob = e.GetPayload<QM::QueueItem *>();
+
+        if (myjob == nullptr || myjob == NULL)
+        {
+            return;
+        }
+        // update column
+        auto store = this->m_joblist->GetStore();
+        // -1 the last (status)
+        // -2 ...      (speed)
+        // -3 ...      (progressbar)
+
+        // it/s format
+        /*
+        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
+               progress.c_str(), step, steps,
+               time > 1.0f || time == 0 ? time : (1.0f / time)
+        */
+        wxString speed = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
+        int progressCol = this->m_joblist->GetColumnCount() - 3;
+        int speedCol = this->m_joblist->GetColumnCount() - 2;
+        float current_progress = 100.f * (static_cast<float>(myjob->step) / static_cast<float>(myjob->steps));
+        if (current_progress < 2.f)
+        {
+            return;
+        }
+
+        for (unsigned int i = 0; i < store->GetItemCount(); i++)
+        {
+            auto _item = store->GetItem(i);
+            auto _item_data = store->GetItemData(_item);
+            auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+            if (_qitem->id == myjob->id)
+            {
+                store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
+                store->SetValueByRow(speed, i, speedCol);
+                this->m_joblist->Refresh();
+                break;
+            }
+        }
+
+        return;
+        for (auto it = this->JobTableItems.begin(); it != this->JobTableItems.end(); ++it)
+        {
+            if (it->second->id == myjob->id)
+            {
+                // store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), it->first, progressCol);
+                store->SetValueByRow(static_cast<int>(current_progress), it->first, progressCol);
+                store->SetValueByRow(speed, it->first, speedCol);
+                this->m_joblist->Refresh();
+                break;
+            }
+        }
+        // update column
+    }
+    if (token == "GENERATION_DONE")
+    {
+    }
+    if (token == "GENERATION_ERROR")
+    {
+        this->logs->AppendText(fmt::format("Generation error: {}\n", content));
+        if (!this->IsShownOnScreen() || !this->HasFocus())
+        {
+            this->TaskBar->ShowBalloon("Generation failed!", content, 0U, wxICON_ERROR);
+        }
+    }
+    if (token == "SD_MESSAGE")
+    {
+        if (content.length() < 1)
+        {
+            return;
+        }
+        this->logs->AppendText(fmt::format("{}", content));
+    }
+    if (token == "MESSAGE")
+    {
+        this->logs->AppendText(fmt::format("{}\n", content));
+        if (!this->IsShownOnScreen() || !this->HasFocus())
+        {
+            this->TaskBar->ShowBalloon("Info", content, 0U, wxICON_INFORMATION);
+        }
+    }
+}
+
+void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
+{
+    auto store = this->m_joblist->GetStore();
+
+    int lastCol = this->m_joblist->GetColumnCount() - 1;
+
+    for (unsigned int i = 0; i < store->GetItemCount(); i++)
+    {
+        auto _item = store->GetItem(i);
+        auto _item_data = store->GetItemData(_item);
+        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+        if (_qitem->id == item.id)
+        {
+            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
+            this->m_joblist->Refresh();
+            break;
+        }
+    }
+}
+
+void MainWindowUI::loadModelList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
+    // clear the table
+    for (auto model : this->ModelFiles)
+    {
+        // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
+        uintmax_t size = std::filesystem::file_size(model.second);
+        auto humanSize = sd_gui_utils::humanReadableFileSize(size);
+        auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
+        wxVector<wxVariant> data;
+        data.push_back(wxVariant(model.first));
+        data.push_back(hs);
+        data.push_back("--");
+        this->m_data_model_list->AppendItem(data);
+    }
+    this->m_data_model_list->Refresh();
+}
+
+void MainWindowUI::StartGeneration(QM::QueueItem myJob)
+{
+    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
+    this->threads.emplace_back(p);
+}
+
+void MainWindowUI::loadTypeList()
+{
+    this->m_type->Clear();
+
+    for (auto type : sd_gui_utils::sd_type_gui_names)
+    {
+        this->m_type->Append(type.second);
+    }
+
+    this->m_type->Select(0);
 }

@@ -2,6 +2,7 @@
 #include <wx/event.h>
 #include "MainWindowUi.h"
 #include <wx/image.h>
+#include "embended_files/app_icon.h"
 
 // Define the MainApp
 class MainApp : public wxApp
@@ -17,6 +18,7 @@ public:
         wxImage::AddHandler(new wxJPEGHandler);
         MainWindowUI *mainFrame = new MainWindowUI(nullptr);
         SetTopWindow(mainFrame);
+        
         return GetTopWindow()->Show();
     }
 };

@@ -274,6 +274,56 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	sizer0004->Fit( m_text2img_panel );
 	m_notebook1302->AddPage( m_text2img_panel, wxT("Text2IMG"), true );
 	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer24;
+	bSizer24 = new wxBoxSizer( wxHORIZONTAL );
+
+	wxBoxSizer* bSizer28;
+	bSizer28 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer32;
+	bSizer32 = new wxBoxSizer( wxVERTICAL );
+
+	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
+	bSizer32->Add( m_open_image, 0, wxALL, 5 );
+
+
+	bSizer28->Add( bSizer32, 0, wxALIGN_CENTER_HORIZONTAL, 5 );
+
+	wxBoxSizer* bSizer33;
+	bSizer33 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2im_preview_img->Enable( false );
+
+	bSizer33->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_delete_initial_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_delete_initial_img->Enable( false );
+
+	bSizer33->Add( m_delete_initial_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer28->Add( bSizer33, 0, wxALIGN_CENTER_HORIZONTAL, 5 );
+
+
+	bSizer24->Add( bSizer28, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer29;
+	bSizer29 = new wxBoxSizer( wxVERTICAL );
+
+	m_img2img_preview = new wxStaticBitmap( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2img_preview->SetBackgroundColour( wxColour( 51, 51, 51 ) );
+	m_img2img_preview->SetMinSize( wxSize( 300,210 ) );
+
+	bSizer29->Add( m_img2img_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+
+
+	bSizer24->Add( bSizer29, 1, wxEXPAND, 5 );
+
+
+	m_image2image_panel->SetSizer( bSizer24 );
+	m_image2image_panel->Layout();
+	bSizer24->Fit( m_image2image_panel );
 	m_notebook1302->AddPage( m_image2image_panel, wxT("Image2image"), false );
 	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer20;
@@ -396,6 +446,9 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_open_image->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
+	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
+	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_generate->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
@@ -421,6 +474,9 @@ UI::~UI()
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_open_image->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
+	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
+	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_generate->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
@@ -450,12 +506,12 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_staticText172410->Wrap( 0 );
 	m_staticText172410->SetMinSize( wxSize( 150,-1 ) );
 
-	bSizer16->Add( m_staticText172410, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer16->Add( m_staticText172410, 0, wxALL, 5 );
 
 	m_model_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
 	m_model_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer16->Add( m_model_dir, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer16->Add( m_model_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer16, 0, wxEXPAND, 5 );
@@ -472,7 +528,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_lora_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
 	m_lora_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer19->Add( m_lora_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer19->Add( m_lora_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer19, 0, wxEXPAND, 5 );
@@ -489,7 +545,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_vae_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
 	m_vae_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer17->Add( m_vae_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer17->Add( m_vae_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer17, 0, wxEXPAND, 5 );
@@ -506,7 +562,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_embedding_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
 	m_embedding_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer18->Add( m_embedding_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer18->Add( m_embedding_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer18, 0, wxEXPAND, 5 );
@@ -550,7 +606,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_presets_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE|wxDIRP_SMALL );
 	m_presets_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer20->Add( m_presets_dir, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer20->Add( m_presets_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer20, 0, wxEXPAND, 5 );
@@ -570,7 +626,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_images_output = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
 	m_images_output->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer21->Add( m_images_output, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer21->Add( m_images_output, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer21, 0, wxEXPAND, 5 );
@@ -587,28 +643,28 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxGridSizer* sizer2018;
 	sizer2018 = new wxGridSizer( 0, 2, 0, 0 );
 
-	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
 	m_keep_model_in_memory->SetValue(true);
 	m_keep_model_in_memory->Enable( false );
 	m_keep_model_in_memory->SetMinSize( wxSize( 230,-1 ) );
 
-	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL, 5 );
+	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( sizer2018, 0, wxEXPAND, 5 );
+	sizer2017->Add( sizer2018, 0, 0, 5 );
 
 	wxGridSizer* sizer2019;
 	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
 
-	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediat images)"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediat images)"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
 	m_save_all_image->SetValue(true);
 	m_save_all_image->Enable( false );
 	m_save_all_image->SetMinSize( wxSize( 230,-1 ) );
 
-	sizer2019->Add( m_save_all_image, 0, wxALIGN_LEFT|wxALL, 5 );
+	sizer2019->Add( m_save_all_image, 0, wxALIGN_LEFT|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( sizer2019, 0, wxEXPAND, 5 );
+	sizer2017->Add( sizer2019, 0, 0, 5 );
 
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
@@ -625,10 +681,10 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_choice4->SetSelection( 0 );
 	m_choice4->Enable( false );
 
-	bSizer10->Add( m_choice4, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer10->Add( m_choice4, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( bSizer10, 0, wxEXPAND, 5 );
+	sizer2017->Add( bSizer10, 0, 0, 5 );
 
 	wxBoxSizer* bSizer22;
 	bSizer22 = new wxBoxSizer( wxHORIZONTAL );
@@ -643,13 +699,32 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer22->Add( m_threads, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( bSizer22, 0, wxEXPAND, 5 );
+	sizer2017->Add( bSizer22, 0, 0, 5 );
 
 
 	m_settings->SetSizer( sizer2017 );
 	m_settings->Layout();
 	sizer2017->Fit( m_settings );
 	m_notebook1696->AddPage( m_settings, wxT("Diffusion"), false );
+	m_settings_ui = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer30;
+	bSizer30 = new wxBoxSizer( wxHORIZONTAL );
+
+	wxBoxSizer* bSizer31;
+	bSizer31 = new wxBoxSizer( wxVERTICAL );
+
+	m_checkBox5 = new wxCheckBox( m_settings_ui, wxID_ANY, wxT("Show notifications"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+	m_checkBox5->SetValue(true);
+	bSizer31->Add( m_checkBox5, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer30->Add( bSizer31, 1, 0, 5 );
+
+
+	m_settings_ui->SetSizer( bSizer30 );
+	m_settings_ui->Layout();
+	bSizer30->Fit( m_settings_ui );
+	m_notebook1696->AddPage( m_settings_ui, wxT("GUI"), false );
 
 	sizer2010->Add( m_notebook1696, 1, wxALL|wxEXPAND, 5 );
 
@@ -700,5 +775,44 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 }
 
 ImageViewer::~ImageViewer()
+{
+}
+
+Image::Image( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxPanel( parent, id, pos, size, style, name )
+{
+	wxBoxSizer* bSizer26;
+	bSizer26 = new wxBoxSizer( wxVERTICAL );
+
+	m_bitmap3 = new wxStaticBitmap( this, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer26->Add( m_bitmap3, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+
+
+	this->SetSizer( bSizer26 );
+	this->Layout();
+}
+
+Image::~Image()
+{
+}
+
+ImageDialog::ImageDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* bSizer27;
+	bSizer27 = new wxBoxSizer( wxVERTICAL );
+
+	m_bitmap = new wxStaticBitmap( this, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer27->Add( m_bitmap, 1, wxALL|wxEXPAND, 5 );
+
+
+	this->SetSizer( bSizer27 );
+	this->Layout();
+	bSizer27->Fit( this );
+
+	this->Centre( wxBOTH );
+}
+
+ImageDialog::~ImageDialog()
 {
 }

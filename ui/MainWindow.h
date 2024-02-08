@@ -27,12 +27,13 @@
 #include <wx/dataview.h>
 #include <wx/panel.h>
 #include <wx/textctrl.h>
+#include <wx/filepicker.h>
+#include <wx/statbmp.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
-#include <wx/filepicker.h>
 #include <wx/bmpbuttn.h>
-#include <wx/statbmp.h>
+#include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -84,6 +85,10 @@ class UI : public wxFrame
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
 		wxPanel* m_image2image_panel;
+		wxFilePickerCtrl* m_open_image;
+		wxButton* m_img2im_preview_img;
+		wxButton* m_delete_initial_img;
+		wxStaticBitmap* m_img2img_preview;
 		wxPanel* m_models_panel;
 		wxDataViewListCtrl* m_data_model_list;
 		wxStaticLine* m_staticLine156;
@@ -115,6 +120,9 @@ class UI : public wxFrame
 		virtual void onJoblistItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onJoblistSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
@@ -165,6 +173,8 @@ class Settings : public wxFrame
 		wxChoice* m_choice4;
 		wxStaticText* m_staticText191;
 		wxSpinCtrl* m_threads;
+		wxPanel* m_settings_ui;
+		wxCheckBox* m_checkBox5;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
@@ -195,6 +205,42 @@ class ImageViewer : public wxFrame
 		ImageViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~ImageViewer();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class Image
+///////////////////////////////////////////////////////////////////////////////
+class Image : public wxPanel
+{
+	private:
+
+	protected:
+
+	public:
+		wxStaticBitmap* m_bitmap3;
+
+		Image( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString );
+
+		~Image();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class ImageDialog
+///////////////////////////////////////////////////////////////////////////////
+class ImageDialog : public wxDialog
+{
+	private:
+
+	protected:
+
+	public:
+		wxStaticBitmap* m_bitmap;
+
+		ImageDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+
+		~ImageDialog();
 
 };
 

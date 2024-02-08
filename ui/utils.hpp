@@ -4,9 +4,9 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-
 #include <unordered_map>
 
+#include <wx/image.h>
 #include <opencv2/opencv.hpp>
 #include <stable-diffusion.h>
 
@@ -259,7 +259,7 @@ namespace sd_gui_utils
         int sample_steps = 20;
         float strength = 0.75f;
         float control_strength = 0.9f;
-        rng_type_t rng_type = CUDA_RNG;
+        rng_type_t rng_type = rng_type_t::STD_DEFAULT_RNG;
         int64_t seed = 42;
         bool verbose = false;
         bool vae_decode_only = true; // on img2img is false
@@ -450,6 +450,34 @@ namespace sd_gui_utils
 
         return square;
     };
+
+    inline wxImage ResizeImageToMaxSize(const wxImage &image, int maxWidth, int maxHeight)
+    {
+        int newWidth = image.GetWidth();
+        int newHeight = image.GetHeight();
+
+        // Az új méreteket úgy határozzuk meg, hogy megtartsuk a képarányt
+        if (newWidth > maxWidth || newHeight > maxHeight)
+        {
+            double aspectRatio = static_cast<double>(newWidth) / static_cast<double>(newHeight);
+            if (aspectRatio > 1.0)
+            {
+                // Szélesség korlátozó dimenzió, a magasságot arányosan beállítjuk
+                newWidth = maxWidth;
+                newHeight = static_cast<int>(maxWidth / aspectRatio);
+            }
+            else
+            {
+                // Magasság korlátozó dimenzió, a szélességet arányosan beállítjuk
+                newHeight = maxHeight;
+                newWidth = static_cast<int>(maxHeight * aspectRatio);
+            }
+        }
+
+        // Méretezés az új méretekre
+        return image.Scale(newWidth, newHeight);
+    };
+
     inline const unsigned int generateRandomInt(unsigned int min, unsigned int max)
     {
         std::random_device rd;

@@ -21,7 +21,7 @@ ENDIF(WIN32)
 # general
 #option(SD_BUILD_TESTS                "sd: build tests"    ${SD_STANDALONE})
 option(SD_BUILD_EXAMPLES             "sd: build examples" ${SD_STANDALONE})
-option(SD_CUBLAS                     "sd: cuda backend" ON)
+option(SD_CUBLAS                     "sd: cuda backend" OFF)
 option(SD_HIPBLAS                    "sd: rocm backend" OFF)
 option(SD_METAL                      "sd: metal backend" OFF)
 option(SD_FLASH_ATTN                 "sd: use flash attention for x4 less memory usage" OFF)
@@ -32,7 +32,7 @@ option(BUILD_SHARED_LIBS             "sd: build shared libs" OFF)
 # stolen ggml options..
 # instruction set specific
 option(GGML_AVX                     "ggml: enable AVX"                                     ON)
-option(GGML_AVX2                    "ggml: enable AVX2"                                    ON)
+option(GGML_AVX2                    "ggml: enable AVX2"                                    OFF)
 option(GGML_AVX512                  "ggml: enable AVX512"                                  OFF)
 option(GGML_AVX512_VBMI             "ggml: enable AVX512-VBMI"                             OFF)
 option(GGML_AVX512_VNNI             "ggml: enable AVX512-VNNI"                             OFF)
@@ -51,7 +51,7 @@ include(external/CMakeLists.txt)
 
 
 
-add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUi.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp)
+add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUi.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp ui/MainWindowImage.cpp ui/MainWindowImageDialog.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/src/stable-diffusion-git)
 
