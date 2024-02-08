@@ -207,6 +207,7 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
 
     this->sd_params->lora_model_dir = this->cfg->lora;
     this->sd_params->embeddings_path = this->cfg->embedding;
+    this->sd_params->n_threads = this->cfg->n_threads;
 
     this->sd_params->prompt = this->m_prompt->GetValue().ToStdString();
     this->sd_params->negative_prompt = this->m_neg_prompt->GetValue().ToStdString();

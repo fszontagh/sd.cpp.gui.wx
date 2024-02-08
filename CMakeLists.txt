@@ -42,22 +42,18 @@ if (NOT MSVC)
     option(GGML_F16C                "ggml: enable F16C"                                    ON)
 endif()
 
-
-
-include(external/stable-diffusion.cmake)
-
-
 if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+include(external/CMakeLists.txt)
+
+
+
+
 add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUi.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp)
 
-
-#add_dependencies(${PROJECT_NAME} stable-diffusion)
-
-#include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
-#link_directories(${EXTERNAL_INSTALL_LOCATION}/bin)
+target_include_directories(${PROJECT_NAME} PRIVATE ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/src/stable-diffusion-git)
 
 IF(WIN32)
 
@@ -70,26 +66,27 @@ IF(WIN32)
 
 
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/${CMAKE_BUILD_TYPE}/stable-diffusion.dll
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/stable-diffusion.dll
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/${CMAKE_BUILD_TYPE}/ggml.dll
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/ggml.dll
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+
 
 
     IF(CMAKE_BUILD_TYPE EQUAL "Debug")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/${CMAKE_BUILD_TYPE}/stable-diffusion.pdb
+        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/stable-diffusion.pdb
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/${CMAKE_BUILD_TYPE}/ggml.pdb
+        ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/ggml.pdb
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)    
     ENDIF()
 
@@ -126,11 +123,11 @@ string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
 string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusionlib ggmllib CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 
 else()
 set(CUDA_MODULES "")
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusionlib ggmllib restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 ENDIF()
 
 
