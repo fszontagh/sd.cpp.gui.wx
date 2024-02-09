@@ -1,5 +1,8 @@
 #include "MainWindowUI.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 MainWindowUI::MainWindowUI(wxWindow *parent)
     : UI(parent)
 {
@@ -7,6 +10,9 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->sd_params = new sd_gui_utils::SDParams;
     this->currentInitialImage = new wxImage();
     this->currentInitialImagePreview = new wxImage();
+
+    this->currentControlnetImage = new wxImage();
+    this->currentControlnetImagePreview = new wxImage();
 
     // prepare data list views
     this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
@@ -48,6 +54,7 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->loadModelList();
     this->loadVaeList();
     this->loadTaesdList();
+    this->loadControlnetList();
 
     if (this->ModelFiles.size() > 0)
     {
@@ -61,8 +68,12 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     {
         this->m_taesd->Enable();
     }
+    if (this->ControlnetModels.size() > 0)
+    {
+        this->m_controlnetModels->Enable();
+    }
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
-    const char * system_info = sd_get_system_info();
+    const char *system_info = sd_get_system_info();
     this->logs->AppendText(system_info);
 }
 
@@ -78,6 +89,7 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
     this->loadModelList();
     this->loadVaeList();
     this->loadTaesdList();
+    this->loadControlnetList();
 
     if (this->ModelFiles.size() > 0)
     {
@@ -90,6 +102,10 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
     if (this->TaesdFiles.size() > 0)
     {
         this->m_taesd->Enable();
+    }
+    if (this->ControlnetModels.size() > 0)
+    {
+        this->m_controlnetModels->Enable();
     }
 }
 
@@ -192,14 +208,59 @@ void MainWindowUI::onJoblistSelectionChanged(wxDataViewEvent &event)
     // TODO: Implement onJoblistSelectionChanged
 }
 
+void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent &event)
+{
+    wxImage img;
+    img.LoadFile(event.GetPath());
+
+    auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 200, 190);
+
+    this->currentControlnetImage = new wxImage(img);
+    this->currentControlnetImagePreview = new wxImage(preview);
+
+    this->m_controlnetImagePreview->SetBitmap(preview);
+    this->m_controlnetImagePreview->Show();
+    this->m_controlnetImagePreviewButton->Enable();
+    this->m_controlnetImageDelete->Enable();
+    this->m_width->SetValue(img.GetWidth());
+    this->m_height->SetValue(img.GetHeight());
+    this->m_width->Disable();
+    this->m_height->Disable();
+    this->m_button7->Disable(); // swap resolution
+}
+
+void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
+{
+    MainWindowImageDialog *dialog = new MainWindowImageDialog(this);
+    wxImage img(*this->currentControlnetImage);
+    auto size = img.GetSize();
+
+    dialog->SetSize(size.GetWidth() + 100, size.GetHeight() + 100);
+    wxString title = wxString::Format("Controlnet Image %dx%dpx", size.GetWidth(), size.GetHeight());
+    dialog->SetTitle(title);
+    dialog->m_bitmap->SetBitmap(img);
+    dialog->ShowModal();
+}
+
+void MainWindowUI::OnControlnetImageDelete(wxCommandEvent &event)
+{
+    this->m_controlnetImagePreviewButton->Disable();
+    this->m_controlnetImageDelete->Disable();
+
+    this->currentControlnetImage = NULL;
+    this->currentControlnetImagePreview = NULL;
+    this->m_controlnetImagePreview->SetBitmap(wxBitmap());
+    this->m_width->Enable();
+    this->m_height->Enable();
+    this->m_button7->Enable(); // swap resolution
+    this->m_controlnetImagePreview->SetSize(200, 190);
+}
+
 void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
 {
 
-    std::cout << "Path: " << event.GetPath() << " \n";
-
     wxImage img;
     img.LoadFile(event.GetPath());
-    auto targetSize = this->m_img2img_preview->GetSize().GetHeight();
 
     auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
 
@@ -216,7 +277,7 @@ void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
     MainWindowImageDialog *dialog = new MainWindowImageDialog(this);
     wxImage img(*this->currentInitialImage);
     auto size = img.GetSize();
-    
+
     dialog->SetSize(size.GetWidth() + 100, size.GetHeight() + 100);
     dialog->SetTitle("IMG2IMG - original image");
     dialog->m_bitmap->SetBitmap(img);
@@ -225,7 +286,6 @@ void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
 
 void MainWindowUI::OnDeleteInitialImage(wxCommandEvent &event)
 {
-    // TODO: Implement OnDeleteInitialImage
     this->currentInitialImage = NULL;
     this->currentInitialImagePreview = NULL;
     this->m_img2img_preview->SetBitmap(wxBitmap());
@@ -267,6 +327,22 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
     this->sd_params->seed = this->m_seed->GetValue();
     this->sd_params->clip_skip = this->m_clip_skip->GetValue();
     this->sd_params->sample_steps = this->m_steps->GetValue();
+    this->sd_params->control_strength = this->m_controlnetStrength->GetValue();
+
+    if (this->m_controlnetModels->GetCurrentSelection() > 0)
+    {
+        this->sd_params->controlnet_path = this->ControlnetModels.at(this->m_controlnetModels->GetStringSelection().ToStdString());
+        // do not set the control image if we have no model
+        if (this->m_controlnetImageOpen->GetPath().length() > 0)
+        {
+            this->sd_params->control_image_path = this->m_controlnetImageOpen->GetPath().ToStdString();
+        }
+    }
+    else
+    {
+        this->sd_params->controlnet_path = "";
+        this->sd_params->control_image_path = "";
+    }
 
     this->sd_params->sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
 
@@ -303,6 +379,7 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
     if (item.params.seed == -1)
     {
         item.params.seed = sd_gui_utils::generateRandomInt(100000000, 999999999);
+        this->m_seed->SetValue(item.params.seed);
     }
 
     // add the queue item
@@ -361,8 +438,12 @@ void MainWindowUI::onLoadPreset(wxCommandEvent &event)
             // do not save seed
             // this->m_seed->SetValue(preset.second.seed);
             this->m_steps->SetValue(preset.second.steps);
-            this->m_width->SetValue(preset.second.width);
-            this->m_height->SetValue(preset.second.height);
+            // when the width || height input is disabled, do not modify it (eg.: controlnet works...)
+            if (this->m_width->IsEnabled() || this->m_height->IsEnabled())
+            {
+                this->m_width->SetValue(preset.second.width);
+                this->m_height->SetValue(preset.second.height);
+            }
             this->m_sampler->SetSelection(preset.second.sampler);
             this->m_batch_count->SetValue(preset.second.batch);
         }
@@ -394,24 +475,6 @@ void MainWindowUI::onDeletePreset(wxCommandEvent &event)
         std::remove(preset.path.c_str());
         this->LoadPresets();
     }
-}
-
-MainWindowUI::~MainWindowUI()
-{
-    if (this->modelLoaded)
-    {
-        free_sd_ctx(this->sd_ctx);
-    }
-    for (auto &t : this->threads)
-    {
-        t->join();
-    }
-    this->TaskBar->Destroy();
-}
-
-void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
-{
-    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
 }
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
@@ -487,7 +550,14 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
         this->m_taesd->Select(0);
         basepath = this->cfg->taesd;
     }
+    case sd_gui_utils::DirTypes::CONTROLNET:
+        this->m_controlnetModels->Clear();
+        this->m_controlnetModels->Append("-none-");
+        this->m_controlnetModels->Select(0);
+        basepath = this->cfg->controlnet;
+        break;
     }
+
     if (!std::filesystem::exists(basepath))
     {
         std::filesystem::create_directories(basepath);
@@ -531,6 +601,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
         if (type == sd_gui_utils::DirTypes::TAESD)
         {
             if (ext != ".pth" && ext != ".safetensors" && ext != ".gguf")
+            {
+                continue;
+            }
+        }
+        if (type == sd_gui_utils::DirTypes::CONTROLNET)
+        {
+            if (ext != ".safetensors" && ext != ".pth")
             {
                 continue;
             }
@@ -579,6 +656,11 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
             this->m_taesd->Append(name);
             this->TaesdFiles.emplace(name, dir_entry.path().string());
         }
+        if (type == sd_gui_utils::CONTROLNET)
+        {
+            this->m_controlnetModels->Append(name);
+            this->ControlnetModels.emplace(name, dir_entry.path().string());
+        }
     }
 
     if (type == sd_gui_utils::CHECKPOINT)
@@ -601,6 +683,33 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
     {
         this->logs->AppendText(fmt::format("Loaded taesd: {}\n", this->TaesdFiles.size()));
     }
+    if (type == sd_gui_utils::CONTROLNET)
+    {
+        this->logs->AppendText(fmt::format("Loaded controlnet: {}\n", this->ControlnetModels.size()));
+    }
+}
+
+void MainWindowUI::loadControlnetList()
+{
+    this->LoadFileList(sd_gui_utils::DirTypes::CONTROLNET);
+}
+
+void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
+{
+    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+}
+
+MainWindowUI::~MainWindowUI()
+{
+    if (this->modelLoaded)
+    {
+        free_sd_ctx(this->sd_ctx);
+    }
+    for (auto &t : this->threads)
+    {
+        t->join();
+    }
+    this->TaskBar->Destroy();
 }
 
 void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem item)
@@ -645,14 +754,18 @@ void MainWindowUI::initConfig()
     wxString jobs_path = datapath;
     jobs_path.append("queue_jobs");
 
+    wxString controlnet_path = datapath;
+    controlnet_path.append("controlnet");
+
     this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
     this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
     this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
     this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
     this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->controlnet = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
     this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
 
-    this->cfg->jobs = this->fileConfig->Read("/paths/presets", jobs_path).ToStdString();
+    this->cfg->jobs = this->fileConfig->Read("/paths/jobs", jobs_path).ToStdString();
 
     this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
     this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
@@ -690,6 +803,74 @@ void MainWindowUI::loadSamplerList()
     }
 }
 
+sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
+{
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("MODEL_LOAD_START:%s", myItem.params.model_path));
+    e->SetPayload(myItem);
+    wxQueueEvent(eventHandler, e);
+
+    // std::lock_guard<std::mutex> guard(this->sdMutex);
+    sd_ctx_t *sd_ctx_ = new_sd_ctx(
+        myItem.params.model_path.c_str(),
+        myItem.params.vae_path.c_str(),
+        myItem.params.taesd_path.c_str(),
+        myItem.params.controlnet_path.c_str(),
+        myItem.params.lora_model_dir.c_str(),
+        myItem.params.embeddings_path.c_str(),
+        false, myItem.params.vae_tiling, false,
+        myItem.params.n_threads,
+        myItem.params.wtype,
+        myItem.params.rng_type,
+        myItem.params.schedule, myItem.params.control_net_cpu);
+
+    if (sd_ctx_ == NULL)
+    {
+        wxThreadEvent *c = new wxThreadEvent();
+        c->SetString(wxString::Format("MODEL_LOAD_ERROR:%s", myItem.params.model_path));
+        c->SetPayload(myItem);
+        wxQueueEvent(eventHandler, c);
+        this->modelLoaded = false;
+        return nullptr;
+    }
+    else
+    {
+        wxThreadEvent *c = new wxThreadEvent();
+        c->SetString(wxString::Format("MODEL_LOAD_DONE:%s", myItem.params.model_path));
+        wxQueueEvent(eventHandler, c);
+        this->modelLoaded = true;
+        this->currentModel = myItem.params.model_path;
+        this->currentVaeModel = myItem.params.vae_path;
+        this->currentTaesdModel = myItem.params.taesd_path;
+        this->currentwType = myItem.params.wtype;
+        this->currentControlnetModel = myItem.params.controlnet_path;
+    }
+    return sd_ctx_;
+}
+
+void MainWindowUI::LoadPresets()
+{
+    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+}
+
+void MainWindowUI::loadTypeList()
+{
+    this->m_type->Clear();
+
+    for (auto type : sd_gui_utils::sd_type_gui_names)
+    {
+        this->m_type->Append(type.second);
+    }
+
+    this->m_type->Select(0);
+}
+
+void MainWindowUI::StartGeneration(QM::QueueItem myJob)
+{
+    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
+    this->threads.emplace_back(p);
+}
+
 void MainWindowUI::loadTaesdList()
 {
 
@@ -711,17 +892,29 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
         this->currentVaeModel = myItem.params.vae_path;
         this->currentTaesdModel = myItem.params.taesd_path;
         this->currentwType = myItem.params.wtype;
+        this->currentControlnetModel = myItem.params.controlnet_path;
     }
     else
     { // the model must be reloaded when: models is changed, vae is changed, taesd is changed
         if (myItem.params.model_path != this->currentModel ||
             this->currentVaeModel != myItem.params.vae_path ||
             this->currentTaesdModel != myItem.params.taesd_path ||
-            this->currentwType != myItem.params.wtype)
+            this->currentwType != myItem.params.wtype ||
+            this->currentControlnetModel != myItem.params.controlnet_path)
         {
             free_sd_ctx(this->sd_ctx);
             this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
         }
+    }
+
+    // it's a bug in sd.cpp, can not generate new image with controlnet, if already generated one...
+    // they don't known, because the example sd.exe is just a one - time runner app... sadly...
+    // so we need to destroy the ctx and re init it
+    if (this->modelLoaded == true && myItem.params.controlnet_path.length() > 0)
+    {
+        free_sd_ctx(this->sd_ctx);
+        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        modelisReloaded = true;
     }
     if (!this->modelLoaded || this->sd_ctx == nullptr)
     {
@@ -741,7 +934,19 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 
     sd_image_t *control_image = NULL;
     sd_image_t *results;
-
+    // prepare controlnet image, if have
+    // if we have, but no model, the myItem will not contains any image
+    if (myItem.params.control_image_path.length() > 0)
+    {
+        if (std::filesystem::exists(myItem.params.control_image_path))
+        {
+            int c = 0;
+            stbi_uc *input_image_buffer = stbi_load(myItem.params.control_image_path.c_str(), &myItem.params.width, &myItem.params.height, &c, 3);
+            control_image = new sd_image_t{(uint32_t)myItem.params.width, (uint32_t)myItem.params.height, 3, input_image_buffer};
+            input_image_buffer = NULL;
+            delete input_image_buffer;
+        }
+    }
     // std::lock_guard<std::mutex> guard(this->sdMutex);
     results = txt2img(this->sd_ctx,
                       myItem.params.prompt.c_str(),
@@ -757,12 +962,15 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
                       control_image,
                       myItem.params.control_strength);
 
+    control_image = NULL;
+    delete control_image;
     if (results == NULL)
     {
         wxThreadEvent *f = new wxThreadEvent();
         f->SetString("GENERATION_ERROR:Something wrong happened at image generation...");
         f->SetPayload(myItem);
         wxQueueEvent(eventHandler, f);
+        delete results;
         return;
     }
     if (!std::filesystem::exists(this->cfg->output))
@@ -804,7 +1012,15 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
         else
         {
             myItem.images.emplace_back(filename);
+            if (myItem.params.control_image_path.length() > 0 && this->cfg->save_all_image)
+            {
+                std::string ctrlFilename = this->cfg->output;
+                ctrlFilename = ctrlFilename + wxFileName::GetPathSeparator() + std::to_string(ctime) + "_ctrlimg_" + extension;
+                wxImage _ctrlimg(myItem.params.control_image_path);
+                _ctrlimg.SaveFile(ctrlFilename);
+            }
         }
+
         // handle data??
     }
 
@@ -856,55 +1072,6 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
 {
     this->initConfig();
     this->settingsWindow->Destroy();
-}
-
-sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
-{
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("MODEL_LOAD_START:%s", myItem.params.model_path));
-    e->SetPayload(myItem);
-    wxQueueEvent(eventHandler, e);
-
-    // std::lock_guard<std::mutex> guard(this->sdMutex);
-    sd_ctx_t *sd_ctx_ = new_sd_ctx(
-        myItem.params.model_path.c_str(),
-        myItem.params.vae_path.c_str(),
-        myItem.params.taesd_path.c_str(),
-        myItem.params.controlnet_path.c_str(),
-        myItem.params.lora_model_dir.c_str(),
-        myItem.params.embeddings_path.c_str(),
-        false, myItem.params.vae_tiling, false,
-        myItem.params.n_threads,
-        myItem.params.wtype,
-        myItem.params.rng_type,
-        myItem.params.schedule, false);
-
-    if (sd_ctx_ == NULL)
-    {
-        wxThreadEvent *c = new wxThreadEvent();
-        c->SetString(wxString::Format("MODEL_LOAD_ERROR:%s", myItem.params.model_path));
-        c->SetPayload(myItem);
-        wxQueueEvent(eventHandler, c);
-        this->modelLoaded = false;
-        return nullptr;
-    }
-    else
-    {
-        wxThreadEvent *c = new wxThreadEvent();
-        c->SetString(wxString::Format("MODEL_LOAD_DONE:%s", myItem.params.model_path));
-        wxQueueEvent(eventHandler, c);
-        this->modelLoaded = true;
-        this->currentModel = myItem.params.model_path;
-        this->currentVaeModel = myItem.params.vae_path;
-        this->currentTaesdModel = myItem.params.taesd_path;
-        this->currentwType = myItem.params.wtype;
-    }
-    return sd_ctx_;
-}
-
-void MainWindowUI::LoadPresets()
-{
-    this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
 }
 
 void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
@@ -1128,22 +1295,4 @@ void MainWindowUI::loadModelList()
         this->m_data_model_list->AppendItem(data);
     }
     this->m_data_model_list->Refresh();
-}
-
-void MainWindowUI::StartGeneration(QM::QueueItem myJob)
-{
-    std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
-    this->threads.emplace_back(p);
-}
-
-void MainWindowUI::loadTypeList()
-{
-    this->m_type->Clear();
-
-    for (auto type : sd_gui_utils::sd_type_gui_names)
-    {
-        this->m_type->Append(type.second);
-    }
-
-    this->m_type->Select(0);
 }

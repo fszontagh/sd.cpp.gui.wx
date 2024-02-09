@@ -4,7 +4,13 @@ set(PROJECT_NAME "sd.ui")
 
 project(${PROJECT_NAME})
 
-set (CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
+#https://stackoverflow.com/questions/47690822/possible-to-force-cmake-msvc-to-use-utf-8-encoding-for-source-files-without-a-bo
+#nlohmann json utf-8 and windows filename
+#add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
+#add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/execution-charset:utf-8>")
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 set(EXTERNAL_INSTALL_LOCATION ${CMAKE_SOURCE_DIR}/external)
 set(EXTERNAL_DOWNLOAD_LOCATION ${CMAKE_SOURCE_DIR}/external)
@@ -62,9 +68,6 @@ IF(WIN32)
     message("-- CUDA_PATH=" ${CUDA_PATH})
     find_package(CUDAToolkit REQUIRED)
     endif(SD_CUBLAS)
-    set(OpenCV_DIR "${VCPKG_INSTALLED_DIR}/x64-windows/share/opencv4")
-
-
 
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -93,13 +96,6 @@ IF(WIN32)
 
 ENDIF(WIN32)
 
-find_package(OpenCV REQUIRED)
-
-if( OpenCV_FOUND )
-  include_directories( ${OpenCV_INCLUDE_DIRS} )
-  link_directories( ${OpenCV_LIB_DIR} )
-endif()
-
 find_package(restclient-cpp CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED)
@@ -123,11 +119,11 @@ string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
 string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver restclient-cpp nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 
 else()
 set(CUDA_MODULES "")
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp opencv_ml opencv_dnn opencv_core opencv_flann nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 ENDIF()
 
 

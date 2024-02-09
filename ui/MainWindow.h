@@ -27,12 +27,12 @@
 #include <wx/dataview.h>
 #include <wx/panel.h>
 #include <wx/textctrl.h>
-#include <wx/filepicker.h>
 #include <wx/statbmp.h>
+#include <wx/filepicker.h>
+#include <wx/bmpbuttn.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
-#include <wx/bmpbuttn.h>
 #include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -84,6 +84,13 @@ class UI : public wxFrame
 		wxPanel* m_text2img_panel;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
+		wxStaticBitmap* m_controlnetImagePreview;
+		wxStaticText* m_staticText22;
+		wxFilePickerCtrl* m_controlnetImageOpen;
+		wxSpinCtrlDouble* m_controlnetStrength;
+		wxButton* m_controlnetImagePreviewButton;
+		wxBitmapButton* m_controlnetImageDelete;
+		wxChoice* m_controlnetModels;
 		wxPanel* m_image2image_panel;
 		wxFilePickerCtrl* m_open_image;
 		wxButton* m_img2im_preview_img;
@@ -120,6 +127,9 @@ class UI : public wxFrame
 		virtual void onJoblistItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onJoblistSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
@@ -160,6 +170,8 @@ class Settings : public wxFrame
 		wxStaticText* m_staticText21;
 		wxDirPickerCtrl* m_taesd_dir;
 		wxBitmapButton* m_bpButton1;
+		wxStaticText* m_staticText23;
+		wxDirPickerCtrl* m_controlnet_dir;
 		wxStaticLine* m_staticline7;
 		wxStaticText* m_staticText19;
 		wxDirPickerCtrl* m_presets_dir;

@@ -7,7 +7,6 @@
 #include <unordered_map>
 
 #include <wx/image.h>
-#include <opencv2/opencv.hpp>
 #include <stable-diffusion.h>
 
 #include <nlohmann/json.hpp>
@@ -91,6 +90,7 @@ namespace sd_gui_utils
         std::string presets = "";
         std::string output = "";
         std::string jobs = "";
+        std::string controlnet = "";
         bool keep_model_in_memory = true;
         bool save_all_image = true;
         int n_threads = 2;
@@ -115,7 +115,8 @@ namespace sd_gui_utils
         PROMPTS,
         NEG_PROMPTS,
         TAESD,
-        ESRGAN
+        ESRGAN,
+        CONTROLNET
     };
     struct generator_preset
     {
@@ -408,49 +409,6 @@ namespace sd_gui_utils
     /* JSONize SD Params*/
 
     // sd c++
-
-    /*cv::Mat GetSquareImage(const unsigned char *img_data, int width, int height, int target_width = 500)
-     {
-         unsigned char * img_data_ptr = (unsigned char*) &img_data;
-         cv::Mat mat(height, width, CV_8UC1, img_data_ptr);
-         return GetSquareImage(mat, target_width);
-     }
-     cv::Mat GetSquareImage(const char *data, int width, int height, int target_width = 500)
-     {
-         cv::Mat mat(height, width, CV_8UC1, &data[0]);
-         return GetSquareImage(mat, target_width);
-     }*/
-    // opencv stuffs
-    inline cv::Mat GetSquareImage(const cv::Mat &img, int target_width = 500)
-    {
-        int width = img.cols,
-            height = img.rows;
-
-        cv::Mat square = cv::Mat::zeros(target_width, target_width, img.type());
-
-        int max_dim = (width >= height) ? width : height;
-        float scale = ((float)target_width) / max_dim;
-        cv::Rect roi;
-        if (width >= height)
-        {
-            roi.width = target_width;
-            roi.x = 0;
-            roi.height = static_cast<float>(height) * scale;
-            roi.y = (target_width - roi.height) / 2;
-        }
-        else
-        {
-            roi.y = 0;
-            roi.height = target_width;
-            roi.width = static_cast<float>(width) * scale;
-            roi.x = (target_width - roi.width) / 2;
-        }
-
-        cv::resize(img, square(roi), roi.size());
-
-        return square;
-    };
-
     inline wxImage ResizeImageToMaxSize(const wxImage &image, int maxWidth, int maxHeight)
     {
         int newWidth = image.GetWidth();

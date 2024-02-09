@@ -212,11 +212,18 @@ void QM::QueueManager::SaveJobToFile(int id)
 
 void QM::QueueManager::SaveJobToFile(QM::QueueItem item)
 {
-    nlohmann::json jsonfile(item);
-    std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
-    std::ofstream file(filename);
-    file << jsonfile;
-    file.close();
+    try
+    {
+        nlohmann::json jsonfile(item);
+        std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
+        std::ofstream file(filename);
+        file << jsonfile;
+        file.close();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
 }
 
 int QM::QueueManager::GetCurrentUnixTimestamp()

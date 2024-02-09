@@ -3,7 +3,6 @@
     "cuda",
     "fmt",
     "nlohmann-json",
-    "opencv",
     "restclient-cpp",
     "wxwidgets"
   ]

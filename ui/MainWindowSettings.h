@@ -32,6 +32,7 @@ private:
 	sd_gui_utils::config *cfg;
 	std::string ini_path;
 
+
 };
 
 #endif // __MainWindowSettings__
