@@ -47,6 +47,7 @@ class MainWindowImageViewer : public ImageViewer
 
 
 
+
 };
 
 #endif // __MainWindowImageViewer__

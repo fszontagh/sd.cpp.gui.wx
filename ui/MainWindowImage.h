@@ -19,6 +19,7 @@ class MainWindowImage : public Image
 	//// end generated class members
 
 
+
 };
 
 #endif // __MainWindowImage__

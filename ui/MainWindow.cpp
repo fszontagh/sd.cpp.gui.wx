@@ -392,9 +392,6 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	sizer0002->Add( m_notebook1302, 1, wxALIGN_TOP|wxEXPAND, 0 );
 
-	m_staticLine156 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
-	sizer0002->Add( m_staticLine156, 0, wxALL|wxEXPAND, 5 );
-
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
 

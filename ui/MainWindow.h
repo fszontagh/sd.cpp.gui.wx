@@ -98,7 +98,6 @@ class UI : public wxFrame
 		wxStaticBitmap* m_img2img_preview;
 		wxPanel* m_models_panel;
 		wxDataViewListCtrl* m_data_model_list;
-		wxStaticLine* m_staticLine156;
 		wxButton* m_generate;
 		wxStaticText* m_staticText15;
 		wxSpinCtrl* m_batch_count;

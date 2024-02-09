@@ -10,6 +10,7 @@
 #include <stable-diffusion.h>
 
 #include <nlohmann/json.hpp>
+#include "stb_image.h"
 
 namespace sd_gui_utils
 {
