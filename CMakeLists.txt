@@ -4,7 +4,8 @@ set(PROJECT_NAME "sd.ui")
 
 project(${PROJECT_NAME})
 
-set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_STANDARD 20)
+
 #https://stackoverflow.com/questions/47690822/possible-to-force-cmake-msvc-to-use-utf-8-encoding-for-source-files-without-a-bo
 #nlohmann json utf-8 and windows filename
 #add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
@@ -133,5 +134,5 @@ ENDIF()
 include_directories(ui)
 
 
-
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 

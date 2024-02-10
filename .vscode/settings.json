@@ -3,6 +3,13 @@
         "xstring": "cpp",
         "utility": "cpp",
         "iostream": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "algorithm": "cpp",
+        "any": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "iosfwd": "cpp"
     }
 }

@@ -558,15 +558,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
     if (token == "MODEL_LOAD_DONE")
     {
-        // this->m_generate->Enable();
-        // this->m_model->Enable();
-        // this->m_vae->Enable();
-        // this->m_refresh->Enable();
 
-        // this->logs->AppendText(fmt::format("Model loaded: {}\n", content));
         this->modelLoaded = true;
-        // std::lock_guard<std::mutex> guard(this->sdMutex);
-        // this->sd_ctx = e.GetPayload<sd_ctx_t *>();
+        this->sd_ctx = e.GetPayload<sd_ctx_t *>();
+
         if (!this->IsShownOnScreen() || !this->HasFocus())
         {
             this->TaskBar->ShowBalloon("Model loaded", content, 0U, wxICON_INFORMATION);
@@ -613,39 +608,21 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     // in the original SD.cpp the progress callback is not implemented... :(
     if (token == "GENERATION_PROGRESS")
     {
-        QM::QueueItem *myjob = e.GetPayload<QM::QueueItem *>();
+        QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
 
-        if (myjob == nullptr || myjob == NULL)
-        {
-            return;
-        }
         // update column
         auto store = this->m_joblist->GetStore();
-        // -1 the last (status)
-        // -2 ...      (speed)
-        // -3 ...      (progressbar)
-
-        // it/s format
-        /*
-        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-               progress.c_str(), step, steps,
-               time > 1.0f || time == 0 ? time : (1.0f / time)
-        */
-        wxString speed = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
+        wxString speed = wxString::Format(myjob.time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob.time > 1.0f || myjob.time == 0 ? myjob.time : (1.0f / myjob.time));
         int progressCol = this->m_joblist->GetColumnCount() - 3;
         int speedCol = this->m_joblist->GetColumnCount() - 2;
-        float current_progress = 100.f * (static_cast<float>(myjob->step) / static_cast<float>(myjob->steps));
-        if (current_progress < 2.f)
-        {
-            return;
-        }
+        float current_progress = 100.f * (static_cast<float>(myjob.step) / static_cast<float>(myjob.steps));
 
         for (unsigned int i = 0; i < store->GetItemCount(); i++)
         {
             auto _item = store->GetItem(i);
             auto _item_data = store->GetItemData(_item);
             auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
-            if (_qitem->id == myjob->id)
+            if (_qitem->id == myjob.id)
             {
                 store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
                 store->SetValueByRow(speed, i, speedCol);
@@ -653,20 +630,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                 break;
             }
         }
-
-        return;
-        for (auto it = this->JobTableItems.begin(); it != this->JobTableItems.end(); ++it)
-        {
-            if (it->second->id == myjob->id)
-            {
-                // store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), it->first, progressCol);
-                store->SetValueByRow(static_cast<int>(current_progress), it->first, progressCol);
-                store->SetValueByRow(speed, it->first, speedCol);
-                this->m_joblist->Refresh();
-                break;
-            }
-        }
-        // update column
     }
     if (token == "GENERATION_DONE")
     {
@@ -729,12 +692,12 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
 
     // std::lock_guard<std::mutex> guard(this->sdMutex);
     sd_ctx_t *sd_ctx_ = new_sd_ctx(
-        myItem.params.model_path.c_str(),
-        myItem.params.vae_path.c_str(),
-        myItem.params.taesd_path.c_str(),
-        myItem.params.controlnet_path.c_str(),
-        myItem.params.lora_model_dir.c_str(),
-        myItem.params.embeddings_path.c_str(),
+        sd_gui_utils::repairPath(myItem.params.model_path).c_str(),
+        sd_gui_utils::repairPath(myItem.params.vae_path).c_str(),
+        sd_gui_utils::repairPath(myItem.params.taesd_path).c_str(),
+        sd_gui_utils::repairPath(myItem.params.controlnet_path).c_str(),
+        sd_gui_utils::repairPath(myItem.params.lora_model_dir).c_str(),
+        sd_gui_utils::repairPath(myItem.params.embeddings_path).c_str(),
         false, myItem.params.vae_tiling, false,
         myItem.params.n_threads,
         myItem.params.wtype,
@@ -754,6 +717,7 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
     {
         wxThreadEvent *c = new wxThreadEvent();
         c->SetString(wxString::Format("MODEL_LOAD_DONE:%s", myItem.params.model_path));
+        c->SetPayload(sd_ctx_);
         wxQueueEvent(eventHandler, c);
         this->modelLoaded = true;
         this->currentModel = myItem.params.model_path;
@@ -958,6 +922,7 @@ void MainWindowUI::Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem)
         }
     }
     // std::lock_guard<std::mutex> guard(this->sdMutex);
+
     results = txt2img(this->sd_ctx,
                       myItem.params.prompt.c_str(),
                       myItem.params.negative_prompt.c_str(),
@@ -1083,7 +1048,7 @@ void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
     wxThreadEvent *e = new wxThreadEvent();
     e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
 
-    e->SetPayload(myItem);
+    e->SetPayload(*myItem);
     wxQueueEvent(eventHandler, e);
 }
 

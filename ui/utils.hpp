@@ -2,6 +2,7 @@
 #define __MAINFRAME_HPP__UTILS
 #include <string>
 #include <filesystem>
+#include <sstream>
 #include <iostream>
 #include <random>
 #include <unordered_map>
@@ -14,7 +15,13 @@
 
 namespace sd_gui_utils
 {
-
+    inline std::string repairPath(std::string path)
+    {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        std::replace(path.begin(), path.end(), '\\', '/');
+#endif
+        return path;
+    }
     typedef struct VoidHolder
     {
         void *p1;
@@ -101,11 +108,12 @@ namespace sd_gui_utils
         std::time_t time = static_cast<std::time_t>(timestamp);
         std::tm *timeinfo = std::localtime(&time);
 
-        std::ostringstream oss;
-        oss << (timeinfo->tm_year + 1900) << "-" << std::setw(2) << std::setfill('0') << (timeinfo->tm_mon + 1) << "-" << std::setw(2) << std::setfill('0') << timeinfo->tm_mday
-            << " " << std::setw(2) << std::setfill('0') << timeinfo->tm_hour << ":" << std::setw(2) << std::setfill('0') << timeinfo->tm_min;
+        // A dátum formázása az évszám-hónap-nap formátumba
+        std::stringstream ss;
+        ss << (timeinfo->tm_year + 1900) << "-" << std::setw(2) << std::setfill('0') << (timeinfo->tm_mon + 1) << "-" << std::setw(2) << std::setfill('0') << timeinfo->tm_mday
+           << " " << std::setw(2) << std::setfill('0') << timeinfo->tm_hour << ":" << std::setw(2) << std::setfill('0') << timeinfo->tm_min;
 
-        return oss.str();
+        return ss.str();
     }
     enum DirTypes
     {
