@@ -34,6 +34,8 @@ private:
 
 
 
+
+
 };
 
 #endif // __MainWindowSettings__

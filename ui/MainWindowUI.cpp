@@ -474,46 +474,6 @@ void MainWindowUI::onDeletePreset(wxCommandEvent &event)
     }
 }
 
-void MainWindowUI::loadModelList()
-{
-
-    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
-    // clear the table
-    for (auto model : this->ModelFiles)
-    {
-        // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
-        uintmax_t size = std::filesystem::file_size(model.second);
-        auto humanSize = sd_gui_utils::humanReadableFileSize(size);
-        auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
-        wxVector<wxVariant> data;
-        data.push_back(wxVariant(model.first));
-        data.push_back(hs);
-        data.push_back("--");
-        this->m_data_model_list->AppendItem(data);
-    }
-    this->m_data_model_list->Refresh();
-}
-
-void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
-{
-    auto store = this->m_joblist->GetStore();
-
-    int lastCol = this->m_joblist->GetColumnCount() - 1;
-
-    for (unsigned int i = 0; i < store->GetItemCount(); i++)
-    {
-        auto _item = store->GetItem(i);
-        auto _item_data = store->GetItemData(_item);
-        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
-        if (_qitem->id == item.id)
-        {
-            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
-            this->m_joblist->Refresh();
-            break;
-        }
-    }
-}
-
 void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
 {
     if (e.GetSkipped() == false)
@@ -660,8 +620,53 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
 }
 
+void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
+{
+    auto store = this->m_joblist->GetStore();
+
+    int lastCol = this->m_joblist->GetColumnCount() - 1;
+
+    for (unsigned int i = 0; i < store->GetItemCount(); i++)
+    {
+        auto _item = store->GetItem(i);
+        auto _item_data = store->GetItemData(_item);
+        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+        if (_qitem->id == item.id)
+        {
+            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
+            this->m_joblist->Refresh();
+            break;
+        }
+    }
+}
+
+void MainWindowUI::loadModelList()
+{
+
+    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
+    // clear the table
+    for (auto model : this->ModelFiles)
+    {
+        // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
+        uintmax_t size = std::filesystem::file_size(model.second);
+        auto humanSize = sd_gui_utils::humanReadableFileSize(size);
+        auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
+        wxVector<wxVariant> data;
+        data.push_back(wxVariant(model.first));
+        data.push_back(hs);
+        data.push_back("--");
+        this->m_data_model_list->AppendItem(data);
+    }
+    this->m_data_model_list->Refresh();
+}
+
 void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 {
+    /// close all threads before start another...
+    for (auto thr : this->threads)
+    {
+        thr->join();
+    }
     std::thread *p = new std::thread(&MainWindowUI::Generate, this, this->GetEventHandler(), myJob);
     this->threads.emplace_back(p);
 }
@@ -1058,42 +1063,6 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
     this->settingsWindow->Destroy();
 }
 
-void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
-{
-    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
-    {
-        auto *eventHandler = (wxEvtHandler *)data;
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-        e->SetPayload(level);
-        wxQueueEvent(eventHandler, e);
-    }
-}
-
-void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
-{
-    wxVector<wxVariant> data;
-
-    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
-
-    data.push_back(wxVariant(std::to_string(item.id)));
-    data.push_back(wxVariant(created_at));
-    data.push_back(wxVariant(item.model));
-    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
-    data.push_back(wxVariant(std::to_string(item.params.seed)));
-    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
-    data.push_back(wxString("-.--it/s"));                           // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
-
-    auto store = this->m_joblist->GetStore();
-
-    QM::QueueItem *nItem = new QM::QueueItem(item);
-
-    this->JobTableItems[item.id] = nItem;
-    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-}
-
 void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
 {
     std::string basepath;
@@ -1268,5 +1237,41 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
     if (type == sd_gui_utils::CONTROLNET)
     {
         this->logs->AppendText(fmt::format("Loaded controlnet: {}\n", this->ControlnetModels.size()));
+    }
+}
+
+void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
+{
+    wxVector<wxVariant> data;
+
+    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
+
+    data.push_back(wxVariant(std::to_string(item.id)));
+    data.push_back(wxVariant(created_at));
+    data.push_back(wxVariant(item.model));
+    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
+    data.push_back(wxVariant(std::to_string(item.params.seed)));
+    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
+    data.push_back(wxString("-.--it/s"));                           // speed
+    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
+
+    auto store = this->m_joblist->GetStore();
+
+    QM::QueueItem *nItem = new QM::QueueItem(item);
+
+    this->JobTableItems[item.id] = nItem;
+    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+}
+
+void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
+{
+    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
+    {
+        auto *eventHandler = (wxEvtHandler *)data;
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
+        e->SetPayload(level);
+        wxQueueEvent(eventHandler, e);
     }
 }

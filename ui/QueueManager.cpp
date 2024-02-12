@@ -260,9 +260,10 @@ void QM::QueueManager::LoadJobListFromDir()
         std::string name = path.filename().replace_extension("").string();
 
         std::ifstream f(path.string());
+        nlohmann::json data;
         try
         {
-            nlohmann::json data = nlohmann::json::parse(f);
+            data = nlohmann::json::parse(f);
             auto item = data.get<QM::QueueItem>();
             if (item.status == QM::QueueStatus::RUNNING)
             {
@@ -274,9 +275,9 @@ void QM::QueueManager::LoadJobListFromDir()
             }
             this->AddItem(item);
         }
-        catch (const std::exception &e)
+        catch (nlohmann::json::parse_error &ex)
         {
-            std::cerr << e.what() << '\n';
+            std::cerr << "parse error at byte " << ex.byte << std::endl;
         }
     }
 }
