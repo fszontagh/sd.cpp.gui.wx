@@ -283,6 +283,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer34;
 	bSizer34 = new wxBoxSizer( wxHORIZONTAL );
 
+	m_generate2 = new wxButton( m_text2img_panel, wxID_ANY, wxT("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_generate2->SetBitmap( play_png_to_wx_bitmap() );
+	m_generate2->Enable( false );
+
+	bSizer34->Add( m_generate2, 0, wxALL, 5 );
+
 	m_staticText22 = new wxStaticText( m_text2img_panel, wxID_ANY, wxT("ControlNet"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText22->Wrap( -1 );
 	bSizer34->Add( m_staticText22, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -292,7 +299,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	bSizer34->Add( m_controlnetImageOpen, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 1, 0.9, 0.1 );
+	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
 	m_controlnetStrength->SetDigits( 1 );
 	bSizer34->Add( m_controlnetStrength, 0, wxALL, 5 );
 
@@ -326,6 +333,8 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	sizer0004->Fit( m_text2img_panel );
 	m_notebook1302->AddPage( m_text2img_panel, wxT("Text2IMG"), true );
 	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_image2image_panel->DragAcceptFiles( true );
+
 	wxBoxSizer* bSizer24;
 	bSizer24 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -336,41 +345,84 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer32 = new wxBoxSizer( wxVERTICAL );
 
 	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
-	bSizer32->Add( m_open_image, 0, wxALL, 5 );
+	bSizer32->Add( m_open_image, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer28->Add( bSizer32, 0, wxALIGN_CENTER_HORIZONTAL, 5 );
+	bSizer28->Add( bSizer32, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer33;
-	bSizer33 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer33 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer36;
+	bSizer36 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2im_preview_img->Enable( false );
 
-	bSizer33->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer36->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_delete_initial_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Remove"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_delete_initial_img = new wxButton( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+
+	m_delete_initial_img->SetBitmap( trash_png_to_wx_bitmap() );
 	m_delete_initial_img->Enable( false );
+	m_delete_initial_img->SetToolTip( wxT("Remove initial image") );
 
-	bSizer33->Add( m_delete_initial_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-
-
-	bSizer28->Add( bSizer33, 0, wxALIGN_CENTER_HORIZONTAL, 5 );
+	bSizer36->Add( m_delete_initial_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer24->Add( bSizer28, 0, wxEXPAND, 5 );
+	bSizer33->Add( bSizer36, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer37;
+	bSizer37 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer37->Add( m_prompt2, 1, wxEXPAND, 5 );
+
+	m_neg_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer37->Add( m_neg_prompt2, 1, wxEXPAND, 5 );
+
+
+	bSizer33->Add( bSizer37, 1, wxEXPAND, 1 );
+
+	wxBoxSizer* bSizer38;
+	bSizer38 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_generate1 = new wxButton( m_image2image_panel, wxID_ANY, wxT("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_generate1->SetBitmap( play_png_to_wx_bitmap() );
+	m_generate1->Enable( false );
+
+	bSizer38->Add( m_generate1, 0, wxALL, 5 );
+
+	m_staticText24 = new wxStaticText( m_image2image_panel, wxID_ANY, wxT("Strength:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText24->Wrap( -1 );
+	bSizer38->Add( m_staticText24, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_strength = new wxSpinCtrlDouble( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0.99, 0.75, 0.1 );
+	m_strength->SetDigits( 2 );
+	bSizer38->Add( m_strength, 0, wxALL, 5 );
+
+
+	bSizer33->Add( bSizer38, 0, wxEXPAND, 5 );
+
+
+	bSizer28->Add( bSizer33, 1, wxEXPAND, 5 );
+
+
+	bSizer24->Add( bSizer28, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer29;
 	bSizer29 = new wxBoxSizer( wxVERTICAL );
 
 	m_img2img_preview = new wxStaticBitmap( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
+	m_img2img_preview->DragAcceptFiles( true );
 	m_img2img_preview->SetMinSize( wxSize( 300,210 ) );
 
 	bSizer29->Add( m_img2img_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
 
 
-	bSizer24->Add( bSizer29, 1, wxEXPAND, 5 );
+	bSizer24->Add( bSizer29, 0, 0, 5 );
 
 
 	m_image2image_panel->SetSizer( bSizer24 );
@@ -394,13 +446,6 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	wxBoxSizer* bSizer9;
 	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_generate = new wxButton( m_all_panel, wxID_ANY, wxT("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
-
-	m_generate->SetBitmap( play_png_to_wx_bitmap() );
-	m_generate->Enable( false );
-
-	bSizer9->Add( m_generate, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText15 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Batch:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText15->Wrap( -1 );
@@ -495,14 +540,17 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
 	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
+	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_open_image->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
+	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_generate->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
 	m_save_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
 	m_load_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );
@@ -526,14 +574,17 @@ UI::~UI()
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::onJoblistItemActivated ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::onJoblistSelectionChanged ), NULL, this );
+	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
 	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
+	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_open_image->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
+	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_generate->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
 	m_save_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
 	m_load_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );

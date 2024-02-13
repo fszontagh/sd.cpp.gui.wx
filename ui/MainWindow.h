@@ -85,6 +85,7 @@ class UI : public wxFrame
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
 		wxStaticBitmap* m_controlnetImagePreview;
+		wxButton* m_generate2;
 		wxStaticText* m_staticText22;
 		wxFilePickerCtrl* m_controlnetImageOpen;
 		wxSpinCtrlDouble* m_controlnetStrength;
@@ -95,10 +96,14 @@ class UI : public wxFrame
 		wxFilePickerCtrl* m_open_image;
 		wxButton* m_img2im_preview_img;
 		wxButton* m_delete_initial_img;
+		wxTextCtrl* m_prompt2;
+		wxTextCtrl* m_neg_prompt2;
+		wxButton* m_generate1;
+		wxStaticText* m_staticText24;
+		wxSpinCtrlDouble* m_strength;
 		wxStaticBitmap* m_img2img_preview;
 		wxPanel* m_models_panel;
 		wxDataViewListCtrl* m_data_model_list;
-		wxButton* m_generate;
 		wxStaticText* m_staticText15;
 		wxSpinCtrl* m_batch_count;
 		wxStaticText* m_staticText163;
@@ -126,13 +131,14 @@ class UI : public wxFrame
 		virtual void onJoblistItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onJoblistSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
+		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }

@@ -22,6 +22,14 @@ namespace QM
         MODEL_LOADING,
         DONE
     };
+
+    enum GenerationMode
+    {
+        TXT2IMG,
+        IMG2IMG,
+        CONVERT
+    };
+
     inline const char *QueueStatus_str[] = {
         "pending",
         "running",
@@ -44,7 +52,9 @@ namespace QM
         QueueItem() = default;
         QueueItem(const QueueItem &other)
             : id(other.id), created_at(other.created_at), updated_at(other.updated_at),
-              finished_at(other.finished_at), params(other.params), status(other.status), images(other.images), step(other.step), steps(other.steps), time(other.time), model(other.model) {}
+              finished_at(other.finished_at), params(other.params), 
+              status(other.status), images(other.images), step(other.step), steps(other.steps), 
+              time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image) {}
 
         QueueItem &operator=(const QueueItem &other)
         {
@@ -61,6 +71,8 @@ namespace QM
                 steps = other.steps;
                 time = other.time;
                 model = other.model;
+                mode = other.mode;
+                initial_image = other.initial_image;
             }
             return *this;
         }
@@ -70,7 +82,8 @@ namespace QM
         sd_gui_utils::SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         std::vector<std::string> images;
-        std::string model;
+        std::string model, initial_image;
+        QM::GenerationMode mode;
     };
 
     inline void to_json(nlohmann::json &j, const QueueItem &p)
@@ -83,7 +96,9 @@ namespace QM
             {"images", p.images},
             {"status", (int)p.status},
             {"model", p.model},
+            {"mode", (int)p.mode},
             {"params", p.params},
+            {"initial_image", p.initial_image},
 
         };
     }
@@ -97,7 +112,9 @@ namespace QM
         j.at("finished_at").get_to(p.finished_at);
         j.at("model").get_to(p.model);
         j.at("params").get_to(p.params);
+        j.at("initial_image").get_to(p.initial_image);
         p.status = j.at("status").get<QM::QueueStatus>();
+        p.mode = j.at("mode").get<QM::GenerationMode>();
     }
 
     class QueueManager

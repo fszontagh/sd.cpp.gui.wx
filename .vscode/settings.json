@@ -10,6 +10,9 @@
         "memory": "cpp",
         "optional": "cpp",
         "random": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "xhash": "cpp",
+        "thread": "cpp",
+        "chrono": "cpp"
     }
 }

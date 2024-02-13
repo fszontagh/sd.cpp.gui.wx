@@ -57,13 +57,14 @@ protected:
 	void onJoblistItemActivated(wxDataViewEvent &event);
 	void onContextMenu(wxDataViewEvent &event);
 	void onJoblistSelectionChanged(wxDataViewEvent &event);
+	void onGenerate(wxCommandEvent &event);
 	void OnControlnetImageOpen(wxFileDirPickerEvent &event);
 	void OnControlnetImagePreviewButton(wxCommandEvent &event);
 	void OnControlnetImageDelete(wxCommandEvent &event);
+	void Onimg2imgDropFile(wxDropFilesEvent &event);
 	void OnImageOpenFileChanged(wxFileDirPickerEvent &event);
 	void OnImg2ImgPreviewButton(wxCommandEvent &event);
 	void OnDeleteInitialImage(wxCommandEvent &event);
-	void onGenerate(wxCommandEvent &event);
 	void onSamplerSelect(wxCommandEvent &event);
 	void onSavePreset(wxCommandEvent &event);
 	void onLoadPreset(wxCommandEvent &event);
@@ -89,6 +90,7 @@ private:
 	wxMenu *TaskBarMenu;
 
 	std::map<std::string, std::string> ModelFiles;
+	std::map<std::string, int> ModelFilesIndex;
 	std::map<std::string, std::string> VaeFiles;
 	std::map<std::string, std::string> TaesdFiles;
 	std::map<std::string, std::string> ControlnetModels;
@@ -107,6 +109,7 @@ private:
 	wxImage *currentInitialImagePreview;
 	wxImage *currentControlnetImage;
 	wxImage *currentControlnetImagePreview;
+	std::string currentInitialImagePath;
 	sd_ctx_t *sd_ctx;
 	std::streambuf *buffer;
 	std::vector<std::thread *> threads;
@@ -122,6 +125,7 @@ private:
 	void loadControlnetList();
 	void loadSamplerList();
 	void loadTypeList();
+	void refreshModelTable();
 	void OnCloseSettings(wxCloseEvent &event);
 	void OnExit(wxEvent &event);
 	void OnPopupClick(wxCommandEvent &evt);
@@ -134,7 +138,8 @@ private:
 	// load the model in a new thread
 	sd_ctx_t *LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem);
 	// generate in another thread
-	void Generate(wxEvtHandler *eventHandler, QM::QueueItem myItem);
+	void GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myItem);
+	void GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myItem);
 
 	// start a thread to generate image
 	void StartGeneration(QM::QueueItem myJob);
