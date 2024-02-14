@@ -40,11 +40,11 @@ else()
 
 
 
-set(GGML_LIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/ggml/src/${CMAKE_BUILD_TYPE}/ggml.a)
-set(GGML_SLIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/${CMAKE_BUILD_TYPE}/ggml.so)
+set(GGML_LIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/ggml/src/ggml.a)
+set(GGML_SLIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/libggml.so)
 
-set(SD_LIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/${CMAKE_BUILD_TYPE}/stable-diffusion.a)
-set(SD_SLIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/${CMAKE_BUILD_TYPE}/stable-diffusion.so)
+set(SD_LIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/stable-diffusion.a)
+set(SD_SLIB ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/libstable-diffusion.so)
 
 set_target_properties(stable-diffusion PROPERTIES
 IMPORTED_CONFIGURATIONS        "DEBUG;RELEASE"

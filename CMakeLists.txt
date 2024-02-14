@@ -4,12 +4,10 @@ set(PROJECT_NAME "sd.ui")
 
 project(${PROJECT_NAME})
 
-#set(CMAKE_CXX_STANDARD 20)
+
 
 #https://stackoverflow.com/questions/47690822/possible-to-force-cmake-msvc-to-use-utf-8-encoding-for-source-files-without-a-bo
 #nlohmann json utf-8 and windows filename
-#add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
-#add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/execution-charset:utf-8>")
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
@@ -58,7 +56,7 @@ include(external/CMakeLists.txt)
 
 
 
-add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUi.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp ui/MainWindowImage.cpp ui/MainWindowImageDialog.cpp)
+add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUI.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp ui/MainWindowImage.cpp ui/MainWindowImageDialog.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/src/stable-diffusion-git)
 
@@ -94,10 +92,12 @@ IF(WIN32)
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)    
     ENDIF()
 
-
+ELSE()
+    if(SD_CUBLAS)
+    find_package(CUDAToolkit REQUIRED)
+    endif(SD_CUBLAS)
 ENDIF(WIN32)
 
-find_package(restclient-cpp CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
@@ -120,11 +120,11 @@ string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
 string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver restclient-cpp nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 
 else()
 set(CUDA_MODULES "")
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml restclient-cpp nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui)
 ENDIF()
 
 

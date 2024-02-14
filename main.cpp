@@ -1,7 +1,7 @@
 #include <wx/app.h>
 #include <wx/event.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include "MainWindowUi.h"
+#include "MainWindowUI.h"
 #include <wx/image.h>
 #include "embedded_files/app_icon.h"
 

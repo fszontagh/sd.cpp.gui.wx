@@ -434,7 +434,6 @@ void MainWindowUI::Onimg2imgDropFile(wxDropFilesEvent &event)
     this->m_img2im_preview_img->Enable();
     this->m_delete_initial_img->Enable();
     this->m_generate1->Enable();
-   
 }
 
 void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
@@ -656,11 +655,6 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
         this->m_controlnetModels->Select(0);
         basepath = this->cfg->controlnet;
         break;
-    }
-
-    if (!std::filesystem::exists(basepath))
-    {
-        std::filesystem::create_directories(basepath);
     }
 
     int i = 0;
@@ -890,10 +884,6 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
         delete results;
         return;
     }
-    if (!std::filesystem::exists(this->cfg->output))
-    {
-        std::filesystem::create_directories(this->cfg->output);
-    }
     /* save image(s) */
 
     const auto p1 = std::chrono::system_clock::now();
@@ -1064,10 +1054,6 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
         wxQueueEvent(eventHandler, f);
         delete results;
         return;
-    }
-    if (!std::filesystem::exists(this->cfg->output))
-    {
-        std::filesystem::create_directories(this->cfg->output);
     }
     /* save image(s) */
 
@@ -1243,6 +1229,44 @@ void MainWindowUI::initConfig()
         this->m_batch_count->SetValue(this->sd_params->batch_count);
         this->loadSamplerList();
         this->loadTypeList();
+
+        // check if directories exists...
+        if (!std::filesystem::exists(model_path.ToStdString()))
+        {
+            std::filesystem::create_directories(model_path.ToStdString());
+        }
+        if (!std::filesystem::exists(lora_path.ToStdString()))
+        {
+            std::filesystem::create_directories(lora_path.ToStdString());
+        }
+        if (!std::filesystem::exists(vae_path.ToStdString()))
+        {
+            std::filesystem::create_directories(vae_path.ToStdString());
+        }
+        if (!std::filesystem::exists(embedding_path.ToStdString()))
+        {
+            std::filesystem::create_directories(embedding_path.ToStdString());
+        }
+        if (!std::filesystem::exists(taesd_path.ToStdString()))
+        {
+            std::filesystem::create_directories(taesd_path.ToStdString());
+        }
+        if (!std::filesystem::exists(presets_path.ToStdString()))
+        {
+            std::filesystem::create_directories(presets_path.ToStdString());
+        }
+        if (!std::filesystem::exists(jobs_path.ToStdString()))
+        {
+            std::filesystem::create_directories(jobs_path.ToStdString());
+        }
+        if (!std::filesystem::exists(controlnet_path.ToStdString()))
+        {
+            std::filesystem::create_directories(controlnet_path.ToStdString());
+        }
+        if (!std::filesystem::exists(imagespath.ToStdString()))
+        {
+            std::filesystem::create_directories(imagespath.ToStdString());
+        }
     }
     this->firstCfgInit = false;
 }
@@ -1321,7 +1345,7 @@ void MainWindowUI::loadTypeList()
         this->m_type->Append(type.second);
     }
 
-    this->m_type->Select(0);
+    this->m_type->Select(sizeof(sd_gui_utils::sd_type_gui_names) - 1);
 }
 
 void MainWindowUI::StartGeneration(QM::QueueItem myJob)
@@ -1438,11 +1462,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
 
         this->modelLoaded = true;
         // this->sd_ctx = e.GetPayload<sd_ctx_t *>();
-
+#ifdef WIN32
         if (!this->IsShownOnScreen() || !this->HasFocus())
         {
             this->TaskBar->ShowBalloon("Model loaded", content, 0U, wxICON_INFORMATION);
         }
+#endif
     }
     if (token == "MODEL_LOAD_START")
     {
@@ -1453,10 +1478,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
 
         this->logs->AppendText(fmt::format("Model load error: {}\n", content));
         this->modelLoaded = false;
+#ifdef WIN32
         if (!this->IsShownOnScreen() || !this->HasFocus())
         {
             this->TaskBar->ShowBalloon("Model load failed!", content, 0U, wxICON_ERROR);
         }
+#endif
     }
 
     if (token == "GENERATION_START")
@@ -1502,10 +1529,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     if (token == "GENERATION_ERROR")
     {
         this->logs->AppendText(fmt::format("Generation error: {}\n", content));
+#ifdef WIN32
         if (!this->IsShownOnScreen() || !this->HasFocus())
         {
             this->TaskBar->ShowBalloon("Generation failed!", content, 0U, wxICON_ERROR);
         }
+#endif
     }
     if (token == "SD_MESSAGE")
     {
@@ -1518,10 +1547,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     if (token == "MESSAGE")
     {
         this->logs->AppendText(fmt::format("{}\n", content));
+#ifdef WIN32
         if (!this->IsShownOnScreen() || !this->HasFocus())
         {
             this->TaskBar->ShowBalloon("Info", content, 0U, wxICON_INFORMATION);
         }
+#endif
     }
 }
 

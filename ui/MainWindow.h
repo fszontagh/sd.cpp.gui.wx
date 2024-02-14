@@ -9,7 +9,7 @@
 
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
-#include <wx/button.h>
+#include <wx/bmpbuttn.h>
 #include <wx/string.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
@@ -18,6 +18,7 @@
 #include <wx/font.h>
 #include <wx/colour.h>
 #include <wx/settings.h>
+#include <wx/button.h>
 #include <wx/stattext.h>
 #include <wx/choice.h>
 #include <wx/sizer.h>
@@ -29,7 +30,6 @@
 #include <wx/textctrl.h>
 #include <wx/statbmp.h>
 #include <wx/filepicker.h>
-#include <wx/bmpbuttn.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
@@ -47,8 +47,8 @@ class UI : public wxFrame
 
 	protected:
 		wxPanel* m_all_panel;
-		wxButton* m_settings;
-		wxButton* m_refresh;
+		wxBitmapButton* m_settings;
+		wxBitmapButton* m_refrersh;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
 		wxChoice* m_type;
@@ -56,7 +56,7 @@ class UI : public wxFrame
 		wxChoice* m_vae;
 		wxStaticText* m_staticText233;
 		wxSpinCtrl* m_seed;
-		wxButton* m_random_seed;
+		wxBitmapButton* m_random_seed;
 		wxStaticText* m_staticText14;
 		wxSpinCtrl* m_steps;
 		wxStaticLine* m_staticLine236;
@@ -95,7 +95,7 @@ class UI : public wxFrame
 		wxPanel* m_image2image_panel;
 		wxFilePickerCtrl* m_open_image;
 		wxButton* m_img2im_preview_img;
-		wxButton* m_delete_initial_img;
+		wxBitmapButton* m_delete_initial_img;
 		wxTextCtrl* m_prompt2;
 		wxTextCtrl* m_neg_prompt2;
 		wxButton* m_generate1;
@@ -113,7 +113,7 @@ class UI : public wxFrame
 		wxButton* m_save_preset;
 		wxButton* m_load_preset;
 		wxChoice* m_preset_list;
-		wxButton* m_delete_preset;
+		wxBitmapButton* m_delete_preset;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -148,7 +148,7 @@ class UI : public wxFrame
 
 	public:
 
-		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxCAPTION|wxCLOSE_BOX|wxICONIZE|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxBORDER_THEME|wxCLIP_CHILDREN );
+		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxICONIZE|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxBORDER_THEME|wxCLIP_CHILDREN );
 
 		~UI();
 
@@ -200,7 +200,7 @@ class Settings : public wxFrame
 
 	public:
 
-		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,400 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_FLOAT_ON_PARENT|wxCAPTION|wxCLOSE_BOX|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME );
+		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_FLOAT_ON_PARENT|wxCAPTION|wxCLOSE_BOX|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME );
 
 		~Settings();
 

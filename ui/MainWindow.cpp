@@ -28,7 +28,7 @@
 
 UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetSizeHints( wxSize( -1,600 ), wxDefaultSize );
 
 	wxBoxSizer* sizer0001;
 	sizer0001 = new wxBoxSizer( wxVERTICAL );
@@ -41,19 +41,15 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* sizer0021;
 	sizer0021 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_settings = new wxButton( m_all_panel, wxID_ANY, wxT("Settings"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_settings = new wxBitmapButton( m_all_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_settings->SetBitmap( settings_png_to_wx_bitmap() );
-	m_settings->SetMinSize( wxSize( 70,-1 ) );
-
 	sizer0021->Add( m_settings, 0, wxALL, 5 );
 
-	m_refresh = new wxButton( m_all_panel, wxID_ANY, wxT("Refresh"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_refrersh = new wxBitmapButton( m_all_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_refresh->SetBitmap( refresh_png_to_wx_bitmap() );
-	m_refresh->SetMinSize( wxSize( 70,-1 ) );
-
-	sizer0021->Add( m_refresh, 0, wxALL, 5 );
+	m_refrersh->SetBitmap( refresh_png_to_wx_bitmap() );
+	sizer0021->Add( m_refrersh, 0, wxALL, 5 );
 
 	m_staticText160 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Model:"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
 	m_staticText160->Wrap( 0 );
@@ -100,17 +96,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_staticText233->Wrap( 0 );
 	sizer0003->Add( m_staticText233, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_seed = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("44"), wxDefaultPosition, wxDefaultSize, 0, -1, 99999999999, 44 );
-	m_seed->SetMinSize( wxSize( 110,-1 ) );
-
+	m_seed = new wxSpinCtrl( m_all_panel, wxID_ANY, wxT("-1"), wxDefaultPosition, wxDefaultSize, 0, -1, 999999999, -1 );
 	sizer0003->Add( m_seed, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_random_seed = new wxButton( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+	m_random_seed = new wxBitmapButton( m_all_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_random_seed->SetBitmap( dice_four_png_to_wx_bitmap() );
-	m_random_seed->SetToolTip( wxT("Generate random seed") );
-
-	sizer0003->Add( m_random_seed, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	sizer0003->Add( m_random_seed, 0, wxALL, 5 );
 
 	m_staticText14 = new wxStaticText( m_all_panel, wxID_ANY, wxT("Steps:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText14->Wrap( -1 );
@@ -120,9 +112,8 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	m_steps = new wxSpinCtrl( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0 );
 	m_steps->SetToolTip( wxT("number of sample steps (default: 20)") );
-	m_steps->SetMinSize( wxSize( 45,-1 ) );
 
-	sizer0003->Add( m_steps, 0, wxALL, 5 );
+	sizer0003->Add( m_steps, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticLine236 = new wxStaticLine( m_all_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
 	sizer0003->Add( m_staticLine236, 0, wxALL|wxEXPAND, 5 );
@@ -295,8 +286,6 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer34->Add( m_staticText22, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_controlnetImageOpen = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
-	m_controlnetImageOpen->SetMinSize( wxSize( 300,-1 ) );
-
 	bSizer34->Add( m_controlnetImageOpen, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
@@ -361,13 +350,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	bSizer36->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_delete_initial_img = new wxButton( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+	m_delete_initial_img = new wxBitmapButton( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_delete_initial_img->SetBitmap( trash_png_to_wx_bitmap() );
-	m_delete_initial_img->Enable( false );
-	m_delete_initial_img->SetToolTip( wxT("Remove initial image") );
-
-	bSizer36->Add( m_delete_initial_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer36->Add( m_delete_initial_img, 0, wxALL, 5 );
 
 
 	bSizer33->Add( bSizer36, 0, wxEXPAND, 5 );
@@ -375,10 +361,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer37;
 	bSizer37 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_TAB|wxTE_WORDWRAP );
 	bSizer37->Add( m_prompt2, 1, wxEXPAND, 5 );
 
-	m_neg_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_neg_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_TAB|wxTE_WORDWRAP );
 	bSizer37->Add( m_neg_prompt2, 1, wxEXPAND, 5 );
 
 
@@ -498,7 +484,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	bSizer9->Add( m_preset_list, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_delete_preset = new wxButton( m_all_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 24,24 ), 0 );
+	m_delete_preset = new wxBitmapButton( m_all_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_delete_preset->SetBitmap( trash_png_to_wx_bitmap() );
 	m_delete_preset->Enable( false );
@@ -528,7 +514,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	// Connect Events
 	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
-	m_refresh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
@@ -562,7 +548,7 @@ UI::~UI()
 {
 	// Disconnect Events
 	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
-	m_refresh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
@@ -595,7 +581,7 @@ UI::~UI()
 
 Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetSizeHints( wxSize( -1,400 ), wxDefaultSize );
 
 	wxBoxSizer* sizer2010;
 	sizer2010 = new wxBoxSizer( wxVERTICAL );
@@ -819,7 +805,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer22->Add( m_staticText191, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_threads = new wxSpinCtrl( m_settings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1, 100, 2 );
-	bSizer22->Add( m_threads, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer22->Add( m_threads, 0, wxALL, 5 );
 
 
 	sizer2017->Add( bSizer22, 0, 0, 5 );
