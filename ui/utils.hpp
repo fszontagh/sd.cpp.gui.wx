@@ -125,8 +125,39 @@ namespace sd_gui_utils
         NEG_PROMPTS,
         TAESD,
         ESRGAN,
-        CONTROLNET
+        CONTROLNET,
+        UPSCALER
     };
+
+    inline std::string UnicodeToUTF8(const char *str)
+    {
+#ifdef WIN32
+        return wxString(str).utf8_string();
+#endif
+        return std::string(str);
+    }
+    inline std::string UnicodeToUTF8(wxString str)
+    {
+#ifdef WIN32
+        return str.utf8_string();
+#endif
+        return str.ToStdString();
+    }
+    inline std::string UTF8ToUnicode(wxString str)
+    {
+#ifdef WIN32
+        return wxString::FromUTF8(str).ToStdString();
+#endif
+        return str.ToStdString();
+    }
+    inline std::string UTF8ToUnicode(const char *str)
+    {
+#ifdef WIN32
+        return wxString::FromUTF8(str).ToStdString();
+#endif
+        return wxString(str).ToStdString();
+    }
+
     struct generator_preset
     {
         double cfg;
@@ -341,17 +372,17 @@ namespace sd_gui_utils
         j = nlohmann::json{
             {"n_threads", p.n_threads},
             {"mode", (int)p.mode},
-            {"model_path", p.model_path},
-            {"vae_path", p.vae_path},
-            {"taesd_path", p.taesd_path},
-            {"esrgan_path", p.esrgan_path},
-            {"controlnet_path", p.controlnet_path},
-            {"embeddings_path", p.embeddings_path},
+            {"model_path", sd_gui_utils::UnicodeToUTF8(p.model_path)},
+            {"vae_path", sd_gui_utils::UnicodeToUTF8(p.vae_path)},
+            {"taesd_path", sd_gui_utils::UnicodeToUTF8(p.taesd_path)},
+            {"esrgan_path", sd_gui_utils::UnicodeToUTF8(p.esrgan_path)},
+            {"controlnet_path", sd_gui_utils::UnicodeToUTF8(p.controlnet_path)},
+            {"embeddings_path", sd_gui_utils::UnicodeToUTF8(p.embeddings_path)},
             {"wtype", (int)p.wtype},
-            {"lora_model_dir", p.lora_model_dir},
-            {"output_path", p.output_path},
-            {"input_path", p.input_path},
-            {"control_image_path", p.control_image_path},
+            {"lora_model_dir", sd_gui_utils::UnicodeToUTF8(p.lora_model_dir)},
+            {"output_path", sd_gui_utils::UnicodeToUTF8(p.output_path)},
+            {"input_path", sd_gui_utils::UnicodeToUTF8(p.input_path)},
+            {"control_image_path", sd_gui_utils::UnicodeToUTF8(p.control_image_path)},
             {"prompt", p.prompt},
             {"negative_prompt", p.negative_prompt},
             {"cfg_scale", p.cfg_scale},
@@ -380,19 +411,19 @@ namespace sd_gui_utils
 
         p.mode = j.at("mode").get<sd_gui_utils::SDMode>();
 
-        j.at("model_path").get_to(p.model_path);
-        j.at("vae_path").get_to(p.vae_path);
-        j.at("taesd_path").get_to(p.taesd_path);
-        j.at("esrgan_path").get_to(p.esrgan_path);
-        j.at("controlnet_path").get_to(p.controlnet_path);
-        j.at("embeddings_path").get_to(p.embeddings_path);
+        p.model_path = sd_gui_utils::UTF8ToUnicode(j.at("model_path").get<std::string>());
+        p.vae_path = sd_gui_utils::UTF8ToUnicode(j.at("vae_path").get<std::string>());
+        p.taesd_path = sd_gui_utils::UTF8ToUnicode(j.at("taesd_path").get<std::string>());
+        p.esrgan_path = sd_gui_utils::UTF8ToUnicode(j.at("esrgan_path").get<std::string>());
+        p.controlnet_path = sd_gui_utils::UTF8ToUnicode(j.at("controlnet_path").get<std::string>());
+        p.embeddings_path = sd_gui_utils::UTF8ToUnicode(j.at("embeddings_path").get<std::string>());
+        p.lora_model_dir = sd_gui_utils::UTF8ToUnicode(j.at("lora_model_dir").get<std::string>());
+        p.output_path = sd_gui_utils::UTF8ToUnicode(j.at("output_path").get<std::string>());
+        p.input_path = sd_gui_utils::UTF8ToUnicode(j.at("input_path").get<std::string>());
+        p.control_image_path = sd_gui_utils::UTF8ToUnicode(j.at("control_image_path").get<std::string>());
 
         p.wtype = j.at("wtype").get<sd_type_t>();
 
-        j.at("lora_model_dir").get_to(p.lora_model_dir);
-        j.at("output_path").get_to(p.output_path);
-        j.at("input_path").get_to(p.input_path);
-        j.at("control_image_path").get_to(p.control_image_path);
         j.at("prompt").get_to(p.prompt);
         j.at("negative_prompt").get_to(p.negative_prompt);
         j.at("cfg_scale").get_to(p.cfg_scale);

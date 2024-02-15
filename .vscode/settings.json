@@ -80,6 +80,7 @@
         "valarray": "cpp",
         "variant": "cpp",
         "format": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "xtree": "cpp"
     }
 }

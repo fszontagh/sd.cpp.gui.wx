@@ -52,8 +52,8 @@ namespace QM
         QueueItem() = default;
         QueueItem(const QueueItem &other)
             : id(other.id), created_at(other.created_at), updated_at(other.updated_at),
-              finished_at(other.finished_at), params(other.params), 
-              status(other.status), images(other.images), step(other.step), steps(other.steps), 
+              finished_at(other.finished_at), params(other.params),
+              status(other.status), images(other.images), step(other.step), steps(other.steps),
               time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image) {}
 
         QueueItem &operator=(const QueueItem &other)
@@ -88,17 +88,22 @@ namespace QM
 
     inline void to_json(nlohmann::json &j, const QueueItem &p)
     {
+        std::vector<std::string> _imgs;
+        for (auto _img : p.images)
+        {
+            _imgs.insert(_imgs.begin(), sd_gui_utils::UnicodeToUTF8(_img));
+        }
         j = nlohmann::json{
             {"id", p.id},
             {"created_at", p.created_at},
             {"updated_at", p.updated_at},
             {"finished_at", p.finished_at},
-            {"images", p.images},
+            {"images", _imgs},
             {"status", (int)p.status},
-            {"model", p.model},
+            {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
             {"params", p.params},
-            {"initial_image", p.initial_image},
+            {"initial_image", sd_gui_utils::UnicodeToUTF8(p.initial_image)},
 
         };
     }
@@ -108,13 +113,21 @@ namespace QM
         j.at("id").get_to(p.id);
         j.at("created_at").get_to(p.created_at);
         j.at("updated_at").get_to(p.updated_at);
-        j.at("images").get_to(p.images);
+
+        std::vector<std::string> _imgs = j.at("images").get<std::vector<std::string>>();
+        for (auto _img : _imgs)
+        {
+            p.images.insert(p.images.begin(), sd_gui_utils::UTF8ToUnicode(_img));
+        }
+
         j.at("finished_at").get_to(p.finished_at);
         j.at("model").get_to(p.model);
         j.at("params").get_to(p.params);
         j.at("initial_image").get_to(p.initial_image);
         p.status = j.at("status").get<QM::QueueStatus>();
         p.mode = j.at("mode").get<QM::GenerationMode>();
+        p.initial_image = sd_gui_utils::UTF8ToUnicode(p.initial_image);
+        p.model = sd_gui_utils::UTF8ToUnicode(p.model);
     }
 
     class QueueManager
@@ -122,15 +135,18 @@ namespace QM
     public:
         QueueManager(wxEvtHandler *eventHandler, std::string jobsdir);
         ~QueueManager();
-        int AddItem(QM::QueueItem item);
-        int AddItem(sd_gui_utils::SDParams *params);
-        int AddItem(sd_gui_utils::SDParams params);
+        int AddItem(QM::QueueItem item, bool fromFile = false);
+        int AddItem(sd_gui_utils::SDParams *params, bool fromFile = false);
+        int AddItem(sd_gui_utils::SDParams params, bool fromFile = false);
         QM::QueueItem GetItem(int id);
         QM::QueueItem GetItem(QM::QueueItem item);
         const std::map<int, QM::QueueItem> getList();
         int Duplicate(QM::QueueItem item);
         int Duplicate(int id);
+        // @brief Update the status of an item by the item's id
         void SetStatus(QM::QueueStatus status, int id);
+        // @brief Update the item too then update the status. This will store the list of the generated images too
+        void SetStatus(QM::QueueStatus status, QM::QueueItem item);
         void PauseAll();
         void SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem item = QM::QueueItem());
         void OnThreadMessage(wxThreadEvent &e);

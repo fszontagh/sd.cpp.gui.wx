@@ -743,7 +743,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
             catch (const std::exception &e)
             {
                 std::remove(path.string().c_str());
-                std::cerr << e.what() << '\n';
+                std::cerr << e.what() << " file: " << path.string() << '\n';
             }
         }
         if (type == sd_gui_utils::TAESD)
@@ -952,10 +952,10 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     // h->SetPayload(myItem);
     wxQueueEvent(eventHandler, h);
 
-    wxThreadEvent *i = new wxThreadEvent();
+    /*wxThreadEvent *i = new wxThreadEvent();
     i->SetString(wxString::Format("GENERATION_DONE:ok"));
     i->SetPayload(results);
-    wxQueueEvent(eventHandler, i);
+    wxQueueEvent(eventHandler, i);*/
 
     // send to the queue manager
     wxThreadEvent *j = new wxThreadEvent();
@@ -1121,10 +1121,10 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     // h->SetPayload(myItem);
     wxQueueEvent(eventHandler, h);
 
-    wxThreadEvent *i = new wxThreadEvent();
+  /*  wxThreadEvent *i = new wxThreadEvent();
     i->SetString(wxString::Format("GENERATION_DONE:ok"));
     i->SetPayload(results);
-    wxQueueEvent(eventHandler, i);
+    wxQueueEvent(eventHandler, i);*/
 
     // send to the queue manager
     wxThreadEvent *j = new wxThreadEvent();
@@ -1294,17 +1294,20 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
 
     // std::lock_guard<std::mutex> guard(this->sdMutex);
     sd_ctx_t *sd_ctx_ = new_sd_ctx(
-        sd_gui_utils::repairPath(myItem.params.model_path).c_str(),
-        sd_gui_utils::repairPath(myItem.params.vae_path).c_str(),
-        sd_gui_utils::repairPath(myItem.params.taesd_path).c_str(),
-        sd_gui_utils::repairPath(myItem.params.controlnet_path).c_str(),
-        sd_gui_utils::repairPath(myItem.params.lora_model_dir).c_str(),
-        sd_gui_utils::repairPath(myItem.params.embeddings_path).c_str(),
-        false, myItem.params.vae_tiling, false,
-        myItem.params.n_threads,
+        sd_gui_utils::repairPath(myItem.params.model_path).c_str(),      // model path
+        sd_gui_utils::repairPath(myItem.params.vae_path).c_str(),        // vae path
+        sd_gui_utils::repairPath(myItem.params.taesd_path).c_str(),      // taesd path
+        sd_gui_utils::repairPath(myItem.params.controlnet_path).c_str(), // controlnet path
+        sd_gui_utils::repairPath(myItem.params.lora_model_dir).c_str(),  // lora path
+        sd_gui_utils::repairPath(myItem.params.embeddings_path).c_str(), // embedding path
+        false,                                                           // vae decode only (img2img = false)
+        myItem.params.vae_tiling,                                        // vae tiling
+        false,                                                           // free params immediatelly
+        myItem.params.n_threads,                                        
         myItem.params.wtype,
         myItem.params.rng_type,
-        myItem.params.schedule, myItem.params.control_net_cpu);
+        myItem.params.schedule,
+        myItem.params.control_net_cpu);
 
     if (sd_ctx_ == NULL)
     {
@@ -1522,9 +1525,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                 break;
             }
         }
-    }
-    if (token == "GENERATION_DONE")
-    {
     }
     if (token == "GENERATION_ERROR")
     {

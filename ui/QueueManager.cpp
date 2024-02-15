@@ -14,7 +14,7 @@ QM::QueueManager::~QueueManager()
 {
 }
 
-int QM::QueueManager::AddItem(QM::QueueItem item)
+int QM::QueueManager::AddItem(QM::QueueItem item, bool fromFile)
 {
     if (item.id == 0)
     {
@@ -33,18 +33,22 @@ int QM::QueueManager::AddItem(QM::QueueItem item)
         this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, item);
         this->isRunning = true;
     }
-    this->SaveJobToFile(item);
+    if (!fromFile)
+    {
+        this->SaveJobToFile(item);
+    }
+
     return item.id;
 }
 
-int QM::QueueManager::AddItem(sd_gui_utils::SDParams *params)
+int QM::QueueManager::AddItem(sd_gui_utils::SDParams *params, bool fromFile)
 {
     QM::QueueItem item;
     item.params = *params;
     return this->AddItem(item);
 }
 
-int QM::QueueManager::AddItem(sd_gui_utils::SDParams params)
+int QM::QueueManager::AddItem(sd_gui_utils::SDParams params, bool fromFile)
 {
     QM::QueueItem item;
     item.params = params;
@@ -96,13 +100,22 @@ void QM::QueueManager::SetStatus(QM::QueueStatus status, int id)
     {
         this->QueueList[id].status = status;
         this->QueueList[id].updated_at = this->GetCurrentUnixTimestamp();
-        if (status == QM::QueueStatus::DONE)
+        if (status == QM::QueueStatus::DONE && this->QueueList[id].finished_at == 0)
         {
             this->QueueList[id].finished_at = this->GetCurrentUnixTimestamp();
         }
         this->SaveJobToFile(this->QueueList[id]);
         this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[id]);
     }
+}
+
+void QM::QueueManager::SetStatus(QM::QueueStatus status, QM::QueueItem item)
+{
+    if (this->QueueList.find(item.id) != this->QueueList.end())
+    {
+        this->QueueList[item.id] = item;
+    }
+    this->SetStatus(status, item.id);
 }
 
 void QM::QueueManager::PauseAll()
@@ -151,7 +164,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         }
         if (event == QM::QueueEvents::ITEM_FINISHED)
         {
-            this->SetStatus(QM::QueueStatus::DONE, payload.id);
+            this->SetStatus(QM::QueueStatus::DONE, payload);
             this->isRunning = false;
             // jump to the next item in queue
             // find waiting jobs
@@ -271,13 +284,13 @@ void QM::QueueManager::LoadJobListFromDir()
             }
             if (item.status == QM::QueueStatus::MODEL_LOADING)
             {
-                item.status = QM::QueueStatus::FAILED;
+                item.status = QM::QueueStatus::PENDING;
             }
-            this->AddItem(item);
+            this->AddItem(item, true);
         }
         catch (nlohmann::json::parse_error &ex)
         {
-            std::cerr << "parse error at byte " << ex.byte << std::endl;
+            std::cerr << "parse error at byte " << ex.byte << " in file: " << path.string() << std::endl;
         }
     }
 }

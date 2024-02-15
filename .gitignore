@@ -24,3 +24,5 @@ build/
 external/stable-diffusion.cpp/**
 external/stable-diffusion/
 .vscode/c_cpp_properties.json
+.vscode/settings.json
+.vscode/tasks.json
