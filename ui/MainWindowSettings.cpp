@@ -24,6 +24,7 @@ this->fileConfig->Write("/paths/presets", this->m_presets_dir->GetPath());
 this->fileConfig->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
 this->fileConfig->Write("/save_all_image", this->m_save_all_image->GetValue());
 this->fileConfig->Write("/n_threads", this->m_threads->GetValue());
+this->fileConfig->Write("/paths/output", this->m_images_output->GetPath());
 this->fileConfig->Flush();
 this->Close();
 }

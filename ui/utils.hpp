@@ -121,16 +121,6 @@ namespace sd_gui_utils
         j.at("meta_file").get_to(p.meta_file);
         p.model_type = j.at("model_type").get<sd_gui_utils::DirTypes>();
     }
-    inline const std::string GetSHA256(const std::string file_path)
-    {
-        std::ifstream f(file_path, std::ios::binary);
-        std::vector<char> s(picosha2::k_digest_size);
-        picosha2::hash256(f, s.begin(), s.end());
-        char *h = &s[0];
-        std::string hash(reinterpret_cast<char const *>(h));
-        f.close();
-        return hash;
-    }
     inline std::string to_hex(std::array<uint8_t, 32> data)
     {
         std::ostringstream oss;
