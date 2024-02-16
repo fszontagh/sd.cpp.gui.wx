@@ -970,7 +970,7 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     const auto p1 = std::chrono::system_clock::now();
     auto ctime = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
 
-    for (int i = 0; i < this->sd_params->batch_count; i++)
+    for (int i = 0; i < myItem.params.batch_count; i++)
     {
         if (results[i].data == NULL)
         {
