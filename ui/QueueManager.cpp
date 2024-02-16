@@ -85,13 +85,25 @@ int QM::QueueManager::Duplicate(QM::QueueItem item)
     }
     else
     {
-        return this->AddItem(this->QueueList.at(item.id).params);
+        auto origItem = this->QueueList.at(item.id);
+        QM::QueueItem newitem;
+        newitem.params = origItem.params;
+        newitem.mode = origItem.mode;
+        newitem.model = origItem.model;
+        newitem.initial_image = origItem.initial_image;
+        newitem.hash_fullsize = origItem.hash_fullsize;
+        newitem.hash_progress_size = origItem.hash_progress_size;
+        newitem.sha256 = origItem.sha256;
+        return this->AddItem(newitem);
     }
 }
 
 int QM::QueueManager::Duplicate(int id)
 {
-    return this->AddItem(this->GetItem(id).params);
+    if (this->QueueList.find(id) != this->QueueList.end()) {
+        return this->Duplicate(this->QueueList[id]);
+    }
+    return -1;
 }
 
 void QM::QueueManager::SetStatus(QM::QueueStatus status, int id)
@@ -189,7 +201,10 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         auto payload = e.GetPayload<QM::QueueItem>();
         this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
     }
-
+    if (token == "HASHING_PROGRESS") {
+        auto payload = e.GetPayload<QM::QueueItem>();
+        this->SetStatus(QM::QueueStatus::HASHING, payload.id);        
+    }
     // this state can not usable at here, because the payload is the sd_ctx* pointer here..
     // we can't identify the current running job here... (we can maybe guess it, but not needed)
     // see  GENERATION_START

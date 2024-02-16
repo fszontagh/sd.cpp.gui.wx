@@ -14,7 +14,9 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     // prepare data list views
     this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
     this->m_data_model_list->AppendTextColumn("Size");
+    this->m_data_model_list->AppendTextColumn("Type");
     this->m_data_model_list->AppendTextColumn("Hash");
+    this->m_data_model_list->AppendProgressColumn("");
 
     this->m_joblist->AppendTextColumn("Id");
     this->m_joblist->AppendTextColumn("Created at");
@@ -26,6 +28,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->m_joblist->AppendTextColumn("Speed");        // speed
     this->m_joblist->AppendTextColumn("Status");       // status
 
+    this->m_joblist->GetColumn(0)->SetHidden(true);
+    
     this->SetTitle(this->GetTitle() + SD_GUI_VERSION);
     this->TaskBar = new wxTaskBarIcon();
 
@@ -51,9 +55,11 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     // load
     this->LoadPresets();
     this->loadModelList();
+    this->loadLoraList();
     this->loadVaeList();
     this->loadTaesdList();
     this->loadControlnetList();
+    this->refreshModelTable();
 
     if (this->ModelFiles.size() > 0)
     {
@@ -193,28 +199,52 @@ void MainWindowUI::onJoblistItemActivated(wxDataViewEvent &event)
 void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 {
 
-    auto *source = (wxDataViewListCtrl *)event.GetEventObject();
-    wxMenu menu;
+    auto column = event.GetColumn();
+    if (column == -1)
+    {
+        return;
+    }
 
-    menu.SetClientData((void *)source);
+    auto *source = (wxDataViewListCtrl *)event.GetEventObject();
+    wxMenu *menu = new wxMenu();
+
+    menu->SetClientData((void *)source);
 
     if (source == this->m_joblist)
     {
-        menu.Append(1, "Copy and restart");
-        menu.Append(2, "Copy paramters to text2img");
-        menu.Append(3, "Copy paramters to img2img");
-        menu.Append(4, "Details...");
+        auto item = event.GetItem();
+
+        wxDataViewListStore *store = this->m_joblist->GetStore();
+        QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(item));
+
+        menu->Append(1, wxString::Format("Copy and queue %d", qitem->id));
+
+        menu->Append(2, wxString::Format("Copy to text2img %d", qitem->id));
+        menu->Append(3, wxString::Format("Copy prompts to text2img %d", qitem->id));
+        menu->Append(4, wxString::Format("Copy prompts to img2img %d", qitem->id));
+        menu->Append(5, "Details...");
     }
 
     if (source == this->m_data_model_list)
     {
+        auto item = event.GetItem();
 
-        menu.Append(1, "Calculate Hash");
-        menu.Append(2, "Download info from CivitAi.com");
+        wxDataViewListStore *store = this->m_data_model_list->GetStore();
+        sd_gui_utils::ModelFileInfo *modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(item));
+
+        menu->Append(101, "Download info from CivitAi.com - not implemented yet");
+        menu->Enable(101, false);
+        if (!modelinfo->sha256.empty())
+        {
+            menu->Append(100, "RE-Calculate Hash");
+        }
+        else
+        {
+            menu->Append(100, "Calculate Hash");
+        }
     }
-
-    menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainWindowUI::OnPopupClick), NULL, this);
-    PopupMenu(&menu);
+    menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
+    PopupMenu(menu);
 }
 
 void MainWindowUI::onJoblistSelectionChanged(wxDataViewEvent &event)
@@ -676,6 +706,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
                 continue;
             }
         }
+        if (type == sd_gui_utils::DirTypes::LORA)
+        {
+            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf")
+            {
+                continue;
+            }
+        }
         if (type == sd_gui_utils::DirTypes::VAE)
         {
             if (ext != ".safetensors" && ext != ".ckpt")
@@ -722,6 +759,46 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
             this->m_model->Append(name);
             this->ModelFiles.emplace(name, dir_entry.path().string());
             this->ModelFilesIndex[name] = this->ModelFiles.size();
+
+            sd_gui_utils::ModelFileInfo minfo;
+            minfo.meta_file = path.replace_extension(".json").string();
+            // insert the modelinfo from json, if the json exists
+            if (std::filesystem::exists(minfo.meta_file))
+            {
+                std::ifstream f(minfo.meta_file);
+                try
+                {
+                    nlohmann::json data = nlohmann::json::parse(f);
+                    minfo = data;
+                    this->ModelInfos[dir_entry.path().string()] = minfo;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << e.what() << " file: " << path.string() << '\n';
+                }
+            }
+        }
+        if (type == sd_gui_utils::LORA)
+        {
+            this->LoraFiles.emplace(name, dir_entry.path().string());
+
+            sd_gui_utils::ModelFileInfo minfo;
+            minfo.meta_file = path.replace_extension(".json").string();
+            // insert the modelinfo from json, if the json exists
+            if (std::filesystem::exists(minfo.meta_file))
+            {
+                std::ifstream f(minfo.meta_file);
+                try
+                {
+                    nlohmann::json data = nlohmann::json::parse(f);
+                    minfo = data;
+                    this->ModelInfos[dir_entry.path().string()] = minfo;
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << e.what() << " file: " << path.string() << '\n';
+                }
+            }
         }
         if (type == sd_gui_utils::VAE)
         {
@@ -761,6 +838,10 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
     if (type == sd_gui_utils::CHECKPOINT)
     {
         this->logs->AppendText(fmt::format("Loaded checkpoints: {}\n", this->ModelFiles.size()));
+    }
+    if (type == sd_gui_utils::LORA)
+    {
+        this->logs->AppendText(fmt::format("Loaded Loras: {}\n", this->LoraFiles.size()));
     }
     if (type == sd_gui_utils::VAE)
     {
@@ -1121,10 +1202,10 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     // h->SetPayload(myItem);
     wxQueueEvent(eventHandler, h);
 
-  /*  wxThreadEvent *i = new wxThreadEvent();
-    i->SetString(wxString::Format("GENERATION_DONE:ok"));
-    i->SetPayload(results);
-    wxQueueEvent(eventHandler, i);*/
+    /*  wxThreadEvent *i = new wxThreadEvent();
+      i->SetString(wxString::Format("GENERATION_DONE:ok"));
+      i->SetPayload(results);
+      wxQueueEvent(eventHandler, i);*/
 
     // send to the queue manager
     wxThreadEvent *j = new wxThreadEvent();
@@ -1140,7 +1221,68 @@ void MainWindowUI::loadControlnetList()
 
 void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
 {
-    void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+    // void *data = static_cast<wxMenu *>(evt.GetEventObject())->GetClientData();
+    wxMenu *m = (wxMenu *)evt.GetClientObject();
+    auto te = evt.GetInt();
+    auto tu = evt.GetId();
+
+    // 100 for queueitem list table
+    if (tu < 100)
+    {
+        wxDataViewListStore *store = this->m_joblist->GetStore();
+        auto currentItem = this->m_joblist->GetCurrentItem();
+
+        QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(currentItem));
+
+        /*
+                1 Copy and queue
+                2 copy to text2img
+                3 copy prompts to text2image
+                4 copy prompts to img2img
+        */
+
+        switch (tu)
+        {
+        case 1:
+            this->qmanager->Duplicate(qitem->id);
+        case 2:
+            this->m_seed->SetValue(qitem->params.seed);
+            this->m_width->SetValue(qitem->params.width);
+            this->m_height->SetValue(qitem->params.height);
+            this->ChangeModelByName(qitem->model);
+            break;
+        case 3:
+            this->m_prompt->SetValue(qitem->params.prompt);
+            this->m_neg_prompt->SetValue(qitem->params.negative_prompt);
+            break;
+        case 4:
+            this->m_prompt2->SetValue(qitem->params.prompt);
+            this->m_neg_prompt2->SetValue(qitem->params.negative_prompt);
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (tu >= 100)
+    {
+        wxDataViewListStore *store = this->m_data_model_list->GetStore();
+        //        auto currentItem = this->m_data_model_list->GetCurrentItem();
+        int currow = this->m_data_model_list->GetSelectedRow();
+        auto currentItem = store->GetItem(currow);
+
+        sd_gui_utils::ModelFileInfo *modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
+
+        switch (tu)
+        {
+        case 100:
+            // std::thread();
+            //  threadedModelHashCalc
+            std::thread *p = new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo);
+            this->threads.emplace_back(p);
+            break;
+        }
+    }
 }
 
 MainWindowUI::~MainWindowUI()
@@ -1151,7 +1293,8 @@ MainWindowUI::~MainWindowUI()
     }
     for (auto &t : this->threads)
     {
-        t->join();
+        // t->join();
+        t->~thread();
     }
     this->TaskBar->Destroy();
 }
@@ -1292,6 +1435,58 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
     e->SetPayload(myItem);
     wxQueueEvent(eventHandler, e);
 
+    // check if hash already calculated
+    if (this->ModelInfos.find(myItem.params.model_path) == this->ModelInfos.end())
+    {
+        sd_gui_utils::ModelFileInfo minfo;
+        auto mpath = std::filesystem::path(myItem.params.model_path);
+
+        minfo.path = myItem.params.model_path;
+        minfo.name = mpath.filename().string();
+        minfo.size = std::filesystem::file_size(mpath);
+        auto msize = sd_gui_utils::humanReadableFileSize(minfo.size);
+        minfo.size_f = fmt::format("{} {}", msize.first, msize.second);
+        minfo.meta_file = mpath.replace_extension(".json").string();
+        if (std::filesystem::exists(minfo.meta_file))
+        {
+            std::ifstream f(minfo.meta_file);
+            try
+            {
+                nlohmann::json data = nlohmann::json::parse(f);
+                minfo = data;
+                this->ModelInfos[myItem.params.model_path] = minfo;
+            }
+            catch (const std::exception &e)
+            {
+                std::cerr << e.what() << " file: " << minfo.meta_file << '\n';
+            }
+        }
+        else
+        {
+
+            QM::QueueItem *item(&myItem);
+            item->hash_fullsize = minfo.size;
+
+            sd_gui_utils::VoidHolder *holder = new sd_gui_utils::VoidHolder;
+            holder->p1 = (void *)eventHandler;
+            holder->p2 = (void *)item;
+
+            minfo.sha256 = sd_gui_utils::sha256_file_openssl(minfo.path.c_str(), (void *)holder, &MainWindowUI::ModelHashingCallback);
+
+            this->ModelInfos[myItem.params.model_path] = minfo;
+            // save info to json file
+            nlohmann::json meta_file(minfo);
+            std::ofstream file(minfo.meta_file);
+            file << meta_file;
+            file.close();
+        }
+    }
+
+    wxThreadEvent *ef = new wxThreadEvent();
+    ef->SetString(wxString::Format("MODEL_LOAD_START:%s", myItem.params.model_path));
+    ef->SetPayload(myItem);
+    wxQueueEvent(eventHandler, ef);
+
     // std::lock_guard<std::mutex> guard(this->sdMutex);
     sd_ctx_t *sd_ctx_ = new_sd_ctx(
         sd_gui_utils::repairPath(myItem.params.model_path).c_str(),      // model path
@@ -1303,7 +1498,7 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
         false,                                                           // vae decode only (img2img = false)
         myItem.params.vae_tiling,                                        // vae tiling
         false,                                                           // free params immediatelly
-        myItem.params.n_threads,                                        
+        myItem.params.n_threads,
         myItem.params.wtype,
         myItem.params.rng_type,
         myItem.params.schedule,
@@ -1337,6 +1532,42 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
 void MainWindowUI::LoadPresets()
 {
     this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
+}
+
+void MainWindowUI::ChangeModelByName(wxString ModelName)
+{
+    if (this->ModelFiles.find(ModelName.ToStdString()) != this->ModelFiles.end())
+    {
+        this->m_model->Select(this->ModelFilesIndex[ModelName.ToStdString()]);
+    }
+}
+
+void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
+{
+    sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
+    wxEvtHandler *eventHandler = (wxEvtHandler *)holder->p1;
+    QM::QueueItem *myItem = (QM::QueueItem *)holder->p2;
+    myItem->hash_progress_size = readed_size;
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString("HASHING_PROGRESS:placeholder");
+    e->SetPayload(*myItem);
+    wxQueueEvent(eventHandler, e);
+}
+
+void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
+{
+    sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
+
+    wxEvtHandler *eventHandler = (wxEvtHandler *)holder->p1;
+    sd_gui_utils::ModelFileInfo *modelinfo = (sd_gui_utils::ModelFileInfo *)holder->p2;
+    modelinfo->hash_progress_size = readed_size;
+    if (readed_size > 0)
+    {
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
+        e->SetPayload(modelinfo);
+        wxQueueEvent(eventHandler, e);
+    }
 }
 
 void MainWindowUI::loadTypeList()
@@ -1374,19 +1605,87 @@ void MainWindowUI::loadTaesdList()
 
 void MainWindowUI::refreshModelTable()
 {
+    auto store = this->m_data_model_list->GetStore();
+
+    sd_gui_utils::ModelFileInfo *mi = new sd_gui_utils::ModelFileInfo;
     // clear the table
+    int currentRow = 0;
     for (auto model : this->ModelFiles)
     {
-        // auto size = sd_gui_utils::HumanReadable{std::filesystem::file_size(model.second)};
         uintmax_t size = std::filesystem::file_size(model.second);
         auto humanSize = sd_gui_utils::humanReadableFileSize(size);
         auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
         wxVector<wxVariant> data;
         data.push_back(wxVariant(model.first));
         data.push_back(hs);
-        data.push_back("--");
+        data.push_back(wxString("CHECKPOINT"));
+        // if we have model data
+        if (this->ModelInfos.find(model.second) != this->ModelInfos.end())
+        {
+            data.push_back(this->ModelInfos[model.second].sha256);
+            mi = new sd_gui_utils::ModelFileInfo(this->ModelInfos[model.second]);
+        }
+        else
+        {
+            mi = new sd_gui_utils::ModelFileInfo();
+            data.push_back("--");
+            mi->name = model.first;
+            mi->meta_file = std::filesystem::path(model.second).replace_extension(".json").string();
+            mi->path = model.second;
+            mi->size = size;
+            mi->size_f = hs;
+            mi->model_type = sd_gui_utils::DirTypes::CHECKPOINT;
+        }
+
+        data.push_back(0); // progress bar..
+
         this->m_data_model_list->AppendItem(data);
+        auto item = store->GetItem(currentRow);
+        store->SetItemData(item, (wxUIntPtr)mi);
+
+        currentRow++;
     }
+    // add loras to the end
+    for (auto model : this->LoraFiles)
+    {
+        uintmax_t size = std::filesystem::file_size(model.second);
+        auto humanSize = sd_gui_utils::humanReadableFileSize(size);
+        auto hs = wxString::Format("%.1f %s", humanSize.first, humanSize.second);
+        wxVector<wxVariant> data;
+        data.push_back(wxVariant(model.first)); // name
+        data.push_back(hs);                     // size
+        data.push_back(wxString("LORA"));
+        // if we have model data
+        if (this->ModelInfos.find(model.second) != this->ModelInfos.end())
+        {
+            data.push_back(this->ModelInfos[model.second].sha256);
+            mi = new sd_gui_utils::ModelFileInfo(this->ModelInfos[model.second]);
+        }
+        else
+        {
+            mi = new sd_gui_utils::ModelFileInfo();
+            data.push_back("--");
+            mi->name = model.first;
+            mi->meta_file = std::filesystem::path(model.second).replace_extension(".json").string();
+            mi->path = model.second;
+            mi->size = size;
+            mi->size_f = hs;
+            mi->model_type = sd_gui_utils::DirTypes::LORA;
+        }
+
+        data.push_back(0); // progress bar..
+
+        this->m_data_model_list->AppendItem(data);
+        auto item = store->GetItem(currentRow);
+        store->SetItemData(item, (wxUIntPtr)mi);
+
+        currentRow++;
+    }
+    auto col = this->m_data_model_list->GetColumn(0);
+    col->SetSortable(true);
+    auto col2 = this->m_data_model_list->GetColumn(1);
+    col2->SetSortable(true);
+
     this->m_data_model_list->Refresh();
 }
 
@@ -1500,6 +1799,115 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                                            myjob.params.cfg_scale,
                                            myjob.params.sample_steps));
     }
+    /// status of hashing from modellist
+    if (token == "STANDALONE_HASHING_PROGRESS")
+    {
+        // modelinfo
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        auto store = this->m_data_model_list->GetStore();
+        int progressCol = this->m_data_model_list->GetColumnCount() - 1; // progressbar col
+        int hashCol = this->m_data_model_list->GetColumnCount() - 2;
+        size_t _x = modelinfo->hash_progress_size;
+        size_t _m = modelinfo->hash_fullsize;
+        int current_progress = 0;
+        auto _hr1 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
+        auto _hr2 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
+
+        if (_m != 0)
+        {
+            current_progress = static_cast<int>((_x * 100) / _m);
+        }
+
+        this->m_statusBar166->SetStatusText(fmt::format("Hashing: {} / {}  {}% {}",
+                                                        wxString::Format("%.1f %s", _hr1.first, _hr1.second).ToStdString(),
+                                                        wxString::Format("%.1f %s", _hr2.first, _hr2.second).ToStdString(),
+                                                        current_progress,
+                                                        modelinfo->name));
+
+        for (unsigned int i = 0; i < store->GetItemCount(); i++)
+        {
+            auto _item = store->GetItem(i);
+            auto _item_data = store->GetItemData(_item);
+            auto *_qitem = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(_item_data);
+            if (_qitem->name == modelinfo->name)
+            {
+                store->SetValueByRow(current_progress, i, progressCol);
+                store->SetValueByRow(modelinfo->sha256, i, hashCol);
+                this->m_data_model_list->Refresh();
+                break;
+            }
+        }
+    }
+    if (token == "STANDALONE_HASHING_DONE")
+    {
+        this->m_statusBar166->SetStatusText("");
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        nlohmann::json j(*modelinfo);
+        std::ofstream file(modelinfo->meta_file);
+        file << j;
+        file.close();
+    }
+    if (token == "HASHING_PROGRESS")
+    {
+        QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
+
+        // update column
+        auto store = this->m_joblist->GetStore();
+
+        int progressCol = this->m_joblist->GetColumnCount() - 3;
+
+        size_t _x = myjob.hash_progress_size;
+        size_t _m = myjob.hash_fullsize;
+        int current_progress = 0;
+        auto _hr1 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
+        auto _hr2 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
+
+        if (_m != 0)
+        {
+            current_progress = static_cast<int>((_x * 100) / _m);
+        }
+
+        this->m_statusBar166->SetStatusText(fmt::format("Hashing: {} / {}  {}% {}",
+                                                        wxString::Format("%.1f %s", _hr1.first, _hr1.second).ToStdString(),
+                                                        wxString::Format("%.1f %s", _hr2.first, _hr2.second).ToStdString(),
+                                                        current_progress,
+                                                        myjob.model));
+
+        for (unsigned int i = 0; i < store->GetItemCount(); i++)
+        {
+            auto _item = store->GetItem(i);
+            auto _item_data = store->GetItemData(_item);
+            auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+            if (_qitem->id == myjob.id)
+            {
+                store->SetValueByRow(current_progress, i, progressCol);
+                this->m_joblist->Refresh();
+                break;
+            }
+        }
+    }
+    if (token == "HASHING_DONE")
+    {
+        QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
+
+        // update column
+        auto store = this->m_joblist->GetStore();
+
+        int progressCol = this->m_joblist->GetColumnCount() - 3;
+
+        for (unsigned int i = 0; i < store->GetItemCount(); i++)
+        {
+            auto _item = store->GetItem(i);
+            auto _item_data = store->GetItemData(_item);
+            auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+            if (_qitem->id == myjob.id)
+            {
+                store->SetValueByRow(0, i, progressCol);
+                this->m_joblist->Refresh();
+                break;
+            }
+        }
+    }
     // in the original SD.cpp the progress callback is not implemented... :(
     if (token == "GENERATION_PROGRESS")
     {
@@ -1576,6 +1984,28 @@ void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
     }
 }
 
+void MainWindowUI::threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo)
+{
+
+    modelinfo->hash_fullsize = modelinfo->size;
+
+    /* wxThreadEvent *e = new wxThreadEvent();
+     e->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
+     e->SetPayload(modelinfo);
+     wxQueueEvent(eventHandler, e);*/
+
+    sd_gui_utils::VoidHolder *holder = new sd_gui_utils::VoidHolder;
+    holder->p1 = (void *)eventHandler;
+    holder->p2 = (void *)modelinfo;
+
+    modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void *)holder, &MainWindowUI::ModelStandaloneHashingCallback);
+
+    wxThreadEvent *r = new wxThreadEvent();
+    r->SetString("STANDALONE_HASHING_DONE:placeholder");
+    r->SetPayload(modelinfo);
+    wxQueueEvent(eventHandler, r);
+}
+
 void MainWindowUI::loadModelList()
 {
     std::string oldSelection = this->m_model->GetStringSelection().ToStdString();
@@ -1586,5 +2016,10 @@ void MainWindowUI::loadModelList()
     {
         this->m_model->SetSelection(this->ModelFilesIndex[oldSelection]);
     }
-    this->refreshModelTable();
+    // this->refreshModelTable();
+}
+
+void MainWindowUI::loadLoraList()
+{
+    this->LoadFileList(sd_gui_utils::DirTypes::LORA);
 }

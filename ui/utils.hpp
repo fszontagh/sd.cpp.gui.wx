@@ -4,11 +4,14 @@
 #include <filesystem>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <random>
 #include <unordered_map>
 
 #include <wx/image.h>
 #include <stable-diffusion.h>
+
+#include <openssl/sha.h>
 
 #include <nlohmann/json.hpp>
 #include "stb_image.h"
@@ -24,10 +27,23 @@ namespace sd_gui_utils
     }
     typedef struct VoidHolder
     {
-        void *p1;
-        void *p2;
+        void *p1; // eventhandler
+        void *p2; // QM::QueueItem
     } VoidHolder;
-
+    enum DirTypes
+    {
+        LORA,
+        CHECKPOINT,
+        VAE,
+        PRESETS,
+        PROMPTS,
+        NEG_PROMPTS,
+        TAESD,
+        ESRGAN,
+        CONTROLNET,
+        UPSCALER,
+        UNKNOWN = -1
+    };
     struct ModelFileInfo
     {
         std::string name;
@@ -37,6 +53,46 @@ namespace sd_gui_utils
         std::string sha256;
         uintmax_t size;
         std::string size_f;
+        std::string meta_file;
+        size_t hash_progress_size = 0;
+        size_t hash_fullsize = 0;
+        sd_gui_utils::DirTypes model_type = sd_gui_utils::DirTypes::UNKNOWN;
+
+        ModelFileInfo() = default;
+        // Copy konstruktor
+        ModelFileInfo(const ModelFileInfo &other)
+            : name(other.name),
+              path(other.path),
+              url(other.url),
+              poster(other.poster),
+              sha256(other.sha256),
+              size(other.size),
+              size_f(other.size_f),
+              meta_file(other.meta_file),
+              hash_progress_size(other.hash_progress_size),
+              hash_fullsize(other.hash_fullsize),
+              model_type(other.model_type)
+        {
+        }
+        // Copy assignment operator
+        ModelFileInfo &operator=(const ModelFileInfo &other)
+        {
+            if (this != &other)
+            {
+                name = other.name;
+                path = other.path;
+                url = other.url;
+                poster = other.poster;
+                sha256 = other.sha256;
+                size = other.size;
+                size_f = other.size_f;
+                meta_file = other.meta_file;
+                hash_progress_size = other.hash_progress_size;
+                hash_fullsize = other.hash_fullsize;
+                model_type = other.model_type;
+            }
+            return *this;
+        }
     };
 
     inline void to_json(nlohmann::json &j, const ModelFileInfo &p)
@@ -48,7 +104,9 @@ namespace sd_gui_utils
             {"poster", p.poster},
             {"sha256", p.sha256},
             {"size", p.size},
-            {"size_f", p.size_f}};
+            {"size_f", p.size_f},
+            {"meta_file", p.meta_file},
+            {"model_type", (int)p.model_type}};
     }
 
     inline void from_json(const nlohmann::json &j, ModelFileInfo &p)
@@ -60,8 +118,75 @@ namespace sd_gui_utils
         j.at("sha256").get_to(p.sha256);
         j.at("size").get_to(p.size);
         j.at("size_f").get_to(p.size_f);
+        j.at("meta_file").get_to(p.meta_file);
+        p.model_type = j.at("model_type").get<sd_gui_utils::DirTypes>();
     }
+    inline const std::string GetSHA256(const std::string file_path)
+    {
+        std::ifstream f(file_path, std::ios::binary);
+        std::vector<char> s(picosha2::k_digest_size);
+        picosha2::hash256(f, s.begin(), s.end());
+        char *h = &s[0];
+        std::string hash(reinterpret_cast<char const *>(h));
+        f.close();
+        return hash;
+    }
+    inline std::string to_hex(std::array<uint8_t, 32> data)
+    {
+        std::ostringstream oss;
+        oss << std::hex << std::setfill('0');
+        for (uint8_t val : data)
+        {
+            oss << std::setw(2) << (unsigned int)val;
+        }
+        return oss.str();
+    }
+    inline std::string sha256_file_openssl(const char *path, void *custom_pointer, void (*callback)(size_t, std::string, void *custom_pointer))
+    {
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open())
+        {
+            return "";
+        }
 
+        // Buffer méretének meghatározása
+        std::streamsize bufferSize = 1 * 1024 * 1024;
+        char *buffer = new char[bufferSize];
+
+        std::string hashResult;
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+        SHA256_CTX sha256;
+        SHA256_Init(&sha256);
+        callback(file.tellg(), hashResult, custom_pointer);
+        while (file.good())
+        {
+            file.read(buffer, bufferSize);
+            std::streamsize bytesRead = file.gcount();
+
+            SHA256_Update(&sha256, buffer, bytesRead);
+
+            // Hívjuk meg a callback függvényt csak minden 20 MB után
+            if (file.tellg() % (20 * 1024 * 1024) == 0)
+            {
+                callback(file.tellg(), "", custom_pointer);
+            }
+        }
+        SHA256_Final(hash, &sha256);
+        // Konvertáljuk a hash-t hexadecimális formátumba
+        std::stringstream ss;
+        for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        {
+            ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+        }
+        callback(std::filesystem::file_size(path), ss.str(), custom_pointer);
+
+        delete[] buffer;
+        return ss.str();
+    }
+    inline unsigned long long Bytes2Megabytes(size_t bytes)
+    {
+        return bytes / (1024 * 1024); // 1 MB = 1024 * 1024 bájt
+    }
     enum THREAD_STATUS_MESSAGES
     {
         MESSAGE,
@@ -115,19 +240,6 @@ namespace sd_gui_utils
 
         return ss.str();
     }
-    enum DirTypes
-    {
-        LORA,
-        CHECKPOINT,
-        VAE,
-        PRESETS,
-        PROMPTS,
-        NEG_PROMPTS,
-        TAESD,
-        ESRGAN,
-        CONTROLNET,
-        UPSCALER
-    };
 
     inline std::string UnicodeToUTF8(const char *str)
     {
@@ -499,6 +611,5 @@ namespace sd_gui_utils
 
         return std::make_pair(size, sizes[div]);
     }
-
 };
 #endif

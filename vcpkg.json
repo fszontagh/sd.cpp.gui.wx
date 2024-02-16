@@ -3,6 +3,7 @@
     "cuda",
     "fmt",
     "nlohmann-json",
-    "wxwidgets"
+    "wxwidgets",
+    "openssl"
   ]
 }

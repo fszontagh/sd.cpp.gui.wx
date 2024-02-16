@@ -89,12 +89,18 @@ private:
 	wxTaskBarIcon *TaskBar;
 	wxMenu *TaskBarMenu;
 
+	/// @brief first: model display name 
+	/// @brief second: model full path
 	std::map<std::string, std::string> ModelFiles;
+	/// @brief first: model display name
+	/// @brief second: index in the selectbox
 	std::map<std::string, int> ModelFilesIndex;
 	std::map<std::string, std::string> VaeFiles;
 	std::map<std::string, std::string> TaesdFiles;
 	std::map<std::string, std::string> ControlnetModels;
+	std::map<std::string, std::string> LoraFiles;
 	std::map<std::string, sd_gui_utils::generator_preset> Presets;
+	std::map<std::string, sd_gui_utils::ModelFileInfo> ModelInfos;
 
 	// the queue manager
 	QM::QueueManager *qmanager;
@@ -118,8 +124,11 @@ private:
 	std::map<int, QM::QueueItem *> JobTableItems;
 	std::map<int, wxDataViewColumn *> *JobTableColumns;
 
+	std::atomic_bool stop_thread = false;
+
 	void initConfig();
 	void loadModelList();
+	void loadLoraList();
 	void loadVaeList();
 	void loadTaesdList();
 	void loadControlnetList();
@@ -131,6 +140,9 @@ private:
 	void OnPopupClick(wxCommandEvent &evt);
 	void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);
 	void LoadPresets();
+	void ChangeModelByName(wxString ModelName);
+	static void ModelHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer);
+	static void ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer);
 
 	static void HandleSDLog(sd_log_level_t level, const char *text, void *data);
 	static void HandleSDProgress(int step, int steps, float time, void *data);
@@ -148,6 +160,9 @@ private:
 	void OnQueueItemManagerItemAdded(QM::QueueItem item);
 	void OnQueueItemManagerItemUpdated(QM::QueueItem item);
 	void OnQueueItemManagerItemStatusChanged(QM::QueueItem item);
+
+	// generate the hash for a model, from the model table list
+	void threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo);
 };
 
 #endif // __MainWindowUI__

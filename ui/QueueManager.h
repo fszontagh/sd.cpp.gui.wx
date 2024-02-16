@@ -20,7 +20,8 @@ namespace QM
         PAUSED,
         FAILED,
         MODEL_LOADING,
-        DONE
+        DONE,
+        HASHING
     };
 
     enum GenerationMode
@@ -36,7 +37,8 @@ namespace QM
         "paused",
         "failed",
         "model loading...",
-        "finished"};
+        "finished",
+        "model hashing..."};
 
     enum QueueEvents
     {
@@ -53,7 +55,8 @@ namespace QM
         QueueItem(const QueueItem &other)
             : id(other.id), created_at(other.created_at), updated_at(other.updated_at),
               finished_at(other.finished_at), params(other.params),
-              status(other.status), images(other.images), step(other.step), steps(other.steps),
+              status(other.status), images(other.images), step(other.step), steps(other.steps),hash_fullsize(other.hash_fullsize),
+              hash_progress_size(other.hash_progress_size),
               time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image) {}
 
         QueueItem &operator=(const QueueItem &other)
@@ -73,17 +76,21 @@ namespace QM
                 model = other.model;
                 mode = other.mode;
                 initial_image = other.initial_image;
+                hash_fullsize = other.hash_fullsize;
+                hash_progress_size = other.hash_progress_size;
             }
             return *this;
         }
         int id = 0, created_at = 0, updated_at = 0, finished_at = 0;
         int step = 0, steps = 0;
+        size_t hash_fullsize, hash_progress_size;
         float time = 0;
         sd_gui_utils::SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         std::vector<std::string> images;
         std::string model, initial_image;
-        QM::GenerationMode mode;
+        QM::GenerationMode mode = QM::GenerationMode::TXT2IMG;
+        std::string sha256;
     };
 
     inline void to_json(nlohmann::json &j, const QueueItem &p)
