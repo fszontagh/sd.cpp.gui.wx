@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <map>
+#include <fmt/format.h>
 #include <chrono>
 #include <nlohmann/json.hpp>
 
@@ -159,6 +160,8 @@ namespace QM
         void OnThreadMessage(wxThreadEvent &e);
         void SaveJobToFile(int id);
         void SaveJobToFile(QM::QueueItem item);
+        bool DeleteJob(QM::QueueItem item);
+        bool DeleteJob(int id);
 
     private:
         int GetCurrentUnixTimestamp();

@@ -2,7 +2,7 @@
 
 MainWindowImage::MainWindowImage( wxWindow* parent )
 :
-Image( parent )
+ImageViewer( parent )
 {
 
 }

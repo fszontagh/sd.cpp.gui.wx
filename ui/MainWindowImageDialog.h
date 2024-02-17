@@ -23,6 +23,10 @@ class MainWindowImageDialog : public ImageDialog
 
 
 
+
+
+
+
 };
 
 #endif // __MainWindowImageDialog__

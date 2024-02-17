@@ -100,7 +100,8 @@ int QM::QueueManager::Duplicate(QM::QueueItem item)
 
 int QM::QueueManager::Duplicate(int id)
 {
-    if (this->QueueList.find(id) != this->QueueList.end()) {
+    if (this->QueueList.find(id) != this->QueueList.end())
+    {
         return this->Duplicate(this->QueueList[id]);
     }
     return -1;
@@ -201,9 +202,10 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         auto payload = e.GetPayload<QM::QueueItem>();
         this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
     }
-    if (token == "HASHING_PROGRESS") {
+    if (token == "HASHING_PROGRESS")
+    {
         auto payload = e.GetPayload<QM::QueueItem>();
-        this->SetStatus(QM::QueueStatus::HASHING, payload.id);        
+        this->SetStatus(QM::QueueStatus::HASHING, payload.id);
     }
     // this state can not usable at here, because the payload is the sd_ctx* pointer here..
     // we can't identify the current running job here... (we can maybe guess it, but not needed)
@@ -252,6 +254,29 @@ void QM::QueueManager::SaveJobToFile(QM::QueueItem item)
     {
         std::cerr << e.what() << '\n';
     }
+}
+
+bool QM::QueueManager::DeleteJob(QM::QueueItem item)
+{
+    return this->DeleteJob(item.id);
+}
+
+bool QM::QueueManager::DeleteJob(int id)
+{
+    auto item = this->GetItem(id);
+    if (item.id == 0) {
+        return false;
+    }
+    std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
+    if (std::filesystem::exists(filename))
+    {
+        if (std::filesystem::remove(filename))
+        {
+            this->QueueList.erase(item.id);
+            return true;
+        }        
+    }
+    return false;
 }
 
 int QM::QueueManager::GetCurrentUnixTimestamp()

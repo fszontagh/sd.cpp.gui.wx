@@ -9,6 +9,7 @@
 
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
+#include <wx/cshelp.h>
 #include <wx/bmpbuttn.h>
 #include <wx/string.h>
 #include <wx/bitmap.h>
@@ -33,6 +34,8 @@
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/scrolwin.h>
+#include <wx/splitter.h>
 #include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -128,9 +131,8 @@ class UI : public wxFrame
 		virtual void onJobsStart( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsPause( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsDelete( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onJoblistItemActivated( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnJobListItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
-		virtual void onJoblistSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -148,7 +150,7 @@ class UI : public wxFrame
 
 	public:
 
-		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxICONIZE|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxBORDER_THEME|wxCLIP_CHILDREN );
+		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxICONIZE|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxBORDER_THEME|wxCLIP_CHILDREN, const wxString& name = wxT("sd.cpp.gui") );
 
 		~UI();
 
@@ -200,7 +202,7 @@ class Settings : public wxFrame
 
 	public:
 
-		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_FLOAT_ON_PARENT|wxCAPTION|wxCLOSE_BOX|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME );
+		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_FLOAT_ON_PARENT|wxCAPTION|wxCLOSE_BOX|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME, const wxString& name = wxT("sd.cpp.gui.settings") );
 
 		~Settings();
 
@@ -214,32 +216,66 @@ class ImageViewer : public wxFrame
 	private:
 
 	protected:
+		wxSplitterWindow* m_splitter2;
+		wxPanel* m_panel9;
+		wxScrolledWindow* m_scrolledWindow1;
+		wxStaticBitmap* m_bitmap6;
+		wxPanel* m_panel10;
+		wxSplitterWindow* m_splitter5;
+		wxPanel* m_panel17;
+		wxStaticText* m_staticText25;
+		wxStaticText* m_static_id;
+		wxStaticText* m_staticText251;
+		wxStaticText* m_static_type;
+		wxStaticText* m_staticText252;
+		wxStaticText* m_static_model;
+		wxStaticText* m_staticText253;
+		wxStaticText* m_static_resolution;
+		wxStaticText* m_staticText256;
+		wxStaticText* m_static_cfg_scale;
+		wxStaticText* m_staticText257;
+		wxStaticText* m_static_clip_skip;
+		wxStaticText* m_staticText258;
+		wxStaticText* m_static_seed;
+		wxStaticText* m_staticText259;
+		wxStaticText* m_static_steps;
+		wxStaticText* m_staticText2510;
+		wxStaticText* m_static_sampler;
+		wxStaticText* m_staticText2511;
+		wxStaticText* m_static_sheduler;
+		wxStaticText* m_staticText25111;
+		wxStaticText* m_static_started;
+		wxStaticText* m_staticText25112;
+		wxStaticText* m_static_finished;
+		wxStaticText* m_staticText2512;
+		wxStaticText* m_static_batch;
+		wxStaticLine* m_staticline7;
+		wxStaticText* m_staticText254;
+		wxTextCtrl* m_static_prompt;
+		wxStaticLine* m_staticline71;
+		wxStaticText* m_staticText255;
+		wxTextCtrl* m_static_negative_prompt;
+		wxPanel* m_panel18;
 
 	public:
-		wxStaticBitmap* m_bitmap;
-		wxTextCtrl* m_textCtrl4;
+		wxScrolledWindow* m_scrolledWindow2;
+		wxBoxSizer* thumbnails_container;
 
-		ImageViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		ImageViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,700 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL, const wxString& name = wxT("sd.cpp.gui.image") );
 
 		~ImageViewer();
 
-};
+		void m_splitter2OnIdle( wxIdleEvent& )
+		{
+			m_splitter2->SetSashPosition( 0 );
+			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ImageViewer::m_splitter2OnIdle ), NULL, this );
+		}
 
-///////////////////////////////////////////////////////////////////////////////
-/// Class Image
-///////////////////////////////////////////////////////////////////////////////
-class Image : public wxPanel
-{
-	private:
-
-	protected:
-
-	public:
-		wxStaticBitmap* m_bitmap3;
-
-		Image( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString );
-
-		~Image();
+		void m_splitter5OnIdle( wxIdleEvent& )
+		{
+			m_splitter5->SetSashPosition( 0 );
+			m_splitter5->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ImageViewer::m_splitter5OnIdle ), NULL, this );
+		}
 
 };
 
@@ -255,9 +291,36 @@ class ImageDialog : public wxDialog
 	public:
 		wxStaticBitmap* m_bitmap;
 
-		ImageDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE );
+		ImageDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE, const wxString& name = wxT("sd.cpp.gui.imagedialog") );
 
 		~ImageDialog();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class Modelinfo
+///////////////////////////////////////////////////////////////////////////////
+class Modelinfo : public wxFrame
+{
+	private:
+
+	protected:
+		wxSplitterWindow* m_splitter4;
+		wxPanel* m_panel13;
+		wxPanel* m_panel14;
+		wxStaticBitmap* m_poster;
+
+	public:
+
+		Modelinfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Model Info"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+
+		~Modelinfo();
+
+		void m_splitter4OnIdle( wxIdleEvent& )
+		{
+			m_splitter4->SetSashPosition( 0 );
+			m_splitter4->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Modelinfo::m_splitter4OnIdle ), NULL, this );
+		}
 
 };
 

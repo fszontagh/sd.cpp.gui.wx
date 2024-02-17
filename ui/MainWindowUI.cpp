@@ -29,7 +29,9 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->m_joblist->AppendTextColumn("Status");       // status
 
     this->m_joblist->GetColumn(0)->SetHidden(true);
-    
+    this->m_joblist->GetColumn(1)->SetSortable(true);
+    this->m_joblist->GetColumn(1)->SetSortOrder(false);
+
     this->SetTitle(this->GetTitle() + SD_GUI_VERSION);
     this->TaskBar = new wxTaskBarIcon();
 
@@ -47,6 +49,9 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     wxConfigBase::Set(fileConfig);
 
     this->initConfig();
+
+    wxPersistentRegisterAndRestore(this, this->GetName());
+
     this->qmanager = new QM::QueueManager(this->GetEventHandler(), this->cfg->jobs);
 
     // set SD logger
@@ -191,9 +196,29 @@ void MainWindowUI::onJobsDelete(wxCommandEvent &event)
     // TODO: Implement onJobsDelete
 }
 
-void MainWindowUI::onJoblistItemActivated(wxDataViewEvent &event)
+void MainWindowUI::OnJobListItemActivated(wxDataViewEvent &event)
 {
-    // TODO: Implement onJoblistItemActivated
+    auto store = this->m_joblist->GetStore();
+
+    auto row = this->m_joblist->GetSelectedRow();
+    auto currentItem = store->GetItem(row);
+    QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(currentItem));
+    if (this->qmanager->GetItem(qitem->id).status == QM::QueueStatus::RUNNING ||
+        this->qmanager->GetItem(qitem->id).status == QM::QueueStatus::PENDING ||
+        this->qmanager->GetItem(qitem->id).status == QM::QueueStatus::HASHING)
+    {
+        return;
+    }
+    wxDisplay display(wxDisplay::GetFromWindow(this));
+    wxRect screen = display.GetClientArea();
+    MainWindowImageViewer *miv = new MainWindowImageViewer(this);
+    miv->SetData(this->qmanager->GetItem(qitem->id));
+    // miv->SetSize(screen.GetSize());
+    // miv->SetPosition(wxPoint(0, 0));
+    miv->Center();
+    miv->SetThemeEnabled(true);
+    miv->SetTitle(wxString::Format("Job details: %d", qitem->id));
+    miv->Show();
 }
 
 void MainWindowUI::onContextMenu(wxDataViewEvent &event)
@@ -223,6 +248,14 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         menu->Append(3, wxString::Format("Copy prompts to text2img %d", qitem->id));
         menu->Append(4, wxString::Format("Copy prompts to img2img %d", qitem->id));
         menu->Append(5, "Details...");
+        menu->AppendSeparator();
+        menu->Append(99, "Delete");
+        if (this->qmanager->GetItem(qitem->id).status == QM::QueueStatus::RUNNING || this->qmanager->GetItem(qitem->id).status == QM::QueueStatus::HASHING)
+        {
+            menu->Enable(1, false);
+            menu->Enable(5, false);
+            menu->Enable(99, false);
+        }
     }
 
     if (source == this->m_data_model_list)
@@ -242,14 +275,19 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         {
             menu->Append(100, "Calculate Hash");
         }
+        if (modelinfo->model_type == sd_gui_utils::DirTypes::LORA)
+        {
+            menu->Append(101, wxString::Format("Append to text2img prompt <lora:%s:0.5>", modelinfo->name));
+            menu->Append(102, wxString::Format("Append to text2img neg. prompt <lora:%s:0.5>", modelinfo->name));
+            menu->Append(103, wxString::Format("Append to img2img prompt <lora:%s:0.5>", modelinfo->name));
+            menu->Append(104, wxString::Format("Append to img2img neg. prompt <lora:%s:0.5>", modelinfo->name));
+        }
+        if (modelinfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+            menu->Append(119, wxString::Format("Select model %s to the next job", modelinfo->name));
+        }
     }
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
     PopupMenu(menu);
-}
-
-void MainWindowUI::onJoblistSelectionChanged(wxDataViewEvent &event)
-{
-    // TODO: Implement onJoblistSelectionChanged
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent &event)
@@ -603,43 +641,6 @@ void MainWindowUI::onDeletePreset(wxCommandEvent &event)
     }
 }
 
-void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
-{
-    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
-    {
-        auto *eventHandler = (wxEvtHandler *)data;
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-        e->SetPayload(level);
-        wxQueueEvent(eventHandler, e);
-    }
-}
-
-void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
-{
-    wxVector<wxVariant> data;
-
-    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
-
-    data.push_back(wxVariant(std::to_string(item.id)));
-    data.push_back(wxVariant(created_at));
-    data.push_back(wxVariant(sd_gui_utils::modes_str[item.mode]));
-    data.push_back(wxVariant(item.model));
-    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
-    data.push_back(wxVariant(std::to_string(item.params.seed)));
-    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
-    data.push_back(wxString("-.--it/s"));                           // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
-
-    auto store = this->m_joblist->GetStore();
-
-    QM::QueueItem *nItem = new QM::QueueItem(item);
-
-    this->JobTableItems[item.id] = nItem;
-    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
-}
-
 void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
 {
     std::string basepath;
@@ -865,6 +866,43 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
     }
 }
 
+void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem item)
+{
+    wxVector<wxVariant> data;
+
+    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item.created_at);
+
+    data.push_back(wxVariant(std::to_string(item.id)));
+    data.push_back(wxVariant(created_at));
+    data.push_back(wxVariant(sd_gui_utils::modes_str[item.mode]));
+    data.push_back(wxVariant(item.model));
+    data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item.params.sample_method]));
+    data.push_back(wxVariant(std::to_string(item.params.seed)));
+    data.push_back(item.status == QM::QueueStatus::DONE ? 100 : 1); // progressbar
+    data.push_back(wxString("-.--it/s"));                           // speed
+    data.push_back(wxVariant(QM::QueueStatus_str[item.status]));    // status
+
+    auto store = this->m_joblist->GetStore();
+
+    QM::QueueItem *nItem = new QM::QueueItem(item);
+
+    this->JobTableItems[item.id] = nItem;
+    //  store->AppendItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+    store->PrependItem(data, wxUIntPtr(this->JobTableItems[item.id]));
+}
+
+void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
+{
+    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
+    {
+        auto *eventHandler = (wxEvtHandler *)data;
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
+        e->SetPayload(level);
+        wxQueueEvent(eventHandler, e);
+    }
+}
+
 void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
     sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
@@ -1043,6 +1081,28 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
     j->SetPayload(myItem);
     wxQueueEvent(eventHandler, j);
+}
+
+void MainWindowUI::threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo)
+{
+
+    modelinfo->hash_fullsize = modelinfo->size;
+
+    /* wxThreadEvent *e = new wxThreadEvent();
+     e->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
+     e->SetPayload(modelinfo);
+     wxQueueEvent(eventHandler, e);*/
+
+    sd_gui_utils::VoidHolder *holder = new sd_gui_utils::VoidHolder;
+    holder->p1 = (void *)eventHandler;
+    holder->p2 = (void *)modelinfo;
+
+    modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void *)holder, &MainWindowUI::ModelStandaloneHashingCallback);
+
+    wxThreadEvent *r = new wxThreadEvent();
+    r->SetString("STANDALONE_HASHING_DONE:placeholder");
+    r->SetPayload(modelinfo);
+    wxQueueEvent(eventHandler, r);
 }
 
 void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -1231,6 +1291,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
     {
         wxDataViewListStore *store = this->m_joblist->GetStore();
         auto currentItem = this->m_joblist->GetCurrentItem();
+        auto currentRow = this->m_joblist->GetSelectedRow();
 
         QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(currentItem));
 
@@ -1239,6 +1300,8 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
                 2 copy to text2img
                 3 copy prompts to text2image
                 4 copy prompts to img2img
+                5 Details
+                99 delete
         */
 
         switch (tu)
@@ -1259,7 +1322,22 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
             this->m_prompt2->SetValue(qitem->params.prompt);
             this->m_neg_prompt2->SetValue(qitem->params.negative_prompt);
             break;
-        default:
+        case 99:
+            if (this->qmanager->DeleteJob(qitem->id))
+            {
+                store->DeleteItem(currentRow);
+            }
+            break;
+        case 5:
+            wxDisplay display(wxDisplay::GetFromWindow(this));
+            wxRect screen = display.GetClientArea();
+            MainWindowImageViewer *miv = new MainWindowImageViewer(this);
+            miv->SetData(this->qmanager->GetItem(qitem->id));
+            miv->SetSize(screen.GetSize());
+            miv->SetPosition(wxPoint(0, 0));
+            miv->SetThemeEnabled(true);
+            miv->SetTitle(wxString::Format("Job details: %d", qitem->id));
+            miv->Show();
             break;
         }
     }
@@ -1293,8 +1371,8 @@ MainWindowUI::~MainWindowUI()
     }
     for (auto &t : this->threads)
     {
-        // t->join();
-        t->~thread();
+        t->join();
+        // t->~thread();
     }
     this->TaskBar->Destroy();
 }
@@ -1542,18 +1620,6 @@ void MainWindowUI::ChangeModelByName(wxString ModelName)
     }
 }
 
-void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
-{
-    sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
-    wxEvtHandler *eventHandler = (wxEvtHandler *)holder->p1;
-    QM::QueueItem *myItem = (QM::QueueItem *)holder->p2;
-    myItem->hash_progress_size = readed_size;
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString("HASHING_PROGRESS:placeholder");
-    e->SetPayload(*myItem);
-    wxQueueEvent(eventHandler, e);
-}
-
 void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
 {
     sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
@@ -1597,10 +1663,65 @@ void MainWindowUI::StartGeneration(QM::QueueItem myJob)
     }
 }
 
+void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
+{
+    auto store = this->m_joblist->GetStore();
+
+    int lastCol = this->m_joblist->GetColumnCount() - 1;
+
+    for (unsigned int i = 0; i < store->GetItemCount(); i++)
+    {
+        auto _item = store->GetItem(i);
+        auto _item_data = store->GetItemData(_item);
+        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
+        if (_qitem->id == item.id)
+        {
+            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
+            this->m_joblist->Refresh();
+            break;
+        }
+    }
+}
+
+void MainWindowUI::loadModelList()
+{
+    std::string oldSelection = this->m_model->GetStringSelection().ToStdString();
+
+    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
+
+    if (this->ModelFilesIndex.find(oldSelection) != this->ModelFilesIndex.end())
+    {
+        this->m_model->SetSelection(this->ModelFilesIndex[oldSelection]);
+    }
+    // this->refreshModelTable();
+}
+
 void MainWindowUI::loadTaesdList()
 {
 
     this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
+}
+
+void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
+{
+    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
+    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
+    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
+    myItem->step = step;
+    myItem->steps = steps;
+    myItem->time = time;
+    /*
+        format it/s
+        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
+               progress.c_str(), step, steps,
+               time > 1.0f || time == 0 ? time : (1.0f / time)
+    */
+
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
+
+    e->SetPayload(*myItem);
+    wxQueueEvent(eventHandler, e);
 }
 
 void MainWindowUI::refreshModelTable()
@@ -1689,32 +1810,22 @@ void MainWindowUI::refreshModelTable()
     this->m_data_model_list->Refresh();
 }
 
-void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
-{
-    sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
-    wxEvtHandler *eventHandler = (wxEvtHandler *)objs->p1;
-    QM::QueueItem *myItem = (QM::QueueItem *)objs->p2;
-    myItem->step = step;
-    myItem->steps = steps;
-    myItem->time = time;
-    /*
-        format it/s
-        time > 1.0f ? "\r%s %i/%i - %.2fs/it" : "\r%s %i/%i - %.2fit/s",
-               progress.c_str(), step, steps,
-               time > 1.0f || time == 0 ? time : (1.0f / time)
-    */
-
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
-
-    e->SetPayload(*myItem);
-    wxQueueEvent(eventHandler, e);
-}
-
 void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
 {
     this->initConfig();
     this->settingsWindow->Destroy();
+}
+
+void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
+{
+    sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
+    wxEvtHandler *eventHandler = (wxEvtHandler *)holder->p1;
+    QM::QueueItem *myItem = (QM::QueueItem *)holder->p2;
+    myItem->hash_progress_size = readed_size;
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString("HASHING_PROGRESS:placeholder");
+    e->SetPayload(*myItem);
+    wxQueueEvent(eventHandler, e);
 }
 
 void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
@@ -1763,13 +1874,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     {
 
         this->modelLoaded = true;
-        // this->sd_ctx = e.GetPayload<sd_ctx_t *>();
-#ifdef WIN32
-        if (!this->IsShownOnScreen() || !this->HasFocus())
-        {
-            this->TaskBar->ShowBalloon("Model loaded", content, 0U, wxICON_INFORMATION);
-        }
-#endif
     }
     if (token == "MODEL_LOAD_START")
     {
@@ -1780,12 +1884,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
 
         this->logs->AppendText(fmt::format("Model load error: {}\n", content));
         this->modelLoaded = false;
-#ifdef WIN32
-        if (!this->IsShownOnScreen() || !this->HasFocus())
-        {
-            this->TaskBar->ShowBalloon("Model load failed!", content, 0U, wxICON_ERROR);
-        }
-#endif
     }
 
     if (token == "GENERATION_START")
@@ -1937,12 +2035,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     if (token == "GENERATION_ERROR")
     {
         this->logs->AppendText(fmt::format("Generation error: {}\n", content));
-#ifdef WIN32
-        if (!this->IsShownOnScreen() || !this->HasFocus())
-        {
-            this->TaskBar->ShowBalloon("Generation failed!", content, 0U, wxICON_ERROR);
-        }
-#endif
     }
     if (token == "SD_MESSAGE")
     {
@@ -1955,68 +2047,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     if (token == "MESSAGE")
     {
         this->logs->AppendText(fmt::format("{}\n", content));
-#ifdef WIN32
-        if (!this->IsShownOnScreen() || !this->HasFocus())
-        {
-            this->TaskBar->ShowBalloon("Info", content, 0U, wxICON_INFORMATION);
-        }
-#endif
     }
-}
-
-void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem item)
-{
-    auto store = this->m_joblist->GetStore();
-
-    int lastCol = this->m_joblist->GetColumnCount() - 1;
-
-    for (unsigned int i = 0; i < store->GetItemCount(); i++)
-    {
-        auto _item = store->GetItem(i);
-        auto _item_data = store->GetItemData(_item);
-        auto *_qitem = reinterpret_cast<QM::QueueItem *>(_item_data);
-        if (_qitem->id == item.id)
-        {
-            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item.status]), i, lastCol);
-            this->m_joblist->Refresh();
-            break;
-        }
-    }
-}
-
-void MainWindowUI::threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo)
-{
-
-    modelinfo->hash_fullsize = modelinfo->size;
-
-    /* wxThreadEvent *e = new wxThreadEvent();
-     e->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
-     e->SetPayload(modelinfo);
-     wxQueueEvent(eventHandler, e);*/
-
-    sd_gui_utils::VoidHolder *holder = new sd_gui_utils::VoidHolder;
-    holder->p1 = (void *)eventHandler;
-    holder->p2 = (void *)modelinfo;
-
-    modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void *)holder, &MainWindowUI::ModelStandaloneHashingCallback);
-
-    wxThreadEvent *r = new wxThreadEvent();
-    r->SetString("STANDALONE_HASHING_DONE:placeholder");
-    r->SetPayload(modelinfo);
-    wxQueueEvent(eventHandler, r);
-}
-
-void MainWindowUI::loadModelList()
-{
-    std::string oldSelection = this->m_model->GetStringSelection().ToStdString();
-
-    this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
-
-    if (this->ModelFilesIndex.find(oldSelection) != this->ModelFilesIndex.end())
-    {
-        this->m_model->SetSelection(this->ModelFilesIndex[oldSelection]);
-    }
-    // this->refreshModelTable();
 }
 
 void MainWindowUI::loadLoraList()
