@@ -42,7 +42,8 @@ namespace sd_gui_utils
         ESRGAN,
         CONTROLNET,
         UPSCALER,
-        UNKNOWN = -1
+        UNKNOWN = -1,
+        ALL = -2
     };
     struct ModelFileInfo
     {

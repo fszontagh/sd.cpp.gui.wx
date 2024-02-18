@@ -436,6 +436,27 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer20;
 	bSizer20 = new wxBoxSizer( wxVERTICAL );
 
+	wxBoxSizer* bSizer63;
+	bSizer63 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_checkbox_lora_filter = new wxCheckBox( m_models_panel, wxID_ANY, wxT("Lora"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_checkbox_lora_filter->SetValue(true);
+	bSizer63->Add( m_checkbox_lora_filter, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_checkbox_filter_checkpoints = new wxCheckBox( m_models_panel, wxID_ANY, wxT("Checkpoints"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_checkbox_filter_checkpoints->SetValue(true);
+	bSizer63->Add( m_checkbox_filter_checkpoints, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_modellist_filter = new wxSearchCtrl( m_models_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	#ifndef __WXMAC__
+	m_modellist_filter->ShowSearchButton( true );
+	#endif
+	m_modellist_filter->ShowCancelButton( false );
+	bSizer63->Add( m_modellist_filter, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer20->Add( bSizer63, 0, wxEXPAND|wxALL, 5 );
+
 	m_data_model_list = new wxDataViewListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0|wxFULL_REPAINT_ON_RESIZE );
 	bSizer20->Add( m_data_model_list, 1, wxALL|wxEXPAND, 5 );
 
@@ -552,6 +573,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
+	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_modellist_filter->Connect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
 	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
 	m_save_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
@@ -585,6 +610,10 @@ UI::~UI()
 	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
+	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_modellist_filter->Disconnect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
 	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
 	m_save_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );

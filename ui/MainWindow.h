@@ -31,6 +31,7 @@
 #include <wx/textctrl.h>
 #include <wx/statbmp.h>
 #include <wx/filepicker.h>
+#include <wx/srchctrl.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
@@ -106,6 +107,9 @@ class UI : public wxFrame
 		wxSpinCtrlDouble* m_strength;
 		wxStaticBitmap* m_img2img_preview;
 		wxPanel* m_models_panel;
+		wxCheckBox* m_checkbox_lora_filter;
+		wxCheckBox* m_checkbox_filter_checkpoints;
+		wxSearchCtrl* m_modellist_filter;
 		wxDataViewListCtrl* m_data_model_list;
 		wxStaticText* m_staticText15;
 		wxSpinCtrl* m_batch_count;
@@ -141,6 +145,10 @@ class UI : public wxFrame
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
+		virtual void OnDataModelActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }

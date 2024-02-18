@@ -35,6 +35,10 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
             {
                 first = false;
                 this->m_bitmap6->SetBitmap(*wimg);
+                this->m_bitmap6->SetSize(wimg->GetSize());
+                this->m_bitmap6->Center();
+                this->m_bitmap6->Refresh();
+                this->Refresh();
             }
         }
     }
@@ -52,6 +56,22 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
         ctrlbitmap->Bind(wxEVT_LEFT_UP, &MainWindowImageViewer::OnThumbnailClick, this);
         this->thumbnails_container->Add(ctrlbitmap, 0, wxALL, 1);
     }
+    // input image if img2img was the job
+    if (!item.initial_image.empty() && std::filesystem::exists(item.initial_image))
+    {
+        wxImage *initImage = new wxImage();
+        initImage->LoadFile(item.initial_image);
+
+        auto initImgResized = sd_gui_utils::ResizeImageToMaxSize(*initImage, 100, 100);
+
+        wxStaticBitmap *initBitmap = new wxStaticBitmap(this->m_scrolledWindow2, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(128, 100), 0);
+        initBitmap->SetBitmap(initImgResized);
+        initBitmap->SetSize(initImgResized.GetSize());
+        initBitmap->SetClientData(initImage);
+        initBitmap->Bind(wxEVT_LEFT_UP, &MainWindowImageViewer::OnThumbnailClick, this);
+        this->thumbnails_container->Add(initBitmap, 0, wxALL, 1);
+    }
+
     this->m_scrolledWindow2->Refresh();
     this->m_bitmap6->Refresh();
     this->Refresh();
@@ -71,44 +91,7 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
     this->m_static_sheduler->SetLabel(sd_gui_utils::schedule_str[item.params.schedule]);
     this->m_static_started->SetLabel(sd_gui_utils::formatUnixTimestampToDate(item.created_at));
     this->m_static_finished->SetLabel(sd_gui_utils::formatUnixTimestampToDate(item.finished_at));
-
-    /*
-        this->m_property_name->SetValue(item.id);
-        this->m_property_name->Enable(false);
-
-        this->m_property_type->SetValue(item.mode);
-        this->m_property_type->Enable(false);
-
-        this->m_property_model->SetValue(item.model);
-        this->m_property_model->Enable(false);
-        // size ---
-        //
-        this->m_property_res->SetValue(wxString::Format("%dx%dpx", item.params.width, item.params.height));
-        this->m_property_res->Enable(false);
-
-        this->m_property_prompt->SetValue(item.params.prompt);
-        this->m_property_prompt->Enable(false);
-
-        this->m_property_neg_prompt->SetValue(item.params.negative_prompt);
-        this->m_property_neg_prompt->Enable(false);
-
-        this->m_property_cfg->SetValue(item.params.cfg_scale);
-        this->m_property_cfg->Enable(false);
-
-        this->m_property_clip_skip->SetValue(item.params.clip_skip);
-        this->m_property_clip_skip->Enable(false);
-
-        this->m_property_seed->SetValue(static_cast<int>(item.params.seed));
-        this->m_property_seed->Enable(false);
-
-        this->m_property_steps->SetValue(item.params.sample_steps);
-        this->m_property_steps->Enable(false);
-
-        this->m_property_sampler->SetValue(item.params.sample_method);
-        this->m_property_sampler->Enable(false);
-
-        this->m_property_sheduler->SetValue(item.params.schedule);
-        this->m_property_sheduler->Enable(false);*/
+    this->m_static_batch->SetLabel(fmt::format("{}", item.params.batch_count));
 }
 
 void MainWindowImageViewer::OnThumbnailClick(wxMouseEvent &event)
