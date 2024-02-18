@@ -491,23 +491,30 @@ void MainWindowUI::Onimg2imgDropFile(wxDropFilesEvent &event)
     auto file = files[0];
 
     wxImage img;
-    if (!img.LoadFile(file))
+    if (img.LoadFile(file))
     {
-        // wxMessageDialog dlg(this,"The file is not valid image!");
-        wxMessageDialog msg(this, wxString::Format("Invalid image file: %s", file), "", wxOK | wxCENTRE | wxICON_ERROR); // msg(wxString::Format("Invalid image file: %s", file), wxT("ERROR!"), wxICON_ERROR);
-        msg.ShowModal();
+
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
+
+        this->currentInitialImage = new wxImage(img);
+        this->currentInitialImagePreview = new wxImage(preview);
+        this->currentInitialImagePath = file;
+
+        this->m_img2img_preview->SetBitmap(preview);
+        this->m_img2im_preview_img->Enable();
+        this->m_delete_initial_img->Enable();
+        this->m_generate1->Enable();
+        wxString comment = img.GetOption(wxT("COM"));
+
+        if (!comment.IsEmpty())
+        {
+            wxMessageBox(wxString::Format("Found some meta info: \n%s", comment));
+        }
     }
-
-    auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
-
-    this->currentInitialImage = new wxImage(img);
-    this->currentInitialImagePreview = new wxImage(preview);
-    this->currentInitialImagePath = file;
-
-    this->m_img2img_preview->SetBitmap(preview);
-    this->m_img2im_preview_img->Enable();
-    this->m_delete_initial_img->Enable();
-    this->m_generate1->Enable();
+    else
+    {
+        wxMessageBox("Can not open image!");
+    }
 }
 
 void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
@@ -520,18 +527,31 @@ void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
     }
 
     wxImage img;
-    img.LoadFile(event.GetPath());
+    if (img.LoadFile(event.GetPath()))
+    {
 
-    auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
 
-    this->currentInitialImage = new wxImage(img);
-    this->currentInitialImagePreview = new wxImage(preview);
-    this->currentInitialImagePath = event.GetPath();
+        this->currentInitialImage = new wxImage(img);
+        this->currentInitialImagePreview = new wxImage(preview);
+        this->currentInitialImagePath = event.GetPath();
 
-    this->m_img2img_preview->SetBitmap(preview);
-    this->m_img2im_preview_img->Enable();
-    this->m_delete_initial_img->Enable();
-    this->m_generate1->Enable();
+        this->m_img2img_preview->SetBitmap(preview);
+        this->m_img2im_preview_img->Enable();
+        this->m_delete_initial_img->Enable();
+        this->m_generate1->Enable();
+
+        wxString comment = img.GetOption(wxT("COM"));
+
+        if (!comment.IsEmpty())
+        {
+            wxMessageBox(wxString::Format("Found some meta info: \n%s", comment));
+        }
+    }
+    else
+    {
+        wxMessageBox("Can not open image!");
+    }
 }
 
 void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
@@ -665,9 +685,22 @@ void MainWindowUI::OnDataModelActivated(wxDataViewEvent &event)
     auto currentItem = store->GetItem(row);
     sd_gui_utils::ModelFileInfo *_item = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
     auto model = this->ModelManager->getInfo(_item->path);
-    // sd_gui_utils::ModelFileInfo item = this->ModelInfos[_item->path];
+    if (model.sha256.empty())
+    {
+        wxMessageBox("Please check hash first!");
+        return;
+    }
     MainWindowModelinfo *mi = new MainWindowModelinfo(this);
-    mi->Show();
+
+    if (mi->SetData(this->ModelManager, _item->path, this->cfg->datapath))
+    {
+        mi->Show();
+    }
+    else
+    {
+        mi = NULL;
+        delete mi;
+    }
 }
 
 void MainWindowUI::onSamplerSelect(wxCommandEvent &event)
@@ -1276,6 +1309,8 @@ void MainWindowUI::initConfig()
     wxString controlnet_path = datapath;
     controlnet_path.append("controlnet");
 
+    this->cfg->datapath = datapath;
+
     this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
     this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
     this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
@@ -1799,6 +1834,10 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
         filename_without_extension = filename;
         filename = filename + extension;
 
+        // test
+        img->SetOption("COM", myItem.params.prompt);
+        img->SetOption("Comment", myItem.params.prompt);
+
         if (!img->SaveFile(filename))
         {
             wxThreadEvent *g = new wxThreadEvent();
@@ -2098,17 +2137,16 @@ void MainWindowUI::refreshModelTable(std::string filter, std::bitset<10> types)
                        [](unsigned char c)
                        { return std::tolower(c); });
 
-
         if (filter.empty() || (!filter.empty() && name.find(filter) != std::string::npos))
         {
             if (types.none() || (!types.none() && types.test(model.model_type)))
             {
                 wxVector<wxVariant> itemData;
-                itemData.push_back(model.name);                                                                     // name
-                itemData.push_back(model.size_f);                                                                   // size
-                itemData.push_back(model.model_type == sd_gui_utils::DirTypes::CHECKPOINT ? "CHECKPOINT" : "LORA"); // type
-                itemData.push_back(model.sha256);                                                                   // hash                                                                // hash
-                itemData.push_back(model.sha256.empty() ? 0 : 100);                                                 // progress bar
+                itemData.push_back(model.name);                                   // name
+                itemData.push_back(model.size_f);                                 // size
+                itemData.push_back(sd_gui_utils::dirtypes_str[model.model_type]); // type
+                itemData.push_back(model.sha256);                                 // hash                                                                // hash
+                itemData.push_back(model.sha256.empty() ? 0 : 100);               // progress bar
                 store->AppendItem(itemData, (wxUIntPtr)this->ModelManager->getIntoPtr(model.path));
                 curRow++;
             }

@@ -38,6 +38,7 @@
 #include <wx/scrolwin.h>
 #include <wx/splitter.h>
 #include <wx/dialog.h>
+#include <wx/html/htmlwin.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -313,12 +314,20 @@ class Modelinfo : public wxFrame
 	private:
 
 	protected:
-		wxSplitterWindow* m_splitter4;
 		wxPanel* m_panel13;
-		wxPanel* m_panel14;
-		wxStaticBitmap* m_poster;
+		wxStaticText* m_static_model_name;
+		wxStaticText* m_static_model_type;
+		wxStaticText* m_static_model_created_at;
+		wxStaticText* m_static_model_nsfw;
+		wxStaticText* m_staticText66;
+		wxStaticText* m_static_model_basemodel;
+		wxStaticText* m_static_model_basemodeltype;
+		wxHtmlWindow* m_htmlWin1;
 
 	public:
+		wxSplitterWindow* m_splitter4;
+		wxScrolledWindow* m_scrolledWindow3;
+		wxBoxSizer* poster_holder;
 
 		Modelinfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Model Info"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 

@@ -10,6 +10,8 @@
 
 #include <wx/image.h>
 #include <stable-diffusion.h>
+#include <png.h>
+#include <jpeglib.h>
 
 #include <openssl/sha.h>
 
@@ -45,6 +47,20 @@ namespace sd_gui_utils
         UNKNOWN = -1,
         ALL = -2
     };
+    inline const char *dirtypes_str[] = {
+        "LORA",
+        "CHECKPOINT",
+        "VAE",
+        "PRESETS",
+        "PROMPTS",
+        "NEG_PROMPTS",
+        "TAESD",
+        "ESRGAN",
+        "CONTROLNER",
+        "UPSCALER",
+        "UNKNOWN",
+        "ALL"};
+
     struct ModelFileInfo
     {
         std::string name;
@@ -215,6 +231,7 @@ namespace sd_gui_utils
         std::string output = "";
         std::string jobs = "";
         std::string controlnet = "";
+        std::string datapath = "";
         bool keep_model_in_memory = true;
         bool save_all_image = true;
         int n_threads = 2;

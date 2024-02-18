@@ -4,6 +4,10 @@
     "fmt",
     "nlohmann-json",
     "wxwidgets",
-    "openssl"
+    "openssl",
+    "curlpp",
+    "libpng",
+    "libjpeg-turbo",
+    "imageinfo"
   ]
 }

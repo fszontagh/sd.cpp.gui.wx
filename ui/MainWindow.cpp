@@ -1267,30 +1267,82 @@ Modelinfo::Modelinfo( wxWindow* parent, wxWindowID id, const wxString& title, co
 	wxBoxSizer* bSizer47;
 	bSizer47 = new wxBoxSizer( wxVERTICAL );
 
-	m_splitter4 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+	m_splitter4 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_3DBORDER|wxSP_3DSASH|wxSP_BORDER|wxSP_LIVE_UPDATE );
 	m_splitter4->Connect( wxEVT_IDLE, wxIdleEventHandler( Modelinfo::m_splitter4OnIdle ), NULL, this );
+	m_splitter4->SetMinimumPaneSize( 300 );
 
 	m_panel13 = new wxPanel( m_splitter4, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer48;
 	bSizer48 = new wxBoxSizer( wxVERTICAL );
 
+	wxBoxSizer* bSizer64;
+	bSizer64 = new wxBoxSizer( wxHORIZONTAL );
+
+
+	bSizer48->Add( bSizer64, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer65;
+	bSizer65 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_static_model_name = new wxStaticText( m_panel13, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_name->Wrap( -1 );
+	bSizer65->Add( m_static_model_name, 1, wxALL, 5 );
+
+	m_static_model_type = new wxStaticText( m_panel13, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_type->Wrap( -1 );
+	bSizer65->Add( m_static_model_type, 1, wxALL, 5 );
+
+
+	bSizer48->Add( bSizer65, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer651;
+	bSizer651 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_static_model_created_at = new wxStaticText( m_panel13, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_created_at->Wrap( -1 );
+	bSizer651->Add( m_static_model_created_at, 1, wxALL, 5 );
+
+	m_static_model_nsfw = new wxStaticText( m_panel13, wxID_ANY, wxT("MyLabel"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_nsfw->Wrap( -1 );
+	bSizer651->Add( m_static_model_nsfw, 1, wxALL, 5 );
+
+
+	bSizer48->Add( bSizer651, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer6511;
+	bSizer6511 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText66 = new wxStaticText( m_panel13, wxID_ANY, wxT("Base model"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
+	m_staticText66->Wrap( -1 );
+	bSizer6511->Add( m_staticText66, 0, wxALL, 5 );
+
+	m_static_model_basemodel = new wxStaticText( m_panel13, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_basemodel->Wrap( -1 );
+	bSizer6511->Add( m_static_model_basemodel, 1, wxALL, 5 );
+
+	m_static_model_basemodeltype = new wxStaticText( m_panel13, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_model_basemodeltype->Wrap( -1 );
+	bSizer6511->Add( m_static_model_basemodeltype, 1, wxALL, 5 );
+
+
+	bSizer48->Add( bSizer6511, 0, wxEXPAND, 5 );
+
+	m_htmlWin1 = new wxHtmlWindow( m_panel13, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_NO_SELECTION|wxHW_SCROLLBAR_AUTO );
+	bSizer48->Add( m_htmlWin1, 1, wxALL|wxEXPAND, 1 );
+
 
 	m_panel13->SetSizer( bSizer48 );
 	m_panel13->Layout();
 	bSizer48->Fit( m_panel13 );
-	m_panel14 = new wxPanel( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* bSizer49;
-	bSizer49 = new wxBoxSizer( wxVERTICAL );
+	m_scrolledWindow3 = new wxScrolledWindow( m_splitter4, wxID_ANY, wxDefaultPosition, wxSize( 512,-1 ), wxHSCROLL|wxVSCROLL );
+	m_scrolledWindow3->SetScrollRate( 5, 5 );
+	poster_holder = new wxBoxSizer( wxVERTICAL );
 
-	bSizer49->SetMinSize( wxSize( 300,-1 ) );
-	m_poster = new wxStaticBitmap( m_panel14, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer49->Add( m_poster, 0, wxALL, 5 );
+	poster_holder->SetMinSize( wxSize( 512,-1 ) );
 
-
-	m_panel14->SetSizer( bSizer49 );
-	m_panel14->Layout();
-	bSizer49->Fit( m_panel14 );
-	m_splitter4->SplitVertically( m_panel13, m_panel14, 0 );
+	m_scrolledWindow3->SetSizer( poster_holder );
+	m_scrolledWindow3->Layout();
+	m_splitter4->SplitVertically( m_panel13, m_scrolledWindow3, 0 );
 	bSizer47->Add( m_splitter4, 1, wxEXPAND, 5 );
 
 
