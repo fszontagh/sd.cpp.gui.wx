@@ -30,6 +30,8 @@ void MainWindowSettings::onShowNotificationCheck(wxCommandEvent &event)
     {
         this->m_notification_timeout->Disable();
         this->cfg->notification_timeout = 60;
+    }else{
+        this->m_notification_timeout->Enable();
     }
 }
 

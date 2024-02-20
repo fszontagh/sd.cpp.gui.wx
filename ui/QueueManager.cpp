@@ -200,11 +200,43 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
             auto payload = e.GetPayload<QM::QueueItem>();
             this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
         }
+        if (event == QM::QueueEvents::ITEM_MODEL_FAILED)
+        {
+            auto payload = e.GetPayload<QM::QueueItem>();
+            this->SetStatus(QM::QueueStatus::FAILED, payload.id);
+            this->isRunning = false;
+            // jump to the next
+            for (auto job : this->QueueList)
+            {
+                if (job.second.status == QM::QueueStatus::PENDING)
+                {
+                    if (this->isRunning == false)
+                    {
+                        this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, job.second);
+                        this->isRunning = true;
+                    }
+                    break;
+                }
+            }
+        }
         if (event == QM::QueueEvents::ITEM_FAILED)
         {
             auto payload = e.GetPayload<QM::QueueItem>();
             this->SetStatus(QM::QueueStatus::FAILED, payload.id);
             this->isRunning = false;
+            // jump to the next
+            for (auto job : this->QueueList)
+            {
+                if (job.second.status == QM::QueueStatus::PENDING)
+                {
+                    if (this->isRunning == false)
+                    {
+                        this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, job.second);
+                        this->isRunning = true;
+                    }
+                    break;
+                }
+            }
         }
         if (event == QM::QueueEvents::ITEM_GENERATION_STARTED)
         {
