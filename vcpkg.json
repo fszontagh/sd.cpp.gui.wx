@@ -6,8 +6,7 @@
     "wxwidgets",
     "openssl",
     "curlpp",
-    "libpng",
-    "libjpeg-turbo",
+    "exiv2",
     "imageinfo"
   ]
 }

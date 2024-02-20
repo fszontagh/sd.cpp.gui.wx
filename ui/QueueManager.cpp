@@ -195,12 +195,23 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
             }
             return;
         }
-    }
-
-    if (token == "MODEL_LOAD_START")
-    {
-        auto payload = e.GetPayload<QM::QueueItem>();
-        this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
+        if (event == QM::QueueEvents::ITEM_MODEL_LOAD_START)
+        {
+            auto payload = e.GetPayload<QM::QueueItem>();
+            this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
+        }
+        if (event == QM::QueueEvents::ITEM_FAILED)
+        {
+            auto payload = e.GetPayload<QM::QueueItem>();
+            this->SetStatus(QM::QueueStatus::FAILED, payload.id);
+            this->isRunning = false;
+        }
+        if (event == QM::QueueEvents::ITEM_GENERATION_STARTED)
+        {
+            auto payload = e.GetPayload<QM::QueueItem>();
+            this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
+            this->isRunning = true;
+        }
     }
     if (token == "HASHING_PROGRESS")
     {
@@ -214,18 +225,6 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
     {
         // auto payload = e.GetPayload<QM::QueueItem>();
         // this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
-    }
-    if (token == "MODEL_LOAD_ERROR" || token == "GENERATION_ERROR")
-    {
-        auto payload = e.GetPayload<QM::QueueItem>();
-        this->SetStatus(QM::QueueStatus::FAILED, payload.id);
-        this->isRunning = false;
-    }
-    if (token == "GENERATION_START")
-    {
-        auto payload = e.GetPayload<QM::QueueItem>();
-        this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
-        this->isRunning = true;
     }
     // nothing to todo here, the payload is the generated image list, we can't find whitch item was it...
     // TODO: use struct to payload, and store multiple items in it...
@@ -264,7 +263,8 @@ bool QM::QueueManager::DeleteJob(QM::QueueItem item)
 bool QM::QueueManager::DeleteJob(int id)
 {
     auto item = this->GetItem(id);
-    if (item.id == 0) {
+    if (item.id == 0)
+    {
         return false;
     }
     std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
@@ -274,7 +274,7 @@ bool QM::QueueManager::DeleteJob(int id)
         {
             this->QueueList.erase(item.id);
             return true;
-        }        
+        }
     }
     return false;
 }

@@ -48,7 +48,13 @@ namespace QM
         ITEM_STATUS_CHANGED,
         ITEM_UPDATED,
         ITEM_START,
-        ITEM_FINISHED
+        ITEM_FINISHED,
+        ITEM_MODEL_LOAD_START,
+        ITEM_MODEL_LOADED,
+        ITEM_MODEL_FAILED,
+        ITEM_GENERATION_STARTED,
+        ITEM_FAILED,
+        SD_MESSAGE
     };
     struct QueueItem
     {
@@ -58,7 +64,7 @@ namespace QM
               finished_at(other.finished_at), params(other.params),
               status(other.status), images(other.images), step(other.step), steps(other.steps),hash_fullsize(other.hash_fullsize),
               hash_progress_size(other.hash_progress_size),
-              time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image) {}
+              time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message) {}
 
         QueueItem &operator=(const QueueItem &other)
         {
@@ -79,6 +85,7 @@ namespace QM
                 initial_image = other.initial_image;
                 hash_fullsize = other.hash_fullsize;
                 hash_progress_size = other.hash_progress_size;
+                status_message = other.status_message;
             }
             return *this;
         }
@@ -92,6 +99,7 @@ namespace QM
         std::string model, initial_image;
         QM::GenerationMode mode = QM::GenerationMode::TXT2IMG;
         std::string sha256;
+        std::string status_message = "";
     };
 
     inline void to_json(nlohmann::json &j, const QueueItem &p)

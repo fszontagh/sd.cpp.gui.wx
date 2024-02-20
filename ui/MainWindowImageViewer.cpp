@@ -39,6 +39,7 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
                 this->m_bitmap6->Center();
                 this->m_bitmap6->Refresh();
                 this->Refresh();
+                this->Layout();
             }
         }
     }
@@ -75,6 +76,7 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
     this->m_scrolledWindow2->Refresh();
     this->m_bitmap6->Refresh();
     this->Refresh();
+    this->Layout();
     this->m_static_id->SetLabel(wxString::Format("%d", item.id));
     this->m_static_type->SetLabel(sd_gui_utils::modes_str[item.mode]);
 

@@ -5,13 +5,14 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <random>
 #include <unordered_map>
 
 #include <wx/image.h>
 #include <stable-diffusion.h>
-#include <png.h>
-#include <jpeglib.h>
+#include <exiv2/exiv2.hpp>
+#include <fmt/format.h>
 
 #include <openssl/sha.h>
 
@@ -220,6 +221,13 @@ namespace sd_gui_utils
     private:
         std::streambuf *old;
     };
+    enum imageTypes
+    {
+        JPG,
+        PNG
+    };
+    inline const char *image_types_str[] = {
+        "JPG", "PNG"};
     struct config
     {
         std::string model = "";
@@ -235,6 +243,10 @@ namespace sd_gui_utils
         bool keep_model_in_memory = true;
         bool save_all_image = true;
         int n_threads = 2;
+        imageTypes image_type = imageTypes::JPG;
+        unsigned int image_quality = 90;
+        bool show_notifications = true;
+        int notification_timeout = 60;
     };
     inline std::string formatUnixTimestampToDate(long timestamp)
     {
@@ -619,5 +631,144 @@ namespace sd_gui_utils
 
         return std::make_pair(size, sizes[div]);
     }
-};
+
+    inline void write_comment(std::string file_name, const char *comment)
+    {
+        try
+        {
+            // PNG fájl metaadatainak beolvasása és módosítása
+            Exiv2::Image::UniquePtr image = Exiv2::ImageFactory::open(file_name);
+            image->readMetadata();
+            Exiv2::ExifData &exifData = image->exifData();
+            exifData["Exif.Photo.UserComment"] = comment;
+            exifData["Exif.Image.XPComment"] = comment;
+
+            // PNG fájl metaadatainak frissítése
+            image->setExifData(exifData);
+            image->writeMetadata();
+        }
+        catch (Exiv2::Error &e)
+        {
+            std::cerr << "Err: " << e.what() << std::endl;
+        }
+    }
+    inline std::string removeWhitespace(std::string str)
+    {
+        std::string::iterator end_pos = std::remove(str.begin(), str.end(), ' ');
+        str.erase(end_pos, str.end());
+        return str;
+    }
+    inline std::string tolower(std::string data)
+    {
+        std::transform(data.begin(), data.end(), data.begin(),
+                       [](unsigned char c)
+                       { return std::tolower(c); });
+        return data;
+    }
+    inline std::map<std::string, std::string> parseExifPrompts(std::string text)
+    {
+        std::map<std::string, std::string> result;
+
+        result[std::string("prompt")] = "";
+
+        std::vector<std::string> lines_in_reverse;
+        std::istringstream f(text);
+        std::string line;
+        while (std::getline(f, line))
+        {
+            {
+                lines_in_reverse.push_back(line);
+            }
+        }
+        std::reverse(lines_in_reverse.begin(), lines_in_reverse.end());
+
+        std::vector<std::string> seglist;
+
+        // first in vector the last in text
+
+        std::string firstline = lines_in_reverse.front();
+        std::istringstream p;
+        p.str(firstline);
+        std::string segment;
+        while (std::getline(p, segment, ','))
+        {
+            // seglist.push_back(segment);
+            size_t pos = segment.find(':');
+            std::string key = removeWhitespace(segment.substr(0, pos));
+            key = sd_gui_utils::tolower(key);
+            std::string val = removeWhitespace(segment.substr(pos + 1));
+
+            // result[segment.substr(0, pos)] = segment.substr(pos + 1);
+            result[key] = val;
+        }
+        // remve params, we already parsed it...
+        lines_in_reverse.erase(lines_in_reverse.begin());
+
+        bool _nfound = false;
+        int counter = 0;
+        std::vector<std::string> _n_prompt_lines;
+
+        std::string nn_p("Negative prompt: ");
+
+        for (auto _l : lines_in_reverse)
+        {
+            if (_l.substr(0, nn_p.length()) == nn_p)
+            {
+                // prompt = prompt + _l.substr(17);
+                _n_prompt_lines.emplace_back(_l.substr(17));
+                _nfound = true;
+                counter++;
+                break;
+            }
+            // prompt = prompt + _l;
+            _n_prompt_lines.emplace_back(_l);
+            counter++;
+        }
+
+        for (int z = 0; z < counter; z++)
+        {
+            lines_in_reverse.erase(lines_in_reverse.begin());
+        }
+
+        std::string prompt; // negative or plain prompt...
+
+        std::reverse(_n_prompt_lines.begin(), _n_prompt_lines.end());
+
+        for (auto _n : _n_prompt_lines)
+        {
+            prompt = prompt + _n;
+        }
+
+        // charset=Unicode
+        std::string charset1("charset=Unicode ");
+        if (prompt.substr(0, 1) == " ")
+        {
+            prompt = prompt.substr(1);
+        }
+        if (prompt.substr(0, charset1.length()) == charset1)
+        {
+            prompt = prompt.substr(charset1.length());
+        }
+
+        if (_nfound)
+        {
+            // result[std::string("negative_prompt")] = prompt;
+
+            result[std::string("negative_prompt")] = prompt;
+
+            std::reverse(lines_in_reverse.begin(), lines_in_reverse.end());
+            for (auto _u : lines_in_reverse)
+            {
+                result[std::string("prompt")] = result[std::string("prompt")] + _u;
+            }
+        }
+        else
+        {
+            result[std::string("prompt")] = prompt;
+        }
+
+        return result;
+    };
+
+}
 #endif

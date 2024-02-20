@@ -21,6 +21,9 @@ class MainWindowSettings : public Settings
 {
 	protected:
 		// Handlers for Settings events.
+		void OnImgQualityScroll( wxScrollEvent& event );
+		void OnImgQualitySpin( wxSpinEvent& event );
+		void onShowNotificationCheck( wxCommandEvent& event );
 		void onSave( wxCommandEvent& event );
 	public:
 		/** Constructor */
@@ -31,6 +34,9 @@ private:
 	wxFileConfig *fileConfig;
 	sd_gui_utils::config *cfg;
 	std::string ini_path;
+
+
+
 
 
 

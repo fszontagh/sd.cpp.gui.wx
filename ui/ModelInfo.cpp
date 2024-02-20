@@ -80,6 +80,19 @@ void ModelInfo::Manager::setHash(std::string model_path, std::string hash)
     }
 }
 
+sd_gui_utils::ModelFileInfo ModelInfo::Manager::getByHash(std::string hash)
+{
+    for (auto model : this->ModelInfos)
+    {
+        if (model.second->sha256 == hash)
+        {
+            return *model.second;
+        }
+    }
+
+    return sd_gui_utils::ModelFileInfo();
+}
+
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfo(std::string path)
 {
     if (this->ModelInfos.find(path) != this->ModelInfos.end())
@@ -111,6 +124,19 @@ sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfoByName(std::string model_
     return sd_gui_utils::ModelFileInfo();
 }
 
+sd_gui_utils::ModelFileInfo ModelInfo::Manager::findInfoByName(std::string model_name)
+{
+    for (auto model : this->ModelInfos)
+    {
+        if (model.second->name.find(model_name) != std::string::npos)
+        {
+            return *model.second;
+        }
+    }
+
+    return sd_gui_utils::ModelFileInfo();
+}
+
 std::string ModelInfo::Manager::GenerateName(std::string model_path, std::string basepath)
 {
     auto path = std::filesystem::path(model_path);
@@ -134,7 +160,7 @@ sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_
     sd_gui_utils::ModelFileInfo *mi = new sd_gui_utils::ModelFileInfo();
     mi->size = std::filesystem::file_size(path);
     auto s = sd_gui_utils::humanReadableFileSize(mi->size);
-    mi->size_f = wxString::Format("%.4f%s", s.first, s.second);
+    mi->size_f = wxString::Format("%.1f%s", s.first, s.second);
     mi->hash_fullsize = 0;
     mi->hash_progress_size = 0;
     mi->meta_file = path.replace_extension(".json").string();

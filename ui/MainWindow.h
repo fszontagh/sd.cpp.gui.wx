@@ -35,6 +35,7 @@
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/slider.h>
 #include <wx/scrolwin.h>
 #include <wx/splitter.h>
 #include <wx/dialog.h>
@@ -138,6 +139,7 @@ class UI : public wxFrame
 		virtual void onJobsDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -198,14 +200,21 @@ class Settings : public wxFrame
 		wxCheckBox* m_keep_model_in_memory;
 		wxCheckBox* m_save_all_image;
 		wxStaticText* m_staticText16;
-		wxChoice* m_choice4;
+		wxChoice* m_image_type;
+		wxSlider* m_image_quality;
+		wxSpinCtrl* m_image_quality_spin;
 		wxStaticText* m_staticText191;
 		wxSpinCtrl* m_threads;
 		wxPanel* m_settings_ui;
-		wxCheckBox* m_checkBox5;
+		wxCheckBox* m_show_notifications;
+		wxStaticText* m_staticText60;
+		wxSpinCtrl* m_notification_timeout;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void OnImgQualityScroll( wxScrollEvent& event ) { event.Skip(); }
+		virtual void OnImgQualitySpin( wxSpinEvent& event ) { event.Skip(); }
+		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }
 
 
