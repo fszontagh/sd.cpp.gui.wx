@@ -29,7 +29,8 @@ namespace QM
     {
         TXT2IMG,
         IMG2IMG,
-        CONVERT
+        CONVERT,
+        UPSCALE
     };
 
     inline const char *QueueStatus_str[] = {
@@ -62,9 +63,9 @@ namespace QM
         QueueItem(const QueueItem &other)
             : id(other.id), created_at(other.created_at), updated_at(other.updated_at),
               finished_at(other.finished_at), params(other.params),
-              status(other.status), images(other.images), step(other.step), steps(other.steps),hash_fullsize(other.hash_fullsize),
+              status(other.status), images(other.images), step(other.step), steps(other.steps), hash_fullsize(other.hash_fullsize),
               hash_progress_size(other.hash_progress_size),
-              time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message) {}
+              time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message), upscale_factor(other.upscale_factor) {}
 
         QueueItem &operator=(const QueueItem &other)
         {
@@ -86,6 +87,7 @@ namespace QM
                 hash_fullsize = other.hash_fullsize;
                 hash_progress_size = other.hash_progress_size;
                 status_message = other.status_message;
+                upscale_factor = other.upscale_factor;
             }
             return *this;
         }
@@ -93,6 +95,7 @@ namespace QM
         int step = 0, steps = 0;
         size_t hash_fullsize, hash_progress_size;
         float time = 0;
+        uint32_t upscale_factor = 4;
         sd_gui_utils::SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         std::vector<std::string> images;
@@ -119,6 +122,7 @@ namespace QM
             {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
             {"params", p.params},
+            {"upscale_factor", p.upscale_factor},
             {"initial_image", sd_gui_utils::UnicodeToUTF8(p.initial_image)},
 
         };
@@ -129,6 +133,10 @@ namespace QM
         j.at("id").get_to(p.id);
         j.at("created_at").get_to(p.created_at);
         j.at("updated_at").get_to(p.updated_at);
+        if (j.contains("upscale_factor"))
+        {
+            j.at("upscale_factor").get_to(p.upscale_factor);
+        }
 
         std::vector<std::string> _imgs = j.at("images").get<std::vector<std::string>>();
         for (auto _img : _imgs)

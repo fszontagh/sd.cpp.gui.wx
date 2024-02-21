@@ -108,6 +108,25 @@ class UI : public wxFrame
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
 		wxStaticBitmap* m_img2img_preview;
+		wxPanel* m_upscaler;
+		wxStaticText* m_staticText62;
+		wxFilePickerCtrl* m_upscaler_filepicker;
+		wxBitmapButton* m_delete_upscale_image;
+		wxStaticText* m_staticText61;
+		wxChoice* m_upscaler_model;
+		wxStaticText* m_staticText63;
+		wxStaticText* m_static_upscaler_width;
+		wxStaticText* m_staticText65;
+		wxStaticText* m_static_upscaler_height;
+		wxStaticText* m_staticText631;
+		wxStaticText* m_static_upscaler_target_width;
+		wxStaticText* m_staticText651;
+		wxStaticText* m_static_upscaler_target_height;
+		wxStaticText* m_staticText67;
+		wxSpinCtrl* m_upscaler_factor;
+		wxButton* m_generate_upscaler;
+		wxCheckBox* m_keep_upscaler_in_memory;
+		wxStaticBitmap* m_upscaler_source_image;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
@@ -148,6 +167,9 @@ class UI : public wxFrame
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUpscalerDropFile( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnDeleteUpscaleImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
@@ -190,6 +212,8 @@ class Settings : public wxFrame
 		wxBitmapButton* m_bpButton1;
 		wxStaticText* m_staticText23;
 		wxDirPickerCtrl* m_controlnet_dir;
+		wxStaticText* m_staticText77;
+		wxDirPickerCtrl* m_esrgan_dir;
 		wxStaticLine* m_staticline7;
 		wxStaticText* m_staticText19;
 		wxDirPickerCtrl* m_presets_dir;

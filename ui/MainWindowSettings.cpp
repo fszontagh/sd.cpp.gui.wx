@@ -30,7 +30,9 @@ void MainWindowSettings::onShowNotificationCheck(wxCommandEvent &event)
     {
         this->m_notification_timeout->Disable();
         this->cfg->notification_timeout = 60;
-    }else{
+    }
+    else
+    {
         this->m_notification_timeout->Enable();
     }
 }
@@ -42,6 +44,7 @@ void MainWindowSettings::onSave(wxCommandEvent &event)
     this->fileConfig->Write("/paths/vae", this->m_vae_dir->GetPath());
     this->fileConfig->Write("/paths/embedding", this->m_embedding_dir->GetPath());
     this->fileConfig->Write("/paths/taesd", this->m_taesd_dir->GetPath());
+    this->fileConfig->Write("/paths/esrgan", this->m_esrgan_dir->GetPath());
     this->fileConfig->Write("/paths/controlnet", this->m_controlnet_dir->GetPath());
     this->fileConfig->Write("/paths/presets", this->m_presets_dir->GetPath());
     this->fileConfig->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
@@ -82,11 +85,15 @@ void MainWindowSettings::InitConfig()
     wxString controlnet_path = datapath;
     controlnet_path.append("controlnet");
 
+    wxString esrgan_path = datapath;
+    esrgan_path.append("esrgan");
+
     this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
     this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
     this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
     this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
     this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->esrgan = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
     this->cfg->controlnet = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
     this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
     this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
@@ -116,6 +123,7 @@ void MainWindowSettings::InitConfig()
     this->m_vae_dir->SetPath(this->cfg->vae);
     this->m_embedding_dir->SetPath(this->cfg->embedding);
     this->m_taesd_dir->SetPath(this->cfg->taesd);
+    this->m_esrgan_dir->SetPath(this->cfg->esrgan);
     this->m_controlnet_dir->SetPath(this->cfg->controlnet);
     this->m_presets_dir->SetPath(this->cfg->presets);
     this->m_images_output->SetPath(this->cfg->output);

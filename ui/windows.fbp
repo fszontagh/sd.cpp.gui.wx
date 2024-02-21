@@ -124,11 +124,11 @@
               <property name="name">sizer0002</property>
               <property name="orient">wxVERTICAL</property>
               <property name="permission">none</property>
-              <object class="sizeritem" expanded="false">
+              <object class="sizeritem" expanded="true">
                 <property name="border">5</property>
                 <property name="flag">wxALL|wxEXPAND</property>
                 <property name="proportion">0</property>
-                <object class="wxBoxSizer" expanded="false">
+                <object class="wxBoxSizer" expanded="true">
                   <property name="minimum_size"></property>
                   <property name="name">sizer0021</property>
                   <property name="orient">wxHORIZONTAL</property>
@@ -1327,7 +1327,7 @@
                   </object>
                 </object>
               </object>
-              <object class="sizeritem" expanded="false">
+              <object class="sizeritem" expanded="true">
                 <property name="border">5</property>
                 <property name="flag">wxEXPAND|wxALL</property>
                 <property name="proportion">0</property>
@@ -2077,7 +2077,7 @@
                       <property name="toolbar_pane">0</property>
                       <property name="tooltip"></property>
                       <property name="window_extra_style"></property>
-                      <property name="window_name"></property>
+                      <property name="window_name">jobs</property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
                       <object class="wxBoxSizer" expanded="false">
                         <property name="minimum_size"></property>
@@ -2357,7 +2357,7 @@
                     <property name="bitmap">Load From Embedded File; icons/16/text_box_dots.png</property>
                     <property name="label">Text2IMG</property>
                     <property name="select">1</property>
-                    <object class="wxPanel" expanded="true">
+                    <object class="wxPanel" expanded="false">
                       <property name="BottomDockable">1</property>
                       <property name="LeftDockable">1</property>
                       <property name="RightDockable">1</property>
@@ -2407,7 +2407,7 @@
                       <property name="toolbar_pane">0</property>
                       <property name="tooltip"></property>
                       <property name="window_extra_style"></property>
-                      <property name="window_name"></property>
+                      <property name="window_name">txt2txt</property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
                       <event name="OnDropFiles">onTxt2ImgFileDrop</event>
                       <object class="wxBoxSizer" expanded="false">
@@ -3167,7 +3167,7 @@
                       <property name="toolbar_pane">0</property>
                       <property name="tooltip"></property>
                       <property name="window_extra_style"></property>
-                      <property name="window_name"></property>
+                      <property name="window_name">img2img</property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
                       <event name="OnDropFiles">Onimg2imgDropFile</event>
                       <object class="wxBoxSizer" expanded="true">
@@ -3179,107 +3179,96 @@
                           <property name="border">5</property>
                           <property name="flag">wxEXPAND</property>
                           <property name="proportion">1</property>
-                          <object class="wxBoxSizer" expanded="true">
+                          <object class="wxBoxSizer" expanded="false">
                             <property name="minimum_size"></property>
                             <property name="name">bSizer28</property>
                             <property name="orient">wxVERTICAL</property>
                             <property name="permission">none</property>
-                            <object class="sizeritem" expanded="true">
-                              <property name="border">5</property>
-                              <property name="flag">wxEXPAND</property>
-                              <property name="proportion">0</property>
-                              <object class="wxBoxSizer" expanded="true">
-                                <property name="minimum_size"></property>
-                                <property name="name">bSizer32</property>
-                                <property name="orient">wxVERTICAL</property>
-                                <property name="permission">none</property>
-                                <object class="sizeritem" expanded="false">
-                                  <property name="border">5</property>
-                                  <property name="flag">wxALL|wxEXPAND</property>
-                                  <property name="proportion">0</property>
-                                  <object class="wxFilePickerCtrl" expanded="false">
-                                    <property name="BottomDockable">1</property>
-                                    <property name="LeftDockable">1</property>
-                                    <property name="RightDockable">1</property>
-                                    <property name="TopDockable">1</property>
-                                    <property name="aui_layer"></property>
-                                    <property name="aui_name"></property>
-                                    <property name="aui_position"></property>
-                                    <property name="aui_row"></property>
-                                    <property name="best_size"></property>
-                                    <property name="bg"></property>
-                                    <property name="caption"></property>
-                                    <property name="caption_visible">1</property>
-                                    <property name="center_pane">0</property>
-                                    <property name="close_button">1</property>
-                                    <property name="context_help"></property>
-                                    <property name="context_menu">1</property>
-                                    <property name="default_pane">0</property>
-                                    <property name="dock">Dock</property>
-                                    <property name="dock_fixed">0</property>
-                                    <property name="docking">Left</property>
-                                    <property name="drag_accept_files">0</property>
-                                    <property name="enabled">1</property>
-                                    <property name="fg"></property>
-                                    <property name="floatable">1</property>
-                                    <property name="font"></property>
-                                    <property name="gripper">0</property>
-                                    <property name="hidden">0</property>
-                                    <property name="id">wxID_ANY</property>
-                                    <property name="max_size"></property>
-                                    <property name="maximize_button">0</property>
-                                    <property name="maximum_size"></property>
-                                    <property name="message">Select an image</property>
-                                    <property name="min_size"></property>
-                                    <property name="minimize_button">0</property>
-                                    <property name="minimum_size"></property>
-                                    <property name="moveable">1</property>
-                                    <property name="name">m_open_image</property>
-                                    <property name="pane_border">1</property>
-                                    <property name="pane_position"></property>
-                                    <property name="pane_size"></property>
-                                    <property name="permission">protected</property>
-                                    <property name="pin_button">1</property>
-                                    <property name="pos"></property>
-                                    <property name="resize">Resizable</property>
-                                    <property name="show">1</property>
-                                    <property name="size"></property>
-                                    <property name="style">wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL</property>
-                                    <property name="subclass">; ; forward_declare</property>
-                                    <property name="toolbar_pane">0</property>
-                                    <property name="tooltip"></property>
-                                    <property name="validator_data_type"></property>
-                                    <property name="validator_style">wxFILTER_NONE</property>
-                                    <property name="validator_type">wxDefaultValidator</property>
-                                    <property name="validator_variable"></property>
-                                    <property name="value"></property>
-                                    <property name="wildcard">PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg</property>
-                                    <property name="window_extra_style"></property>
-                                    <property name="window_name"></property>
-                                    <property name="window_style"></property>
-                                    <event name="OnFileChanged">OnImageOpenFileChanged</event>
-                                  </object>
-                                </object>
-                              </object>
-                            </object>
-                            <object class="sizeritem" expanded="true">
+                            <object class="sizeritem" expanded="false">
                               <property name="border">5</property>
                               <property name="flag">wxEXPAND</property>
                               <property name="proportion">1</property>
-                              <object class="wxBoxSizer" expanded="true">
+                              <object class="wxBoxSizer" expanded="false">
                                 <property name="minimum_size"></property>
                                 <property name="name">bSizer33</property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">0</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer36</property>
                                     <property name="orient">wxHORIZONTAL</property>
                                     <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxFilePickerCtrl" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="message">Select an image</property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_open_image</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size"></property>
+                                        <property name="style">wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL</property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="validator_data_type"></property>
+                                        <property name="validator_style">wxFILTER_NONE</property>
+                                        <property name="validator_type">wxDefaultValidator</property>
+                                        <property name="validator_variable"></property>
+                                        <property name="value"></property>
+                                        <property name="wildcard">PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg</property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <event name="OnFileChanged">OnImageOpenFileChanged</event>
+                                      </object>
+                                    </object>
                                     <object class="sizeritem" expanded="false">
                                       <property name="border">5</property>
                                       <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
@@ -3432,11 +3421,11 @@
                                     </object>
                                   </object>
                                 </object>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">1</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">1</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer37</property>
                                     <property name="orient">wxHORIZONTAL</property>
@@ -3573,11 +3562,11 @@
                                     </object>
                                   </object>
                                 </object>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">0</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer38</property>
                                     <property name="orient">wxHORIZONTAL</property>
@@ -3792,16 +3781,16 @@
                         </object>
                         <object class="sizeritem" expanded="true">
                           <property name="border">5</property>
-                          <property name="flag"></property>
+                          <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                           <property name="proportion">0</property>
                           <object class="wxBoxSizer" expanded="true">
                             <property name="minimum_size"></property>
                             <property name="name">bSizer29</property>
-                            <property name="orient">wxVERTICAL</property>
+                            <property name="orient">wxHORIZONTAL</property>
                             <property name="permission">none</property>
                             <object class="sizeritem" expanded="false">
                               <property name="border">5</property>
-                              <property name="flag">wxALL|wxALIGN_CENTER_HORIZONTAL</property>
+                              <property name="flag">wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</property>
                               <property name="proportion">0</property>
                               <object class="wxStaticBitmap" expanded="false">
                                 <property name="BottomDockable">1</property>
@@ -3865,6 +3854,1343 @@
                     </object>
                   </object>
                   <object class="notebookpage" expanded="true">
+                    <property name="bitmap"></property>
+                    <property name="label">Upscaler</property>
+                    <property name="select">0</property>
+                    <object class="wxPanel" expanded="true">
+                      <property name="BottomDockable">1</property>
+                      <property name="LeftDockable">1</property>
+                      <property name="RightDockable">1</property>
+                      <property name="TopDockable">1</property>
+                      <property name="aui_layer"></property>
+                      <property name="aui_name"></property>
+                      <property name="aui_position"></property>
+                      <property name="aui_row"></property>
+                      <property name="best_size"></property>
+                      <property name="bg"></property>
+                      <property name="caption"></property>
+                      <property name="caption_visible">1</property>
+                      <property name="center_pane">0</property>
+                      <property name="close_button">1</property>
+                      <property name="context_help"></property>
+                      <property name="context_menu">1</property>
+                      <property name="default_pane">0</property>
+                      <property name="dock">Dock</property>
+                      <property name="dock_fixed">0</property>
+                      <property name="docking">Left</property>
+                      <property name="drag_accept_files">1</property>
+                      <property name="enabled">1</property>
+                      <property name="fg"></property>
+                      <property name="floatable">1</property>
+                      <property name="font"></property>
+                      <property name="gripper">0</property>
+                      <property name="hidden">0</property>
+                      <property name="id">wxID_ANY</property>
+                      <property name="max_size"></property>
+                      <property name="maximize_button">0</property>
+                      <property name="maximum_size"></property>
+                      <property name="min_size"></property>
+                      <property name="minimize_button">0</property>
+                      <property name="minimum_size"></property>
+                      <property name="moveable">1</property>
+                      <property name="name">m_upscaler</property>
+                      <property name="pane_border">1</property>
+                      <property name="pane_position"></property>
+                      <property name="pane_size"></property>
+                      <property name="permission">protected</property>
+                      <property name="pin_button">1</property>
+                      <property name="pos"></property>
+                      <property name="resize">Resizable</property>
+                      <property name="show">1</property>
+                      <property name="size"></property>
+                      <property name="subclass">; ; forward_declare</property>
+                      <property name="toolbar_pane">0</property>
+                      <property name="tooltip"></property>
+                      <property name="window_extra_style"></property>
+                      <property name="window_name">upscaler</property>
+                      <property name="window_style">wxTAB_TRAVERSAL</property>
+                      <event name="OnDropFiles">OnUpscalerDropFile</event>
+                      <object class="wxBoxSizer" expanded="true">
+                        <property name="minimum_size"></property>
+                        <property name="name">bSizer68</property>
+                        <property name="orient">wxHORIZONTAL</property>
+                        <property name="permission">none</property>
+                        <object class="sizeritem" expanded="true">
+                          <property name="border">5</property>
+                          <property name="flag">wxEXPAND</property>
+                          <property name="proportion">1</property>
+                          <object class="wxBoxSizer" expanded="true">
+                            <property name="minimum_size"></property>
+                            <property name="name">bSizer79</property>
+                            <property name="orient">wxVERTICAL</property>
+                            <property name="permission">none</property>
+                            <object class="sizeritem" expanded="true">
+                              <property name="border">5</property>
+                              <property name="flag">wxEXPAND</property>
+                              <property name="proportion">1</property>
+                              <object class="wxBoxSizer" expanded="true">
+                                <property name="minimum_size"></property>
+                                <property name="name">bSizer69</property>
+                                <property name="orient">wxVERTICAL</property>
+                                <property name="permission">none</property>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="false">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer71</property>
+                                    <property name="orient">wxHORIZONTAL</property>
+                                    <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Source Image</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText62</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">100,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxFilePickerCtrl" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="message">Select a file</property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_upscaler_filepicker</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size"></property>
+                                        <property name="style">wxFLP_DEFAULT_STYLE</property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="validator_data_type"></property>
+                                        <property name="validator_style">wxFILTER_NONE</property>
+                                        <property name="validator_type">wxDefaultValidator</property>
+                                        <property name="validator_variable"></property>
+                                        <property name="value"></property>
+                                        <property name="wildcard">*.*</property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxBitmapButton" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="auth_needed">0</property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="bitmap">Load From Embedded File; Z:\sd.cpp.gui.wx_github\ui\icons\16\trash.png</property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="current"></property>
+                                        <property name="default">0</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="disabled"></property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="focus"></property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">MyButton</property>
+                                        <property name="margins"></property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_delete_upscale_image</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="position"></property>
+                                        <property name="pressed"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size"></property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="validator_data_type"></property>
+                                        <property name="validator_style">wxFILTER_NONE</property>
+                                        <property name="validator_type">wxDefaultValidator</property>
+                                        <property name="validator_variable"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <event name="OnButtonClick">OnDeleteUpscaleImage</event>
+                                      </object>
+                                    </object>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="false">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer70</property>
+                                    <property name="orient">wxHORIZONTAL</property>
+                                    <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Upscaler model</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText61</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">100,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxChoice" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="choices"></property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_upscaler_model</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="selection">0</property>
+                                        <property name="show">1</property>
+                                        <property name="size"></property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="validator_data_type"></property>
+                                        <property name="validator_style">wxFILTER_NONE</property>
+                                        <property name="validator_type">wxDefaultValidator</property>
+                                        <property name="validator_variable"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                      </object>
+                                    </object>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="false">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer72</property>
+                                    <property name="orient">wxHORIZONTAL</property>
+                                    <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Width:</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText63</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">50,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label"></property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_static_upscaler_width</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">100,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Height:</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText65</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">50,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label"></property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_static_upscaler_height</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">-1,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="false">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer721</property>
+                                    <property name="orient">wxHORIZONTAL</property>
+                                    <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Width:</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText631</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">50,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label"></property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_static_upscaler_target_width</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">100,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Height:</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText651</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">50,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">1</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label"></property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_static_upscaler_target_height</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">-1,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="true">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="true">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer73</property>
+                                    <property name="orient">wxHORIZONTAL</property>
+                                    <property name="permission">none</property>
+                                    <object class="sizeritem" expanded="false">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxStaticText" expanded="false">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="label">Upscale factor</property>
+                                        <property name="markup">0</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_staticText67</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size">100,-1</property>
+                                        <property name="style"></property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <property name="wrap">-1</property>
+                                      </object>
+                                    </object>
+                                    <object class="sizeritem" expanded="true">
+                                      <property name="border">5</property>
+                                      <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                      <property name="proportion">0</property>
+                                      <object class="wxSpinCtrl" expanded="true">
+                                        <property name="BottomDockable">1</property>
+                                        <property name="LeftDockable">1</property>
+                                        <property name="RightDockable">1</property>
+                                        <property name="TopDockable">1</property>
+                                        <property name="aui_layer"></property>
+                                        <property name="aui_name"></property>
+                                        <property name="aui_position"></property>
+                                        <property name="aui_row"></property>
+                                        <property name="best_size"></property>
+                                        <property name="bg"></property>
+                                        <property name="caption"></property>
+                                        <property name="caption_visible">1</property>
+                                        <property name="center_pane">0</property>
+                                        <property name="close_button">1</property>
+                                        <property name="context_help"></property>
+                                        <property name="context_menu">1</property>
+                                        <property name="default_pane">0</property>
+                                        <property name="dock">Dock</property>
+                                        <property name="dock_fixed">0</property>
+                                        <property name="docking">Left</property>
+                                        <property name="drag_accept_files">0</property>
+                                        <property name="enabled">1</property>
+                                        <property name="fg"></property>
+                                        <property name="floatable">1</property>
+                                        <property name="font"></property>
+                                        <property name="gripper">0</property>
+                                        <property name="hidden">0</property>
+                                        <property name="id">wxID_ANY</property>
+                                        <property name="initial">2</property>
+                                        <property name="max">4</property>
+                                        <property name="max_size"></property>
+                                        <property name="maximize_button">0</property>
+                                        <property name="maximum_size"></property>
+                                        <property name="min">1</property>
+                                        <property name="min_size"></property>
+                                        <property name="minimize_button">0</property>
+                                        <property name="minimum_size"></property>
+                                        <property name="moveable">1</property>
+                                        <property name="name">m_upscaler_factor</property>
+                                        <property name="pane_border">1</property>
+                                        <property name="pane_position"></property>
+                                        <property name="pane_size"></property>
+                                        <property name="permission">protected</property>
+                                        <property name="pin_button">1</property>
+                                        <property name="pos"></property>
+                                        <property name="resize">Resizable</property>
+                                        <property name="show">1</property>
+                                        <property name="size"></property>
+                                        <property name="style">wxSP_ARROW_KEYS</property>
+                                        <property name="subclass">; ; forward_declare</property>
+                                        <property name="toolbar_pane">0</property>
+                                        <property name="tooltip"></property>
+                                        <property name="value"></property>
+                                        <property name="window_extra_style"></property>
+                                        <property name="window_name"></property>
+                                        <property name="window_style"></property>
+                                        <event name="OnSpinCtrl">OnUpscalerFactorChange</event>
+                                      </object>
+                                    </object>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxEXPAND</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxBoxSizer" expanded="false">
+                                    <property name="minimum_size"></property>
+                                    <property name="name">bSizer80</property>
+                                    <property name="orient">wxVERTICAL</property>
+                                    <property name="permission">none</property>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                            <object class="sizeritem" expanded="true">
+                              <property name="border">5</property>
+                              <property name="flag"></property>
+                              <property name="proportion">0</property>
+                              <object class="wxBoxSizer" expanded="true">
+                                <property name="minimum_size"></property>
+                                <property name="name">bSizer77</property>
+                                <property name="orient">wxHORIZONTAL</property>
+                                <property name="permission">none</property>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxButton" expanded="false">
+                                    <property name="BottomDockable">1</property>
+                                    <property name="LeftDockable">1</property>
+                                    <property name="RightDockable">1</property>
+                                    <property name="TopDockable">1</property>
+                                    <property name="aui_layer"></property>
+                                    <property name="aui_name"></property>
+                                    <property name="aui_position"></property>
+                                    <property name="aui_row"></property>
+                                    <property name="auth_needed">0</property>
+                                    <property name="best_size"></property>
+                                    <property name="bg"></property>
+                                    <property name="bitmap">Load From Embedded File; icons/16/play.png</property>
+                                    <property name="caption"></property>
+                                    <property name="caption_visible">1</property>
+                                    <property name="center_pane">0</property>
+                                    <property name="close_button">1</property>
+                                    <property name="context_help"></property>
+                                    <property name="context_menu">1</property>
+                                    <property name="current"></property>
+                                    <property name="default">0</property>
+                                    <property name="default_pane">0</property>
+                                    <property name="disabled"></property>
+                                    <property name="dock">Dock</property>
+                                    <property name="dock_fixed">0</property>
+                                    <property name="docking">Left</property>
+                                    <property name="drag_accept_files">0</property>
+                                    <property name="enabled">0</property>
+                                    <property name="fg"></property>
+                                    <property name="floatable">1</property>
+                                    <property name="focus"></property>
+                                    <property name="font"></property>
+                                    <property name="gripper">0</property>
+                                    <property name="hidden">0</property>
+                                    <property name="id">wxID_ANY</property>
+                                    <property name="label">Queue</property>
+                                    <property name="margins"></property>
+                                    <property name="markup">0</property>
+                                    <property name="max_size"></property>
+                                    <property name="maximize_button">0</property>
+                                    <property name="maximum_size"></property>
+                                    <property name="min_size"></property>
+                                    <property name="minimize_button">0</property>
+                                    <property name="minimum_size"></property>
+                                    <property name="moveable">1</property>
+                                    <property name="name">m_generate_upscaler</property>
+                                    <property name="pane_border">1</property>
+                                    <property name="pane_position"></property>
+                                    <property name="pane_size"></property>
+                                    <property name="permission">protected</property>
+                                    <property name="pin_button">1</property>
+                                    <property name="pos"></property>
+                                    <property name="position"></property>
+                                    <property name="pressed"></property>
+                                    <property name="resize">Resizable</property>
+                                    <property name="show">1</property>
+                                    <property name="size"></property>
+                                    <property name="style"></property>
+                                    <property name="subclass">; ; forward_declare</property>
+                                    <property name="toolbar_pane">0</property>
+                                    <property name="tooltip"></property>
+                                    <property name="validator_data_type"></property>
+                                    <property name="validator_style">wxFILTER_NONE</property>
+                                    <property name="validator_type">wxDefaultValidator</property>
+                                    <property name="validator_variable"></property>
+                                    <property name="window_extra_style"></property>
+                                    <property name="window_name"></property>
+                                    <property name="window_style"></property>
+                                    <event name="OnButtonClick">onGenerate</event>
+                                  </object>
+                                </object>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                  <property name="proportion">0</property>
+                                  <object class="wxCheckBox" expanded="false">
+                                    <property name="BottomDockable">1</property>
+                                    <property name="LeftDockable">1</property>
+                                    <property name="RightDockable">1</property>
+                                    <property name="TopDockable">1</property>
+                                    <property name="aui_layer"></property>
+                                    <property name="aui_name"></property>
+                                    <property name="aui_position"></property>
+                                    <property name="aui_row"></property>
+                                    <property name="best_size"></property>
+                                    <property name="bg"></property>
+                                    <property name="caption"></property>
+                                    <property name="caption_visible">1</property>
+                                    <property name="center_pane">0</property>
+                                    <property name="checked">0</property>
+                                    <property name="close_button">1</property>
+                                    <property name="context_help"></property>
+                                    <property name="context_menu">1</property>
+                                    <property name="default_pane">0</property>
+                                    <property name="dock">Dock</property>
+                                    <property name="dock_fixed">0</property>
+                                    <property name="docking">Left</property>
+                                    <property name="drag_accept_files">0</property>
+                                    <property name="enabled">0</property>
+                                    <property name="fg"></property>
+                                    <property name="floatable">1</property>
+                                    <property name="font"></property>
+                                    <property name="gripper">0</property>
+                                    <property name="hidden">0</property>
+                                    <property name="id">wxID_ANY</property>
+                                    <property name="label">Keep model in memory</property>
+                                    <property name="max_size"></property>
+                                    <property name="maximize_button">0</property>
+                                    <property name="maximum_size"></property>
+                                    <property name="min_size"></property>
+                                    <property name="minimize_button">0</property>
+                                    <property name="minimum_size"></property>
+                                    <property name="moveable">1</property>
+                                    <property name="name">m_keep_upscaler_in_memory</property>
+                                    <property name="pane_border">1</property>
+                                    <property name="pane_position"></property>
+                                    <property name="pane_size"></property>
+                                    <property name="permission">protected</property>
+                                    <property name="pin_button">1</property>
+                                    <property name="pos"></property>
+                                    <property name="resize">Resizable</property>
+                                    <property name="show">1</property>
+                                    <property name="size"></property>
+                                    <property name="style"></property>
+                                    <property name="subclass">; ; forward_declare</property>
+                                    <property name="toolbar_pane">0</property>
+                                    <property name="tooltip"></property>
+                                    <property name="validator_data_type"></property>
+                                    <property name="validator_style">wxFILTER_NONE</property>
+                                    <property name="validator_type">wxDefaultValidator</property>
+                                    <property name="validator_variable"></property>
+                                    <property name="window_extra_style"></property>
+                                    <property name="window_name"></property>
+                                    <property name="window_style"></property>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                        </object>
+                        <object class="sizeritem" expanded="true">
+                          <property name="border">5</property>
+                          <property name="flag">wxEXPAND</property>
+                          <property name="proportion">0</property>
+                          <object class="wxBoxSizer" expanded="true">
+                            <property name="minimum_size"></property>
+                            <property name="name">bSizer78</property>
+                            <property name="orient">wxHORIZONTAL</property>
+                            <property name="permission">none</property>
+                            <object class="sizeritem" expanded="true">
+                              <property name="border">5</property>
+                              <property name="flag">wxALIGN_CENTER_VERTICAL</property>
+                              <property name="proportion">0</property>
+                              <object class="wxBoxSizer" expanded="true">
+                                <property name="minimum_size"></property>
+                                <property name="name">bSizer82</property>
+                                <property name="orient">wxHORIZONTAL</property>
+                                <property name="permission">none</property>
+                                <object class="sizeritem" expanded="false">
+                                  <property name="border">5</property>
+                                  <property name="flag">wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL</property>
+                                  <property name="proportion">1</property>
+                                  <object class="wxStaticBitmap" expanded="false">
+                                    <property name="BottomDockable">1</property>
+                                    <property name="LeftDockable">1</property>
+                                    <property name="RightDockable">1</property>
+                                    <property name="TopDockable">1</property>
+                                    <property name="aui_layer"></property>
+                                    <property name="aui_name"></property>
+                                    <property name="aui_position"></property>
+                                    <property name="aui_row"></property>
+                                    <property name="best_size"></property>
+                                    <property name="bg">80,80,80</property>
+                                    <property name="bitmap"></property>
+                                    <property name="caption"></property>
+                                    <property name="caption_visible">1</property>
+                                    <property name="center_pane">0</property>
+                                    <property name="close_button">1</property>
+                                    <property name="context_help"></property>
+                                    <property name="context_menu">1</property>
+                                    <property name="default_pane">0</property>
+                                    <property name="dock">Dock</property>
+                                    <property name="dock_fixed">0</property>
+                                    <property name="docking">Left</property>
+                                    <property name="drag_accept_files">0</property>
+                                    <property name="enabled">1</property>
+                                    <property name="fg"></property>
+                                    <property name="floatable">1</property>
+                                    <property name="font"></property>
+                                    <property name="gripper">0</property>
+                                    <property name="hidden">0</property>
+                                    <property name="id">wxID_ANY</property>
+                                    <property name="max_size"></property>
+                                    <property name="maximize_button">0</property>
+                                    <property name="maximum_size">-1,-1</property>
+                                    <property name="min_size"></property>
+                                    <property name="minimize_button">0</property>
+                                    <property name="minimum_size">300,210</property>
+                                    <property name="moveable">1</property>
+                                    <property name="name">m_upscaler_source_image</property>
+                                    <property name="pane_border">1</property>
+                                    <property name="pane_position"></property>
+                                    <property name="pane_size"></property>
+                                    <property name="permission">protected</property>
+                                    <property name="pin_button">1</property>
+                                    <property name="pos"></property>
+                                    <property name="resize">Resizable</property>
+                                    <property name="show">1</property>
+                                    <property name="size">-1,-1</property>
+                                    <property name="subclass">; ; forward_declare</property>
+                                    <property name="toolbar_pane">0</property>
+                                    <property name="tooltip"></property>
+                                    <property name="window_extra_style"></property>
+                                    <property name="window_name"></property>
+                                    <property name="window_style"></property>
+                                  </object>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
+                        </object>
+                      </object>
+                    </object>
+                  </object>
+                  <object class="notebookpage" expanded="true">
                     <property name="bitmap">Load From Embedded File; icons/16/cube.png</property>
                     <property name="label">Models</property>
                     <property name="select">0</property>
@@ -3918,9 +5244,9 @@
                       <property name="toolbar_pane">0</property>
                       <property name="tooltip"></property>
                       <property name="window_extra_style"></property>
-                      <property name="window_name"></property>
+                      <property name="window_name">models</property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
-                      <object class="wxBoxSizer" expanded="true">
+                      <object class="wxBoxSizer" expanded="false">
                         <property name="minimum_size"></property>
                         <property name="name">bSizer20</property>
                         <property name="orient">wxVERTICAL</property>
@@ -5032,11 +6358,11 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style"></property>
-            <object class="notebookpage" expanded="false">
+            <object class="notebookpage" expanded="true">
               <property name="bitmap">Load From Embedded File; icons/16/disk.png</property>
               <property name="label">Paths</property>
               <property name="select">0</property>
-              <object class="wxPanel" expanded="false">
+              <object class="wxPanel" expanded="true">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -5088,7 +6414,7 @@
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
                 <property name="window_style">wxTAB_TRAVERSAL</property>
-                <object class="wxBoxSizer" expanded="false">
+                <object class="wxBoxSizer" expanded="true">
                   <property name="minimum_size"></property>
                   <property name="name">sizer2011</property>
                   <property name="orient">wxVERTICAL</property>
@@ -5857,11 +7183,11 @@
                       </object>
                     </object>
                   </object>
-                  <object class="sizeritem" expanded="false">
+                  <object class="sizeritem" expanded="true">
                     <property name="border">5</property>
                     <property name="flag">wxALL</property>
                     <property name="proportion">0</property>
-                    <object class="wxBoxSizer" expanded="false">
+                    <object class="wxBoxSizer" expanded="true">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer35</property>
                       <property name="orient">wxHORIZONTAL</property>
@@ -5970,6 +7296,144 @@
                           <property name="minimum_size">200,-1</property>
                           <property name="moveable">1</property>
                           <property name="name">m_controlnet_dir</property>
+                          <property name="pane_border">1</property>
+                          <property name="pane_position"></property>
+                          <property name="pane_size"></property>
+                          <property name="permission">protected</property>
+                          <property name="pin_button">1</property>
+                          <property name="pos"></property>
+                          <property name="resize">Resizable</property>
+                          <property name="show">1</property>
+                          <property name="size"></property>
+                          <property name="style">wxDIRP_DEFAULT_STYLE|wxDIRP_DIR_MUST_EXIST|wxDIRP_SMALL</property>
+                          <property name="subclass">; ; forward_declare</property>
+                          <property name="toolbar_pane">0</property>
+                          <property name="tooltip"></property>
+                          <property name="validator_data_type"></property>
+                          <property name="validator_style">wxFILTER_NONE</property>
+                          <property name="validator_type">wxDefaultValidator</property>
+                          <property name="validator_variable"></property>
+                          <property name="value"></property>
+                          <property name="window_extra_style"></property>
+                          <property name="window_name"></property>
+                          <property name="window_style"></property>
+                        </object>
+                      </object>
+                    </object>
+                  </object>
+                  <object class="sizeritem" expanded="true">
+                    <property name="border">5</property>
+                    <property name="flag">wxALL</property>
+                    <property name="proportion">0</property>
+                    <object class="wxBoxSizer" expanded="true">
+                      <property name="minimum_size"></property>
+                      <property name="name">bSizer81</property>
+                      <property name="orient">wxHORIZONTAL</property>
+                      <property name="permission">none</property>
+                      <object class="sizeritem" expanded="true">
+                        <property name="border">5</property>
+                        <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                        <property name="proportion">0</property>
+                        <object class="wxStaticText" expanded="true">
+                          <property name="BottomDockable">1</property>
+                          <property name="LeftDockable">1</property>
+                          <property name="RightDockable">1</property>
+                          <property name="TopDockable">1</property>
+                          <property name="aui_layer"></property>
+                          <property name="aui_name"></property>
+                          <property name="aui_position"></property>
+                          <property name="aui_row"></property>
+                          <property name="best_size"></property>
+                          <property name="bg"></property>
+                          <property name="caption"></property>
+                          <property name="caption_visible">1</property>
+                          <property name="center_pane">0</property>
+                          <property name="close_button">1</property>
+                          <property name="context_help"></property>
+                          <property name="context_menu">1</property>
+                          <property name="default_pane">0</property>
+                          <property name="dock">Dock</property>
+                          <property name="dock_fixed">0</property>
+                          <property name="docking">Left</property>
+                          <property name="drag_accept_files">0</property>
+                          <property name="enabled">1</property>
+                          <property name="fg"></property>
+                          <property name="floatable">1</property>
+                          <property name="font"></property>
+                          <property name="gripper">0</property>
+                          <property name="hidden">0</property>
+                          <property name="id">wxID_ANY</property>
+                          <property name="label">ESRGAN path</property>
+                          <property name="markup">0</property>
+                          <property name="max_size"></property>
+                          <property name="maximize_button">0</property>
+                          <property name="maximum_size"></property>
+                          <property name="min_size"></property>
+                          <property name="minimize_button">0</property>
+                          <property name="minimum_size"></property>
+                          <property name="moveable">1</property>
+                          <property name="name">m_staticText77</property>
+                          <property name="pane_border">1</property>
+                          <property name="pane_position"></property>
+                          <property name="pane_size"></property>
+                          <property name="permission">protected</property>
+                          <property name="pin_button">1</property>
+                          <property name="pos"></property>
+                          <property name="resize">Resizable</property>
+                          <property name="show">1</property>
+                          <property name="size">150,-1</property>
+                          <property name="style"></property>
+                          <property name="subclass">; ; forward_declare</property>
+                          <property name="toolbar_pane">0</property>
+                          <property name="tooltip"></property>
+                          <property name="window_extra_style"></property>
+                          <property name="window_name"></property>
+                          <property name="window_style"></property>
+                          <property name="wrap">-1</property>
+                        </object>
+                      </object>
+                      <object class="sizeritem" expanded="true">
+                        <property name="border">5</property>
+                        <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                        <property name="proportion">1</property>
+                        <object class="wxDirPickerCtrl" expanded="true">
+                          <property name="BottomDockable">1</property>
+                          <property name="LeftDockable">1</property>
+                          <property name="RightDockable">1</property>
+                          <property name="TopDockable">1</property>
+                          <property name="aui_layer"></property>
+                          <property name="aui_name"></property>
+                          <property name="aui_position"></property>
+                          <property name="aui_row"></property>
+                          <property name="best_size"></property>
+                          <property name="bg"></property>
+                          <property name="caption"></property>
+                          <property name="caption_visible">1</property>
+                          <property name="center_pane">0</property>
+                          <property name="close_button">1</property>
+                          <property name="context_help"></property>
+                          <property name="context_menu">1</property>
+                          <property name="default_pane">0</property>
+                          <property name="dock">Dock</property>
+                          <property name="dock_fixed">0</property>
+                          <property name="docking">Left</property>
+                          <property name="drag_accept_files">0</property>
+                          <property name="enabled">1</property>
+                          <property name="fg"></property>
+                          <property name="floatable">1</property>
+                          <property name="font"></property>
+                          <property name="gripper">0</property>
+                          <property name="hidden">0</property>
+                          <property name="id">wxID_ANY</property>
+                          <property name="max_size"></property>
+                          <property name="maximize_button">0</property>
+                          <property name="maximum_size"></property>
+                          <property name="message">Select a folder</property>
+                          <property name="min_size"></property>
+                          <property name="minimize_button">0</property>
+                          <property name="minimum_size">200,-1</property>
+                          <property name="moveable">1</property>
+                          <property name="name">m_esrgan_dir</property>
                           <property name="pane_border">1</property>
                           <property name="pane_position"></property>
                           <property name="pane_size"></property>
@@ -7364,7 +8828,7 @@
         </object>
       </object>
     </object>
-    <object class="Frame" expanded="true">
+    <object class="Frame" expanded="false">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -7393,25 +8857,25 @@
       <property name="window_name">sd.cpp.gui.image</property>
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">0</property>
-      <object class="wxBoxSizer" expanded="true">
+      <object class="wxBoxSizer" expanded="false">
         <property name="minimum_size"></property>
         <property name="name">bSizer39</property>
         <property name="orient">wxVERTICAL</property>
         <property name="permission">none</property>
-        <object class="sizeritem" expanded="true">
+        <object class="sizeritem" expanded="false">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxBoxSizer" expanded="true">
+          <object class="wxBoxSizer" expanded="false">
             <property name="minimum_size"></property>
             <property name="name">bSizer41</property>
             <property name="orient">wxHORIZONTAL</property>
             <property name="permission">none</property>
-            <object class="sizeritem" expanded="true">
+            <object class="sizeritem" expanded="false">
               <property name="border">5</property>
               <property name="flag">wxEXPAND|wxALL</property>
               <property name="proportion">1</property>
-              <object class="wxSplitterWindow" expanded="true">
+              <object class="wxSplitterWindow" expanded="false">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -7469,8 +8933,8 @@
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
                 <property name="window_style"></property>
-                <object class="splitteritem" expanded="true">
-                  <object class="wxPanel" expanded="true">
+                <object class="splitteritem" expanded="false">
+                  <object class="wxPanel" expanded="false">
                     <property name="BottomDockable">1</property>
                     <property name="LeftDockable">1</property>
                     <property name="RightDockable">1</property>
@@ -7522,7 +8986,7 @@
                     <property name="window_extra_style"></property>
                     <property name="window_name"></property>
                     <property name="window_style">wxTAB_TRAVERSAL</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer44</property>
                       <property name="orient">wxVERTICAL</property>
@@ -7655,8 +9119,8 @@
                     </object>
                   </object>
                 </object>
-                <object class="splitteritem" expanded="true">
-                  <object class="wxPanel" expanded="true">
+                <object class="splitteritem" expanded="false">
+                  <object class="wxPanel" expanded="false">
                     <property name="BottomDockable">1</property>
                     <property name="LeftDockable">1</property>
                     <property name="RightDockable">1</property>
@@ -7708,16 +9172,16 @@
                     <property name="window_extra_style"></property>
                     <property name="window_name"></property>
                     <property name="window_style">wxTAB_TRAVERSAL</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer43</property>
                       <property name="orient">wxVERTICAL</property>
                       <property name="permission">none</property>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxEXPAND</property>
                         <property name="proportion">1</property>
-                        <object class="wxSplitterWindow" expanded="true">
+                        <object class="wxSplitterWindow" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -7775,8 +9239,8 @@
                           <property name="window_extra_style"></property>
                           <property name="window_name"></property>
                           <property name="window_style">wxBORDER_THEME</property>
-                          <object class="splitteritem" expanded="true">
-                            <object class="wxPanel" expanded="true">
+                          <object class="splitteritem" expanded="false">
+                            <object class="wxPanel" expanded="false">
                               <property name="BottomDockable">1</property>
                               <property name="LeftDockable">1</property>
                               <property name="RightDockable">1</property>
@@ -7828,16 +9292,16 @@
                               <property name="window_extra_style"></property>
                               <property name="window_name"></property>
                               <property name="window_style"></property>
-                              <object class="wxBoxSizer" expanded="true">
+                              <object class="wxBoxSizer" expanded="false">
                                 <property name="minimum_size"></property>
                                 <property name="name">bSizer52</property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="permission">none</property>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">1</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer54</property>
                                     <property name="orient">wxHORIZONTAL</property>
@@ -9647,11 +11111,11 @@
                                     <property name="window_style"></property>
                                   </object>
                                 </object>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">1</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer544</property>
                                     <property name="orient">wxVERTICAL</property>
@@ -9844,11 +11308,11 @@
                                     <property name="window_style"></property>
                                   </object>
                                 </object>
-                                <object class="sizeritem" expanded="true">
+                                <object class="sizeritem" expanded="false">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">1</property>
-                                  <object class="wxBoxSizer" expanded="true">
+                                  <object class="wxBoxSizer" expanded="false">
                                     <property name="minimum_size"></property>
                                     <property name="name">bSizer545</property>
                                     <property name="orient">wxVERTICAL</property>
@@ -9915,11 +11379,11 @@
                                         <property name="wrap">-1</property>
                                       </object>
                                     </object>
-                                    <object class="sizeritem" expanded="true">
+                                    <object class="sizeritem" expanded="false">
                                       <property name="border">5</property>
                                       <property name="flag">wxALL|wxEXPAND</property>
                                       <property name="proportion">1</property>
-                                      <object class="wxTextCtrl" expanded="true">
+                                      <object class="wxTextCtrl" expanded="false">
                                         <property name="BottomDockable">1</property>
                                         <property name="LeftDockable">1</property>
                                         <property name="RightDockable">1</property>
@@ -10217,7 +11681,7 @@
         </object>
       </object>
     </object>
-    <object class="Frame" expanded="true">
+    <object class="Frame" expanded="false">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
       <property name="bg"></property>
@@ -10246,16 +11710,16 @@
       <property name="window_name"></property>
       <property name="window_style">wxTAB_TRAVERSAL</property>
       <property name="xrc_skip_sizer">1</property>
-      <object class="wxBoxSizer" expanded="true">
+      <object class="wxBoxSizer" expanded="false">
         <property name="minimum_size"></property>
         <property name="name">bSizer47</property>
         <property name="orient">wxVERTICAL</property>
         <property name="permission">none</property>
-        <object class="sizeritem" expanded="true">
+        <object class="sizeritem" expanded="false">
           <property name="border">5</property>
           <property name="flag">wxEXPAND</property>
           <property name="proportion">1</property>
-          <object class="wxSplitterWindow" expanded="true">
+          <object class="wxSplitterWindow" expanded="false">
             <property name="BottomDockable">1</property>
             <property name="LeftDockable">1</property>
             <property name="RightDockable">1</property>
@@ -10313,8 +11777,8 @@
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style"></property>
-            <object class="splitteritem" expanded="true">
-              <object class="wxPanel" expanded="true">
+            <object class="splitteritem" expanded="false">
+              <object class="wxPanel" expanded="false">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -10366,36 +11830,36 @@
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
                 <property name="window_style">wxTAB_TRAVERSAL</property>
-                <object class="wxBoxSizer" expanded="true">
+                <object class="wxBoxSizer" expanded="false">
                   <property name="minimum_size"></property>
                   <property name="name">bSizer48</property>
                   <property name="orient">wxVERTICAL</property>
                   <property name="permission">none</property>
-                  <object class="sizeritem" expanded="true">
+                  <object class="sizeritem" expanded="false">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer64</property>
                       <property name="orient">wxHORIZONTAL</property>
                       <property name="permission">none</property>
                     </object>
                   </object>
-                  <object class="sizeritem" expanded="true">
+                  <object class="sizeritem" expanded="false">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer65</property>
                       <property name="orient">wxHORIZONTAL</property>
                       <property name="permission">none</property>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10453,11 +11917,11 @@
                           <property name="wrap">-1</property>
                         </object>
                       </object>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10517,20 +11981,20 @@
                       </object>
                     </object>
                   </object>
-                  <object class="sizeritem" expanded="true">
+                  <object class="sizeritem" expanded="false">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer651</property>
                       <property name="orient">wxHORIZONTAL</property>
                       <property name="permission">none</property>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10588,11 +12052,11 @@
                           <property name="wrap">-1</property>
                         </object>
                       </object>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10652,20 +12116,20 @@
                       </object>
                     </object>
                   </object>
-                  <object class="sizeritem" expanded="true">
+                  <object class="sizeritem" expanded="false">
                     <property name="border">5</property>
                     <property name="flag">wxEXPAND</property>
                     <property name="proportion">0</property>
-                    <object class="wxBoxSizer" expanded="true">
+                    <object class="wxBoxSizer" expanded="false">
                       <property name="minimum_size"></property>
                       <property name="name">bSizer6511</property>
                       <property name="orient">wxHORIZONTAL</property>
                       <property name="permission">none</property>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">0</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10723,11 +12187,11 @@
                           <property name="wrap">-1</property>
                         </object>
                       </object>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10785,11 +12249,11 @@
                           <property name="wrap">-1</property>
                         </object>
                       </object>
-                      <object class="sizeritem" expanded="true">
+                      <object class="sizeritem" expanded="false">
                         <property name="border">5</property>
                         <property name="flag">wxALL</property>
                         <property name="proportion">1</property>
-                        <object class="wxStaticText" expanded="true">
+                        <object class="wxStaticText" expanded="false">
                           <property name="BottomDockable">1</property>
                           <property name="LeftDockable">1</property>
                           <property name="RightDockable">1</property>
@@ -10849,11 +12313,11 @@
                       </object>
                     </object>
                   </object>
-                  <object class="sizeritem" expanded="true">
+                  <object class="sizeritem" expanded="false">
                     <property name="border">1</property>
                     <property name="flag">wxALL|wxEXPAND</property>
                     <property name="proportion">1</property>
-                    <object class="wxHtmlWindow" expanded="true">
+                    <object class="wxHtmlWindow" expanded="false">
                       <property name="BottomDockable">1</property>
                       <property name="LeftDockable">1</property>
                       <property name="RightDockable">1</property>
@@ -10911,8 +12375,8 @@
                 </object>
               </object>
             </object>
-            <object class="splitteritem" expanded="true">
-              <object class="wxScrolledWindow" expanded="true">
+            <object class="splitteritem" expanded="false">
+              <object class="wxScrolledWindow" expanded="false">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
                 <property name="RightDockable">1</property>
@@ -10966,7 +12430,7 @@
                 <property name="window_extra_style"></property>
                 <property name="window_name"></property>
                 <property name="window_style">wxHSCROLL|wxVSCROLL</property>
-                <object class="wxBoxSizer" expanded="true">
+                <object class="wxBoxSizer" expanded="false">
                   <property name="minimum_size">512,-1</property>
                   <property name="name">poster_holder</property>
                   <property name="orient">wxVERTICAL</property>

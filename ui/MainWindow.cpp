@@ -221,7 +221,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_notebook1302 = new wxNotebook( m_all_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,200 ), wxBK_DEFAULT );
 	m_notebook1302->SetMinSize( wxSize( -1,200 ) );
 
-	m_jobs_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_jobs_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("jobs") );
 	wxBoxSizer* bSizer17;
 	bSizer17 = new wxBoxSizer( wxVERTICAL );
 
@@ -260,7 +260,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_jobs_panel->Layout();
 	bSizer17->Fit( m_jobs_panel );
 	m_notebook1302->AddPage( m_jobs_panel, wxT("Jobs and Images"), false );
-	m_text2img_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_text2img_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("txt2txt") );
 	m_text2img_panel->DragAcceptFiles( true );
 
 	wxBoxSizer* sizer0004;
@@ -340,7 +340,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_text2img_panel->Layout();
 	sizer0004->Fit( m_text2img_panel );
 	m_notebook1302->AddPage( m_text2img_panel, wxT("Text2IMG"), true );
-	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("img2img") );
 	m_image2image_panel->DragAcceptFiles( true );
 
 	wxBoxSizer* bSizer24;
@@ -349,20 +349,14 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer28;
 	bSizer28 = new wxBoxSizer( wxVERTICAL );
 
-	wxBoxSizer* bSizer32;
-	bSizer32 = new wxBoxSizer( wxVERTICAL );
-
-	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
-	bSizer32->Add( m_open_image, 0, wxALL|wxEXPAND, 5 );
-
-
-	bSizer28->Add( bSizer32, 0, wxEXPAND, 5 );
-
 	wxBoxSizer* bSizer33;
 	bSizer33 = new wxBoxSizer( wxVERTICAL );
 
 	wxBoxSizer* bSizer36;
 	bSizer36 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
+	bSizer36->Add( m_open_image, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2im_preview_img->Enable( false );
@@ -417,24 +411,179 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer24->Add( bSizer28, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer29;
-	bSizer29 = new wxBoxSizer( wxVERTICAL );
+	bSizer29 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_img2img_preview = new wxStaticBitmap( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
 	m_img2img_preview->DragAcceptFiles( true );
 	m_img2img_preview->SetMinSize( wxSize( 300,210 ) );
 
-	bSizer29->Add( m_img2img_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+	bSizer29->Add( m_img2img_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer24->Add( bSizer29, 0, 0, 5 );
+	bSizer24->Add( bSizer29, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	m_image2image_panel->SetSizer( bSizer24 );
 	m_image2image_panel->Layout();
 	bSizer24->Fit( m_image2image_panel );
 	m_notebook1302->AddPage( m_image2image_panel, wxT("Image2image"), false );
-	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_upscaler = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("upscaler") );
+	m_upscaler->DragAcceptFiles( true );
+
+	wxBoxSizer* bSizer68;
+	bSizer68 = new wxBoxSizer( wxHORIZONTAL );
+
+	wxBoxSizer* bSizer79;
+	bSizer79 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer69;
+	bSizer69 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer71;
+	bSizer71 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText62 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Source Image"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_staticText62->Wrap( -1 );
+	bSizer71->Add( m_staticText62, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_upscaler_filepicker = new wxFilePickerCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
+	bSizer71->Add( m_upscaler_filepicker, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_delete_upscale_image = new wxBitmapButton( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_delete_upscale_image->SetBitmap( trash_png_to_wx_bitmap() );
+	bSizer71->Add( m_delete_upscale_image, 0, wxALL, 5 );
+
+
+	bSizer69->Add( bSizer71, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer70;
+	bSizer70 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText61 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Upscaler model"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_staticText61->Wrap( -1 );
+	bSizer70->Add( m_staticText61, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_upscaler_modelChoices;
+	m_upscaler_model = new wxChoice( m_upscaler, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_upscaler_modelChoices, 0 );
+	m_upscaler_model->SetSelection( 0 );
+	bSizer70->Add( m_upscaler_model, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer69->Add( bSizer70, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer72;
+	bSizer72 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText63 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Width:"), wxDefaultPosition, wxSize( 50,-1 ), 0 );
+	m_staticText63->Wrap( -1 );
+	bSizer72->Add( m_staticText63, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_static_upscaler_width = new wxStaticText( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_static_upscaler_width->Wrap( -1 );
+	bSizer72->Add( m_static_upscaler_width, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText65 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Height:"), wxDefaultPosition, wxSize( 50,-1 ), 0 );
+	m_staticText65->Wrap( -1 );
+	bSizer72->Add( m_staticText65, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_static_upscaler_height = new wxStaticText( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_static_upscaler_height->Wrap( -1 );
+	bSizer72->Add( m_static_upscaler_height, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer69->Add( bSizer72, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer721;
+	bSizer721 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText631 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Width:"), wxDefaultPosition, wxSize( 50,-1 ), 0 );
+	m_staticText631->Wrap( -1 );
+	bSizer721->Add( m_staticText631, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_static_upscaler_target_width = new wxStaticText( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_static_upscaler_target_width->Wrap( -1 );
+	bSizer721->Add( m_static_upscaler_target_width, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText651 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Height:"), wxDefaultPosition, wxSize( 50,-1 ), 0 );
+	m_staticText651->Wrap( -1 );
+	bSizer721->Add( m_staticText651, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_static_upscaler_target_height = new wxStaticText( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_static_upscaler_target_height->Wrap( -1 );
+	bSizer721->Add( m_static_upscaler_target_height, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer69->Add( bSizer721, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer73;
+	bSizer73 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText67 = new wxStaticText( m_upscaler, wxID_ANY, wxT("Upscale factor"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_staticText67->Wrap( -1 );
+	bSizer73->Add( m_staticText67, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 4, 2 );
+	bSizer73->Add( m_upscaler_factor, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer69->Add( bSizer73, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer80;
+	bSizer80 = new wxBoxSizer( wxVERTICAL );
+
+
+	bSizer69->Add( bSizer80, 0, wxEXPAND, 5 );
+
+
+	bSizer79->Add( bSizer69, 1, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer77;
+	bSizer77 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_generate_upscaler = new wxButton( m_upscaler, wxID_ANY, wxT("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_generate_upscaler->SetBitmap( play_png_to_wx_bitmap() );
+	m_generate_upscaler->Enable( false );
+
+	bSizer77->Add( m_generate_upscaler, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_upscaler_in_memory->Enable( false );
+
+	bSizer77->Add( m_keep_upscaler_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer79->Add( bSizer77, 0, 0, 5 );
+
+
+	bSizer68->Add( bSizer79, 1, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer78;
+	bSizer78 = new wxBoxSizer( wxHORIZONTAL );
+
+	wxBoxSizer* bSizer82;
+	bSizer82 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_upscaler_source_image->SetBackgroundColour( wxColour( 80, 80, 80 ) );
+	m_upscaler_source_image->SetMinSize( wxSize( 300,210 ) );
+
+	bSizer82->Add( m_upscaler_source_image, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer78->Add( bSizer82, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer68->Add( bSizer78, 0, wxEXPAND, 5 );
+
+
+	m_upscaler->SetSizer( bSizer68 );
+	m_upscaler->Layout();
+	bSizer68->Fit( m_upscaler );
+	m_notebook1302->AddPage( m_upscaler, wxT("Upscaler"), false );
+	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("models") );
 	wxBoxSizer* bSizer20;
 	bSizer20 = new wxBoxSizer( wxVERTICAL );
 
@@ -576,6 +725,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_upscaler->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
+	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
+	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
 	m_modellist_filter->Connect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
@@ -614,6 +767,10 @@ UI::~UI()
 	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_upscaler->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
+	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
+	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
 	m_modellist_filter->Disconnect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
@@ -747,6 +904,21 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 
 	sizer2011->Add( bSizer35, 0, wxALL, 5 );
+
+	wxBoxSizer* bSizer81;
+	bSizer81 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText77 = new wxStaticText( m_path_panel, wxID_ANY, wxT("ESRGAN path"), wxDefaultPosition, wxSize( 150,-1 ), 0 );
+	m_staticText77->Wrap( -1 );
+	bSizer81->Add( m_staticText77, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_esrgan_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, wxT("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE|wxDIRP_DIR_MUST_EXIST|wxDIRP_SMALL );
+	m_esrgan_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer81->Add( m_esrgan_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2011->Add( bSizer81, 0, wxALL, 5 );
 
 	m_staticline7 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
 	sizer2011->Add( m_staticline7, 0, wxEXPAND | wxALL, 5 );

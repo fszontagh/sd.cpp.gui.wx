@@ -235,6 +235,7 @@ namespace sd_gui_utils
         std::string lora = "";
         std::string embedding = "";
         std::string taesd = "";
+        std::string esrgan = "";
         std::string presets = "";
         std::string output = "";
         std::string jobs = "";
@@ -380,6 +381,7 @@ namespace sd_gui_utils
         "txt2img",
         "img2img",
         "convert",
+        "upscale"
     };
 
     enum SDMode
