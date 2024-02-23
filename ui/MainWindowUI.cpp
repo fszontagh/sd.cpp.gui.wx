@@ -197,10 +197,24 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(item));
 
         menu->Append(1, "Requeue");
+        if (qitem->mode == QM::GenerationMode::IMG2IMG || qitem->mode == QM::GenerationMode::UPSCALE)
+        {
+            if (!std::filesystem::exists(qitem->initial_image))
+            {
+                menu->Enable(1, false);
+            }
+        }
+        if (qitem->params.controlnet_path.length() > 0 && qitem->params.control_image_path.length() > 0 && !std::filesystem::exists(qitem->params.control_image_path))
+        {
+            menu->Enable(1, false);
+        }
 
-        menu->Append(2, wxString::Format("Copy to text2img %d", qitem->id));
-        menu->Append(3, wxString::Format("Copy prompts to text2img %d", qitem->id));
-        menu->Append(4, wxString::Format("Copy prompts to img2img %d", qitem->id));
+        if (qitem->mode != QM::GenerationMode::UPSCALE && qitem->mode != QM::GenerationMode::CONVERT)
+        {
+            menu->Append(2, wxString::Format("Copy to text2img %d", qitem->id));
+            menu->Append(3, wxString::Format("Copy prompts to text2img %d", qitem->id));
+            menu->Append(4, wxString::Format("Copy prompts to img2img %d", qitem->id));
+        }
         menu->Append(5, "Details...");
         menu->AppendSeparator();
         menu->Append(99, "Delete");
@@ -535,71 +549,7 @@ void MainWindowUI::Onimg2imgDropFile(wxDropFilesEvent &event)
     auto files = event.GetFiles();
     auto file = files[0];
 
-    wxImage img;
-    if (img.LoadFile(file))
-    {
-
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
-
-        this->currentInitialImage = new wxImage(img);
-        this->currentInitialImagePreview = new wxImage(preview);
-        this->currentInitialImagePath = file;
-
-        this->m_img2img_preview->SetBitmap(preview);
-        this->m_img2im_preview_img->Enable();
-        this->m_delete_initial_img->Enable();
-        this->m_generate1->Enable();
-
-        // png not working... yet...
-        if (img.GetType() == wxBITMAP_TYPE_PNG)
-        {
-            return;
-        }
-
-        try
-        {
-
-            Exiv2::Image::UniquePtr image = Exiv2::ImageFactory::open(file.ToStdString());
-            if (!image->good())
-            {
-                return;
-            }
-            image->readMetadata();
-            Exiv2::ExifData &exifData = image->exifData();
-            if (!exifData.empty())
-            {
-                std::string ex;
-                Exiv2::ExifData::iterator it;
-                std::string usercomment;
-                for (it = exifData.begin(); it != exifData.end(); ++it)
-                {
-                    // ex += fmt::format("Key: {} ", it->key());
-                    if (it->key() == "Exif.Photo.UserComment")
-                    {
-                        usercomment = it->getValue()->toString();
-                        if (!usercomment.empty())
-                        {
-                            std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
-                            this->imageCommentToGuiParams(getParams, sd_gui_utils::SDMode::IMG2IMG);
-                            for (auto _s : getParams)
-                            {
-                                std::cerr << "key: " << _s.first << " val: " << _s.second << "\n";
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exiv2::Error &e)
-        {
-            std::cerr << "Err: " << e.what() << std::endl;
-        }
-    }
-    else
-    {
-        wxMessageBox("Can not open image!");
-    }
+    this->onimg2ImgImageOpen(file.ToStdString());
 }
 
 void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
@@ -610,26 +560,7 @@ void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
         this->m_generate1->Disable();
         return;
     }
-
-    wxImage img;
-    if (img.LoadFile(event.GetPath()))
-    {
-
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
-
-        this->currentInitialImage = new wxImage(img);
-        this->currentInitialImagePreview = new wxImage(preview);
-        this->currentInitialImagePath = event.GetPath();
-
-        this->m_img2img_preview->SetBitmap(preview);
-        this->m_img2im_preview_img->Enable();
-        this->m_delete_initial_img->Enable();
-        this->m_generate1->Enable();
-    }
-    else
-    {
-        wxMessageBox("Can not open image!");
-    }
+    this->onimg2ImgImageOpen(event.GetPath().ToStdString());
 }
 
 void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
@@ -652,6 +583,8 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent &event)
     this->m_img2img_preview->SetBitmap(wxBitmap());
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
+    this->m_open_image->SetPath("");
+    this->m_generate2->Disable();
 }
 
 void MainWindowUI::OnUpscalerDropFile(wxDropFilesEvent &event)
@@ -659,28 +592,17 @@ void MainWindowUI::OnUpscalerDropFile(wxDropFilesEvent &event)
     // only just one file.. sry...
     auto files = event.GetFiles();
     auto file = files[0];
+    this->onUpscaleImageOpen(file.ToStdString());
+}
 
-    wxImage img;
-    if (img.LoadFile(file))
+void MainWindowUI::OnImageOpenFilePickerChanged(wxFileDirPickerEvent &event)
+{
+    if (event.GetPath().empty())
     {
-        this->currentUpscalerSourceImage = new wxImage(img);
-        this->m_upscaler_filepicker->SetPath(file);
-        int maxHeight = this->m_upscaler_source_image->GetSize().GetHeight();
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, maxHeight);
-
-        this->m_generate_upscaler->Enable();
-        this->m_upscaler_source_image->SetBitmap(preview);
-        this->Layout();
-        this->m_static_upscaler_height->SetLabel(wxString::Format("%dpx", img.GetHeight()));
-        this->m_static_upscaler_width->SetLabel(wxString::Format("%dpx", img.GetWidth()));
-
-        int factor = this->m_upscaler_factor->GetValue();
-        int target_width = factor * img.GetWidth();
-        int target_height = factor * img.GetHeight();
-
-        this->m_static_upscaler_target_height->SetLabel(wxString::Format("%dpx", target_height));
-        this->m_static_upscaler_target_width->SetLabel(wxString::Format("%dpx", target_width));
+        this->m_generate2->Disable();
+        return;
     }
+    this->onUpscaleImageOpen(event.GetPath().ToStdString());
 }
 
 void MainWindowUI::OnDeleteUpscaleImage(wxCommandEvent &event)
@@ -697,7 +619,20 @@ void MainWindowUI::OnDeleteUpscaleImage(wxCommandEvent &event)
     this->Layout();
 }
 
-void MainWindowUI::OnUpscalerFactorChange(wxSpinDoubleEvent &event)
+void MainWindowUI::OnUpscalerModelSelection(wxCommandEvent &event)
+{
+    if (this->m_upscaler_model->GetCurrentSelection() != 0)
+    {
+        if (!this->m_upscaler_filepicker->GetPath().empty())
+        {
+            this->m_generate_upscaler->Enable();
+            return;
+        }
+    }
+    this->m_generate_upscaler->Disable();
+}
+
+void MainWindowUI::OnUpscalerFactorChange(wxSpinEvent &event)
 {
 
     if (this->currentUpscalerSourceImage->IsOk())
@@ -1631,6 +1566,108 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
     }
 }
 
+void MainWindowUI::onimg2ImgImageOpen(std::string file)
+{
+    wxImage img;
+    if (img.LoadFile(file))
+    {
+
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
+
+        this->currentInitialImage = new wxImage(img);
+        this->currentInitialImagePreview = new wxImage(preview);
+        this->currentInitialImagePath = file;
+
+        this->m_img2img_preview->SetBitmap(preview);
+        this->m_img2im_preview_img->Enable();
+        this->m_delete_initial_img->Enable();
+        this->m_generate1->Enable();
+        this->m_open_image->SetPath(file);
+
+        // png not working... yet...
+        if (img.GetType() == wxBITMAP_TYPE_PNG)
+        {
+            return;
+        }
+
+        try
+        {
+
+            Exiv2::Image::UniquePtr image = Exiv2::ImageFactory::open(file);
+            if (!image->good())
+            {
+                return;
+            }
+            image->readMetadata();
+            Exiv2::ExifData &exifData = image->exifData();
+            if (!exifData.empty())
+            {
+                std::string ex;
+                Exiv2::ExifData::iterator it;
+                std::string usercomment;
+                for (it = exifData.begin(); it != exifData.end(); ++it)
+                {
+                    // ex += fmt::format("Key: {} ", it->key());
+                    if (it->key() == "Exif.Photo.UserComment")
+                    {
+                        usercomment = it->getValue()->toString();
+                        if (!usercomment.empty())
+                        {
+                            std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
+                            this->imageCommentToGuiParams(getParams, sd_gui_utils::SDMode::IMG2IMG);
+                            for (auto _s : getParams)
+                            {
+                                std::cerr << "key: " << _s.first << " val: " << _s.second << "\n";
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exiv2::Error &e)
+        {
+            std::cerr << "Err: " << e.what() << std::endl;
+        }
+    }
+    else
+    {
+        wxMessageBox("Can not open image!");
+    }
+}
+
+void MainWindowUI::onUpscaleImageOpen(std::string file)
+{
+    wxImage img;
+    if (img.LoadFile(file))
+    {
+        this->currentUpscalerSourceImage = new wxImage(img);
+        this->m_upscaler_filepicker->SetPath(file);
+        int maxHeight = this->m_upscaler_source_image->GetSize().GetHeight();
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, maxHeight);
+        this->m_generate_upscaler->Enable();
+        this->m_upscaler_source_image->SetBitmap(preview);
+        this->Layout();
+        this->m_static_upscaler_height->SetLabel(wxString::Format("%dpx", img.GetHeight()));
+        this->m_static_upscaler_width->SetLabel(wxString::Format("%dpx", img.GetWidth()));
+
+        int factor = this->m_upscaler_factor->GetValue();
+        int target_width = factor * img.GetWidth();
+        int target_height = factor * img.GetHeight();
+
+        this->m_static_upscaler_target_height->SetLabel(wxString::Format("%dpx", target_height));
+        this->m_static_upscaler_target_width->SetLabel(wxString::Format("%dpx", target_width));
+        if (this->m_upscaler_model->GetCurrentSelection() != 0)
+        {
+            this->m_generate_upscaler->Enable();
+        }
+        else
+        {
+            this->m_generate_upscaler->Disable();
+        }
+    }
+}
+
 void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 {
 
@@ -1654,17 +1691,17 @@ void MainWindowUI::StartGeneration(QM::QueueItem myJob)
 void MainWindowUI::loadTypeList()
 {
     this->m_type->Clear();
-    unsigned int index = 0;
+    unsigned int selected = 0;
     for (auto type : sd_gui_utils::sd_type_gui_names)
     {
+
+        this->m_type->Append(type.second);
         if (type.second == "Default")
         {
-            this->m_type->Select(type.first);
+            this->m_type->Select(selected);
         }
-        this->m_type->Append(type.second);
-        index = 0;
+        selected++;
     }
-
     // this->m_type->Select(sizeof(sd_gui_utils::sd_type_gui_names) - 1);
 }
 
@@ -1805,12 +1842,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
             current_progress = static_cast<int>((_x * 100) / _m);
         }
 
-        this->m_statusBar166->SetStatusText(fmt::format("Hashing: {} / {}  {}% {}",
-                                                        wxString::Format("%.1f %s", _hr1.first, _hr1.second).ToStdString(),
-                                                        wxString::Format("%.1f %s", _hr2.first, _hr2.second).ToStdString(),
-                                                        current_progress,
-                                                        modelinfo->name));
-
         for (unsigned int i = 0; i < store->GetItemCount(); i++)
         {
             auto _item = store->GetItem(i);
@@ -1827,7 +1858,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
     if (token == "STANDALONE_HASHING_DONE")
     {
-        this->m_statusBar166->SetStatusText("");
         sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
         nlohmann::json j(*modelinfo);
         std::ofstream file(modelinfo->meta_file);
@@ -1853,12 +1883,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
         {
             current_progress = static_cast<int>((_x * 100) / _m);
         }
-
-        this->m_statusBar166->SetStatusText(fmt::format("Hashing: {} / {}  {}% {}",
-                                                        wxString::Format("%.1f %s", _hr1.first, _hr1.second).ToStdString(),
-                                                        wxString::Format("%.1f %s", _hr2.first, _hr2.second).ToStdString(),
-                                                        current_progress,
-                                                        myjob.model));
 
         for (unsigned int i = 0; i < store->GetItemCount(); i++)
         {
@@ -1962,11 +1986,21 @@ void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, 
     sd_gui_utils::VoidHolder *holder = static_cast<sd_gui_utils::VoidHolder *>(custom_pointer);
     wxEvtHandler *eventHandler = (wxEvtHandler *)holder->p1;
     QM::QueueItem *myItem = (QM::QueueItem *)holder->p2;
+    // update the model list too
+    sd_gui_utils::ModelFileInfo *modelinfo = (sd_gui_utils::ModelFileInfo *)holder->p3;
+    modelinfo->hash_progress_size = readed_size;
+    modelinfo->hash_fullsize = myItem->hash_fullsize;
     myItem->hash_progress_size = readed_size;
     wxThreadEvent *e = new wxThreadEvent();
     e->SetString("HASHING_PROGRESS:placeholder");
     e->SetPayload(*myItem);
     wxQueueEvent(eventHandler, e);
+
+    // send info to the model list tooo
+    wxThreadEvent *r = new wxThreadEvent();
+    r->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
+    r->SetPayload(modelinfo);
+    wxQueueEvent(eventHandler, r);
 }
 
 void MainWindowUI::ShowNotification(std::string title, std::string message)
@@ -1984,17 +2018,16 @@ void MainWindowUI::ShowNotification(std::string title, std::string message)
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
 {
-    //   if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
-    //  {
-    auto *eventHandler = (wxEvtHandler *)data;
+    if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
+    {
+        auto *eventHandler = (wxEvtHandler *)data;
 
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-    e->SetPayload(level);
-    wxQueueEvent(eventHandler, e);
-    ///
-    // MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::SD_MESSAGE, level, text);
-    // }
+        wxThreadEvent *e = new wxThreadEvent();
+        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
+        e->SetPayload(level);
+        wxQueueEvent(eventHandler, e);
+        // MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::SD_MESSAGE, level, text);
+    }
 }
 
 sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -2024,6 +2057,7 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
             sd_gui_utils::VoidHolder *holder = new sd_gui_utils::VoidHolder;
             holder->p1 = (void *)eventHandler;
             holder->p2 = (void *)item;
+            holder->p3 = (void *)this->ModelManager->getIntoPtr(model.path);
             auto hash = sd_gui_utils::sha256_file_openssl(model.path.c_str(), (void *)holder, &MainWindowUI::ModelHashingCallback);
             this->ModelManager->setHash(myItem.params.model_path, hash);
         }
@@ -2082,7 +2116,7 @@ upscaler_ctx_t *MainWindowUI::LoadUpscaleModel(wxEvtHandler *eventHandler, QM::Q
 {
     upscaler_ctx_t *u_ctx = new_upscaler_ctx(myItem.params.esrgan_path.c_str(),
                                              myItem.params.n_threads,
-                                             SD_TYPE_F16);
+                                             myItem.params.wtype);
     if (u_ctx == NULL)
     {
         this->upscaleModelLoaded = false;
@@ -2701,6 +2735,21 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
 
+    sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
+    vparams->p1 = (void *)this->GetEventHandler();
+    vparams->p2 = (void *)&myItem;
+
+    sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void *)vparams);
+
+    if (this->currentUpscalerModel != myItem.params.esrgan_path)
+    {
+        if (this->upscaleModelLoaded)
+        {
+            free_upscaler_ctx(this->upscaler_ctx);
+            this->upscaleModelLoaded = false;
+        }
+    }
+
     if (this->upscaleModelLoaded == false)
     {
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_LOAD_START, myItem);
@@ -2710,8 +2759,10 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         {
             myItem.status_message = fmt::format("Model load failed: {}", myItem.params.esrgan_path);
             MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_FAILED, myItem);
+            this->upscaleModelLoaded = false;
             return;
         }
+        this->upscaleModelLoaded = true;
     }
 
     if (std::filesystem::exists(myItem.initial_image))
@@ -2763,8 +2814,11 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         }
 
         // save img
-
-        free_upscaler_ctx(this->upscaler_ctx);
+        if (!this->m_keep_upscaler_in_memory->GetValue())
+        {
+            this->upscaleModelLoaded = false;
+            free_upscaler_ctx(this->upscaler_ctx);
+        }
     }
     else
     {

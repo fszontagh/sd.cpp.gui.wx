@@ -447,7 +447,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_staticText62->Wrap( -1 );
 	bSizer71->Add( m_staticText62, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_upscaler_filepicker = new wxFilePickerCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("*.*"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
+	m_upscaler_filepicker = new wxFilePickerCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxT("Select a file"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
 	bSizer71->Add( m_upscaler_filepicker, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_delete_upscale_image = new wxBitmapButton( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
@@ -524,7 +524,9 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_staticText67->Wrap( -1 );
 	bSizer73->Add( m_staticText67, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 4, 2 );
+	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 4, 4 );
+	m_upscaler_factor->Enable( false );
+
 	bSizer73->Add( m_upscaler_factor, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -550,8 +552,6 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer77->Add( m_generate_upscaler, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_keep_upscaler_in_memory->Enable( false );
-
 	bSizer77->Add( m_keep_upscaler_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -563,20 +563,14 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer78;
 	bSizer78 = new wxBoxSizer( wxHORIZONTAL );
 
-	wxBoxSizer* bSizer82;
-	bSizer82 = new wxBoxSizer( wxHORIZONTAL );
-
 	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	m_upscaler_source_image->SetBackgroundColour( wxColour( 80, 80, 80 ) );
 	m_upscaler_source_image->SetMinSize( wxSize( 300,210 ) );
 
-	bSizer82->Add( m_upscaler_source_image, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer78->Add( m_upscaler_source_image, 1, wxEXPAND, 5 );
 
 
-	bSizer78->Add( bSizer82, 0, wxALIGN_CENTER_VERTICAL, 5 );
-
-
-	bSizer68->Add( bSizer78, 0, wxEXPAND, 5 );
+	bSizer68->Add( bSizer78, 1, wxALL|wxEXPAND, 5 );
 
 
 	m_upscaler->SetSizer( bSizer68 );
@@ -726,7 +720,9 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_upscaler->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
+	m_upscaler_filepicker->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
 	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::OnUpscalerModelSelection ), NULL, this );
 	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
 	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
@@ -768,7 +764,9 @@ UI::~UI()
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_upscaler->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
+	m_upscaler_filepicker->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
 	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::OnUpscalerModelSelection ), NULL, this );
 	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
 	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );

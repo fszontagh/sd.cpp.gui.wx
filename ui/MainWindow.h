@@ -168,7 +168,9 @@ class UI : public wxFrame
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerDropFile( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnImageOpenFilePickerChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnDeleteUpscaleImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUpscalerModelSelection( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }

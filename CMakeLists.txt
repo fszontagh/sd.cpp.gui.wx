@@ -36,7 +36,7 @@ option(BUILD_SHARED_LIBS             "sd: build shared libs" OFF)
 
 # stolen ggml options..
 # instruction set specific
-option(GGML_AVX                     "ggml: enable AVX"                                     ON)
+option(GGML_AVX                     "ggml: enable AVX"                                     OFF)
 option(GGML_AVX2                    "ggml: enable AVX2"                                    OFF)
 option(GGML_AVX512                  "ggml: enable AVX512"                                  OFF)
 option(GGML_AVX512_VBMI             "ggml: enable AVX512-VBMI"                             OFF)
@@ -103,7 +103,6 @@ find_package(wxWidgets CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(unofficial-curlpp CONFIG REQUIRED)
-find_package(imageinfo CONFIG REQUIRED)
 find_package(exiv2 CONFIG REQUIRED)
 
 
@@ -122,11 +121,11 @@ string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
 string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html imageinfo::imageinfo Exiv2::exiv2lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html Exiv2::exiv2lib)
 
 else()
 set(CUDA_MODULES "")
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html imageinfo::imageinfo Exiv2::exiv2lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html Exiv2::exiv2lib)
 ENDIF()
 
 

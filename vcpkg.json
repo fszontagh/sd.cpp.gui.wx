@@ -6,7 +6,6 @@
     "wxwidgets",
     "openssl",
     "curlpp",
-    "exiv2",
-    "imageinfo"
+    "exiv2"
   ]
 }

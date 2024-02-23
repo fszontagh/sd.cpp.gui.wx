@@ -32,6 +32,7 @@ namespace sd_gui_utils
     {
         void *p1; // eventhandler
         void *p2; // QM::QueueItem
+        void *p3; // Others... 
     } VoidHolder;
     enum DirTypes
     {
