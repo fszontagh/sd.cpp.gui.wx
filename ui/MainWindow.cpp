@@ -1124,11 +1124,7 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 	wxBoxSizer* bSizer41;
 	bSizer41 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_splitter2 = new wxSplitterWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D|wxSP_3DBORDER|wxSP_BORDER|wxSP_LIVE_UPDATE|wxSP_THIN_SASH );
-	m_splitter2->Connect( wxEVT_IDLE, wxIdleEventHandler( ImageViewer::m_splitter2OnIdle ), NULL, this );
-	m_splitter2->SetMinimumPaneSize( 220 );
-
-	m_panel9 = new wxPanel( m_splitter2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel9 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	m_panel9->SetMinSize( wxSize( 500,-1 ) );
 
 	wxBoxSizer* bSizer44;
@@ -1154,7 +1150,11 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 	m_panel9->SetSizer( bSizer44 );
 	m_panel9->Layout();
 	bSizer44->Fit( m_panel9 );
-	m_panel10 = new wxPanel( m_splitter2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	bSizer41->Add( m_panel9, 1, wxEXPAND | wxALL, 5 );
+
+	m_panel10 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel10->SetMinSize( wxSize( 300,-1 ) );
+
 	wxBoxSizer* bSizer43;
 	bSizer43 = new wxBoxSizer( wxVERTICAL );
 
@@ -1413,9 +1413,8 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_scrolledWindow2 = new wxScrolledWindow( m_panel18, wxID_ANY, wxDefaultPosition, wxSize( -1,200 ), wxBORDER_SIMPLE|wxCLIP_CHILDREN|wxFULL_REPAINT_ON_RESIZE|wxHSCROLL );
 	m_scrolledWindow2->SetScrollRate( 5, 5 );
-	thumbnails_container = new wxBoxSizer( wxVERTICAL );
+	thumbnails_container = new wxGridSizer( 0, 6, 0, 0 );
 
-	thumbnails_container->SetMinSize( wxSize( -1,128 ) );
 
 	m_scrolledWindow2->SetSizer( thumbnails_container );
 	m_scrolledWindow2->Layout();
@@ -1432,8 +1431,7 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 	m_panel10->SetSizer( bSizer43 );
 	m_panel10->Layout();
 	bSizer43->Fit( m_panel10 );
-	m_splitter2->SplitVertically( m_panel9, m_panel10, 0 );
-	bSizer41->Add( m_splitter2, 1, wxEXPAND|wxALL, 5 );
+	bSizer41->Add( m_panel10, 1, wxEXPAND | wxALL, 5 );
 
 
 	bSizer39->Add( bSizer41, 1, wxEXPAND, 5 );
@@ -1443,10 +1441,16 @@ ImageViewer::ImageViewer( wxWindow* parent, wxWindowID id, const wxString& title
 	this->Layout();
 
 	this->Centre( wxBOTH );
+
+	// Connect Events
+	m_bitmap6->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( ImageViewer::onImageViewClick ), NULL, this );
 }
 
 ImageViewer::~ImageViewer()
 {
+	// Disconnect Events
+	m_bitmap6->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( ImageViewer::onImageViewClick ), NULL, this );
+
 }
 
 ImageDialog::ImageDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxDialog( parent, id, title, pos, size, style, name )

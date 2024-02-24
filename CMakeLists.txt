@@ -53,15 +53,15 @@ endif()
 
 include(external/CMakeLists.txt)
 
+if(WIN32)
+  set(SRCS ${SRCS} minimal.rc)
+endif(WIN32)
 
-
-
-add_executable(${PROJECT_NAME} ${OPTIONS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUI.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp ui/MainWindowImage.cpp ui/MainWindowImageDialog.cpp ui/MainWindowModelinfo.cpp ui/ModelInfo.cpp)
+add_executable(${PROJECT_NAME} ${OPTIONS} ${SRCS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUI.cpp ui/MainWindowImageViewer.cpp ui/QueueManager.cpp ui/MainWindowImage.cpp ui/MainWindowImageDialog.cpp ui/MainWindowModelinfo.cpp ui/ModelInfo.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/src/stable-diffusion-git)
 
 IF(WIN32)
-
     if(SD_CUBLAS)
     set(CUDA_PATH "$ENV{CUDA_PATH}")
     message("-- CUDA_PATH=" ${CUDA_PATH})

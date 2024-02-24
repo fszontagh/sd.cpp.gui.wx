@@ -260,7 +260,6 @@ class ImageViewer : public wxFrame
 	private:
 
 	protected:
-		wxSplitterWindow* m_splitter2;
 		wxPanel* m_panel9;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticBitmap* m_bitmap6;
@@ -301,19 +300,17 @@ class ImageViewer : public wxFrame
 		wxTextCtrl* m_static_negative_prompt;
 		wxPanel* m_panel18;
 
+		// Virtual event handlers, override them in your derived class
+		virtual void onImageViewClick( wxMouseEvent& event ) { event.Skip(); }
+
+
 	public:
 		wxScrolledWindow* m_scrolledWindow2;
-		wxBoxSizer* thumbnails_container;
+		wxGridSizer* thumbnails_container;
 
 		ImageViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,700 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL, const wxString& name = wxT("sd.cpp.gui.image") );
 
 		~ImageViewer();
-
-		void m_splitter2OnIdle( wxIdleEvent& )
-		{
-			m_splitter2->SetSashPosition( 0 );
-			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ImageViewer::m_splitter2OnIdle ), NULL, this );
-		}
 
 		void m_splitter5OnIdle( wxIdleEvent& )
 		{

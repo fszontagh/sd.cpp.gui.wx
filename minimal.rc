@@ -1,0 +1,2 @@
+mondrian ICON "ui/icons/16/cube.ico"
+#include "wx/msw/wx.rc"

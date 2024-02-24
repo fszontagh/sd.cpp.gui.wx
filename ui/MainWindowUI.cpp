@@ -1131,7 +1131,7 @@ void MainWindowUI::refreshModelTable(std::string filter, std::bitset<10> types)
                 itemData.push_back(model.name);                                   // name
                 itemData.push_back(model.size_f);                                 // size
                 itemData.push_back(sd_gui_utils::dirtypes_str[model.model_type]); // type
-                itemData.push_back(model.sha256);                                 // hash                                                                // hash
+                itemData.push_back(model.sha256.substr(0, 10));                   // hash
                 itemData.push_back(model.sha256.empty() ? 0 : 100);               // progress bar
                 store->AppendItem(itemData, (wxUIntPtr)this->ModelManager->getIntoPtr(model.path));
                 curRow++;
@@ -1170,7 +1170,7 @@ std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_util
                                     myItem.params.cfg_scale,
                                     myItem.params.width, myItem.params.height,
                                     modelPath.filename().replace_extension().string(),
-                                    modelInfo.sha256,
+                                    modelInfo.sha256.substr(0, 10), //autov2 hash (the first 10 char from sha256 :) )
                                     sd_gui_utils::modes_str[(int)myItem.mode]);
 
     if (!myItem.params.vae_path.empty())
@@ -1850,7 +1850,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
             if (_qitem->name == modelinfo->name)
             {
                 store->SetValueByRow(current_progress, i, progressCol);
-                store->SetValueByRow(modelinfo->sha256, i, hashCol);
+                store->SetValueByRow(modelinfo->sha256.substr(0, 10), i, hashCol);
                 this->m_data_model_list->Refresh();
                 break;
             }
