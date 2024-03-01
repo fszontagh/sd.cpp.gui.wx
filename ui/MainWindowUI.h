@@ -58,6 +58,11 @@ class MainWindowUI : public UI
 		void onModelSelect( wxCommandEvent& event );
 		void onTypeSelect( wxCommandEvent& event );
 		void onVaeSelect( wxCommandEvent& event );
+		void onSamplerSelect( wxCommandEvent& event );
+		void onSavePreset( wxCommandEvent& event );
+		void onLoadPreset( wxCommandEvent& event );
+		void onSelectPreset( wxCommandEvent& event );
+		void onDeletePreset( wxCommandEvent& event );
 		void onRandomGenerateButton( wxCommandEvent& event );
 		void onResolutionSwap( wxCommandEvent& event );
 		void onJobsStart( wxCommandEvent& event );
@@ -65,6 +70,8 @@ class MainWindowUI : public UI
 		void onJobsDelete( wxCommandEvent& event );
 		void OnJobListItemActivated( wxDataViewEvent& event );
 		void onContextMenu( wxDataViewEvent& event );
+		void OnJobListItemSelection( wxDataViewEvent& event );
+		void OnJobDetailsImagelistItemActivated( wxListEvent& event );
 		void onTxt2ImgFileDrop( wxDropFilesEvent& event );
 		void onGenerate( wxCommandEvent& event );
 		void OnControlnetImageOpen( wxFileDirPickerEvent& event );
@@ -83,11 +90,7 @@ class MainWindowUI : public UI
 		void OnCheckboxCheckpointFilter( wxCommandEvent& event );
 		void OnModellistFilterKeyUp( wxKeyEvent& event );
 		void OnDataModelActivated( wxDataViewEvent& event );
-		void onSamplerSelect( wxCommandEvent& event );
-		void onSavePreset( wxCommandEvent& event );
-		void onLoadPreset( wxCommandEvent& event );
-		void onSelectPreset( wxCommandEvent& event );
-		void onDeletePreset( wxCommandEvent& event );
+		void OnDataModelSelected( wxDataViewEvent& event );
 	public:
 		/** Constructor */
 		MainWindowUI( wxWindow* parent );
@@ -137,6 +140,7 @@ private:
 	wxImage *currentControlnetImagePreview;
 	wxImage *currentUpscalerSourceImage;
 	std::string currentInitialImagePath;
+	wxImageList *previewImageList;
 	sd_ctx_t *sd_ctx;
 	upscaler_ctx_t *upscaler_ctx;
 	std::streambuf *buffer;
@@ -198,9 +202,6 @@ private:
 
 	// generate the hash for a model, from the model table list
 	void threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo);
-
-
-
 
 };
 

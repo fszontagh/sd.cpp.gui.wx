@@ -801,5 +801,46 @@ namespace sd_gui_utils
         return result;
     };
 
+    inline wxImage cropResizeImage(const wxImage &originalImage, int targetWidth, int targetHeight)
+    {
+        int originalWidth = originalImage.GetWidth();
+        int originalHeight = originalImage.GetHeight();
+
+        double aspectRatio = static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
+        int newWidth = targetWidth;
+        int newHeight = targetHeight;
+
+        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
+        if (originalWidth > targetWidth || originalHeight > targetHeight)
+        {
+            if (aspectRatio > 1.0)
+            {
+                // Szélesség alapján skálázzuk az új méretet
+                newWidth = targetWidth;
+                newHeight = static_cast<int>(targetWidth / aspectRatio);
+            }
+            else
+            {
+                // Magasság alapján skálázzuk az új méretet
+                newHeight = targetHeight;
+                newWidth = static_cast<int>(targetHeight * aspectRatio);
+            }
+        }
+
+        // Méretezzük az eredeti képet az új méretekre
+        wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
+
+        // Üres terület hozzáadása és transzparens töltése
+        if (newWidth < targetWidth || newHeight < targetHeight)
+        {
+            wxImage finalImage(targetWidth, targetHeight);
+            finalImage.SetAlpha();
+            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2, (targetHeight - newHeight) / 2);
+            return finalImage;
+        }
+
+        return resizedImage;
+    }
+
 }
 #endif

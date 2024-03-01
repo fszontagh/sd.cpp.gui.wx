@@ -95,7 +95,10 @@ class UI : public wxFrame
 		wxButton* m_pause_jobs;
 		wxButton* m_delete_all_jobs;
 		wxDataViewListCtrl* m_joblist;
-		wxListCtrl* m_listCtrl1;
+		wxDataViewListCtrl* m_joblist_item_details;
+		wxDataViewColumn* m_dataViewListColumn1;
+		wxDataViewColumn* m_dataViewListColumn2;
+		wxListCtrl* m_job_details_imagelist;
 		wxPanel* m_text2img_panel;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
@@ -132,15 +135,16 @@ class UI : public wxFrame
 		wxStaticText* m_static_upscaler_target_height;
 		wxStaticText* m_staticText67;
 		wxSpinCtrl* m_upscaler_factor;
+		wxStaticBitmap* m_upscaler_source_image;
 		wxButton* m_generate_upscaler;
 		wxCheckBox* m_keep_upscaler_in_memory;
-		wxStaticBitmap* m_upscaler_source_image;
+		wxCheckBox* m_keep_other_models_in_memory;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
 		wxSearchCtrl* m_modellist_filter;
 		wxDataViewListCtrl* m_data_model_list;
-		wxListCtrl* m_listCtrl11;
+		wxListCtrl* m_model_details;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -162,6 +166,8 @@ class UI : public wxFrame
 		virtual void onJobsDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnJobListItemSelection( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnJobDetailsImagelistItemActivated( wxListEvent& event ) { event.Skip(); }
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
@@ -180,6 +186,7 @@ class UI : public wxFrame
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
 		virtual void OnDataModelActivated( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnDataModelSelected( wxDataViewEvent& event ) { event.Skip(); }
 
 
 	public:

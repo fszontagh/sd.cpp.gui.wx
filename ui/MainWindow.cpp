@@ -413,8 +413,20 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_joblist = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
 	bSizer78->Add( m_joblist, 1, wxEXPAND, 5 );
 
-	m_listCtrl1 = new wxListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
-	bSizer78->Add( m_listCtrl1, 1, wxEXPAND, 5 );
+	wxBoxSizer* bSizer107;
+	bSizer107 = new wxBoxSizer( wxVERTICAL );
+
+	m_joblist_item_details = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VARIABLE_LINE_HEIGHT|wxDV_VERT_RULES );
+	m_dataViewListColumn1 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn2 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_NONE );
+	bSizer107->Add( m_joblist_item_details, 1, wxALL|wxEXPAND, 5 );
+
+	m_job_details_imagelist = new wxListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL );
+	bSizer107->Add( m_job_details_imagelist, 1, wxEXPAND, 5 );
+
+
+	bSizer78->Add( bSizer107, 1, wxEXPAND, 5 );
 
 
 	bSizer17->Add( bSizer78, 1, wxEXPAND, 5 );
@@ -609,10 +621,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_upscaler->DragAcceptFiles( true );
 
 	wxBoxSizer* bSizer68;
-	bSizer68 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer68 = new wxBoxSizer( wxVERTICAL );
 
 	wxBoxSizer* bSizer999;
-	bSizer999 = new wxBoxSizer( wxVERTICAL );
+	bSizer999 = new wxBoxSizer( wxHORIZONTAL );
 
 	wxBoxSizer* bSizer69;
 	bSizer69 = new wxBoxSizer( wxVERTICAL );
@@ -712,6 +724,20 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	bSizer999->Add( bSizer69, 1, wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer1000;
+	bSizer1000 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_upscaler_source_image->SetBackgroundColour( wxColour( 80, 80, 80 ) );
+
+	bSizer1000->Add( m_upscaler_source_image, 1, wxEXPAND, 5 );
+
+
+	bSizer999->Add( bSizer1000, 1, wxEXPAND, 5 );
+
+
+	bSizer68->Add( bSizer999, 1, wxEXPAND, 5 );
+
 	wxBoxSizer* bSizer77;
 	bSizer77 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -725,22 +751,11 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer77->Add( m_keep_upscaler_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-
-	bSizer999->Add( bSizer77, 0, wxEXPAND, 5 );
-
-
-	bSizer68->Add( bSizer999, 1, wxEXPAND, 5 );
-
-	wxBoxSizer* bSizer1000;
-	bSizer1000 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	m_upscaler_source_image->SetBackgroundColour( wxColour( 80, 80, 80 ) );
-
-	bSizer1000->Add( m_upscaler_source_image, 1, wxEXPAND, 5 );
+	m_keep_other_models_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Check Me!"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer77->Add( m_keep_other_models_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer68->Add( bSizer1000, 1, wxEXPAND, 5 );
+	bSizer68->Add( bSizer77, 0, wxEXPAND, 5 );
 
 
 	m_upscaler->SetSizer( bSizer68 );
@@ -778,10 +793,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_data_model_list = new wxDataViewListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_ROW_LINES|wxDV_SINGLE|wxFULL_REPAINT_ON_RESIZE );
 	bSizer102->Add( m_data_model_list, 1, wxEXPAND, 5 );
 
-	m_listCtrl11 = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
-	m_listCtrl11->SetMinSize( wxSize( 300,-1 ) );
+	m_model_details = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
+	m_model_details->SetMinSize( wxSize( 300,-1 ) );
 
-	bSizer102->Add( m_listCtrl11, 1, wxEXPAND, 5 );
+	bSizer102->Add( m_model_details, 1, wxEXPAND, 5 );
 
 
 	bSizer20->Add( bSizer102, 1, wxEXPAND, 5 );
@@ -832,6 +847,8 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_delete_all_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnJobListItemActivated ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
+	m_job_details_imagelist->Connect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( UI::OnJobDetailsImagelistItemActivated ), NULL, this );
 	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
 	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
@@ -854,6 +871,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_modellist_filter->Connect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
 	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
 	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnDataModelSelected ), NULL, this );
 }
 
 UI::~UI()
@@ -876,6 +894,8 @@ UI::~UI()
 	m_delete_all_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnJobListItemActivated ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
+	m_job_details_imagelist->Disconnect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( UI::OnJobDetailsImagelistItemActivated ), NULL, this );
 	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
 	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
@@ -898,6 +918,7 @@ UI::~UI()
 	m_modellist_filter->Disconnect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
 	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
 	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnDataModelSelected ), NULL, this );
 
 }
 

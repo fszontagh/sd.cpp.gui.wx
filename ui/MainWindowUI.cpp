@@ -12,6 +12,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->currentControlnetImage = new wxImage();
     this->currentControlnetImagePreview = new wxImage();
 
+    this->previewImageList = new wxImageList();
+
     // prepare data list views
     this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
     this->m_data_model_list->AppendTextColumn("Size");
@@ -151,6 +153,8 @@ void MainWindowUI::onJobsDelete(wxCommandEvent &event)
 
 void MainWindowUI::OnJobListItemActivated(wxDataViewEvent &event)
 {
+    // implemented in OnJobListItemSelection
+    return;
     auto store = this->m_joblist->GetStore();
 
     auto row = this->m_joblist->GetSelectedRow();
@@ -258,6 +262,224 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
     PopupMenu(menu);
 }
 
+void MainWindowUI::OnJobListItemSelection(wxDataViewEvent &event)
+{
+    auto store = this->m_joblist->GetStore();
+
+    auto row = this->m_joblist->GetSelectedRow();
+    auto currentItem = store->GetItem(row);
+    QM::QueueItem *qitem = reinterpret_cast<QM::QueueItem *>(store->GetItemData(currentItem));
+
+    auto item = this->qmanager->GetItem(qitem->id);
+
+    if (item.status == QM::QueueStatus::RUNNING ||
+        item.status == QM::QueueStatus::PENDING ||
+        item.status == QM::QueueStatus::HASHING)
+    {
+        return;
+    }
+
+    std::cerr << "Selected job: " << qitem->id << std::endl;
+    this->m_joblist_item_details->DeleteAllItems();
+
+    wxVector<wxVariant> data;
+
+    data.push_back(wxVariant("ID"));
+    data.push_back(wxVariant(wxString::Format("%d", item.id)));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Created at"));
+    data.push_back(wxVariant(sd_gui_utils::formatUnixTimestampToDate(item.created_at)));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Finished at"));
+    data.push_back(wxVariant(sd_gui_utils::formatUnixTimestampToDate(item.finished_at)));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Mode"));
+    data.push_back(wxVariant(wxString(sd_gui_utils::modes_str[item.mode])));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Model"));
+    data.push_back(wxVariant(wxString(item.model)));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Threads"));
+    data.push_back(wxVariant(wxString::Format("%d", item.params.n_threads)));
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    if (item.mode == QM::GenerationMode::IMG2IMG)
+    {
+        data.push_back(wxVariant("Init image"));
+        data.push_back(wxVariant(wxString(item.initial_image)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+    }
+    if (item.mode == QM::GenerationMode::UPSCALE)
+    {
+    }
+    if (item.mode == QM::GenerationMode::TXT2IMG || item.mode == QM::GenerationMode::IMG2IMG)
+    {
+        data.push_back(wxVariant("Prompt"));
+        data.push_back(wxVariant(wxString(item.params.prompt)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Neg. prompt"));
+        data.push_back(wxVariant(wxString(item.params.negative_prompt)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Seed"));
+        data.push_back(wxVariant(wxString::Format("%" PRId64, item.params.seed)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Clip skip"));
+        data.push_back(wxVariant(wxString::Format("%d", item.params.clip_skip)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Cfg scale"));
+        data.push_back(wxVariant(wxString::Format("%.1f", item.params.cfg_scale)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Sampler"));
+        data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sample_method_str[item.params.sample_method])));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        if (item.mode == QM::GenerationMode::IMG2IMG)
+        {
+            data.push_back(wxVariant("Strength"));
+            data.push_back(wxVariant(wxString::Format("%.2f", item.params.strength)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
+
+        data.push_back(wxVariant("Steps"));
+        data.push_back(wxVariant(wxString::Format("%d", item.params.sample_steps)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("VAE"));
+        data.push_back(wxVariant(wxString(item.params.vae_path)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("VAE tiling"));
+        data.push_back(wxVariant(wxString(item.params.vae_tiling == true ? _("yes") : _("no"))));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("TAESD"));
+        data.push_back(wxVariant(wxString(item.params.taesd_path)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+    }
+    if (item.mode == QM::GenerationMode::TXT2IMG)
+    {
+        data.push_back(wxVariant("Width"));
+        data.push_back(wxVariant(wxString::Format("%dpx", item.params.width)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Height"));
+        data.push_back(wxVariant(wxString::Format("%dpx", item.params.height)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant("Batch count"));
+        data.push_back(wxVariant(wxString::Format("%d", item.params.batch_count)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        if (!item.params.controlnet_path.empty())
+        {
+            data.push_back(wxVariant("CN model"));
+            data.push_back(wxVariant(wxString(item.params.controlnet_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant("CN img"));
+            data.push_back(wxVariant(wxString(item.params.control_image_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant("CN strength"));
+            data.push_back(wxVariant(wxString::Format("%.2f", item.params.control_strength)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
+    }
+    this->previewImageList->Destroy();
+    this->previewImageList->Create(256, 256);
+
+    this->m_job_details_imagelist->ClearAll();
+
+    if (!item.initial_image.empty())
+    {
+        item.images.insert(item.images.begin(), item.initial_image);
+    }
+    if (!item.params.control_image_path.empty())
+    {
+        item.images.insert(item.images.begin(), item.params.control_image_path);
+    }
+
+    // add imgs
+    for (auto img : item.images)
+    {
+        if (std::filesystem::exists(img))
+        {
+            wxImage _img;
+            if (_img.LoadFile(img))
+            {
+                auto resized = sd_gui_utils::cropResizeImage(_img, 256, 256);
+                wxBitmap bmap(resized);
+                this->previewImageList->Add(bmap);
+            }
+        }
+    }
+
+    this->m_job_details_imagelist->SetImageList(this->previewImageList, wxIMAGE_LIST_NORMAL);
+    int idx = 0;
+    for (auto img : item.images)
+    {
+        std::filesystem::path *image_path = new std::filesystem::path(img);
+        if (std::filesystem::exists(*image_path))
+        {
+            auto id = this->m_job_details_imagelist->InsertItem(idx, image_path->filename().string(), idx);
+            this->m_job_details_imagelist->SetItemPtrData(id, wxUIntPtr(image_path));
+            idx++;
+        }
+        else
+        {
+            auto id = this->m_job_details_imagelist->InsertItem(idx, wxString::Format("Deleted: %s", image_path->filename().string()));
+            this->m_job_details_imagelist->SetItemPtrData(id, wxUIntPtr(image_path));
+            // this->m_job_details_imagelist->SetItemBackgroundColour(id, wxColour(255,255,255));// light yellow, image not found
+            this->m_job_details_imagelist->SetItemTextColour(id, wxColour(247, 88, 35)); // near orange, but red
+        }
+    }
+}
+
+void MainWindowUI::OnJobDetailsImagelistItemActivated(wxListEvent &event)
+{
+    //
+    auto item = event.GetItem();
+    std::filesystem::path *p = reinterpret_cast<std::filesystem::path *>(item.GetData());
+    if (std::filesystem::exists(*p))
+    {
+        wxLaunchDefaultApplication(p->string());
+    }
+}
+
 void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent &event)
 {
     // only just one file.. sry...
@@ -331,14 +553,6 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent &event)
 void MainWindowUI::onGenerate(wxCommandEvent &event)
 {
     this->initConfig();
-
-    // get the generation type
-    // 0 -> joblist
-    // 1 -> text2img
-    // 3 -> img2img
-    // 4 -> models
-    // 5 -> ... none
-    // ...
     auto type = QM::GenerationMode::TXT2IMG;
     int pageId = this->m_notebook1302->GetSelection();
     switch (pageId)
@@ -617,7 +831,7 @@ void MainWindowUI::OnDeleteUpscaleImage(wxCommandEvent &event)
     this->currentUpscalerSourceImage = NULL;
     this->m_upscaler_filepicker->SetPath("");
     this->m_generate_upscaler->Disable();
-    //this->m_upscaler_factor->SetValue(2.0);
+    // this->m_upscaler_factor->SetValue(2.0);
     this->Layout();
 }
 
@@ -775,6 +989,21 @@ void MainWindowUI::OnDataModelActivated(wxDataViewEvent &event)
         mi = NULL;
         delete mi;
     }
+}
+
+void MainWindowUI::OnDataModelSelected(wxDataViewEvent &event)
+{
+    auto store = this->m_data_model_list->GetStore();
+    auto row = this->m_data_model_list->GetSelectedRow();
+    auto currentItem = store->GetItem(row);
+    sd_gui_utils::ModelFileInfo *_item = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
+    auto model = this->ModelManager->getInfo(_item->path);
+    if (model.sha256.empty())
+    {
+        wxMessageBox("Please check hash first!");
+        return;
+    }
+    std::cerr << "Selected model: " << model.name << std::endl;
 }
 
 void MainWindowUI::onSamplerSelect(wxCommandEvent &event)
@@ -2758,6 +2987,15 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         }
     }
 
+    if (!this->m_keep_other_models_in_memory->GetValue())
+    {
+        if (this->modelLoaded)
+        {
+            this->modelLoaded = false;
+            free_sd_ctx(this->sd_ctx);
+        }
+    }
+
     if (this->upscaleModelLoaded == false)
     {
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_LOAD_START, myItem);
@@ -2813,6 +3051,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         filename = filename + extension;
         if (img->SaveFile(filename, imgHandler))
         {
+            myItem.images.emplace_back(filename);
             MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, myItem);
         }
         else
