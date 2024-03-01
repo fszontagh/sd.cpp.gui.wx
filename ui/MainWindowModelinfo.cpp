@@ -26,6 +26,7 @@ void MainWindowModelinfo::data2Gui()
     }
     std::ifstream ifs(this->infofile);
     nlohmann::json jf = nlohmann::json::parse(ifs);
+    std::cerr << jf.dump() << std::endl;
     if (jf.contains("model"))
     {
 
@@ -54,7 +55,15 @@ void MainWindowModelinfo::data2Gui()
         this->m_static_model_nsfw->SetLabel(jf["model"]["nsfw"].get<bool>() == true ? "NSFW" : "SFW");
         this->m_static_model_created_at->SetLabel(jf["createdAt"].get<std::string>());
         this->m_static_model_basemodel->SetLabel(jf["baseModel"].get<std::string>());
-        this->m_static_model_basemodeltype->SetLabel(jf["baseModelType"].get<std::string>());
+        if (jf["baseModelType"].is_null())
+        {
+            this->m_static_model_basemodeltype->SetLabel("--");
+        }
+        else
+        {
+            this->m_static_model_basemodeltype->SetLabel(jf["baseModelType"].get<std::string>());
+        }
+
         if (jf["description"].is_null())
         {
             this->m_htmlWin1->SetPage(wxString("<b><i>No description...</i></b>"));

@@ -12,8 +12,6 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->currentControlnetImage = new wxImage();
     this->currentControlnetImagePreview = new wxImage();
 
-    this->ModelManager = new ModelInfo::Manager();
-
     // prepare data list views
     this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
     this->m_data_model_list->AppendTextColumn("Size");
@@ -54,6 +52,7 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     wxPersistentRegisterAndRestore(this, this->GetName());
 
     this->qmanager = new QM::QueueManager(this->GetEventHandler(), this->cfg->jobs);
+    this->ModelManager = new ModelInfo::Manager(this->cfg->datapath);
 
     // set SD logger
     sd_set_log_callback(MainWindowUI::HandleSDLog, (void *)this->GetEventHandler());
@@ -233,10 +232,6 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 
         wxDataViewListStore *store = this->m_data_model_list->GetStore();
         sd_gui_utils::ModelFileInfo *modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(item));
-        // implemented in the model details...
-        // on already hash-ed models, double click then info coming...
-        // menu->Append(111, "Download info from CivitAi.com - not implemented yet");
-        // menu->Enable(111, false);
 
         if (!modelinfo->sha256.empty())
         {
@@ -495,24 +490,27 @@ void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent &event)
         return;
     }
     wxImage img;
-    img.LoadFile(event.GetPath());
+    if (img.LoadFile(event.GetPath()))
+    {
 
-    auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 200, 190);
+        auto origSize = this->m_controlnetImagePreview->GetSize();
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
 
-    this->currentControlnetImage = new wxImage(img);
-    this->currentControlnetImagePreview = new wxImage(preview);
+        this->currentControlnetImage = new wxImage(img);
+        this->currentControlnetImagePreview = new wxImage(preview);
 
-    this->m_controlnetImagePreview->SetBitmap(preview);
-    this->m_controlnetImagePreview->Show();
-    this->m_controlnetImagePreviewButton->Enable();
-    this->m_controlnetImageDelete->Enable();
-    this->m_width->SetValue(img.GetWidth());
-    this->m_height->SetValue(img.GetHeight());
-    // can not change the outpt images resolution
-    this->m_width->Disable();
-    this->m_height->Disable();
-    this->m_button7->Disable(); // swap resolution
-    this->m_controlnetImagePreview->SetSize(200, 190);
+        this->m_controlnetImagePreview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
+        this->m_controlnetImagePreview->SetBitmap(preview);
+        this->m_controlnetImagePreview->SetSize(origSize);
+        this->m_controlnetImagePreviewButton->Enable();
+        this->m_controlnetImageDelete->Enable();
+        this->m_width->SetValue(img.GetWidth());
+        this->m_height->SetValue(img.GetHeight());
+        // can not change the outpt images resolution
+        this->m_width->Disable();
+        this->m_height->Disable();
+        this->m_button7->Disable(); // swap resolution
+    }
 }
 
 void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
@@ -580,7 +578,9 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent &event)
     this->currentInitialImage = NULL;
     this->currentInitialImagePreview = NULL;
     this->currentInitialImagePath = "";
+    auto origSize = this->m_img2img_preview->GetSize();
     this->m_img2img_preview->SetBitmap(wxBitmap());
+    this->m_img2img_preview->SetSize(origSize);
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
     this->m_open_image->SetPath("");
@@ -611,11 +611,13 @@ void MainWindowUI::OnDeleteUpscaleImage(wxCommandEvent &event)
     this->m_static_upscaler_width->SetLabel("");
     this->m_static_upscaler_target_height->SetLabel("");
     this->m_static_upscaler_target_width->SetLabel("");
+    auto origSize = this->m_upscaler_source_image->GetSize();
     this->m_upscaler_source_image->SetBitmap(wxBitmap());
+    this->m_upscaler_source_image->SetSize(origSize);
     this->currentUpscalerSourceImage = NULL;
     this->m_upscaler_filepicker->SetPath("");
     this->m_generate_upscaler->Disable();
-    this->m_upscaler_factor->SetValue(2.0);
+    //this->m_upscaler_factor->SetValue(2.0);
     this->Layout();
 }
 
@@ -1170,7 +1172,7 @@ std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_util
                                     myItem.params.cfg_scale,
                                     myItem.params.width, myItem.params.height,
                                     modelPath.filename().replace_extension().string(),
-                                    modelInfo.sha256.substr(0, 10), //autov2 hash (the first 10 char from sha256 :) )
+                                    modelInfo.sha256.substr(0, 10), // autov2 hash (the first 10 char from sha256 :) )
                                     sd_gui_utils::modes_str[(int)myItem.mode]);
 
     if (!myItem.params.vae_path.empty())
@@ -1571,14 +1573,18 @@ void MainWindowUI::onimg2ImgImageOpen(std::string file)
     wxImage img;
     if (img.LoadFile(file))
     {
+        auto origSize = this->m_img2img_preview->GetSize();
 
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, 210);
-
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
         this->currentInitialImage = new wxImage(img);
         this->currentInitialImagePreview = new wxImage(preview);
         this->currentInitialImagePath = file;
 
+        this->m_img2img_preview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
+
         this->m_img2img_preview->SetBitmap(preview);
+        this->m_img2img_preview->SetSize(origSize);
+
         this->m_img2im_preview_img->Enable();
         this->m_delete_initial_img->Enable();
         this->m_generate1->Enable();
@@ -1643,11 +1649,15 @@ void MainWindowUI::onUpscaleImageOpen(std::string file)
     {
         this->currentUpscalerSourceImage = new wxImage(img);
         this->m_upscaler_filepicker->SetPath(file);
-        int maxHeight = this->m_upscaler_source_image->GetSize().GetHeight();
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, 300, maxHeight);
+        auto origSize = this->m_upscaler_source_image->GetSize();
+
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
+
         this->m_generate_upscaler->Enable();
+        this->m_upscaler_source_image->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
         this->m_upscaler_source_image->SetBitmap(preview);
-        this->Layout();
+        this->m_upscaler_source_image->SetSize(origSize);
+
         this->m_static_upscaler_height->SetLabel(wxString::Format("%dpx", img.GetHeight()));
         this->m_static_upscaler_width->SetLabel(wxString::Format("%dpx", img.GetWidth()));
 
@@ -2008,11 +2018,8 @@ void MainWindowUI::ShowNotification(std::string title, std::string message)
     if (this->cfg->show_notifications)
     {
         wxNotificationMessage notification(title, message, this);
-        // if (!notification.MSWUseToasts())
-        // {
         notification.UseTaskBarIcon(this->TaskBar);
-        // }
-        notification.Show(60);
+        notification.Show(this->cfg->notification_timeout);
     }
 }
 
@@ -2341,11 +2348,12 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
             // it's a bug in sd.cpp, can not generate new image with controlnet, if already generated one...
             // they don't known, because the example sd.exe is just a one - time runner app... sadly...
             // so we need to destroy the ctx and re init it
-            if (myItem.params.controlnet_path.length() > 0)
-            {
-                free_sd_ctx(this->sd_ctx);
-                this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
-            }
+            /* if (myItem.params.controlnet_path.length() > 0)
+             {
+                 free_sd_ctx(this->sd_ctx);
+                 this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+             }
+             */
         }
     }
 

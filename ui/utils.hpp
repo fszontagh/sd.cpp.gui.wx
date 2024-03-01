@@ -28,11 +28,41 @@ namespace sd_gui_utils
 #endif
         return path;
     }
+
+    inline std::string UnicodeToUTF8(const char *str)
+    {
+#ifdef WIN32
+        return wxString(str).utf8_string();
+#endif
+        return std::string(str);
+    }
+    inline std::string UnicodeToUTF8(wxString str)
+    {
+#ifdef WIN32
+        return str.utf8_string();
+#endif
+        return str.ToStdString();
+    }
+    inline std::string UTF8ToUnicode(wxString str)
+    {
+#ifdef WIN32
+        return wxString::FromUTF8(str).ToStdString();
+#endif
+        return str.ToStdString();
+    }
+    inline std::string UTF8ToUnicode(const char *str)
+    {
+#ifdef WIN32
+        return wxString::FromUTF8(str).ToStdString();
+#endif
+        return wxString(str).ToStdString();
+    }
+
     typedef struct VoidHolder
     {
         void *p1; // eventhandler
         void *p2; // QM::QueueItem
-        void *p3; // Others... 
+        void *p3; // Others...
     } VoidHolder;
     enum DirTypes
     {
@@ -117,28 +147,56 @@ namespace sd_gui_utils
     inline void to_json(nlohmann::json &j, const ModelFileInfo &p)
     {
         j = nlohmann::json{
-            {"name", p.name},
-            {"path", p.path},
+            {"name", sd_gui_utils::UnicodeToUTF8(p.name)},
+            {"path", sd_gui_utils::UnicodeToUTF8(p.path)},
             {"url", p.url},
-            {"poster", p.poster},
+            {"poster", sd_gui_utils::UnicodeToUTF8(p.poster)},
             {"sha256", p.sha256},
             {"size", p.size},
             {"size_f", p.size_f},
-            {"meta_file", p.meta_file},
+            {"meta_file", sd_gui_utils::UnicodeToUTF8(p.meta_file)},
             {"model_type", (int)p.model_type}};
     }
 
     inline void from_json(const nlohmann::json &j, ModelFileInfo &p)
     {
-        j.at("name").get_to(p.name);
-        j.at("path").get_to(p.path);
-        j.at("url").get_to(p.url);
-        j.at("poster").get_to(p.poster);
-        j.at("sha256").get_to(p.sha256);
-        j.at("size").get_to(p.size);
-        j.at("size_f").get_to(p.size_f);
-        j.at("meta_file").get_to(p.meta_file);
-        p.model_type = j.at("model_type").get<sd_gui_utils::DirTypes>();
+        if (j.contains("name"))
+        {
+            p.name = sd_gui_utils::UTF8ToUnicode(j.at("name").get<std::string>());
+        }
+        if (j.contains("path"))
+        {
+            p.path = sd_gui_utils::UTF8ToUnicode(j.at("path").get<std::string>());
+        }
+
+        if (j.contains("url"))
+        {
+            j.at("url").get_to(p.url);
+        }
+        if (j.contains("poster"))
+        {
+            p.poster = sd_gui_utils::UTF8ToUnicode(j.at("poster").get<std::string>());
+        }
+        if (j.contains("sha256"))
+        {
+            j.at("sha256").get_to(p.sha256);
+        }
+        if (j.contains("size"))
+        {
+            j.at("size").get_to(p.size);
+        }
+        if (j.contains("size_f"))
+        {
+            j.at("size_f").get_to(p.size_f);
+        }
+        if (j.contains("meta_file"))
+        {
+            p.meta_file = sd_gui_utils::UTF8ToUnicode(j.at("meta_file").get<std::string>());
+        }
+        if (j.contains("model_type"))
+        {
+            p.model_type = j.at("model_type").get<sd_gui_utils::DirTypes>();
+        }
     }
     inline std::string to_hex(std::array<uint8_t, 32> data)
     {
@@ -263,35 +321,6 @@ namespace sd_gui_utils
         return ss.str();
     }
 
-    inline std::string UnicodeToUTF8(const char *str)
-    {
-#ifdef WIN32
-        return wxString(str).utf8_string();
-#endif
-        return std::string(str);
-    }
-    inline std::string UnicodeToUTF8(wxString str)
-    {
-#ifdef WIN32
-        return str.utf8_string();
-#endif
-        return str.ToStdString();
-    }
-    inline std::string UTF8ToUnicode(wxString str)
-    {
-#ifdef WIN32
-        return wxString::FromUTF8(str).ToStdString();
-#endif
-        return str.ToStdString();
-    }
-    inline std::string UTF8ToUnicode(const char *str)
-    {
-#ifdef WIN32
-        return wxString::FromUTF8(str).ToStdString();
-#endif
-        return wxString(str).ToStdString();
-    }
-
     struct generator_preset
     {
         double cfg;
@@ -382,8 +411,7 @@ namespace sd_gui_utils
         "txt2img",
         "img2img",
         "convert",
-        "upscale"
-    };
+        "upscale"};
 
     enum SDMode
     {

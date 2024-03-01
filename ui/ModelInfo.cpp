@@ -1,7 +1,13 @@
 #include "ModelInfo.h"
 
-ModelInfo::Manager::Manager()
+ModelInfo::Manager::Manager(std::string meta_base_path)
 {
+    this->MetaStorePath = meta_base_path + "modelinfos";
+    if (!std::filesystem::exists(this->MetaStorePath))
+    {
+        std::filesystem::create_directories(this->MetaStorePath);
+        this->MetaStorePath = std::filesystem::absolute(this->MetaStorePath).string();
+    }
 }
 
 ModelInfo::Manager::~Manager()
@@ -12,7 +18,7 @@ void ModelInfo::Manager::addModel(std::string model_path, sd_gui_utils::DirTypes
 {
     auto path = std::filesystem::path(model_path);
 
-    std::string meta_path = path.replace_extension(".json").string();
+    auto meta_path = this->GetMetaPath(model_path);
 
     if (std::filesystem::exists(meta_path))
     {
@@ -157,13 +163,17 @@ std::string ModelInfo::Manager::GenerateName(std::string model_path, std::string
 sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name)
 {
     auto path = std::filesystem::path(model_path);
+
     sd_gui_utils::ModelFileInfo *mi = new sd_gui_utils::ModelFileInfo();
     mi->size = std::filesystem::file_size(path);
     auto s = sd_gui_utils::humanReadableFileSize(mi->size);
     mi->size_f = wxString::Format("%.1f%s", s.first, s.second);
     mi->hash_fullsize = 0;
     mi->hash_progress_size = 0;
-    mi->meta_file = path.replace_extension(".json").string();
+    mi->model_type = type;
+
+    
+    mi->meta_file = this->GetMetaPath(model_path);
     mi->name = name;
     mi->path = path.string();
     return mi;
@@ -188,4 +198,11 @@ void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo)
 void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo *modelinfo)
 {
     this->WriteIntoMeta(*modelinfo);
+}
+
+std::string ModelInfo::Manager::GetMetaPath(std::string model_path)
+{
+    auto path = std::filesystem::path(model_path);
+    auto meta_file_name = path.filename().replace_extension(".json");
+    return std::filesystem::absolute(std::filesystem::path(this->MetaStorePath + "/" + meta_file_name.string(), std::filesystem::path::format::generic_format)).string();
 }

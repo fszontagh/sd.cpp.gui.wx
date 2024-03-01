@@ -14,7 +14,16 @@ MainWindowImageViewer::MainWindowImageViewer(wxWindow *parent)
 
 void MainWindowImageViewer::onImageViewClick(wxMouseEvent &event)
 {
-    // TODO: Implement onImageViewClick
+    if (this->m_bitmap6->GetScaleMode() == wxStaticBitmapBase::Scale_AspectFit)
+    {
+        this->m_bitmap6->SetScaleMode(wxStaticBitmapBase::Scale_Fill);
+    }
+    else
+    {
+        this->m_bitmap6->SetScaleMode(wxStaticBitmapBase::Scale_AspectFit);
+    }
+    this->m_bitmap6->Center();
+    this->m_bitmap6->Refresh();
 }
 
 void MainWindowImageViewer::SetData(QM::QueueItem item)
@@ -107,6 +116,8 @@ void MainWindowImageViewer::SetData(QM::QueueItem item)
     this->m_static_finished->SetLabel(sd_gui_utils::formatUnixTimestampToDate(item.finished_at));
     this->m_static_batch->SetLabel(fmt::format("{}", item.params.batch_count));
     this->m_bitmap6->SetCursor(wxCURSOR_MAGNIFIER);
+    this->Refresh();
+    this->Layout();
 }
 
 void MainWindowImageViewer::OnThumbnailClick(wxMouseEvent &event)
@@ -118,16 +129,11 @@ void MainWindowImageViewer::OnThumbnailClick(wxMouseEvent &event)
 
 void MainWindowImageViewer::SetImage(wxImage img)
 {
-
-    if (img.GetWidth() > img.GetHeight())
-    {
-        this->m_panel9->SetSize(768, this->m_panel9->GetSize().GetHeight());
-        this->Layout();
-    }
-
     this->m_bitmap6->SetBitmap(img);
     this->m_bitmap6->SetSize(img.GetSize());
+    this->m_bitmap6->SetScaleMode(wxStaticBitmapBase::Scale_AspectFit);
     this->m_bitmap6->Center();
     this->m_bitmap6->Refresh();
     this->Refresh();
+    this->Layout();
 }

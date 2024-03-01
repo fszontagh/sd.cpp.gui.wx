@@ -16,9 +16,11 @@ namespace ModelInfo
         void WriteIntoMeta(std::string model_path);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo *modelinfo);
+        std::string GetMetaPath(std::string model_path);
+        std::string MetaStorePath;
 
     public:
-        Manager();
+        Manager(std::string meta_base_path);
         ~Manager();
         void addModel(std::string model_path, sd_gui_utils::DirTypes type, std::string name);
         bool exists(std::string model_path);

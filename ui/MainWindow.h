@@ -20,14 +20,14 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/button.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/choice.h>
-#include <wx/sizer.h>
-#include <wx/spinctrl.h>
-#include <wx/statline.h>
 #include <wx/checkbox.h>
-#include <wx/dataview.h>
+#include <wx/spinctrl.h>
 #include <wx/panel.h>
+#include <wx/dataview.h>
+#include <wx/listctrl.h>
 #include <wx/textctrl.h>
 #include <wx/statbmp.h>
 #include <wx/filepicker.h>
@@ -35,6 +35,7 @@
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/statline.h>
 #include <wx/slider.h>
 #include <wx/scrolwin.h>
 #include <wx/splitter.h>
@@ -52,52 +53,59 @@ class UI : public wxFrame
 	private:
 
 	protected:
-		wxPanel* m_all_panel;
+		wxPanel* m_panel14;
 		wxBitmapButton* m_settings;
 		wxBitmapButton* m_refrersh;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
+		wxStaticText* m_staticText72;
 		wxChoice* m_type;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
+		wxCheckBox* m_vae_tiling;
+		wxCheckBox* m_vae_decode_only;
+		wxStaticText* m_staticText231;
+		wxSpinCtrlDouble* m_cfg;
+		wxStaticText* m_staticText234;
+		wxSpinCtrl* m_clip_skip;
+		wxStaticText* m_staticText20;
+		wxChoice* m_taesd;
+		wxStaticText* m_staticText15;
+		wxSpinCtrl* m_batch_count;
+		wxStaticText* m_staticText163;
+		wxChoice* m_sampler;
+		wxStaticText* m_staticText17;
+		wxButton* m_save_preset;
+		wxButton* m_load_preset;
+		wxChoice* m_preset_list;
+		wxBitmapButton* m_delete_preset;
 		wxStaticText* m_staticText233;
 		wxSpinCtrl* m_seed;
 		wxBitmapButton* m_random_seed;
 		wxStaticText* m_staticText14;
 		wxSpinCtrl* m_steps;
-		wxStaticLine* m_staticLine236;
 		wxStaticText* m_staticText237;
 		wxSpinCtrl* m_width;
 		wxStaticText* m_staticText239;
 		wxSpinCtrl* m_height;
 		wxButton* m_button7;
-		wxStaticText* m_staticText231;
-		wxSpinCtrlDouble* m_cfg;
-		wxStaticText* m_staticText234;
-		wxSpinCtrl* m_clip_skip;
-		wxStaticLine* m_staticline51;
-		wxCheckBox* m_vae_tiling;
-		wxCheckBox* m_vae_decode_only;
-		wxStaticLine* m_staticline6;
-		wxStaticText* m_staticText20;
-		wxChoice* m_taesd;
 		wxNotebook* m_notebook1302;
 		wxPanel* m_jobs_panel;
 		wxButton* m_start_jobs;
 		wxButton* m_pause_jobs;
 		wxButton* m_delete_all_jobs;
 		wxDataViewListCtrl* m_joblist;
+		wxListCtrl* m_listCtrl1;
 		wxPanel* m_text2img_panel;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
 		wxStaticBitmap* m_controlnetImagePreview;
 		wxButton* m_generate2;
-		wxStaticText* m_staticText22;
 		wxFilePickerCtrl* m_controlnetImageOpen;
+		wxChoice* m_controlnetModels;
 		wxSpinCtrlDouble* m_controlnetStrength;
 		wxButton* m_controlnetImagePreviewButton;
 		wxBitmapButton* m_controlnetImageDelete;
-		wxChoice* m_controlnetModels;
 		wxPanel* m_image2image_panel;
 		wxFilePickerCtrl* m_open_image;
 		wxButton* m_img2im_preview_img;
@@ -132,16 +140,7 @@ class UI : public wxFrame
 		wxCheckBox* m_checkbox_filter_checkpoints;
 		wxSearchCtrl* m_modellist_filter;
 		wxDataViewListCtrl* m_data_model_list;
-		wxStaticText* m_staticText15;
-		wxSpinCtrl* m_batch_count;
-		wxStaticText* m_staticText163;
-		wxChoice* m_sampler;
-		wxStaticLine* m_staticline5;
-		wxStaticText* m_staticText17;
-		wxButton* m_save_preset;
-		wxButton* m_load_preset;
-		wxChoice* m_preset_list;
-		wxBitmapButton* m_delete_preset;
+		wxListCtrl* m_listCtrl11;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -151,6 +150,11 @@ class UI : public wxFrame
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsStart( wxCommandEvent& event ) { event.Skip(); }
@@ -176,16 +180,11 @@ class UI : public wxFrame
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
 		virtual void OnDataModelActivated( wxDataViewEvent& event ) { event.Skip(); }
-		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
 
-		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxICONIZE|wxMINIMIZE_BOX|wxSYSTEM_MENU|wxBORDER_THEME|wxCLIP_CHILDREN, const wxString& name = wxT("sd.cpp.gui") );
+		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
 		~UI();
 
@@ -246,7 +245,7 @@ class Settings : public wxFrame
 
 	public:
 
-		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_FLOAT_ON_PARENT|wxCAPTION|wxCLOSE_BOX|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME, const wxString& name = wxT("sd.cpp.gui.settings") );
+		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxFRAME_NO_TASKBAR|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME, const wxString& name = wxT("sd.cpp.gui.settings") );
 
 		~Settings();
 
