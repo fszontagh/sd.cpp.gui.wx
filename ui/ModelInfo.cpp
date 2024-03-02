@@ -88,6 +88,18 @@ void ModelInfo::Manager::setHash(std::string model_path, std::string hash)
 
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::getByHash(std::string hash)
 {
+
+    if (hash.length() == 10)
+    {
+        for (auto model : this->ModelInfos)
+        {
+            if (model.second->sha256.substr(0, 10) == hash)
+            {
+                return *model.second;
+            }
+        }
+        return sd_gui_utils::ModelFileInfo();
+    }
     for (auto model : this->ModelInfos)
     {
         if (model.second->sha256 == hash)
@@ -116,7 +128,7 @@ sd_gui_utils::ModelFileInfo *ModelInfo::Manager::getIntoPtr(std::string path)
     }
     return nullptr;
 }
-
+// @brief Get a modelinfo by it's name
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfoByName(std::string model_name)
 {
     for (std::map<std::string, sd_gui_utils::ModelFileInfo *>::iterator itr = this->ModelInfos.begin(); itr != this->ModelInfos.end(); itr++)
@@ -129,7 +141,7 @@ sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfoByName(std::string model_
 
     return sd_gui_utils::ModelFileInfo();
 }
-
+// @brief Find a similar named modelinfo
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::findInfoByName(std::string model_name)
 {
     for (auto model : this->ModelInfos)
@@ -160,6 +172,34 @@ std::string ModelInfo::Manager::GenerateName(std::string model_path, std::string
     return name;
 }
 
+sd_gui_utils::ModelFileInfo ModelInfo::Manager::updateCivitAiInfo(std::string model_path, std::string info)
+{
+    sd_gui_utils::ModelFileInfo *model = this->getIntoPtr(model_path);
+    return this->updateCivitAiInfo(model);
+}
+sd_gui_utils::ModelFileInfo ModelInfo::Manager::updateCivitAiInfo(sd_gui_utils::ModelFileInfo *modelinfo)
+{
+    if (modelinfo->civitaiPlainJson.empty())
+    {
+        return sd_gui_utils::ModelFileInfo();
+    }
+    sd_gui_utils::ModelFileInfo *m = this->getIntoPtr(modelinfo->path);
+    m->civitaiPlainJson = modelinfo->civitaiPlainJson;
+    this->ParseCivitAiInfo(m);
+    sd_gui_utils::ModelFileInfo newInfo = this->getInfo(m->path);
+    this->WriteIntoMeta(newInfo);
+    return newInfo;
+}
+
+void ModelInfo::Manager::UpdateInfo(sd_gui_utils::ModelFileInfo *modelinfo)
+{
+    sd_gui_utils::ModelFileInfo * newInfo(modelinfo);
+    this->ModelInfos[modelinfo->path] = newInfo;
+    //this->ModelInfos.erase(newInfo->path);
+    //this->ModelInfos[newInfo->path] = newInfo;
+    this->WriteIntoMeta(newInfo);
+}
+
 sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name)
 {
     auto path = std::filesystem::path(model_path);
@@ -172,7 +212,6 @@ sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_
     mi->hash_progress_size = 0;
     mi->model_type = type;
 
-    
     mi->meta_file = this->GetMetaPath(model_path);
     mi->name = name;
     mi->path = path.string();
@@ -198,6 +237,39 @@ void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo)
 void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo *modelinfo)
 {
     this->WriteIntoMeta(*modelinfo);
+}
+
+void ModelInfo::Manager::ParseCivitAiInfo(sd_gui_utils::ModelFileInfo *modelinfo)
+{
+    if (modelinfo->civitaiPlainJson.empty())
+    {
+        return;
+    }
+
+    try
+    {
+        nlohmann::json data = nlohmann::json::parse(modelinfo->civitaiPlainJson);
+        if (data.contains("error"))
+        {
+            modelinfo->state = sd_gui_utils::CivitAiState::NOT_FOUND;
+            return;
+        }
+        auto civitaiinfo = data.template get<CivitAi::ModelInfo>();
+        modelinfo->CivitAiInfo = civitaiinfo;
+        modelinfo->state = sd_gui_utils::CivitAiState::OK;
+    }
+    catch (const json::parse_error &e)
+    {
+        std::cerr << "message: " << e.what() << '\n'
+                  << "exception id: " << e.id << '\n'
+                  << "byte position of error: " << e.byte << std::endl;
+        modelinfo->state = sd_gui_utils::CivitAiState::ERR;
+    }
+    catch (const json::exception &e)
+    {
+        std::cerr << e.what() << '\n';
+        modelinfo->state = sd_gui_utils::CivitAiState::ERR;
+    }
 }
 
 std::string ModelInfo::Manager::GetMetaPath(std::string model_path)

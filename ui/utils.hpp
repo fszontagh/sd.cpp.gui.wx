@@ -18,6 +18,7 @@
 
 #include <nlohmann/json.hpp>
 #include "../libs/stb_image.h"
+#include "../helpers/civitai.hpp"
 
 namespace sd_gui_utils
 {
@@ -93,6 +94,19 @@ namespace sd_gui_utils
         "UNKNOWN",
         "ALL"};
 
+    enum CivitAiState
+    {
+        OK,
+        NOT_FOUND,
+        ERR,
+        NOT_CHECKED
+    };
+    inline const char *civitai_state_str[] = {
+        "Ok",
+        "Not found",
+        "Parse error",
+        "",
+    };
     struct ModelFileInfo
     {
         std::string name;
@@ -106,6 +120,10 @@ namespace sd_gui_utils
         size_t hash_progress_size = 0;
         size_t hash_fullsize = 0;
         sd_gui_utils::DirTypes model_type = sd_gui_utils::DirTypes::UNKNOWN;
+        std::string civitaiPlainJson;
+        CivitAi::ModelInfo CivitAiInfo;
+        sd_gui_utils::CivitAiState state = sd_gui_utils::CivitAiState::NOT_CHECKED;
+        std::vector<std::string> preview_images;
 
         ModelFileInfo() = default;
         // Copy konstruktor
@@ -120,7 +138,11 @@ namespace sd_gui_utils
               meta_file(other.meta_file),
               hash_progress_size(other.hash_progress_size),
               hash_fullsize(other.hash_fullsize),
-              model_type(other.model_type)
+              model_type(other.model_type),
+              civitaiPlainJson(other.civitaiPlainJson),
+              CivitAiInfo(other.CivitAiInfo),
+              state(other.state),
+              preview_images(other.preview_images)
         {
         }
         // Copy assignment operator
@@ -139,6 +161,10 @@ namespace sd_gui_utils
                 hash_progress_size = other.hash_progress_size;
                 hash_fullsize = other.hash_fullsize;
                 model_type = other.model_type;
+                civitaiPlainJson = other.civitaiPlainJson;
+                CivitAiInfo = other.CivitAiInfo;
+                state = other.state;
+                preview_images = other.preview_images;
             }
             return *this;
         }
@@ -155,7 +181,13 @@ namespace sd_gui_utils
             {"size", p.size},
             {"size_f", p.size_f},
             {"meta_file", sd_gui_utils::UnicodeToUTF8(p.meta_file)},
-            {"model_type", (int)p.model_type}};
+            {"model_type", (int)p.model_type},
+            {"civitaiPlainJson", p.civitaiPlainJson},
+            {"CivitAiInfo", p.CivitAiInfo},
+            {"state", (int)p.state},
+            {"preview_images", p.preview_images}
+
+        };
     }
 
     inline void from_json(const nlohmann::json &j, ModelFileInfo &p)
@@ -164,6 +196,7 @@ namespace sd_gui_utils
         {
             p.name = sd_gui_utils::UTF8ToUnicode(j.at("name").get<std::string>());
         }
+
         if (j.contains("path"))
         {
             p.path = sd_gui_utils::UTF8ToUnicode(j.at("path").get<std::string>());
@@ -173,29 +206,53 @@ namespace sd_gui_utils
         {
             j.at("url").get_to(p.url);
         }
+
         if (j.contains("poster"))
         {
             p.poster = sd_gui_utils::UTF8ToUnicode(j.at("poster").get<std::string>());
         }
+
         if (j.contains("sha256"))
         {
             j.at("sha256").get_to(p.sha256);
         }
+
         if (j.contains("size"))
         {
             j.at("size").get_to(p.size);
         }
+
         if (j.contains("size_f"))
         {
             j.at("size_f").get_to(p.size_f);
         }
+
         if (j.contains("meta_file"))
         {
             p.meta_file = sd_gui_utils::UTF8ToUnicode(j.at("meta_file").get<std::string>());
         }
+
         if (j.contains("model_type"))
         {
             p.model_type = j.at("model_type").get<sd_gui_utils::DirTypes>();
+        }
+
+        if (j.contains("civitaiPlainJson"))
+        {
+            p.civitaiPlainJson = j.at("civitaiPlainJson").get<std::string>();
+        }
+
+        if (j.contains("CivitAiInfo"))
+        {
+            p.CivitAiInfo = j.at("CivitAiInfo").get<CivitAi::ModelInfo>();
+        }
+        if (j.contains("state"))
+        {
+            p.state = j.at("state").get<sd_gui_utils::CivitAiState>();
+        }
+        if (j.contains("preview_images"))
+        {
+            p.preview_images = j.at("preview_images").get<std::vector<std::string>>();
         }
     }
     inline std::string to_hex(std::array<uint8_t, 32> data)
@@ -254,17 +311,7 @@ namespace sd_gui_utils
     {
         return bytes / (1024 * 1024); // 1 MB = 1024 * 1024 bájt
     }
-    enum THREAD_STATUS_MESSAGES
-    {
-        MESSAGE,
-        MODEL_LOAD_START,
-        MODEL_LOAD_DONE,
-        MODEL_LOAD_ERROR,
-        GENERATION_START,
-        GENERATION_PROGRESS,
-        GENERATION_DONE,
-        GENERATION_ERROR
-    };
+
     struct cout_redirect
     {
         cout_redirect(std::streambuf *new_buffer)
@@ -608,9 +655,28 @@ namespace sd_gui_utils
         j.at("vae_tiling").get_to(p.vae_tiling);
         j.at("control_net_cpu").get_to(p.control_net_cpu);
         j.at("canny_preprocess").get_to(p.canny_preprocess);
-    }
+    };
     /* JSONize SD Params*/
-
+    enum ThreadEvents
+    {
+        QUEUE,
+        HASHING_PROGRESS,
+        MODEL_LOAD_DONE,
+        GENERATION_DONE,
+        STANDALONE_HASHING_PROGRESS,
+        STANDALONE_HASHING_DONE,
+        HASHING_DONE,
+        GENERATION_PROGRESS,
+        SD_MESSAGE,
+        MESSAGE,
+        MODEL_INFO_DOWNLOAD_START,
+        MODEL_INFO_DOWNLOAD_FAILED,
+        MODEL_INFO_DOWNLOAD_FINISHED,
+        MODEL_INFO_DOWNLOAD_IMAGES_START,
+        MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS,
+        MODEL_INFO_DOWNLOAD_IMAGES_DONE,
+        MODEL_INFO_DOWNLOAD_IMAGE_FAILED,
+    };
     // sd c++
     inline wxImage ResizeImageToMaxSize(const wxImage &image, int maxWidth, int maxHeight)
     {
@@ -770,17 +836,6 @@ namespace sd_gui_utils
             prompt = prompt + _n;
         }
 
-        // charset=Unicode
-        std::string charset1("charset=Unicode ");
-        if (prompt.substr(0, 1) == " ")
-        {
-            prompt = prompt.substr(1);
-        }
-        if (prompt.substr(0, charset1.length()) == charset1)
-        {
-            prompt = prompt.substr(charset1.length());
-        }
-
         if (_nfound)
         {
             // result[std::string("negative_prompt")] = prompt;
@@ -796,6 +851,18 @@ namespace sd_gui_utils
         else
         {
             result[std::string("prompt")] = prompt;
+        }
+
+        // remove garbage
+        // charset=Unicode
+        std::string charset1("charset=Unicode ");
+        if (result["prompt"].substr(0, 1) == " ")
+        {
+            result["prompt"] = result["prompt"].substr(1);
+        }
+        if (result["prompt"].substr(0, charset1.length()) == charset1)
+        {
+            result["prompt"] = result["prompt"].substr(charset1.length());
         }
 
         return result;

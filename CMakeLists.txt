@@ -121,11 +121,11 @@ string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
 string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
 SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html Exiv2::exiv2lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cuda_driver nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html wx::net Exiv2::exiv2lib)
 
 else()
 set(CUDA_MODULES "")
-target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html Exiv2::exiv2lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE stable-diffusion ggml unofficial::curlpp::curlpp OpenSSL::Crypto nlohmann_json::nlohmann_json fmt::fmt wx::core wx::base wx::xrc wx::adv wx::richtext wx::aui wx::propgrid wx::html wx::net Exiv2::exiv2lib)
 ENDIF()
 
 

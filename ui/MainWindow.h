@@ -32,6 +32,8 @@
 #include <wx/statbmp.h>
 #include <wx/filepicker.h>
 #include <wx/srchctrl.h>
+#include <wx/hyperlink.h>
+#include <wx/html/htmlwin.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
@@ -40,7 +42,6 @@
 #include <wx/scrolwin.h>
 #include <wx/splitter.h>
 #include <wx/dialog.h>
-#include <wx/html/htmlwin.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +145,18 @@ class UI : public wxFrame
 		wxCheckBox* m_checkbox_filter_checkpoints;
 		wxSearchCtrl* m_modellist_filter;
 		wxDataViewListCtrl* m_data_model_list;
-		wxListCtrl* m_model_details;
+		wxDataViewColumn* m_dataViewListColumn3;
+		wxDataViewColumn* m_dataViewListColumn4;
+		wxDataViewColumn* m_dataViewListColumn5;
+		wxDataViewColumn* m_dataViewListColumn6;
+		wxDataViewColumn* m_dataViewListColumn8;
+		wxDataViewColumn* m_dataViewListColumn7;
+		wxHyperlinkCtrl* m_data_model_url;
+		wxDataViewListCtrl* m_model_details;
+		wxDataViewColumn* m_dataViewListColumn11;
+		wxDataViewColumn* m_dataViewListColumn21;
+		wxHtmlWindow* m_model_details_description;
+		wxListCtrl* m_model_details_imagelist;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 

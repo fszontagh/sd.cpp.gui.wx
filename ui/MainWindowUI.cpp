@@ -13,13 +13,14 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->currentControlnetImagePreview = new wxImage();
 
     this->previewImageList = new wxImageList();
+    this->modelPreviewImageList = new wxImageList();
 
-    // prepare data list views
-    this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
-    this->m_data_model_list->AppendTextColumn("Size");
-    this->m_data_model_list->AppendTextColumn("Type");
-    this->m_data_model_list->AppendTextColumn("Hash");
-    this->m_data_model_list->AppendProgressColumn("");
+    // prepare data list views - added from wxFormBuilder
+    //   this->m_data_model_list->AppendTextColumn("Name", wxDATAVIEW_CELL_INERT, 200);
+    //   this->m_data_model_list->AppendTextColumn("Size");
+    //   this->m_data_model_list->AppendTextColumn("Type");
+    //   this->m_data_model_list->AppendTextColumn("Hash");
+    //   this->m_data_model_list->AppendProgressColumn("");
 
     this->m_joblist->AppendTextColumn("Id");
     this->m_joblist->AppendTextColumn("Created at");
@@ -93,16 +94,19 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
 void MainWindowUI::onModelSelect(wxCommandEvent &event)
 {
     // check if really selected a model, or just the first element, which is always exists...
-    auto name = this->m_model->GetStringSelection().ToStdString();
-    auto first = this->m_model->GetString(0);
-    if (name == first)
+    if (this->m_model->GetSelection() == 0)
     {
         this->m_generate1->Disable();
         this->m_generate2->Disable();
         this->m_statusBar166->SetStatusText("Model: none");
         return;
     }
-    this->m_generate1->Enable();
+    auto name = this->m_model->GetStringSelection().ToStdString();
+    // img2img has an image
+    if (!this->m_open_image->GetPath().empty())
+    {
+        this->m_generate1->Enable();
+    }
     this->m_generate2->Enable();
     this->sd_params->model_path = this->ModelFiles.at(name);
     this->m_statusBar166->SetStatusText("Model: " + this->sd_params->model_path);
@@ -244,6 +248,10 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         else
         {
             menu->Append(100, "Calculate Hash");
+        }
+        if (!modelinfo->civitaiPlainJson.empty())
+        {
+            menu->Append(105, "Force update info from CivitAi");
         }
 
         if (modelinfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT)
@@ -997,13 +1005,14 @@ void MainWindowUI::OnDataModelSelected(wxDataViewEvent &event)
     auto row = this->m_data_model_list->GetSelectedRow();
     auto currentItem = store->GetItem(row);
     sd_gui_utils::ModelFileInfo *_item = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
-    auto model = this->ModelManager->getInfo(_item->path);
-    if (model.sha256.empty())
+    sd_gui_utils::ModelFileInfo *modelinfo = this->ModelManager->getIntoPtr(_item->path);
+
+    // download infos only when empty and sha256 is present
+    if (modelinfo->civitaiPlainJson.empty() && !modelinfo->sha256.empty())
     {
-        wxMessageBox("Please check hash first!");
-        return;
+        this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
     }
-    std::cerr << "Selected model: " << model.name << std::endl;
+    this->UpdateModelInfoDetailsFromModelList(modelinfo);
 }
 
 void MainWindowUI::onSamplerSelect(wxCommandEvent &event)
@@ -1157,6 +1166,124 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item)
                 this->m_controlnetModels->Select(index);
             }
             index++;
+        }
+    }
+}
+
+void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo *modelinfo)
+{
+    this->m_model_details->DeleteAllItems();
+    this->m_model_details_description->Hide();
+    this->m_model_details_description->SetPage("");
+    this->m_data_model_url->SetLabel("");
+    this->m_data_model_url->SetURL("");
+    this->modelPreviewImageList->Destroy();
+    this->modelPreviewImageList->Create(256, 256);
+    this->m_model_details_imagelist->DeleteAllItems();
+
+    if (modelinfo->state == sd_gui_utils::CivitAiState::NOT_FOUND || modelinfo->state == sd_gui_utils::CivitAiState::ERR)
+    {
+        return;
+    }
+    if (modelinfo->civitaiPlainJson.empty())
+    {
+        return;
+    }
+
+    this->m_data_model_url->SetLabel(modelinfo->CivitAiInfo.model.name + modelinfo->CivitAiInfo.model.name);
+    wxString url = wxString::Format("https://civitai.com/models/%d", modelinfo->CivitAiInfo.modelId);
+    this->m_data_model_url->SetURL(url);
+
+    wxVector<wxVariant> data;
+
+    data.push_back(wxVariant("Name"));
+    data.push_back(wxVariant(wxString::Format("%s %s", modelinfo->CivitAiInfo.name, modelinfo->CivitAiInfo.model.name)));
+    this->m_model_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("File name"));
+    data.push_back(wxVariant(wxString::Format("%s", modelinfo->path)));
+    this->m_model_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Hash"));
+    data.push_back(wxVariant(wxString::Format("%s", modelinfo->sha256)));
+    this->m_model_details->AppendItem(data);
+    data.clear();
+
+    data.push_back(wxVariant("Type"));
+    data.push_back(wxVariant(wxString::Format("%s", modelinfo->CivitAiInfo.model.type)));
+    this->m_model_details->AppendItem(data);
+    data.clear();
+
+    if (modelinfo->CivitAiInfo.description.empty())
+    {
+        this->m_model_details_description->Hide();
+        this->m_model_details_description->SetPage("");
+    }
+    else
+    {
+        this->m_model_details_description->Show();
+        //this->m_model_details_description->SetLabelMarkup(modelinfo->CivitAiInfo.description);
+        this->m_model_details_description->SetPage(modelinfo->CivitAiInfo.description);
+    }
+    int idx = 0;
+    for (auto file : modelinfo->CivitAiInfo.files)
+    {
+        data.push_back(wxVariant(wxString::Format("#%d id", idx)));
+        data.push_back(wxVariant(wxString::Format("%d", file.id)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(wxString::Format("#%d name", idx)));
+        data.push_back(wxVariant(wxString::Format("%s", file.name)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(wxString::Format("#%d format", idx)));
+        data.push_back(wxVariant(wxString::Format("%s", file.metadata.format)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(wxString::Format("#%d type", idx)));
+        data.push_back(wxVariant(wxString::Format("%s", file.metadata.fp)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+        idx++;
+    }
+
+    for (auto img : modelinfo->preview_images)
+    {
+        if (!std::filesystem::exists(img))
+        {
+            continue;
+        }
+        wxImage pimg;
+        if (!pimg.LoadFile(img))
+        {
+            continue;
+        }
+        auto resized = sd_gui_utils::cropResizeImage(pimg, 256, 256);
+        wxBitmap bmap(resized);
+        this->modelPreviewImageList->Add(resized);
+    }
+    this->m_model_details_imagelist->SetImageList(this->modelPreviewImageList, wxIMAGE_LIST_NORMAL);
+
+    int index0 = 0;
+    for (auto img : modelinfo->preview_images)
+    {
+        std::filesystem::path *image_path = new std::filesystem::path(img);
+        if (std::filesystem::exists(*image_path))
+        {
+            auto id = this->m_model_details_imagelist->InsertItem(idx, image_path->filename().string(), index0);
+            this->m_model_details_imagelist->SetItemPtrData(id, wxUIntPtr(image_path));
+            index0++;
+        }
+        else
+        {
+            auto id = this->m_model_details_imagelist->InsertItem(index0, wxString::Format("Deleted: %s", image_path->filename().string()));
+            this->m_model_details_imagelist->SetItemPtrData(id, wxUIntPtr(image_path));
+            this->m_model_details_imagelist->SetItemTextColour(id, wxColour(247, 88, 35)); // near orange, but red
         }
     }
 }
@@ -1315,6 +1442,9 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
         case 104:
             this->m_neg_prompt2->SetValue(fmt::format("{} <lora:{}:0.5>", this->m_neg_prompt2->GetValue().ToStdString(), modelinfo->name));
             break;
+        case 105: // TODO: get info from civitai
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+            break;
         case 200:
             this->ChangeModelByName(modelinfo->name);
             break;
@@ -1344,9 +1474,12 @@ void MainWindowUI::refreshModelTable(std::string filter, std::bitset<10> types)
                        { return std::tolower(c); });
     }
 
-    auto list = this->ModelManager->getList();
+    std::vector<sd_gui_utils::ModelFileInfo> list = this->ModelManager->getList();
+    std::vector<sd_gui_utils::ModelFileInfo> filtered_list;
+    std::vector<sd_gui_utils::ModelFileInfo> endless_list;
 
     int curRow = 0;
+    bool add = false;
     for (const auto &model : list)
     {
         auto name = model.name;
@@ -1356,26 +1489,66 @@ void MainWindowUI::refreshModelTable(std::string filter, std::bitset<10> types)
 
         if (filter.empty() || (!filter.empty() && name.find(filter) != std::string::npos))
         {
+            add = true;
             if (types.none() || (!types.none() && types.test(model.model_type)))
             {
-                wxVector<wxVariant> itemData;
-                itemData.push_back(model.name);                                   // name
-                itemData.push_back(model.size_f);                                 // size
-                itemData.push_back(sd_gui_utils::dirtypes_str[model.model_type]); // type
-                itemData.push_back(model.sha256.substr(0, 10));                   // hash
-                itemData.push_back(model.sha256.empty() ? 0 : 100);               // progress bar
-                store->AppendItem(itemData, (wxUIntPtr)this->ModelManager->getIntoPtr(model.path));
-                curRow++;
+                add = true;
+            }
+            else
+            {
+                add = false;
             }
         }
+        else
+        {
+            add = false;
+        }
+        if (add)
+        {
+            filtered_list.emplace_back(model);
+        }
     }
-    auto col = this->m_data_model_list->GetColumn(0);
-    col->SetSortable(true);
-    auto col2 = this->m_data_model_list->GetColumn(1);
-    col2->SetSortable(true);
+    endless_list = filtered_list;
+    for (unsigned int z = 0; z < this->m_data_model_list->GetItemCount(); ++z)
+    {
+        bool exists = false;
+        wxDataViewItem item = store->GetItem(z);
+        sd_gui_utils::ModelFileInfo *data = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(item));
+        for (int y = 0; y < filtered_list.size(); ++y)
+        {
+            if (filtered_list[y].path == data->path)
+            {
+                for (unsigned int u = 0; u < endless_list.size(); ++u)
+                {
+                    if (endless_list[u].path == data->path)
+                    {
+                        endless_list.erase(endless_list.begin() + u);
+                    }
+                }
+                exists = true;
+            }
+        }
+        // if not in the filtered list, then delete from the table
+        if (!exists)
+        {
+            store->DeleteItem(z);
+        }
+        // if the content of the filtered list is exists in the table, delete from filtered list /no need to duplicate it/
+    }
 
-    col->SetSortOrder(true);
-
+    for (auto ele : endless_list)
+    {
+        wxVector<wxVariant> itemData;
+        itemData.push_back(ele.name);                                   // name
+        itemData.push_back(ele.size_f);                                 // size
+        itemData.push_back(sd_gui_utils::dirtypes_str[ele.model_type]); // type
+        itemData.push_back(ele.sha256.substr(0, 10));                   // autov2 hash
+        itemData.push_back(sd_gui_utils::civitai_state_str[ele.state]); // civitai state
+        itemData.push_back(ele.sha256.empty() ? 0 : 100);               // progress bar
+        store->AppendItem(itemData, (wxUIntPtr)this->ModelManager->getIntoPtr(ele.path));
+        curRow++;
+    }
+    // remove which not needed
     this->m_data_model_list->Refresh();
 }
 
@@ -1417,7 +1590,15 @@ template <typename T>
 inline void MainWindowUI::SendThreadEvent(wxEvtHandler *eventHandler, QM::QueueEvents eventType, const T &payload, std::string text)
 {
     wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("QUEUE:%d:%s", (int)eventType, text));
+    e->SetString(wxString::Format("%d:%d:%s", (int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType, text));
+    e->SetPayload(payload);
+    wxQueueEvent(eventHandler, e);
+}
+template <typename T>
+void MainWindowUI::SendThreadEvent(wxEvtHandler *eventHandler, sd_gui_utils::ThreadEvents eventType, const T &payload, std::string text)
+{
+    wxThreadEvent *e = new wxThreadEvent();
+    e->SetString(wxString::Format("%d:%s", (int)eventType, text));
     e->SetPayload(payload);
     wxQueueEvent(eventHandler, e);
 }
@@ -1761,10 +1942,10 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
                 this->m_prompt->SetValue(item.second);
             }
         }
-        bool mode_found_by_name = false;
-        if (item.first == "model")
+        // first check by hash
+        if (item.first == "modelhash" && !modelFound)
         {
-            auto check = this->ModelManager->findInfoByName(item.second);
+            auto check = this->ModelManager->getByHash(item.second);
             if (!check.path.empty())
             {
                 this->m_model->Select(this->ModelFilesIndex[check.name]);
@@ -1772,15 +1953,26 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
                 continue;
             }
         }
-        if (item.first == "modelhash" && !modelFound)
+        if (item.first == "model" && !modelFound)
         {
-            auto model = this->ModelManager->getByHash(item.second);
-            if (!model.path.empty())
+            // get by name
+            auto check = this->ModelManager->getInfoByName(item.second);
+            if (!check.path.empty())
             {
-                this->m_model->Select(this->ModelFilesIndex[model.name]);
+                this->m_model->Select(this->ModelFilesIndex[check.name]);
+                modelFound = true;
+                continue;
             }
-            continue;
+            // search by name
+            auto check2 = this->ModelManager->findInfoByName(item.second);
+            if (!check.path.empty())
+            {
+                this->m_model->Select(this->ModelFilesIndex[check2.name]);
+                modelFound = true;
+                continue;
+            }
         }
+
         if (item.first == "vae")
         {
             unsigned int index = 0;
@@ -1816,7 +2008,10 @@ void MainWindowUI::onimg2ImgImageOpen(std::string file)
 
         this->m_img2im_preview_img->Enable();
         this->m_delete_initial_img->Enable();
-        this->m_generate1->Enable();
+        if (this->m_model->GetSelection() > 0)
+        {
+            this->m_generate1->Enable();
+        }
         this->m_open_image->SetPath(file);
 
         // png not working... yet...
@@ -1941,7 +2136,6 @@ void MainWindowUI::loadTypeList()
         }
         selected++;
     }
-    // this->m_type->Select(sizeof(sd_gui_utils::sd_type_gui_names) - 1);
 }
 
 void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
@@ -1953,10 +2147,7 @@ void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::strin
     modelinfo->hash_progress_size = readed_size;
     if (readed_size > 0)
     {
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
-        e->SetPayload(modelinfo);
-        wxQueueEvent(eventHandler, e);
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
     }
 }
 
@@ -1990,16 +2181,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
 
     std::string token = msg.substr(0, msg.find(":"));
     std::string content = msg.substr(msg.find(":") + 1);
+    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
 
-    // this->logs->AppendText(fmt::format("Got thread message: {}\n", e.GetString().ToStdString()));
-    if (token == "QUEUE")
+    if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE)
     {
         // only numbers here...
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
-        // only handle the QUEUE messages, what this class generate
-        // alway QM::EueueItem the payload, with the new data
-        QM::QueueItem payload;
-        payload = e.GetPayload<QM::QueueItem>();
+        QM::QueueItem payload = e.GetPayload<QM::QueueItem>();
         switch (event)
         {
             // new item added
@@ -2062,14 +2250,82 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
             break;
         }
     }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_DONE)
+    {
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        this->ModelManager->UpdateInfo(modelinfo);
+        // update if the current selected item is the updated item info
+        wxDataViewItem item = this->m_data_model_list->GetCurrentItem();
+        sd_gui_utils::ModelFileInfo *info = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(this->m_data_model_list->GetItemData(item));
+        if (info->path == modelinfo->path)
+        {
+            this->UpdateModelInfoDetailsFromModelList(modelinfo);
+        }
+        return;
+    }
+    // sd_gui_utils::ModelFileInfo *payload = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FAILED)
+    {
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        this->logs->AppendText(fmt::format("Model civitai info download error: {}\n", modelinfo->name));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_START)
+    {
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        this->logs->AppendText(fmt::format("Model civitai info download start: {}\n", modelinfo->name));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FINISHED)
+    {
+        sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        sd_gui_utils::ModelFileInfo newInfo = this->ModelManager->updateCivitAiInfo(modelinfo);
+        sd_gui_utils::ModelFileInfo *newInfoptr = this->ModelManager->getIntoPtr(newInfo.path);
+
+        if (newInfo.state == sd_gui_utils::CivitAiState::OK)
+        {
+            this->logs->AppendText(fmt::format("Model civitai info download finished: {}\n", newInfo.CivitAiInfo.name));
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoImageDownload, this, this->GetEventHandler(), newInfoptr));
+        }
+        if (newInfo.state == sd_gui_utils::CivitAiState::NOT_FOUND)
+        {
+            this->logs->AppendText(fmt::format("Model civitai info not found: {} Hash: {}\n", newInfo.name, newInfo.sha256.substr(0, 10)));
+        }
+        if (newInfo.state == sd_gui_utils::CivitAiState::ERR)
+        {
+            this->logs->AppendText(fmt::format("Model civitai info unkown parsing error happened: {} Hash: {}\n", newInfo.name, newInfo.sha256.substr(0, 10)));
+        }
+        // update anyway
+        this->UpdateModelInfoDetailsFromModelList(modelinfo);
+        // update table
+        auto store = this->m_data_model_list->GetStore();
+        int civitAiCol = this->m_data_model_list->GetColumnCount() - 2; // civitai col
+
+        for (unsigned int i = 0; i < store->GetItemCount(); i++)
+        {
+            auto _item = store->GetItem(i);
+            auto _item_data = store->GetItemData(_item);
+            auto *_qitem = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(_item_data);
+            if (_qitem->name == modelinfo->name)
+            {
+                store->SetValueByRow(sd_gui_utils::civitai_state_str[modelinfo->state], i, civitAiCol);
+                this->m_data_model_list->Refresh();
+                break;
+            }
+        }
+        // update table
+
+        return;
+    }
+
     /// status of hashing from modellist
-    if (token == "STANDALONE_HASHING_PROGRESS")
+    if (threadEvent == sd_gui_utils::STANDALONE_HASHING_PROGRESS)
     {
         // modelinfo
         sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
         auto store = this->m_data_model_list->GetStore();
         int progressCol = this->m_data_model_list->GetColumnCount() - 1; // progressbar col
-        int hashCol = this->m_data_model_list->GetColumnCount() - 2;
+        int hashCol = this->m_data_model_list->GetColumnCount() - 3;
         size_t _x = modelinfo->hash_progress_size;
         size_t _m = modelinfo->hash_fullsize;
         int current_progress = 0;
@@ -2095,15 +2351,20 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
             }
         }
     }
-    if (token == "STANDALONE_HASHING_DONE")
+    if (threadEvent == sd_gui_utils::STANDALONE_HASHING_DONE)
     {
         sd_gui_utils::ModelFileInfo *modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo *>();
+        if (modelinfo->civitaiPlainJson.empty())
+        {
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+        }
         nlohmann::json j(*modelinfo);
         std::ofstream file(modelinfo->meta_file);
         file << j;
         file.close();
+        return;
     }
-    if (token == "HASHING_PROGRESS")
+    if (threadEvent == sd_gui_utils::HASHING_PROGRESS)
     {
         QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
 
@@ -2135,8 +2396,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                 break;
             }
         }
+        return;
     }
-    if (token == "HASHING_DONE")
+    if (threadEvent == sd_gui_utils::HASHING_DONE)
     {
         QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
 
@@ -2157,9 +2419,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                 break;
             }
         }
+        return;
     }
-    // in the original SD.cpp the progress callback is not implemented... :(
-    if (token == "GENERATION_PROGRESS")
+    if (threadEvent == sd_gui_utils::GENERATION_PROGRESS)
     {
         QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
 
@@ -2183,18 +2445,21 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                 break;
             }
         }
+        return;
     }
-    if (token == "SD_MESSAGE")
+    if (threadEvent == sd_gui_utils::SD_MESSAGE)
     {
         if (content.length() < 1)
         {
             return;
         }
         this->logs->AppendText(fmt::format("{}", content));
+        return;
     }
-    if (token == "MESSAGE")
+    if (threadEvent == sd_gui_utils::MESSAGE)
     {
         this->logs->AppendText(fmt::format("{}\n", content));
+        return;
     }
 }
 
@@ -2213,11 +2478,11 @@ void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
                time > 1.0f || time == 0 ? time : (1.0f / time)
     */
 
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("GENERATION_PROGRESS:%d/%d", step, steps));
-
-    e->SetPayload(*myItem);
-    wxQueueEvent(eventHandler, e);
+    /* wxThreadEvent *e = new wxThreadEvent();
+     e->SetString(wxString::Format("%d:%d/%d", sd_gui_utils::GENERATION_PROGRESS, step, steps));
+     e->SetPayload(*myItem);
+     wxQueueEvent(eventHandler, e);*/
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::GENERATION_PROGRESS, *myItem, fmt::format("{}/{}", step, steps));
 }
 
 void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void *custom_pointer)
@@ -2230,16 +2495,24 @@ void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, 
     modelinfo->hash_progress_size = readed_size;
     modelinfo->hash_fullsize = myItem->hash_fullsize;
     myItem->hash_progress_size = readed_size;
-    wxThreadEvent *e = new wxThreadEvent();
-    e->SetString("HASHING_PROGRESS:placeholder");
-    e->SetPayload(*myItem);
-    wxQueueEvent(eventHandler, e);
 
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::HASHING_PROGRESS, *myItem);
+
+    /*
+     wxThreadEvent *e = new wxThreadEvent();
+     e->SetString(wxString::Format("%d:placeholder", sd_gui_utils::HASHING_PROGRESS));
+     e->SetPayload(*myItem);
+     wxQueueEvent(eventHandler, e);
+     */
+
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
     // send info to the model list tooo
+    /*
     wxThreadEvent *r = new wxThreadEvent();
-    r->SetString("STANDALONE_HASHING_PROGRESS:placeholder");
+    e->SetString(wxString::Format("%d:placeholder", sd_gui_utils::STANDALONE_HASHING_PROGRESS));
     r->SetPayload(modelinfo);
     wxQueueEvent(eventHandler, r);
+    */
 }
 
 void MainWindowUI::ShowNotification(std::string title, std::string message)
@@ -2254,15 +2527,11 @@ void MainWindowUI::ShowNotification(std::string title, std::string message)
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
 {
+    // TODO: hadle visible levels from the GUI
     if (level == sd_log_level_t::SD_LOG_INFO || level == sd_log_level_t::SD_LOG_ERROR)
     {
         auto *eventHandler = (wxEvtHandler *)data;
-
-        wxThreadEvent *e = new wxThreadEvent();
-        e->SetString(wxString::Format("SD_MESSAGE:%s", text));
-        e->SetPayload(level);
-        wxQueueEvent(eventHandler, e);
-        // MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::SD_MESSAGE, level, text);
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::SD_MESSAGE, level, text);
     }
 }
 
@@ -2537,11 +2806,136 @@ void MainWindowUI::threadedModelHashCalc(wxEvtHandler *eventHandler, sd_gui_util
     holder->p2 = (void *)modelinfo;
 
     modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void *)holder, &MainWindowUI::ModelStandaloneHashingCallback);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE, modelinfo);
+}
 
-    wxThreadEvent *r = new wxThreadEvent();
-    r->SetString("STANDALONE_HASHING_DONE:placeholder");
-    r->SetPayload(modelinfo);
-    wxQueueEvent(eventHandler, r);
+void MainWindowUI::threadedModelInfoDownload(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo)
+{
+
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_START, modelinfo);
+
+    std::list<std::string> headers;
+    headers.push_back("Content-Type: text/json;");
+    std::string url = "https://civitai.com/api/v1/model-versions/by-hash/" + modelinfo->sha256.substr(0, 10);
+    std::ostringstream response;
+    try
+    {
+        // That's all that is needed to do cleanup of used resources (RAII style).
+        curlpp::Cleanup myCleanup;
+
+        // Our request to be sent.
+        curlpp::Easy request;
+        request.setOpt(new curlpp::options::HttpHeader(headers));
+        request.setOpt(new curlpp::options::WriteStream(&response));
+        request.setOpt<curlpp::options::Url>(url);
+        request.perform();
+        std::cerr << std::string(response.str()) << std::endl;
+        modelinfo->civitaiPlainJson = response.str();
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FINISHED, modelinfo);
+        return;
+    }
+
+    catch (curlpp::RuntimeError &e)
+    {
+        std::cout << e.what() << std::endl;
+        wxMessageDialog dialog(this, e.what());
+        modelinfo->civitaiPlainJson = response.str();
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
+        return;
+    }
+
+    catch (curlpp::LogicError &e)
+    {
+        wxMessageDialog dialog(this, e.what());
+        modelinfo->civitaiPlainJson = response.str();
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
+        return;
+    }
+    std::cerr << std::string(response.str()) << std::endl;
+    modelinfo->civitaiPlainJson = response.str();
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
+}
+
+void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd_gui_utils::ModelFileInfo *modelinfo)
+{
+    if (modelinfo->civitaiPlainJson.empty())
+    {
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, std::string("No model info found."));
+        return;
+    }
+
+    if (modelinfo->CivitAiInfo.images.empty())
+    {
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, "No images found.");
+        return;
+    }
+
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_START, modelinfo);
+    int index = 0;
+    for (auto img : modelinfo->CivitAiInfo.images)
+    {
+        /// download
+        std::list<std::string> headers;
+        headers.push_back("Content-Type: text/json;");
+
+        std::ostringstream response(std::stringstream::binary);
+        try
+        {
+            curlpp::Cleanup myCleanup;
+
+            // Our request to be sent.
+            curlpp::Easy request;
+            // request.setOpt(new curlpp::options::HttpHeader(headers));
+            request.setOpt(new curlpp::options::WriteStream(&response));
+            request.setOpt<curlpp::options::Url>(img.url);
+            request.perform();
+            std::string target_path = std::filesystem::path(this->cfg->datapath + "/" + modelinfo->sha256 + "_" + std::to_string(index) + ".tmp").generic_string();
+            std::ofstream file(target_path, std::ios::binary);
+            file << response.str();
+            file.close();
+
+            wxImage _tmpImg;
+            _tmpImg.SetLoadFlags(_tmpImg.GetLoadFlags() & ~wxImage::Load_Verbose);
+
+            if (_tmpImg.LoadFile(target_path))
+            {
+
+                if (_tmpImg.GetType() == wxBITMAP_TYPE_JPEG)
+                {
+                    std::string new_path = std::filesystem::path(target_path).replace_extension(".jpg").generic_string();
+                    std::filesystem::rename(target_path, new_path);
+                    modelinfo->preview_images.emplace_back(new_path);
+                    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
+                    index++;
+                }
+                if (_tmpImg.GetType() == wxBITMAP_TYPE_PNG)
+                {
+                    std::string new_path = std::filesystem::path(target_path).replace_extension(".png").generic_string();
+                    std::filesystem::rename(target_path, new_path);
+                    modelinfo->preview_images.emplace_back(new_path);
+                    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
+                    index++;
+                }
+            }
+            _tmpImg.Destroy();
+            continue;
+        }
+
+        catch (curlpp::RuntimeError &e)
+        {
+            std::cout << e.what() << std::endl;
+            MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
+            continue;
+        }
+
+        catch (curlpp::LogicError &e)
+        {
+            MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
+            continue;
+        }
+        /// download
+    }
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_DONE, modelinfo);
 }
 
 void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -2748,16 +3142,15 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 
     // send to notify the user...
     wxThreadEvent *h = new wxThreadEvent();
-    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
-    h->SetString(wxString(msg.c_str()));
-    // h->SetPayload(myItem);
-    wxQueueEvent(eventHandler, h);
+    auto msg = fmt::format("Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MESSAGE, NULL, msg);
+    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, myItem);
 
     // send to the queue manager
-    wxThreadEvent *j = new wxThreadEvent();
-    j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
-    j->SetPayload(myItem);
-    wxQueueEvent(eventHandler, j);
+    /* wxThreadEvent *j = new wxThreadEvent();
+     j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
+     j->SetPayload(myItem);
+     wxQueueEvent(eventHandler, j);*/
 }
 
 void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -2789,12 +3182,8 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
         }
     }
 
-    if (!this->modelLoaded || this->sd_ctx == nullptr)
+    if (!this->modelLoaded)
     {
-        /*  wxThreadEvent *f = new wxThreadEvent();
-          f->SetString("GENERATION_ERROR:Model load failed...");
-          f->SetPayload(myItem);
-          wxQueueEvent(eventHandler, f);*/
         myItem.status_message = fmt::format("Model load failed: {}", myItem.model);
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_FAILED, myItem);
         return;
@@ -2954,18 +3343,8 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
 
-    // send to notify the user...
-    wxThreadEvent *h = new wxThreadEvent();
-    auto msg = fmt::format("MESSAGE:Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
-    h->SetString(wxString(msg.c_str()));
-    // h->SetPayload(myItem);
-    wxQueueEvent(eventHandler, h);
-
-    // send to the queue manager
-    /* wxThreadEvent *j = new wxThreadEvent();
-     j->SetString(wxString::Format("QUEUE:%d", QM::QueueEvents::ITEM_FINISHED));
-     j->SetPayload(myItem);
-     wxQueueEvent(eventHandler, j);*/
+    auto msg = fmt::format("Image generation done in {}s. Saved into {}", elapsed_seconds.count(), this->cfg->output);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MESSAGE, NULL, msg);
     MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, myItem);
 }
 

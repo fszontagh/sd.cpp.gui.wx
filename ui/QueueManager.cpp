@@ -145,8 +145,9 @@ void QM::QueueManager::PauseAll()
 
 void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem item)
 {
+    // TODO: e->SetInt instead of SetString
     wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("QUEUE:%d", (int)eventType));
+    e->SetString(wxString::Format("%d:%d",(int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType));
     e->SetPayload(item);
     wxQueueEvent(this->eventHandler, e);
 }
@@ -162,10 +163,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
 
     std::string token = msg.substr(0, msg.find(":"));
     std::string content = msg.substr(msg.find(":") + 1);
+    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
     // only numbers here...
 
     // only handle the QUEUE messages, what this class generate
-    if (token == "QUEUE")
+    if (threadEvent == sd_gui_utils::QUEUE)
     {
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
         auto payload = e.GetPayload<QM::QueueItem>();
@@ -245,23 +247,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
             this->isRunning = true;
         }
     }
-    if (token == "HASHING_PROGRESS")
+
+    if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS)
     {
         auto payload = e.GetPayload<QM::QueueItem>();
         this->SetStatus(QM::QueueStatus::HASHING, payload.id);
-    }
-    // this state can not usable at here, because the payload is the sd_ctx* pointer here..
-    // we can't identify the current running job here... (we can maybe guess it, but not needed)
-    // see  GENERATION_START
-    if (token == "MODEL_LOAD_DONE")
-    {
-        // auto payload = e.GetPayload<QM::QueueItem>();
-        // this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
-    }
-    // nothing to todo here, the payload is the generated image list, we can't find whitch item was it...
-    // TODO: use struct to payload, and store multiple items in it...
-    if (token == "GENERATION_DONE")
-    {
     }
 }
 

@@ -5,6 +5,8 @@
 #include <fmt/format.h>
 #include "utils.hpp"
 
+#include "../helpers/civitai.hpp"
+
 namespace ModelInfo
 {
     class Manager
@@ -16,6 +18,7 @@ namespace ModelInfo
         void WriteIntoMeta(std::string model_path);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo *modelinfo);
+        void ParseCivitAiInfo(sd_gui_utils::ModelFileInfo *modelinfo);
         std::string GetMetaPath(std::string model_path);
         std::string MetaStorePath;
 
@@ -34,6 +37,10 @@ namespace ModelInfo
         sd_gui_utils::ModelFileInfo getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo findInfoByName(std::string model_name);
         static std::string GenerateName(std::string model_path, std::string basepath);
+        sd_gui_utils::ModelFileInfo updateCivitAiInfo(std::string model_path, std::string info);
+        sd_gui_utils::ModelFileInfo updateCivitAiInfo(sd_gui_utils::ModelFileInfo *modelinfo);
+        void UpdateInfo(sd_gui_utils::ModelFileInfo *modelinfo);
+        
     };
 };
 #endif

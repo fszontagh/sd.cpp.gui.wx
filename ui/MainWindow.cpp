@@ -106,7 +106,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_type->SetSelection( 0 );
 	m_type->SetToolTip( wxT("Weight type. If not specified, the default is the type of the weight file.") );
 
-	bSizer100->Add( m_type, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer100->Add( m_type, 1, wxALL|wxEXPAND, 5 );
 
 
 	sizer0021->Add( bSizer100, 1, wxEXPAND, 5 );
@@ -135,13 +135,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_vae_tiling = new wxCheckBox( m_panel14, wxID_ANY, wxT("VAE tiling"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_vae_tiling->SetToolTip( wxT("Process vae in tiles to reduce memory usage") );
 
-	bSizer87->Add( m_vae_tiling, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer87->Add( m_vae_tiling, 1, wxALL|wxEXPAND, 5 );
 
 	m_vae_decode_only = new wxCheckBox( m_panel14, wxID_ANY, wxT("VAE decode only"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_vae_decode_only->SetValue(true);
 	m_vae_decode_only->Enable( false );
 
-	bSizer87->Add( m_vae_decode_only, 1, wxALL|wxALIGN_CENTER_VERTICAL|wxEXPAND, 5 );
+	bSizer87->Add( m_vae_decode_only, 1, wxALL|wxEXPAND, 5 );
 
 
 	sizer0021->Add( bSizer87, 1, wxEXPAND, 5 );
@@ -420,7 +420,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_dataViewListColumn1 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn2 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_NONE );
-	bSizer107->Add( m_joblist_item_details, 1, wxALL|wxEXPAND, 5 );
+	bSizer107->Add( m_joblist_item_details, 1, wxEXPAND, 5 );
 
 	m_job_details_imagelist = new wxListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL );
 	bSizer107->Add( m_job_details_imagelist, 1, wxEXPAND, 5 );
@@ -751,7 +751,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer77->Add( m_keep_upscaler_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_keep_other_models_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Check Me!"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_other_models_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, wxT("Keep checkpoints in memory"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer77->Add( m_keep_other_models_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -791,12 +791,36 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer102 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_data_model_list = new wxDataViewListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_ROW_LINES|wxDV_SINGLE|wxFULL_REPAINT_ON_RESIZE );
+	m_dataViewListColumn3 = m_data_model_list->AppendTextColumn( wxT("Name"), wxDATAVIEW_CELL_INERT, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn4 = m_data_model_list->AppendTextColumn( wxT("Size"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn5 = m_data_model_list->AppendTextColumn( wxT("Type"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn6 = m_data_model_list->AppendTextColumn( wxT("Hash"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn8 = m_data_model_list->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn7 = m_data_model_list->AppendProgressColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer102->Add( m_data_model_list, 1, wxEXPAND, 5 );
 
-	m_model_details = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( 300,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
-	m_model_details->SetMinSize( wxSize( 300,-1 ) );
+	wxBoxSizer* bSizer1001;
+	bSizer1001 = new wxBoxSizer( wxVERTICAL );
 
-	bSizer102->Add( m_model_details, 1, wxEXPAND, 5 );
+	m_data_model_url = new wxHyperlinkCtrl( m_models_panel, wxID_ANY, wxT("sd.cpp.gui.wx"), wxT("https://github.com/fszontagh/sd.cpp.gui.wx"), wxDefaultPosition, wxDefaultSize, wxHL_DEFAULT_STYLE );
+	bSizer1001->Add( m_data_model_url, 0, wxALL|wxEXPAND, 5 );
+
+	m_model_details = new wxDataViewListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VARIABLE_LINE_HEIGHT|wxDV_VERT_RULES );
+	m_dataViewListColumn11 = m_model_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn21 = m_model_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn21->GetRenderer()->EnableEllipsize( wxELLIPSIZE_NONE );
+	bSizer1001->Add( m_model_details, 1, wxEXPAND, 5 );
+
+	m_model_details_description = new wxHtmlWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_AUTO );
+	m_model_details_description->Hide();
+
+	bSizer1001->Add( m_model_details_description, 1, wxALL|wxEXPAND, 5 );
+
+	m_model_details_imagelist = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
+	bSizer1001->Add( m_model_details_imagelist, 1, wxEXPAND, 5 );
+
+
+	bSizer102->Add( bSizer1001, 1, wxEXPAND, 5 );
 
 
 	bSizer20->Add( bSizer102, 1, wxEXPAND, 5 );
