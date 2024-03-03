@@ -1224,7 +1224,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     else
     {
         this->m_model_details_description->Show();
-        //this->m_model_details_description->SetLabelMarkup(modelinfo->CivitAiInfo.description);
+        // this->m_model_details_description->SetLabelMarkup(modelinfo->CivitAiInfo.description);
         this->m_model_details_description->SetPage(modelinfo->CivitAiInfo.description);
     }
     int idx = 0;
@@ -1321,12 +1321,15 @@ MainWindowUI::~MainWindowUI()
 {
     if (this->modelLoaded)
     {
-        free_sd_ctx(this->sd_ctx);
+        free_sd_ctx(this->txt2img_sd_ctx);
+    }
+    if (this->upscaleModelLoaded)
+    {
+        free_upscaler_ctx(this->upscaler_sd_ctx);
     }
     for (auto &t : this->threads)
     {
         t->join();
-        // t->~thread();
     }
 
     this->TaskBar->Destroy();
@@ -2221,14 +2224,31 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
                     .ToStdString());
             break;
         case QM::QueueEvents::ITEM_MODEL_LOADED: // MODEL_LOAD_DONE
-            this->modelLoaded = true;
+            if (payload.mode == QM::GenerationMode::IMG2IMG || payload.mode == QM::GenerationMode::TXT2IMG)
+            {
+                this->modelLoaded = true;
+            }
+            if (payload.mode == QM::GenerationMode::UPSCALE)
+            {
+                this->upscaleModelLoaded = true;
+            }
+            this->logs->AppendText(fmt::format("Model loaded: {}\n", payload.model));
             break;
         case QM::QueueEvents::ITEM_MODEL_LOAD_START: // MODEL_LOAD_START
             this->logs->AppendText(fmt::format("Model load start: {}\n", payload.model));
             break;
         case QM::QueueEvents::ITEM_MODEL_FAILED: // MODEL_LOAD_ERROR
             this->logs->AppendText(fmt::format("Model load error: {}\n", payload.status_message));
-            this->modelLoaded = false;
+
+            if (payload.mode == QM::GenerationMode::IMG2IMG || payload.mode == QM::GenerationMode::TXT2IMG)
+            {
+                this->modelLoaded = false;
+            }
+            if (payload.mode == QM::GenerationMode::UPSCALE)
+            {
+                this->upscaleModelLoaded = false;
+            }
+
             this->ShowNotification(
                 "The Model failed to load",
                 wxString::Format("The '%s' just failed to load... for more details please see the logs!", payload.model)
@@ -2589,13 +2609,6 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
 
     if (sd_ctx_ == NULL)
     {
-        /*   wxThreadEvent *c = new wxThreadEvent();
-           c->SetString(wxString::Format("MODEL_LOAD_ERROR:%s", myItem.params.model_path));
-           c->SetPayload(myItem);
-           wxQueueEvent(eventHandler, c);*/
-        // myItem.status_message = fmt::format("Can not load model: {}", myItem.model);
-        // MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_FAILED, myItem);
-        // send thi event from the parent method
         this->modelLoaded = false;
         return nullptr;
     }
@@ -2940,6 +2953,7 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
 
 void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
+    std::lock_guard<std::mutex> lock(this->mutex);
     sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
     vparams->p1 = (void *)this->GetEventHandler();
     vparams->p2 = (void *)&myItem;
@@ -2948,7 +2962,7 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 
     if (!this->modelLoaded)
     {
-        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
         this->currentModel = myItem.params.model_path;
         this->currentVaeModel = myItem.params.vae_path;
         this->currentTaesdModel = myItem.params.taesd_path;
@@ -2963,8 +2977,8 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
             this->currentwType != myItem.params.wtype ||
             this->currentControlnetModel != myItem.params.controlnet_path)
         {
-            free_sd_ctx(this->sd_ctx);
-            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+            free_sd_ctx(this->txt2img_sd_ctx);
+            this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
         }
         else
         {
@@ -2973,14 +2987,14 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
             // so we need to destroy the ctx and re init it
             /* if (myItem.params.controlnet_path.length() > 0)
              {
-                 free_sd_ctx(this->sd_ctx);
-                 this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+                 free_sd_ctx(this->txt2img_sd_ctx);
+                 this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
              }
              */
         }
     }
 
-    if (!this->modelLoaded || this->sd_ctx == nullptr)
+    if (!this->modelLoaded || this->txt2img_sd_ctx == nullptr)
     {
         //       wxThreadEvent *f = new wxThreadEvent();
         //        f->SetString("GENERATION_ERROR:Model load failed...");
@@ -3016,7 +3030,7 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
     }
     // std::lock_guard<std::mutex> guard(this->sdMutex);
 
-    results = txt2img(this->sd_ctx,
+    results = txt2img(this->txt2img_sd_ctx,
                       myItem.params.prompt.c_str(),
                       myItem.params.negative_prompt.c_str(),
                       myItem.params.clip_skip,
@@ -3155,6 +3169,7 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 
 void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
+    std::lock_guard<std::mutex> lock(this->mutex);
     sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
     vparams->p1 = (void *)this->GetEventHandler();
     vparams->p2 = (void *)&myItem;
@@ -3163,7 +3178,7 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 
     if (!this->modelLoaded)
     {
-        this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+        this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
         this->currentModel = myItem.params.model_path;
         this->currentVaeModel = myItem.params.vae_path;
         this->currentTaesdModel = myItem.params.taesd_path;
@@ -3177,8 +3192,8 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
             this->currentTaesdModel != myItem.params.taesd_path ||
             this->currentwType != myItem.params.wtype)
         {
-            free_sd_ctx(this->sd_ctx);
-            this->sd_ctx = this->LoadModelv2(eventHandler, myItem);
+            free_sd_ctx(this->txt2img_sd_ctx);
+            this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
         }
     }
 
@@ -3221,7 +3236,7 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
      wxQueueEvent(eventHandler, e);
      */
     MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_GENERATION_STARTED, myItem);
-    results = img2img(this->sd_ctx,
+    results = img2img(this->txt2img_sd_ctx,
                       *control_image,
                       myItem.params.prompt.c_str(),
                       myItem.params.negative_prompt.c_str(),
@@ -3351,6 +3366,7 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem myI
 void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myItem)
 {
 
+    std::lock_guard<std::mutex> lock(this->mutex);
     sd_gui_utils::VoidHolder *vparams = new sd_gui_utils::VoidHolder;
     vparams->p1 = (void *)this->GetEventHandler();
     vparams->p2 = (void *)&myItem;
@@ -3359,28 +3375,25 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
 
     if (this->currentUpscalerModel != myItem.params.esrgan_path)
     {
-        if (this->upscaleModelLoaded)
+        if (this->upscaleModelLoaded == true)
         {
-            free_upscaler_ctx(this->upscaler_ctx);
+            free_upscaler_ctx(this->upscaler_sd_ctx);
             this->upscaleModelLoaded = false;
         }
     }
 
-    if (!this->m_keep_other_models_in_memory->GetValue())
+    if (this->m_keep_other_models_in_memory->GetValue() == false && this->modelLoaded == true)
     {
-        if (this->modelLoaded)
-        {
-            this->modelLoaded = false;
-            free_sd_ctx(this->sd_ctx);
-        }
+        free_sd_ctx(this->txt2img_sd_ctx);
+        this->modelLoaded = false;
     }
 
     if (this->upscaleModelLoaded == false)
     {
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_LOAD_START, myItem);
-        this->upscaler_ctx = this->LoadUpscaleModel(eventHandler, myItem);
+        this->upscaler_sd_ctx = this->LoadUpscaleModel(eventHandler, myItem);
 
-        if (!this->upscaleModelLoaded || this->upscaler_ctx == NULL)
+        if (!this->upscaleModelLoaded || this->upscaler_sd_ctx == NULL)
         {
             myItem.status_message = fmt::format("Model load failed: {}", myItem.params.esrgan_path);
             MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_FAILED, myItem);
@@ -3400,7 +3413,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         delete input_image_buffer;
 
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_GENERATION_STARTED, myItem);
-        sd_image_t upscaled_image = upscale(this->upscaler_ctx, control_image, myItem.upscale_factor);
+        sd_image_t upscaled_image = upscale(this->upscaler_sd_ctx, control_image, myItem.upscale_factor);
 
         // save img
         wxImage *img = new wxImage(upscaled_image.width, upscaled_image.height, upscaled_image.data);
@@ -3443,7 +3456,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem myI
         if (!this->m_keep_upscaler_in_memory->GetValue())
         {
             this->upscaleModelLoaded = false;
-            free_upscaler_ctx(this->upscaler_ctx);
+            free_upscaler_ctx(this->upscaler_sd_ctx);
         }
     }
     else
