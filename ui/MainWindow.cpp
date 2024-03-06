@@ -878,6 +878,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
 	m_job_details_imagelist->Connect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( UI::OnJobDetailsImagelistItemActivated ), NULL, this );
+	m_job_details_imagelist->Connect( wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK, wxListEventHandler( UI::OnJobDetailsImagelistItemRightClick ), NULL, this );
 	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
 	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
@@ -932,6 +933,7 @@ UI::~UI()
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
 	m_job_details_imagelist->Disconnect( wxEVT_COMMAND_LIST_ITEM_ACTIVATED, wxListEventHandler( UI::OnJobDetailsImagelistItemActivated ), NULL, this );
+	m_job_details_imagelist->Disconnect( wxEVT_COMMAND_LIST_ITEM_RIGHT_CLICK, wxListEventHandler( UI::OnJobDetailsImagelistItemRightClick ), NULL, this );
 	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
 	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );

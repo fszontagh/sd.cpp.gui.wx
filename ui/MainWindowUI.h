@@ -60,6 +60,7 @@ protected:
 	// Handlers for UI events.
 	void onSettings(wxCommandEvent &event);
 	void onModelsRefresh(wxCommandEvent &event);
+	void OnAboutButton(wxCommandEvent &event);
 	void onModelSelect(wxCommandEvent &event);
 	void onTypeSelect(wxCommandEvent &event);
 	void onVaeSelect(wxCommandEvent &event);
@@ -78,6 +79,7 @@ protected:
 	void onContextMenu(wxDataViewEvent &event);
 	void OnJobListItemSelection(wxDataViewEvent &event);
 	void OnJobDetailsImagelistItemActivated(wxListEvent &event);
+	void OnJobDetailsImagelistItemRightClick(wxListEvent &event);
 	void onTxt2ImgFileDrop(wxDropFilesEvent &event);
 	void OnPromptText(wxCommandEvent &event);
 	void OnNegPromptText(wxCommandEvent &event);
@@ -144,6 +146,7 @@ private:
 	std::string currentTaesdModel;
 	std::string currentControlnetModel;
 	std::string currentUpscalerModel;
+	bool currentVaeDecodeOnly;
 	sd_type_t currentwType = sd_type_t::SD_TYPE_COUNT;
 	wxImage *currentInitialImage;
 	wxImage *currentInitialImagePreview;
@@ -194,7 +197,7 @@ private:
 	static void HandleSDLog(sd_log_level_t level, const char *text, void *data);
 	static void HandleSDProgress(int step, int steps, float time, void *data);
 
-	QM::QueueItem handleSdImage(sd_image_t result, QM::QueueItem item, wxEvtHandler * eventHandler);
+	QM::QueueItem handleSdImage(sd_image_t result, QM::QueueItem item, wxEvtHandler *eventHandler);
 
 	std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
 	void imageCommentToGuiParams(std::map<std::string, std::string> params, sd_gui_utils::SDMode mode);
