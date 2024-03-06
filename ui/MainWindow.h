@@ -39,8 +39,6 @@
 #include <wx/frame.h>
 #include <wx/statline.h>
 #include <wx/slider.h>
-#include <wx/scrolwin.h>
-#include <wx/splitter.h>
 #include <wx/dialog.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -143,6 +141,7 @@ class UI : public wxFrame
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
+		wxCheckBox* m_checkbox_filter_embeddings;
 		wxSearchCtrl* m_modellist_filter;
 		wxDataViewListCtrl* m_data_model_list;
 		wxDataViewColumn* m_dataViewListColumn3;
@@ -173,6 +172,7 @@ class UI : public wxFrame
 		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
+		virtual void m_notebook1302OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void onJobsStart( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsPause( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsDelete( wxCommandEvent& event ) { event.Skip(); }
@@ -181,6 +181,8 @@ class UI : public wxFrame
 		virtual void OnJobListItemSelection( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnJobDetailsImagelistItemActivated( wxListEvent& event ) { event.Skip(); }
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -271,74 +273,6 @@ class Settings : public wxFrame
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Class ImageViewer
-///////////////////////////////////////////////////////////////////////////////
-class ImageViewer : public wxFrame
-{
-	private:
-
-	protected:
-		wxPanel* m_panel9;
-		wxScrolledWindow* m_scrolledWindow1;
-		wxStaticBitmap* m_bitmap6;
-		wxPanel* m_panel10;
-		wxSplitterWindow* m_splitter5;
-		wxPanel* m_panel17;
-		wxStaticText* m_staticText25;
-		wxStaticText* m_static_id;
-		wxStaticText* m_staticText251;
-		wxStaticText* m_static_type;
-		wxStaticText* m_staticText252;
-		wxStaticText* m_static_model;
-		wxStaticText* m_staticText253;
-		wxStaticText* m_static_resolution;
-		wxStaticText* m_staticText256;
-		wxStaticText* m_static_cfg_scale;
-		wxStaticText* m_staticText257;
-		wxStaticText* m_static_clip_skip;
-		wxStaticText* m_staticText258;
-		wxStaticText* m_static_seed;
-		wxStaticText* m_staticText259;
-		wxStaticText* m_static_steps;
-		wxStaticText* m_staticText2510;
-		wxStaticText* m_static_sampler;
-		wxStaticText* m_staticText2511;
-		wxStaticText* m_static_sheduler;
-		wxStaticText* m_staticText25111;
-		wxStaticText* m_static_started;
-		wxStaticText* m_staticText25112;
-		wxStaticText* m_static_finished;
-		wxStaticText* m_staticText2512;
-		wxStaticText* m_static_batch;
-		wxStaticLine* m_staticline7;
-		wxStaticText* m_staticText254;
-		wxTextCtrl* m_static_prompt;
-		wxStaticLine* m_staticline71;
-		wxStaticText* m_staticText255;
-		wxTextCtrl* m_static_negative_prompt;
-		wxPanel* m_panel18;
-
-		// Virtual event handlers, override them in your derived class
-		virtual void onImageViewClick( wxMouseEvent& event ) { event.Skip(); }
-
-
-	public:
-		wxScrolledWindow* m_scrolledWindow2;
-		wxGridSizer* thumbnails_container;
-
-		ImageViewer( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,700 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL, const wxString& name = wxT("sd.cpp.gui.image") );
-
-		~ImageViewer();
-
-		void m_splitter5OnIdle( wxIdleEvent& )
-		{
-			m_splitter5->SetSashPosition( 0 );
-			m_splitter5->Disconnect( wxEVT_IDLE, wxIdleEventHandler( ImageViewer::m_splitter5OnIdle ), NULL, this );
-		}
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
 /// Class ImageDialog
 ///////////////////////////////////////////////////////////////////////////////
 class ImageDialog : public wxDialog
@@ -353,41 +287,6 @@ class ImageDialog : public wxDialog
 		ImageDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE, const wxString& name = wxT("sd.cpp.gui.imagedialog") );
 
 		~ImageDialog();
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-/// Class Modelinfo
-///////////////////////////////////////////////////////////////////////////////
-class Modelinfo : public wxFrame
-{
-	private:
-
-	protected:
-		wxPanel* m_panel13;
-		wxStaticText* m_static_model_name;
-		wxStaticText* m_static_model_type;
-		wxStaticText* m_static_model_created_at;
-		wxStaticText* m_static_model_nsfw;
-		wxStaticText* m_staticText66;
-		wxStaticText* m_static_model_basemodel;
-		wxStaticText* m_static_model_basemodeltype;
-		wxHtmlWindow* m_htmlWin1;
-
-	public:
-		wxSplitterWindow* m_splitter4;
-		wxScrolledWindow* m_scrolledWindow3;
-		wxBoxSizer* poster_holder;
-
-		Modelinfo( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Model Info"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
-
-		~Modelinfo();
-
-		void m_splitter4OnIdle( wxIdleEvent& )
-		{
-			m_splitter4->SetSashPosition( 0 );
-			m_splitter4->Disconnect( wxEVT_IDLE, wxIdleEventHandler( Modelinfo::m_splitter4OnIdle ), NULL, this );
-		}
 
 };
 

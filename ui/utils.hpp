@@ -10,6 +10,8 @@
 #include <unordered_map>
 
 #include <wx/image.h>
+#include <wx/textctrl.h>
+
 #include <stable-diffusion.h>
 #include <exiv2/exiv2.hpp>
 #include <fmt/format.h>
@@ -18,6 +20,7 @@
 
 #include <nlohmann/json.hpp>
 #include "../libs/stb_image.h"
+#include "../libs/bitmask_operators.h"
 #include "../helpers/civitai.hpp"
 
 namespace sd_gui_utils
@@ -59,40 +62,63 @@ namespace sd_gui_utils
         return wxString(str).ToStdString();
     }
 
+    typedef struct stringformat
+    {
+        size_t start = -1;
+        size_t end = -1;
+        wxTextAttr textAttr = wxTextAttr();
+        std::string string = "";
+    } stringformat;
+
     typedef struct VoidHolder
     {
         void *p1; // eventhandler
         void *p2; // QM::QueueItem
         void *p3; // Others...
     } VoidHolder;
-    enum DirTypes
+
+    enum class DirTypes : int
     {
-        LORA,
-        CHECKPOINT,
-        VAE,
-        PRESETS,
-        PROMPTS,
-        NEG_PROMPTS,
-        TAESD,
-        ESRGAN,
-        CONTROLNET,
-        UPSCALER,
-        UNKNOWN = -1,
-        ALL = -2
+        EMPTY = 0,            // If no option is set
+        LORA = 1 << 0,        // The LORA option represents the 0th bit
+        CHECKPOINT = 1 << 1,  // The CHECKPOINT option represents the 1st bit
+        VAE = 1 << 2,         // The VAE option represents the 2nd bit
+        PRESETS = 1 << 3,     // The PRESETS option represents the 3rd bit
+        PROMPTS = 1 << 4,     // The PROMPTS option represents the 4th bit
+        NEG_PROMPTS = 1 << 5, // The NEG_PROMPTS option represents the 5th bit
+        TAESD = 1 << 6,       // The TAESD option represents the 6th bit
+        ESRGAN = 1 << 7,      // The ESRGAN option represents the 7th bit
+        CONTROLNET = 1 << 8,  // The CONTROLNET option represents the 8th bit
+        UPSCALER = 1 << 9,    // The UPSCALER option represents the 9th bit
+        EMBEDDING = 1 << 10,  // The EMBEDDING option represents the 10th bit
+        ALL = -1,             // All options are set
+        UNKNOWN = -2,         // The unknown option
     };
-    inline const char *dirtypes_str[] = {
-        "LORA",
-        "CHECKPOINT",
-        "VAE",
-        "PRESETS",
-        "PROMPTS",
-        "NEG_PROMPTS",
-        "TAESD",
-        "ESRGAN",
-        "CONTROLNER",
-        "UPSCALER",
-        "UNKNOWN",
-        "ALL"};
+
+    template <>
+    struct enable_bitmask_operators<DirTypes>
+    {
+        static constexpr bool enable = true;
+    };
+    inline bool filterByModelType(const sd_gui_utils::DirTypes modelType, sd_gui_utils::DirTypes filterType)
+    {
+        return static_cast<bool>(modelType & filterType);
+    }
+
+    inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
+        {DirTypes::LORA, "LORA"},
+        {DirTypes::CHECKPOINT, "CHECKPOINT"},
+        {DirTypes::VAE, "VAE"},
+        {DirTypes::PRESETS, "PRESETS"},
+        {DirTypes::PROMPTS, "PROMPTS"},
+        {DirTypes::NEG_PROMPTS, "NEG_PROMPTS"},
+        {DirTypes::TAESD, "TAESD"},
+        {DirTypes::ESRGAN, "ESRGAN"},
+        {DirTypes::CONTROLNET, "CONTROLNET"},
+        {DirTypes::UPSCALER, "UPSCALER"},
+        {DirTypes::EMBEDDING, "EMBEDDING"},
+        {DirTypes::ALL, "ALL"},
+        {DirTypes::UNKNOWN, "UNKNOWN"}};
 
     enum CivitAiState
     {
@@ -127,7 +153,7 @@ namespace sd_gui_utils
 
         ModelFileInfo() = default;
         // Copy konstruktor
-        ModelFileInfo(const ModelFileInfo &other)
+        ModelFileInfo(const sd_gui_utils::ModelFileInfo &other)
             : name(other.name),
               path(other.path),
               url(other.url),
@@ -146,7 +172,7 @@ namespace sd_gui_utils
         {
         }
         // Copy assignment operator
-        ModelFileInfo &operator=(const ModelFileInfo &other)
+        ModelFileInfo &operator=(const sd_gui_utils::ModelFileInfo &other)
         {
             if (this != &other)
             {
@@ -168,9 +194,25 @@ namespace sd_gui_utils
             }
             return *this;
         }
+        inline bool operator==(const sd_gui_utils::ModelFileInfo &rh) const
+        {
+            return path == rh.path;
+        }
+        inline bool operator==(const sd_gui_utils::ModelFileInfo rh) const
+        {
+            return path == rh.path;
+        }
+        inline bool operator==(const sd_gui_utils::ModelFileInfo *rh) const
+        {
+            return path == rh->path;
+        }
+        inline bool operator==(const std::string &otherPath) const
+        {
+            return path == otherPath;
+        }
     };
 
-    inline void to_json(nlohmann::json &j, const ModelFileInfo &p)
+    inline void to_json(nlohmann::json &j, const sd_gui_utils::ModelFileInfo &p)
     {
         j = nlohmann::json{
             {"name", sd_gui_utils::UnicodeToUTF8(p.name)},
@@ -902,12 +944,53 @@ namespace sd_gui_utils
         {
             wxImage finalImage(targetWidth, targetHeight);
             finalImage.SetAlpha();
+
             finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2, (targetHeight - newHeight) / 2);
             return finalImage;
         }
 
         return resizedImage;
     }
+    inline wxImage cropResizeImage(const wxImage &originalImage, int targetWidth, int targetHeight, const wxColour &backgroundColor)
+    {
+        int originalWidth = originalImage.GetWidth();
+        int originalHeight = originalImage.GetHeight();
 
+        double aspectRatio = static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
+        int newWidth = targetWidth;
+        int newHeight = targetHeight;
+
+        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
+        if (originalWidth > targetWidth || originalHeight > targetHeight)
+        {
+            if (aspectRatio > 1.0)
+            {
+                // Szélesség alapján skálázzuk az új méretet
+                newWidth = targetWidth;
+                newHeight = static_cast<int>(targetWidth / aspectRatio);
+            }
+            else
+            {
+                // Magasság alapján skálázzuk az új méretet
+                newHeight = targetHeight;
+                newWidth = static_cast<int>(targetHeight * aspectRatio);
+            }
+        }
+
+        // Méretezzük az eredeti képet az új méretekre
+        wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
+
+        // Üres terület hozzáadása és háttérszínnel való töltése
+        if (newWidth < targetWidth || newHeight < targetHeight)
+        {
+            wxImage finalImage(targetWidth, targetHeight);
+            finalImage.SetRGB(wxRect(0, 0, targetWidth, targetHeight), backgroundColor.Red(), backgroundColor.Green(), backgroundColor.Blue());
+
+            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2, (targetHeight - newHeight) / 2);
+            return finalImage;
+        }
+
+        return resizedImage;
+    }
 }
 #endif

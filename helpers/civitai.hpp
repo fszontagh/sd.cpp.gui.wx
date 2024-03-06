@@ -109,15 +109,15 @@ namespace CivitAi
     inline void from_json(const nlohmann::json &nlohmann_json_j, file_metadata &nlohmann_json_t)
     {
         const file_metadata nlohmann_json_default_obj{};
-        if (!nlohmann_json_j["fp"].is_null())
+        if (nlohmann_json_j.contains("fp") && !nlohmann_json_j["fp"].is_null())
         {
             nlohmann_json_t.fp = nlohmann_json_j.value("fp", nlohmann_json_default_obj.fp);
         }
-        if (!nlohmann_json_j["size"].is_null())
+        if (nlohmann_json_j.contains("size") && !nlohmann_json_j["size"].is_null())
         {
             nlohmann_json_t.size = nlohmann_json_j.value("size", nlohmann_json_default_obj.size);
         }
-        if (!nlohmann_json_j["format"].is_null())
+        if (nlohmann_json_j.contains("format") && !nlohmann_json_j["format"].is_null())
         {
             nlohmann_json_t.format = nlohmann_json_j.value("format", nlohmann_json_default_obj.format);
         }

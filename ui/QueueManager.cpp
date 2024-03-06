@@ -138,7 +138,19 @@ void QM::QueueManager::PauseAll()
         if (value.status == QM::QueueStatus::PENDING)
         {
             this->SetStatus(QM::PAUSED, key);
-            this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED);
+            this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, value);
+        }
+    }
+}
+
+void QM::QueueManager::RestartQueue()
+{
+    for (auto [key, value] : this->QueueList)
+    {
+        if (value.status == QM::QueueStatus::PENDING)
+        {
+            this->SetStatus(QM::PENDING, key);
+            this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, value);
         }
     }
 }
@@ -147,7 +159,7 @@ void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, QM::Queu
 {
     // TODO: e->SetInt instead of SetString
     wxThreadEvent *e = new wxThreadEvent();
-    e->SetString(wxString::Format("%d:%d",(int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType));
+    e->SetString(wxString::Format("%d:%d", (int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType));
     e->SetPayload(item);
     wxQueueEvent(this->eventHandler, e);
 }

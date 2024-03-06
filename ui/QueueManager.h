@@ -172,6 +172,7 @@ namespace QM
         // @brief Update the item too then update the status. This will store the list of the generated images too
         void SetStatus(QM::QueueStatus status, QM::QueueItem item);
         void PauseAll();
+        void RestartQueue();
         void SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem item = QM::QueueItem());
         void OnThreadMessage(wxThreadEvent &e);
         void SaveJobToFile(int id);
