@@ -91,6 +91,10 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
     this->loadEsrganList();
 }
 
+void MainWindowUI::OnAboutButton(wxCommandEvent &event)
+{
+}
+
 void MainWindowUI::onModelSelect(wxCommandEvent &event)
 {
     // check if really selected a model, or just the first element, which is always exists...
@@ -610,6 +614,10 @@ void MainWindowUI::OnJobDetailsImagelistItemActivated(wxListEvent &event)
     {
         wxLaunchDefaultApplication(p->string());
     }
+}
+
+void MainWindowUI::OnJobDetailsImagelistItemRightClick(wxListEvent &event)
+{
 }
 
 void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent &event)
