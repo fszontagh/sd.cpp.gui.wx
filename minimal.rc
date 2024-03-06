@@ -1,2 +1,2 @@
-mondrian ICON "ui/icons/16/cube.ico"
+mondrian ICON "ui/icons/256/cube.ico"
 #include "wx/msw/wx.rc"

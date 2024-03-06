@@ -1,11 +1,11 @@
-#ifndef APP_PNG_H
-#define APP_PNG_H
+#ifndef CUBE_256_PNG_H
+#define CUBE_256_PNG_H
 
 #include <wx/mstream.h>
 #include <wx/image.h>
 #include <wx/bitmap.h>
 
-inline static const unsigned char app_png[] =
+static const unsigned char cube_256_png[] =
 {
 	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 
 	0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x01, 0x00, 
@@ -423,13 +423,13 @@ inline static const unsigned char app_png[] =
 	0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82, 
 };
 
-inline wxBitmap& app_png_to_wx_bitmap()
+wxBitmap& cube_256_png_to_wx_bitmap()
 {
-	static wxMemoryInputStream memIStream( app_png, sizeof( app_png ) );
+	static wxMemoryInputStream memIStream( cube_256_png, sizeof( cube_256_png ) );
 	static wxImage image( memIStream, wxBITMAP_TYPE_PNG );
 	static wxBitmap bmp( image );
 	return bmp;
 }
 
 
-#endif //APP_PNG_H
+#endif //CUBE_256_PNG_H

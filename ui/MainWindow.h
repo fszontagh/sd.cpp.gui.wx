@@ -55,6 +55,7 @@ class UI : public wxFrame
 		wxPanel* m_panel14;
 		wxBitmapButton* m_settings;
 		wxBitmapButton* m_refrersh;
+		wxBitmapButton* m_about;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
 		wxStaticText* m_staticText72;
@@ -109,15 +110,15 @@ class UI : public wxFrame
 		wxButton* m_controlnetImagePreviewButton;
 		wxBitmapButton* m_controlnetImageDelete;
 		wxPanel* m_image2image_panel;
-		wxFilePickerCtrl* m_open_image;
-		wxButton* m_img2im_preview_img;
-		wxBitmapButton* m_delete_initial_img;
 		wxTextCtrl* m_prompt2;
 		wxTextCtrl* m_neg_prompt2;
+		wxStaticBitmap* m_img2img_preview;
 		wxButton* m_generate1;
+		wxFilePickerCtrl* m_open_image;
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
-		wxStaticBitmap* m_img2img_preview;
+		wxButton* m_img2im_preview_img;
+		wxBitmapButton* m_delete_initial_img;
 		wxPanel* m_upscaler;
 		wxStaticText* m_staticText62;
 		wxFilePickerCtrl* m_upscaler_filepicker;
@@ -162,6 +163,7 @@ class UI : public wxFrame
 		// Virtual event handlers, override them in your derived class
 		virtual void onSettings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
@@ -249,6 +251,7 @@ class Settings : public wxFrame
 		wxChoice* m_image_type;
 		wxSlider* m_image_quality;
 		wxSpinCtrl* m_image_quality_spin;
+		wxStaticText* m_staticText38;
 		wxStaticText* m_staticText191;
 		wxSpinCtrl* m_threads;
 		wxPanel* m_settings_ui;
@@ -266,7 +269,7 @@ class Settings : public wxFrame
 
 	public:
 
-		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 600,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxFRAME_NO_TASKBAR|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME, const wxString& name = wxT("sd.cpp.gui.settings") );
+		Settings( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Settings"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_FRAME_STYLE|wxFRAME_NO_TASKBAR|wxFULL_REPAINT_ON_RESIZE|wxTAB_TRAVERSAL|wxBORDER_THEME, const wxString& name = wxT("sd.cpp.gui.settings") );
 
 		~Settings();
 

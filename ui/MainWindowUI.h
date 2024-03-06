@@ -158,6 +158,8 @@ private:
 	std::streambuf *buffer;
 	std::vector<std::thread *> threads;
 	wxTextAttr defaultTextCtrlStyle;
+	wxBitmap ControlnetOrigPreviewBitmap;
+	wxBitmap AppOrigPlaceHolderBitmap;
 
 	// row,QueueItem
 	std::map<int, QM::QueueItem *> JobTableItems;
@@ -191,6 +193,8 @@ private:
 
 	static void HandleSDLog(sd_log_level_t level, const char *text, void *data);
 	static void HandleSDProgress(int step, int steps, float time, void *data);
+
+	QM::QueueItem handleSdImage(sd_image_t result, QM::QueueItem item, wxEvtHandler * eventHandler);
 
 	std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
 	void imageCommentToGuiParams(std::map<std::string, std::string> params, sd_gui_utils::SDMode mode);

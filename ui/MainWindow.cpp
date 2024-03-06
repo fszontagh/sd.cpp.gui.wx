@@ -7,6 +7,7 @@
 
 #include "MainWindow.h"
 
+#include "embedded_files/controlnet.png.h"
 #include "embedded_files/cube.png.h"
 #include "embedded_files/dice_four.png.h"
 #include "embedded_files/disk.png.h"
@@ -20,6 +21,7 @@
 #include "embedded_files/play.png.h"
 #include "embedded_files/refresh.png.h"
 #include "embedded_files/replace.png.h"
+#include "embedded_files/sd.cpp.gui_blankimage.png.h"
 #include "embedded_files/settings.png.h"
 #include "embedded_files/text_box_dots.png.h"
 #include "embedded_files/trash.png.h"
@@ -72,6 +74,14 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	m_refrersh->SetBitmap( refresh_png_to_wx_bitmap() );
 	bSizer97->Add( m_refrersh, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_about = new wxBitmapButton( m_panel14, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_about->SetBitmap( cube_png_to_wx_bitmap() );
+	m_about->SetToolTip( wxT("About the sd.cpp.gui.wx") );
+	m_about->SetHelpText( wxT("About the program") );
+
+	bSizer97->Add( m_about, 0, wxALL, 5 );
 
 
 	sizer0021->Add( bSizer97, 1, wxEXPAND, 5 );
@@ -453,7 +463,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer82->Add( m_prompt, 1, wxALL|wxEXPAND, 1 );
 
 	m_neg_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,300 ), wxTE_MULTILINE|wxTE_PROCESS_ENTER|wxTE_RICH|wxTE_RICH2|wxTE_WORDWRAP );
-	m_neg_prompt->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+	m_neg_prompt->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 
 	bSizer82->Add( m_neg_prompt, 1, wxALL|wxEXPAND, 1 );
 
@@ -467,7 +477,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer331 = new wxBoxSizer( wxVERTICAL );
 
 	bSizer331->SetMinSize( wxSize( -1,100 ) );
-	m_controlnetImagePreview = new wxStaticBitmap( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxFULL_REPAINT_ON_RESIZE );
+	m_controlnetImagePreview = new wxStaticBitmap( m_text2img_panel, wxID_ANY, controlnet_png_to_wx_bitmap(), wxDefaultPosition, wxSize( -1,-1 ), wxFULL_REPAINT_ON_RESIZE );
 	m_controlnetImagePreview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
 
 	bSizer331->Add( m_controlnetImagePreview, 1, wxEXPAND, 5 );
@@ -494,10 +504,9 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer34->Add( m_controlnetImageOpen, 0, wxALL, 5 );
 
 	wxArrayString m_controlnetModelsChoices;
-	m_controlnetModels = new wxChoice( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_controlnetModelsChoices, 0 );
+	m_controlnetModels = new wxChoice( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxSize( 210,-1 ), m_controlnetModelsChoices, 0 );
 	m_controlnetModels->SetSelection( 0 );
 	m_controlnetModels->Enable( false );
-	m_controlnetModels->SetMinSize( wxSize( 210,-1 ) );
 
 	bSizer34->Add( m_controlnetModels, 0, wxALL, 5 );
 
@@ -531,47 +540,40 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_image2image_panel->DragAcceptFiles( true );
 
 	wxBoxSizer* bSizer24;
-	bSizer24 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer24 = new wxBoxSizer( wxVERTICAL );
 
 	wxBoxSizer* bSizer28;
-	bSizer28 = new wxBoxSizer( wxVERTICAL );
+	bSizer28 = new wxBoxSizer( wxHORIZONTAL );
 
 	wxBoxSizer* bSizer33;
 	bSizer33 = new wxBoxSizer( wxVERTICAL );
 
-	wxBoxSizer* bSizer36;
-	bSizer36 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
-	bSizer36->Add( m_open_image, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-
-	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_img2im_preview_img->Enable( false );
-
-	bSizer36->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-
-	m_delete_initial_img = new wxBitmapButton( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
-
-	m_delete_initial_img->SetBitmap( trash_png_to_wx_bitmap() );
-	bSizer36->Add( m_delete_initial_img, 0, wxALL, 5 );
-
-
-	bSizer33->Add( bSizer36, 0, wxEXPAND, 5 );
-
-	wxBoxSizer* bSizer37;
-	bSizer37 = new wxBoxSizer( wxVERTICAL );
-
 	m_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_TAB|wxTE_WORDWRAP );
-	bSizer37->Add( m_prompt2, 1, wxEXPAND|wxALL, 5 );
+	bSizer33->Add( m_prompt2, 1, wxEXPAND|wxALL, 1 );
 
 	m_neg_prompt2 = new wxTextCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_TAB|wxTE_WORDWRAP );
-	bSizer37->Add( m_neg_prompt2, 1, wxEXPAND|wxALL, 5 );
+	bSizer33->Add( m_neg_prompt2, 1, wxEXPAND|wxALL, 1 );
 
 
-	bSizer37->Add( 0, 0, 1, wxEXPAND, 5 );
+	bSizer33->Add( 0, 0, 1, wxEXPAND, 5 );
 
 
-	bSizer33->Add( bSizer37, 1, wxEXPAND, 1 );
+	bSizer28->Add( bSizer33, 1, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer29;
+	bSizer29 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_img2img_preview = new wxStaticBitmap( m_image2image_panel, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
+	m_img2img_preview->DragAcceptFiles( true );
+
+	bSizer29->Add( m_img2img_preview, 1, wxEXPAND, 5 );
+
+
+	bSizer28->Add( bSizer29, 1, wxEXPAND, 5 );
+
+
+	bSizer24->Add( bSizer28, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer38;
 	bSizer38 = new wxBoxSizer( wxHORIZONTAL );
@@ -583,6 +585,11 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	bSizer38->Add( m_generate1, 0, wxALL, 5 );
 
+	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, wxT("Select an image"), wxT("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
+	m_open_image->SetMinSize( wxSize( 470,-1 ) );
+
+	bSizer38->Add( m_open_image, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
 	m_staticText24 = new wxStaticText( m_image2image_panel, wxID_ANY, wxT("Strength:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText24->Wrap( -1 );
 	bSizer38->Add( m_staticText24, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -591,26 +598,18 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_strength->SetDigits( 2 );
 	bSizer38->Add( m_strength, 0, wxALL, 5 );
 
+	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, wxT("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2im_preview_img->Enable( false );
 
-	bSizer33->Add( bSizer38, 0, wxEXPAND, 5 );
+	bSizer38->Add( m_img2im_preview_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_delete_initial_img = new wxBitmapButton( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	bSizer28->Add( bSizer33, 1, wxEXPAND, 5 );
-
-
-	bSizer24->Add( bSizer28, 1, wxEXPAND, 5 );
-
-	wxBoxSizer* bSizer29;
-	bSizer29 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_img2img_preview = new wxStaticBitmap( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
-	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
-	m_img2img_preview->DragAcceptFiles( true );
-
-	bSizer29->Add( m_img2img_preview, 1, wxEXPAND, 5 );
+	m_delete_initial_img->SetBitmap( trash_png_to_wx_bitmap() );
+	bSizer38->Add( m_delete_initial_img, 0, wxALL, 5 );
 
 
-	bSizer24->Add( bSizer29, 1, wxEXPAND, 5 );
+	bSizer24->Add( bSizer38, 0, wxEXPAND, 5 );
 
 
 	m_image2image_panel->SetSizer( bSizer24 );
@@ -727,8 +726,8 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer1000;
 	bSizer1000 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	m_upscaler_source_image->SetBackgroundColour( wxColour( 80, 80, 80 ) );
+	m_upscaler_source_image = new wxStaticBitmap( m_upscaler, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_upscaler_source_image->SetBackgroundColour( wxColour( 64, 64, 64 ) );
 
 	bSizer1000->Add( m_upscaler_source_image, 1, wxEXPAND, 5 );
 
@@ -860,6 +859,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	// Connect Events
 	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
 	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnAboutButton ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
@@ -886,13 +886,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
 	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
+	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_open_image->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
-	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_upscaler->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
 	m_upscaler_filepicker->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
 	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
@@ -913,6 +913,7 @@ UI::~UI()
 	// Disconnect Events
 	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
 	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
+	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnAboutButton ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
@@ -939,13 +940,13 @@ UI::~UI()
 	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
 	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
+	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
+	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
 	m_open_image->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
-	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
 	m_upscaler->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
 	m_upscaler_filepicker->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
 	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
@@ -964,7 +965,7 @@ UI::~UI()
 
 Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxFrame( parent, id, title, pos, size, style, name )
 {
-	this->SetSizeHints( wxSize( -1,500 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( -1,-1 ), wxDefaultSize );
 
 	wxBoxSizer* sizer2010;
 	sizer2010 = new wxBoxSizer( wxVERTICAL );
@@ -1142,7 +1143,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_path_panel->SetSizer( sizer2011 );
 	m_path_panel->Layout();
 	sizer2011->Fit( m_path_panel );
-	m_notebook1696->AddPage( m_path_panel, wxT("Paths"), false );
+	m_notebook1696->AddPage( m_path_panel, wxT("Paths"), true );
 	m_settings = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* sizer2017;
 	sizer2017 = new wxBoxSizer( wxVERTICAL );
@@ -1153,6 +1154,8 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, wxT("Keep model in memory"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
 	m_keep_model_in_memory->SetValue(true);
 	m_keep_model_in_memory->Enable( false );
+	m_keep_model_in_memory->SetToolTip( wxT("Keep model in (v)RAM after diffusions") );
+	m_keep_model_in_memory->SetHelpText( wxT("Keep the model in memory (vRAM or RAM, depends on diffusion type) when it is possible. \n\nText to image and image to image can use the same model. If controlnet model is selected and used, the all new job need to reload the model before run. \nIf type is changed (eg fp16 -> Q4_1), then the model need to be reloaded, but usable with mode diffusion without reload. \n\nIf you disable this option, the model allways unloaded from memory after the job is finished. ") );
 	m_keep_model_in_memory->SetMinSize( wxSize( 230,-1 ) );
 
 	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -1163,7 +1166,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxGridSizer* sizer2019;
 	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
 
-	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediat images)"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, wxT("Save all images (intermediate images)"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
 	m_save_all_image->SetValue(true);
 	m_save_all_image->Enable( false );
 	m_save_all_image->SetMinSize( wxSize( 230,-1 ) );
@@ -1198,6 +1201,18 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 
 	sizer2017->Add( bSizer10, 0, wxALL, 5 );
+
+	wxBoxSizer* bSizer72;
+	bSizer72 = new wxBoxSizer( wxVERTICAL );
+
+	m_staticText38 = new wxStaticText( m_settings, wxID_ANY, wxT("PNG meta data not supported yet"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText38->Wrap( -1 );
+	m_staticText38->SetFont( wxFont( 8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_LIGHT, false, wxEmptyString ) );
+
+	bSizer72->Add( m_staticText38, 0, wxALL|wxEXPAND, 5 );
+
+
+	sizer2017->Add( bSizer72, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer22;
 	bSizer22 = new wxBoxSizer( wxHORIZONTAL );
@@ -1258,6 +1273,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	this->SetSizer( sizer2010 );
 	this->Layout();
+	sizer2010->Fit( this );
 
 	this->Centre( wxBOTH );
 
