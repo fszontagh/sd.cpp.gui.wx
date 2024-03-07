@@ -421,6 +421,7 @@ namespace sd_gui_utils
         std::string name;
         std::string mode; // modes_str
         int batch;
+        std::string type; // types_str
         std::string path;
     };
 
@@ -435,6 +436,7 @@ namespace sd_gui_utils
             {"height", p.height},
             {"name", p.name},
             {"mode", p.mode},
+            {"type", p.type},
             {"sampler", (int)p.sampler},
             {"batch", p.batch},
         };
@@ -450,6 +452,9 @@ namespace sd_gui_utils
         j.at("height").get_to(p.height);
         j.at("name").get_to(p.name);
         j.at("mode").get_to(p.mode);
+        if (j.contains("type")) {
+            j.at("type").get_to(p.type);
+        }
         j.at("batch").get_to(p.batch);
         p.sampler = j.at("sampler").get<sample_method_t>();
     }

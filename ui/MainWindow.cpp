@@ -1333,3 +1333,30 @@ ImageDialog::ImageDialog( wxWindow* parent, wxWindowID id, const wxString& title
 ImageDialog::~ImageDialog()
 {
 }
+
+AboutDialog::AboutDialog( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
+{
+	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+
+	wxBoxSizer* bSizer71;
+	bSizer71 = new wxBoxSizer( wxVERTICAL );
+
+	m_about = new wxHtmlWindow( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_NO_SELECTION|wxHW_SCROLLBAR_AUTO );
+	bSizer71->Add( m_about, 1, wxALL|wxEXPAND, 5 );
+
+
+	this->SetSizer( bSizer71 );
+	this->Layout();
+
+	this->Centre( wxBOTH );
+
+	// Connect Events
+	m_about->Connect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( AboutDialog::m_aboutOnHtmlLinkClicked ), NULL, this );
+}
+
+AboutDialog::~AboutDialog()
+{
+	// Disconnect Events
+	m_about->Disconnect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( AboutDialog::m_aboutOnHtmlLinkClicked ), NULL, this );
+
+}

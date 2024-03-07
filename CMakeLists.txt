@@ -2,9 +2,29 @@ cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME "sd.ui")
 
-project(${PROJECT_NAME})
 
 
+
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+set(VERSION_PATCH 4)
+set(DESCRIPTION:STRING "C++ based stable diffusion Graphical Interface based on stable-diffusion.cpp")
+set(HOMEPAGE:STRING "https://github.com/fszontagh/sd.cpp.gui.wx")
+
+project(
+    ${PROJECT_NAME}
+    LANGUAGES CXX
+    VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}
+    DESCRIPTION "${DESCRIPTION}"
+    HOMEPAGE_URL "${HOMEPAGE}"
+    )
+
+execute_process(
+    COMMAND git log -1 --format=%h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    OUTPUT_VARIABLE GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
 #https://stackoverflow.com/questions/47690822/possible-to-force-cmake-msvc-to-use-utf-8-encoding-for-source-files-without-a-bo
 #nlohmann json utf-8 and windows filename
@@ -57,7 +77,7 @@ if(WIN32)
   set(SRCS ${SRCS} minimal.rc)
 endif(WIN32)
 
-add_executable(${PROJECT_NAME} ${OPTIONS} ${SRCS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUI.cpp ui/QueueManager.cpp ui/MainWindowImageDialog.cpp ui/ModelInfo.cpp)
+add_executable(${PROJECT_NAME} ${OPTIONS} ${SRCS} main.cpp ui/MainWindow.cpp ui/MainWindowSettings.cpp ui/MainWindowUI.cpp ui/QueueManager.cpp ui/MainWindowImageDialog.cpp ui/ModelInfo.cpp ui/MainWindowAboutDialog)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/src/stable-diffusion-git)
 
@@ -73,23 +93,11 @@ IF(WIN32)
         ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/stable-diffusion.dll
         $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 
-        #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        #COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        #${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/ggml.dll
-        #$<TARGET_FILE_DIR:${PROJECT_NAME}>)
-
-
-
     IF(CMAKE_BUILD_TYPE EQUAL "Debug")
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/stable-diffusion.pdb
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-
-        #add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        #COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        #${EXTERNAL_DOWNLOAD_LOCATION}/stable-diffusion/bin/$<CONFIGURATION>/ggml.pdb
-        #$<TARGET_FILE_DIR:${PROJECT_NAME}>)    
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>)  
     ENDIF()
 
 ELSE()
@@ -137,3 +145,4 @@ include_directories(ui)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
+configure_file (ver.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/ui/ver.hpp @ONLY)

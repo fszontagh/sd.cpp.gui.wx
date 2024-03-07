@@ -1,0 +1,15 @@
+#ifndef VERSION_H_IN
+#define VERSION_H_IN
+
+inline const char *PROJECT_NAME = "@PROJECT_NAME@";
+inline const char *VERSION_MAJOR = "@VERSION_MAJOR@";
+inline const char *VERSION_MINOR = "@VERSION_MINOR@";
+inline const char *VERSION_PATCH = "@VERSION_PATCH@";
+inline const char *SD_GUI_VERSION = "@VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@";
+inline const char *SD_GUI_SYSTEM_NAME = "@CMAKE_SYSTEM_NAME@";
+inline const char *SD_GUI_SYSTEM_VERSION = "@CMAKE_SYSTEM_VERSION@";
+inline const char *GIT_HASH = "@GIT_HASH@";
+// User-Agent: Mozilla/5.0 (<system-information>) <platform> (<platform-details>) <extensions>
+inline const char *SD_CURL_USER_AGENT = "@PROJECT_NAME@/@VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@ (@CMAKE_SYSTEM_NAME@ @CMAKE_SYSTEM_VERSION@; @CMAKE_SYSTEM_PROCESSOR@) @PROJECT_NAME@/@GIT_HASH@";
+
+#endif // VERSION_H_IN

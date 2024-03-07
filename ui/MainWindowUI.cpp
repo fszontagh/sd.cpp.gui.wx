@@ -11,6 +11,8 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
 
     this->currentControlnetImage = new wxImage();
     this->currentControlnetImagePreview = new wxImage();
+    this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
+    this->AppOrigPlaceHolderBitmap = this->m_img2img_preview->GetBitmap();
 
     this->previewImageList = new wxImageList();
     this->modelPreviewImageList = new wxImageList();
@@ -36,11 +38,11 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
 
     // this->TaskBarMenu = new wxMenu();
 
-    auto bitmap = app_png_to_wx_bitmap();
-    TaskBar->SetIcon(bitmap, this->GetTitle());
+    this->TaskBarIcon = app_png_to_wx_bitmap();
+    this->TaskBar->SetIcon(this->TaskBarIcon, this->GetTitle());
 
     wxIcon icon;
-    icon.CopyFromBitmap(bitmap);
+    icon.CopyFromBitmap(this->TaskBarIcon);
     this->SetIcon(icon);
 
     this->cfg = new sd_gui_utils::config;
@@ -93,6 +95,14 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
 
 void MainWindowUI::OnAboutButton(wxCommandEvent &event)
 {
+    MainWindowAboutDialog *dialog = new MainWindowAboutDialog(this);
+    wxString about = wxString::Format("<h2>%s</h2><p>Version: %s Git version: %s</p><p>Website: <a target='_blank' href='https://github.com/fszontagh/sd.cpp.gui.wx'>sd.cpp.gui.wx</a></p><hr/>", PROJECT_NAME, SD_GUI_VERSION, GIT_HASH);
+    about.append(wxString("<pre>"));
+    about.append(wxString(sd_get_system_info()));
+    about.append(wxString("</pre>"));
+    dialog->m_about->SetPage(about);
+    dialog->SetIcon(this->GetIcon());
+    dialog->ShowModal();
 }
 
 void MainWindowUI::onModelSelect(wxCommandEvent &event)
@@ -211,17 +221,20 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent &event)
         {
             this->m_width->Disable();
             this->m_height->Disable();
+            this->m_button7->Disable(); // swap button
         }
         else
         {
             this->m_width->Enable();
             this->m_height->Enable();
+            this->m_button7->Enable();
         }
         // img2img
         if (selected == 2 && !this->m_open_image->GetPath().empty())
         {
             this->m_width->Disable();
             this->m_height->Disable();
+            this->m_button7->Disable(); // swap button
         }
     }
     // upscaler
@@ -244,6 +257,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent &event)
         this->m_steps->Disable();
         this->m_width->Disable();
         this->m_height->Disable();
+        this->m_button7->Disable(); // swap button
     }
 }
 
@@ -934,29 +948,7 @@ void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent &event)
     {
         return;
     }
-    wxImage img;
-    if (img.LoadFile(event.GetPath()))
-    {
-
-        auto origSize = this->m_controlnetImagePreview->GetSize();
-        this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
-
-        this->currentControlnetImage = new wxImage(img);
-        this->currentControlnetImagePreview = new wxImage(preview);
-
-        this->m_controlnetImagePreview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
-        this->m_controlnetImagePreview->SetBitmap(preview);
-        this->m_controlnetImagePreview->SetSize(origSize);
-        this->m_controlnetImagePreviewButton->Enable();
-        this->m_controlnetImageDelete->Enable();
-        this->m_width->SetValue(img.GetWidth());
-        this->m_height->SetValue(img.GetHeight());
-        // can not change the outpt images resolution
-        this->m_width->Disable();
-        this->m_height->Disable();
-        this->m_button7->Disable(); // swap resolution
-    }
+    this->onControlnetImageOpen(event.GetPath().ToStdString());
 }
 
 void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
@@ -968,6 +960,7 @@ void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
     dialog->SetSize(size.GetWidth() + 100, size.GetHeight() + 100);
     wxString title = wxString::Format("Controlnet Image %dx%dpx", size.GetWidth(), size.GetHeight());
     dialog->SetTitle(title);
+    dialog->SetIcon(this->GetIcon());
     dialog->m_bitmap->SetBitmap(img);
     dialog->ShowModal();
 }
@@ -1156,10 +1149,29 @@ void MainWindowUI::onSavePreset(wxCommandEvent &event)
         preset.steps = this->m_steps->GetValue();
         preset.width = this->m_width->GetValue();
         preset.height = this->m_height->GetValue();
-        preset.sampler = (sample_method_t)this->m_sampler->GetSelection();
+
+        int index = 0;
+        for (auto sampler : sd_gui_utils::sample_method_str)
+        {
+            if (this->m_sampler->GetStringSelection().ToStdString() == sampler)
+            {
+                preset.sampler = (sample_method_t)index;
+                break;
+            }
+            index++;
+        }
         preset.batch = this->m_batch_count->GetValue();
         preset.name = preset_name.ToStdString();
-        preset.mode = "text2image";
+        preset.type = this->m_type->GetStringSelection().ToStdString();
+        if (this->m_notebook1302->GetSelection() == 1)
+        {
+            preset.mode = sd_gui_utils::modes_str[QM::GenerationMode::TXT2IMG];
+        }
+        if (this->m_notebook1302->GetSelection() == 2)
+        {
+            preset.mode = sd_gui_utils::modes_str[QM::GenerationMode::IMG2IMG];
+        }
+
         nlohmann::json j(preset);
         std::string presetfile = fmt::format("{}{}{}.json",
                                              this->cfg->presets,
@@ -1299,10 +1311,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item)
     {
         if (std::filesystem::exists(item.params.control_image_path))
         {
-            wxImage img;
-            img.LoadFile(item.params.control_image_path);
-            this->m_controlnetImagePreview->SetBitmap(img);
-            this->m_controlnetImageOpen->SetPath(item.params.control_image_path);
+            this->onControlnetImageOpen(item.params.control_image_path);
         }
 
         for (auto cnmodel : this->ControlnetModels)
@@ -2211,7 +2220,6 @@ void MainWindowUI::onimg2ImgImageOpen(std::string file)
         this->currentInitialImagePath = file;
 
         this->m_img2img_preview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
-        this->AppOrigPlaceHolderBitmap = this->m_img2img_preview->GetBitmap();
         this->m_img2img_preview->SetBitmap(preview);
         this->m_img2img_preview->SetSize(origSize);
 
@@ -2283,8 +2291,6 @@ void MainWindowUI::onUpscaleImageOpen(std::string file)
         this->currentUpscalerSourceImage = new wxImage(img);
         this->m_upscaler_filepicker->SetPath(file);
         auto origSize = this->m_upscaler_source_image->GetSize();
-        this->AppOrigPlaceHolderBitmap = this->m_upscaler_source_image->GetBitmap();
-
         auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
 
         this->m_generate_upscaler->Enable();
@@ -2875,6 +2881,8 @@ void MainWindowUI::ShowNotification(std::string title, std::string message)
         notification.UseTaskBarIcon(this->TaskBar);
         notification.Show(this->cfg->notification_timeout);
     }
+
+    this->TaskBar->SetIcon(this->TaskBarIcon, fmt::format("{} - {}", this->GetTitle().ToStdString(), title));
 }
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *data)
@@ -2885,6 +2893,7 @@ void MainWindowUI::HandleSDLog(sd_log_level_t level, const char *text, void *dat
         auto *eventHandler = (wxEvtHandler *)data;
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::SD_MESSAGE, level, text);
     }
+    // TaskBar->SetIcon(, this->GetTitle());
 }
 
 sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem myItem)
@@ -2912,8 +2921,6 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem my
             this->ModelManager->setHash(myItem.params.model_path, hash);
         }
     }
-
-    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_LOAD_START, myItem);
 
     sd_ctx_t *sd_ctx_ = new_sd_ctx(
         sd_gui_utils::repairPath(myItem.params.model_path).c_str(),      // model path
@@ -2968,6 +2975,32 @@ upscaler_ctx_t *MainWindowUI::LoadUpscaleModel(wxEvtHandler *eventHandler, QM::Q
         this->upscaleModelLoaded = true;
     }
     return u_ctx;
+}
+
+void MainWindowUI::onControlnetImageOpen(std::string file)
+{
+    wxImage img;
+    if (img.LoadFile(file))
+    {
+        this->m_controlnetImageOpen->SetPath(file);
+        auto origSize = this->m_controlnetImagePreview->GetSize();
+        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
+
+        this->currentControlnetImage = new wxImage(img);
+        this->currentControlnetImagePreview = new wxImage(preview);
+
+        this->m_controlnetImagePreview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
+        this->m_controlnetImagePreview->SetBitmap(preview);
+        this->m_controlnetImagePreview->SetSize(origSize);
+        this->m_controlnetImagePreviewButton->Enable();
+        this->m_controlnetImageDelete->Enable();
+        this->m_width->SetValue(img.GetWidth());
+        this->m_height->SetValue(img.GetHeight());
+        // can not change the outpt images resolution
+        this->m_width->Disable();
+        this->m_height->Disable();
+        this->m_button7->Disable(); // swap resolution
+    }
 }
 
 void MainWindowUI::LoadPresets()

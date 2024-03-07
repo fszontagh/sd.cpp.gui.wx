@@ -294,3 +294,25 @@ class ImageDialog : public wxDialog
 
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// Class AboutDialog
+///////////////////////////////////////////////////////////////////////////////
+class AboutDialog : public wxDialog
+{
+	private:
+
+	protected:
+
+		// Virtual event handlers, override them in your derived class
+		virtual void m_aboutOnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
+
+
+	public:
+		wxHtmlWindow* m_about;
+
+		AboutDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("About"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,600 ), long style = wxDEFAULT_DIALOG_STYLE );
+
+		~AboutDialog();
+
+};
+
