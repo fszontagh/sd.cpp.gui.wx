@@ -1351,14 +1351,14 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         return;
     }
 
-    this->m_data_model_url->SetLabel(modelinfo->CivitAiInfo.model.name + modelinfo->CivitAiInfo.model.name);
+    this->m_data_model_url->SetLabel(modelinfo->CivitAiInfo.model.name + " " + modelinfo->CivitAiInfo.name);
     wxString url = wxString::Format("https://civitai.com/models/%d", modelinfo->CivitAiInfo.modelId);
     this->m_data_model_url->SetURL(url);
 
     wxVector<wxVariant> data;
 
     data.push_back(wxVariant("Name"));
-    data.push_back(wxVariant(wxString::Format("%s %s", modelinfo->CivitAiInfo.name, modelinfo->CivitAiInfo.model.name)));
+    data.push_back(wxVariant(wxString::Format("%s %s", modelinfo->CivitAiInfo.model.name, modelinfo->CivitAiInfo.name)));
     this->m_model_details->AppendItem(data);
     data.clear();
 
@@ -3280,7 +3280,7 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
         /// download
         std::list<std::string> headers;
         headers.push_back("Content-Type: text/json;");
-        headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));        
+        headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
 
         std::ostringstream response(std::stringstream::binary);
         try

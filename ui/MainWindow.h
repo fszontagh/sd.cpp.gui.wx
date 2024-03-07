@@ -155,8 +155,8 @@ class UI : public wxFrame
 		wxDataViewListCtrl* m_model_details;
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
-		wxHtmlWindow* m_model_details_description;
 		wxListCtrl* m_model_details_imagelist;
+		wxHtmlWindow* m_model_details_description;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 

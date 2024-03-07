@@ -814,13 +814,13 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_dataViewListColumn21->GetRenderer()->EnableEllipsize( wxELLIPSIZE_NONE );
 	bSizer1001->Add( m_model_details, 1, wxEXPAND, 5 );
 
-	m_model_details_description = new wxHtmlWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_AUTO );
-	m_model_details_description->Hide();
-
-	bSizer1001->Add( m_model_details_description, 1, wxALL|wxEXPAND, 5 );
-
 	m_model_details_imagelist = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
 	bSizer1001->Add( m_model_details_imagelist, 1, wxEXPAND, 5 );
+
+	m_model_details_description = new wxHtmlWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,80 ), wxHW_SCROLLBAR_AUTO );
+	m_model_details_description->Hide();
+
+	bSizer1001->Add( m_model_details_description, 1, wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
 
 	bSizer102->Add( bSizer1001, 1, wxEXPAND, 5 );
