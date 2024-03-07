@@ -3217,6 +3217,7 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler *eventHandler, sd_gui_
 
     std::list<std::string> headers;
     headers.push_back("Content-Type: text/json;");
+    headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
     std::string url = "https://civitai.com/api/v1/model-versions/by-hash/" + modelinfo->sha256.substr(0, 10);
     std::cerr << "Getting info from " << url << std::endl;
     std::ostringstream response;
@@ -3279,6 +3280,7 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
         /// download
         std::list<std::string> headers;
         headers.push_back("Content-Type: text/json;");
+        headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));        
 
         std::ostringstream response(std::stringstream::binary);
         try
