@@ -312,6 +312,10 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 
     if (source == this->m_joblist)
     {
+        if (this->m_joblist->GetSelectedItemsCount() == 0 || column >= this->m_joblist->GetItemCount())
+        {
+            return;
+        }
         wxMenu *menu = new wxMenu();
 
         auto item = event.GetItem();
@@ -383,6 +387,10 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 
     if (source == this->m_data_model_list)
     {
+        if (this->m_data_model_list->GetSelectedItemsCount() == 0 || column >= this->m_joblist->GetItemCount())
+        {
+            return;
+        }
         wxMenu *menu = new wxMenu();
         auto item = this->m_data_model_list->GetCurrentItem();
 
@@ -429,6 +437,10 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 void MainWindowUI::OnJobListItemSelection(wxDataViewEvent &event)
 {
     auto row = this->m_joblist->GetSelectedRow();
+    if (row == wxNOT_FOUND)
+    {
+        return;
+    }
     auto store = this->m_joblist->GetStore();
     auto ditem = store->GetItem(row);
     int itemid = store->GetItemData(ditem);
@@ -452,6 +464,10 @@ void MainWindowUI::OnJobDetailsImagelistItemRightClick(wxListEvent &event)
 {
     auto store = this->m_joblist->GetStore();
     auto row = this->m_joblist->GetSelectedRow();
+    if (row == wxNOT_FOUND)
+    {
+        return;
+    }
     auto currentItem = store->GetItem(row);
 
     int jobid = store->GetItemData(currentItem);
@@ -974,6 +990,10 @@ void MainWindowUI::OnDataModelSelected(wxDataViewEvent &event)
 {
     auto store = this->m_data_model_list->GetStore();
     auto row = this->m_data_model_list->GetSelectedRow();
+    if (row == wxNOT_FOUND)
+    {
+        return;
+    }
     auto currentItem = store->GetItem(row);
     sd_gui_utils::ModelFileInfo *_item = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
     sd_gui_utils::ModelFileInfo *modelinfo = this->ModelManager->getIntoPtr(_item->path);
@@ -1422,6 +1442,10 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
         wxDataViewListStore *store = this->m_joblist->GetStore();
         auto currentItem = this->m_joblist->GetCurrentItem();
         auto currentRow = this->m_joblist->GetSelectedRow();
+        if (currentRow == wxNOT_FOUND)
+        {
+            return;
+        }
         int id = store->GetItemData(currentItem);
         QM::QueueItem *qitem = this->qmanager->GetItemPtr(id);
 
@@ -1505,6 +1529,10 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
     {
         wxDataViewListStore *store = this->m_data_model_list->GetStore();
         int currow = this->m_data_model_list->GetSelectedRow();
+        if (currow == wxNOT_FOUND)
+        {
+            return;
+        }
         auto currentItem = store->GetItem(currow);
 
         sd_gui_utils::ModelFileInfo *modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
@@ -1559,6 +1587,10 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
         wxDataViewListStore *store = this->m_joblist->GetStore();
         auto currentItem = this->m_joblist->GetCurrentItem();
         auto currentRow = this->m_joblist->GetSelectedRow();
+        if (currentRow == wxNOT_FOUND)
+        {
+            return;
+        }
 
         int id = store->GetItemData(currentItem);
         QM::QueueItem *qitem = this->qmanager->GetItemPtr(id);
