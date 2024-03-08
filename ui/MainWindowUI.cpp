@@ -367,7 +367,7 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         menu->AppendSeparator();
         menu->Append(99, "Delete");
         menu->Enable(99, false);
-        
+
         if (qitem->status == QM::QueueStatus::RUNNING ||
             qitem->status == QM::QueueStatus::HASHING)
         {
@@ -2688,15 +2688,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
     if (threadEvent == sd_gui_utils::HASHING_PROGRESS)
     {
-        QM::QueueItem myjob = e.GetPayload<QM::QueueItem>();
+        QM::QueueItem * myjob = e.GetPayload<QM::QueueItem*>();
 
         // update column
         auto store = this->m_joblist->GetStore();
 
         int progressCol = this->m_joblist->GetColumnCount() - 3;
 
-        size_t _x = myjob.hash_progress_size;
-        size_t _m = myjob.hash_fullsize;
+        size_t _x = myjob->hash_progress_size;
+        size_t _m = myjob->hash_fullsize;
         int current_progress = 0;
         auto _hr1 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
         auto _hr2 = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
@@ -2711,7 +2711,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
             auto currentItem = store->GetItem(i);
             int id = store->GetItemData(currentItem);
             QM::QueueItem *qitem = this->qmanager->GetItemPtr(id);
-            if (qitem->id == myjob.id)
+            if (qitem->id == myjob->id)
             {
                 store->SetValueByRow(current_progress, i, progressCol);
                 this->m_joblist->Refresh();
