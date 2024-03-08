@@ -6,60 +6,60 @@ QM::QueueManager::QueueManager(wxEvtHandler *eventHandler, std::string jobsdir)
     this->eventHandler = eventHandler;
     this->eventHandler->Bind(wxEVT_THREAD, &QueueManager::OnThreadMessage, this);
     this->jobsDir = jobsdir;
-    this->QueueList = std::map<int, QM::QueueItem>();
+    this->QueueList = std::map<int, QM::QueueItem *>();
     this->LoadJobListFromDir();
 }
 
 QM::QueueManager::~QueueManager()
 {
+    for (auto &pair : this->QueueList)
+    {
+        for (auto &img : pair.second->images)
+        {
+            if (img != nullptr)
+            {
+                delete img;
+            }
+        }
+        if (pair.second != nullptr)
+        {
+            delete pair.second;
+        }
+    }
 }
 
-int QM::QueueManager::AddItem(QM::QueueItem item, bool fromFile)
+int QM::QueueManager::AddItem(QM::QueueItem *item, bool fromFile)
 {
-    if (item.id == 0)
+    if (item->id == 0)
     {
-        item.id = this->GetAnId();
+        item->id = this->GetAnId();
     }
-    if (item.created_at == 0)
+    if (item->created_at == 0)
     {
-        item.created_at = this->GetCurrentUnixTimestamp();
+        item->created_at = this->GetCurrentUnixTimestamp();
     }
 
-    this->QueueList[item.id] = item;
+    this->QueueList[item->id] = item;
 
     this->SendEventToMainWindow(QM::QueueEvents::ITEM_ADDED, item);
-    if (this->isRunning == false && item.status == QM::QueueStatus::PENDING)
+    if (this->isRunning == false && item->status == QM::QueueStatus::PENDING)
     {
         this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, item);
         this->isRunning = true;
     }
     if (!fromFile)
     {
-        this->SaveJobToFile(item);
+        this->SaveJobToFile(*item);
     }
 
-    return item.id;
+    return item->id;
 }
 
-int QM::QueueManager::AddItem(sd_gui_utils::SDParams *params, bool fromFile)
-{
-    QM::QueueItem item;
-    item.params = *params;
-    return this->AddItem(item);
-}
-
-int QM::QueueManager::AddItem(sd_gui_utils::SDParams params, bool fromFile)
-{
-    QM::QueueItem item;
-    item.params = params;
-    return this->AddItem(item);
-}
-
-QM::QueueItem QM::QueueManager::GetItem(int id)
+QM::QueueItem *QM::QueueManager::GetItemPtr(int id)
 {
     if (this->QueueList.find(id) == this->QueueList.end())
     {
-        return QM::QueueItem();
+        return nullptr;
     }
     else
     {
@@ -67,95 +67,129 @@ QM::QueueItem QM::QueueManager::GetItem(int id)
     }
 }
 
-QM::QueueItem QM::QueueManager::GetItem(QM::QueueItem item)
+QM::QueueItem *QM::QueueManager::GetItemPtr(QM::QueueItem item)
 {
-    return this->GetItem(item.id);
+    return this->GetItemPtr(item.id);
 }
 
-const std::map<int, QM::QueueItem> QM::QueueManager::getList()
+const std::map<int, const QM::QueueItem *> QM::QueueManager::getList()
 {
-    return this->QueueList;
-}
-
-int QM::QueueManager::Duplicate(QM::QueueItem item)
-{
-    if (this->QueueList.find(item.id) == this->QueueList.end())
+    std::map<int, const QM::QueueItem *> newlist;
+    for (auto item : this->QueueList)
     {
-        return -1;
+        newlist[item.first] = item.second;
     }
-    else
-    {
-        auto origItem = this->QueueList.at(item.id);
-        QM::QueueItem newitem;
-        newitem.params = origItem.params;
-        newitem.mode = origItem.mode;
-        newitem.model = origItem.model;
-        newitem.initial_image = origItem.initial_image;
-        newitem.hash_fullsize = origItem.hash_fullsize;
-        newitem.hash_progress_size = origItem.hash_progress_size;
-        newitem.sha256 = origItem.sha256;
-        return this->AddItem(newitem);
-    }
+    return newlist;
 }
 
-int QM::QueueManager::Duplicate(int id)
+QM::QueueItem *QM::QueueManager::Duplicate(const QM::QueueItem *item)
+{
+    if (this->QueueList.find(item->id) == this->QueueList.end())
+    {
+        return nullptr;
+    }
+
+    QM::QueueItem *newitem = new QM::QueueItem(*item);
+    // handle this in the AddItem
+    newitem->id = 0;
+    newitem->created_at = 0;
+    // clear the list, we need a new later
+    newitem->images.clear();
+    // set to paused, user will start manually
+    newitem->status = QM::QueueStatus::PAUSED;
+    this->AddItem(newitem);
+    return newitem;
+}
+
+QM::QueueItem *QM::QueueManager::Duplicate(int id)
 {
     if (this->QueueList.find(id) != this->QueueList.end())
     {
         return this->Duplicate(this->QueueList[id]);
     }
-    return -1;
+    return nullptr;
 }
 
-void QM::QueueManager::SetStatus(QM::QueueStatus status, int id)
+void QM::QueueManager::SetStatus(QM::QueueStatus status, QM::QueueItem *item)
 {
-    if (this->QueueList.find(id) != this->QueueList.end())
+    if (this->QueueList.find(item->id) != this->QueueList.end())
     {
-        this->QueueList[id].status = status;
-        this->QueueList[id].updated_at = this->GetCurrentUnixTimestamp();
-        if (status == QM::QueueStatus::DONE && this->QueueList[id].finished_at == 0)
+        if (item->finished_at == 0)
         {
-            this->QueueList[id].finished_at = this->GetCurrentUnixTimestamp();
+            item->finished_at = this->GetCurrentUnixTimestamp();
         }
-        this->SaveJobToFile(this->QueueList[id]);
-        this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[id]);
+        else
+        {
+            item->updated_at = this->GetCurrentUnixTimestamp();
+        }
+        this->QueueList[item->id]->status = status;
+        this->SaveJobToFile(*this->QueueList[item->id]);
+        this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item->id]);
     }
-}
-
-void QM::QueueManager::SetStatus(QM::QueueStatus status, QM::QueueItem item)
-{
-    if (this->QueueList.find(item.id) != this->QueueList.end())
-    {
-        this->QueueList[item.id] = item;
-    }
-    this->SetStatus(status, item.id);
 }
 
 void QM::QueueManager::PauseAll()
 {
-    for (auto [key, value] : this->QueueList)
+    for (auto q : this->QueueList)
     {
-        if (value.status == QM::QueueStatus::PENDING)
+        if (q.second->status == QM::QueueStatus::PENDING)
         {
-            this->SetStatus(QM::PAUSED, key);
-            this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, value);
+            this->SetStatus(QM::PAUSED, q.second);
         }
     }
 }
 
 void QM::QueueManager::RestartQueue()
 {
-    for (auto [key, value] : this->QueueList)
+    for (auto q : this->QueueList)
     {
-        if (value.status == QM::QueueStatus::PENDING)
+        if (q.second->status == QM::QueueStatus::PAUSED)
         {
-            this->SetStatus(QM::PENDING, key);
-            this->SendEventToMainWindow(QM::QueueEvents::ITEM_STATUS_CHANGED, value);
+            this->SetStatus(QM::PENDING, q.second);
+        }
+    }
+
+    if (!this->isRunning)
+    {
+        for (auto job : this->QueueList)
+        {
+            if (job.second->status == QM::QueueStatus::PENDING)
+            {
+                if (this->isRunning == false)
+                {
+                    
+                    this->isRunning = true;
+                    this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, job.second);
+                }
+                break;
+            }
         }
     }
 }
 
-void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem item)
+void QM::QueueManager::UnPauseItem(QM::QueueItem *item)
+{
+    if (item->status == QM::QueueStatus::PAUSED)
+    {
+        this->SetStatus(QM::QueueStatus::PENDING, item);
+        // check if queue is active
+        if (!this->isRunning)
+        {
+            this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, this->QueueList[item->id]);
+            this->isRunning = true;
+        }
+    }
+}
+
+void QM::QueueManager::PauseItem(QM::QueueItem *item)
+{
+    if (item->status == QM::QueueStatus::PENDING)
+    {
+        this->SetStatus(QM::QueueStatus::PAUSED, item);
+    }
+}
+
+void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem *item)
 {
     // TODO: e->SetInt instead of SetString
     wxThreadEvent *e = new wxThreadEvent();
@@ -182,10 +216,10 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
     if (threadEvent == sd_gui_utils::QUEUE)
     {
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
-        auto payload = e.GetPayload<QM::QueueItem>();
+        auto payload = e.GetPayload<QM::QueueItem *>();
         if (event == QM::QueueEvents::ITEM_START)
         {
-            this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
+            this->SetStatus(QM::QueueStatus::RUNNING, payload);
             this->isRunning = true;
             return;
         }
@@ -197,7 +231,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
             // find waiting jobs
             for (auto job : this->QueueList)
             {
-                if (job.second.status == QM::QueueStatus::PENDING)
+                if (job.second->status == QM::QueueStatus::PENDING)
                 {
                     if (this->isRunning == false)
                     {
@@ -211,18 +245,18 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         }
         if (event == QM::QueueEvents::ITEM_MODEL_LOAD_START)
         {
-            auto payload = e.GetPayload<QM::QueueItem>();
-            this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload.id);
+            auto payload = e.GetPayload<QM::QueueItem *>();
+            this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload);
         }
         if (event == QM::QueueEvents::ITEM_MODEL_FAILED)
         {
-            auto payload = e.GetPayload<QM::QueueItem>();
-            this->SetStatus(QM::QueueStatus::FAILED, payload.id);
+            auto payload = e.GetPayload<QM::QueueItem *>();
+            this->SetStatus(QM::QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
             for (auto job : this->QueueList)
             {
-                if (job.second.status == QM::QueueStatus::PENDING)
+                if (job.second->status == QM::QueueStatus::PENDING)
                 {
                     if (this->isRunning == false)
                     {
@@ -235,13 +269,13 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         }
         if (event == QM::QueueEvents::ITEM_FAILED)
         {
-            auto payload = e.GetPayload<QM::QueueItem>();
-            this->SetStatus(QM::QueueStatus::FAILED, payload.id);
+            auto payload = e.GetPayload<QM::QueueItem *>();
+            this->SetStatus(QM::QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
             for (auto job : this->QueueList)
             {
-                if (job.second.status == QM::QueueStatus::PENDING)
+                if (job.second->status == QM::QueueStatus::PENDING)
                 {
                     if (this->isRunning == false)
                     {
@@ -254,26 +288,26 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent &e)
         }
         if (event == QM::QueueEvents::ITEM_GENERATION_STARTED)
         {
-            auto payload = e.GetPayload<QM::QueueItem>();
-            this->SetStatus(QM::QueueStatus::RUNNING, payload.id);
+            auto payload = e.GetPayload<QM::QueueItem *>();
+            this->SetStatus(QM::QueueStatus::RUNNING, payload);
             this->isRunning = true;
         }
     }
 
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS)
     {
-        auto payload = e.GetPayload<QM::QueueItem>();
-        this->SetStatus(QM::QueueStatus::HASHING, payload.id);
+        auto payload = e.GetPayload<QM::QueueItem *>();
+        this->SetStatus(QM::QueueStatus::HASHING, payload);
     }
 }
 
 void QM::QueueManager::SaveJobToFile(int id)
 {
-    auto item = this->GetItem(id);
-    this->SaveJobToFile(item);
+    auto item = this->GetItemPtr(id);
+    this->SaveJobToFile(*item);
 }
 
-void QM::QueueManager::SaveJobToFile(QM::QueueItem item)
+void QM::QueueManager::SaveJobToFile(const QM::QueueItem &item)
 {
     try
     {
@@ -296,21 +330,27 @@ bool QM::QueueManager::DeleteJob(QM::QueueItem item)
 
 bool QM::QueueManager::DeleteJob(int id)
 {
-    auto item = this->GetItem(id);
-    if (item.id == 0)
+    auto item = this->GetItemPtr(id);
+    if (item->id == 0)
     {
         return false;
     }
-    std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
+    std::string filename = this->jobsDir + "/" + std::to_string(item->id) + ".json";
     if (std::filesystem::exists(filename))
     {
         if (std::filesystem::remove(filename))
         {
-            this->QueueList.erase(item.id);
+            delete this->QueueList[item->id];
+            this->QueueList.erase(item->id);
             return true;
         }
     }
     return false;
+}
+
+bool QM::QueueManager::IsRunning()
+{
+    return this->isRunning;
 }
 
 int QM::QueueManager::GetCurrentUnixTimestamp()
@@ -347,24 +387,31 @@ void QM::QueueManager::LoadJobListFromDir()
         std::string name = path.filename().replace_extension("").string();
 
         std::ifstream f(path.string());
-        nlohmann::json data;
+
         try
         {
-            data = nlohmann::json::parse(f);
-            auto item = data.get<QM::QueueItem>();
-            if (item.status == QM::QueueStatus::RUNNING)
+            nlohmann::json data = nlohmann::json::parse(f);
+            QM::QueueItem *item = new QM::QueueItem(data.get<QM::QueueItem>());
+            if (item->status == QM::QueueStatus::RUNNING)
             {
-                item.status = QM::QueueStatus::FAILED;
+                item->status = QM::QueueStatus::PAUSED;
             }
-            if (item.status == QM::QueueStatus::MODEL_LOADING)
+            if (item->status == QM::QueueStatus::MODEL_LOADING)
             {
-                item.status = QM::QueueStatus::PENDING;
+                item->status = QM::QueueStatus::PAUSED;
             }
             this->AddItem(item, true);
         }
         catch (nlohmann::json::parse_error &ex)
         {
             std::cerr << "parse error at byte " << ex.byte << " in file: " << path.string() << std::endl;
+        }
+        catch (const json::out_of_range &e)
+        {
+            // output exception information
+            std::cerr << "message: " << e.what() << '\n'
+                      << "exception id: " << e.id << '\n'
+                      << "in file: " << path.string() << std::endl;
         }
     }
 }

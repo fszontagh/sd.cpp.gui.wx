@@ -390,7 +390,7 @@ namespace CivitAi
         int id = -1;
         int modelId = -1;
         std::string name;
-        std::string creaedAt;
+        std::string createdAt;
         std::string updatedAt;
         std::string status;
         std::string publishedAt;
@@ -407,7 +407,7 @@ namespace CivitAi
             int id_,
             int modelId_,
             std::string name_,
-            std::string creaedAt_,
+            std::string createdAt_,
             std::string updatedAt_,
             std::string status_,
             std::string publishedAt_,
@@ -422,7 +422,7 @@ namespace CivitAi
             : id(std::move(id_)),
               modelId(std::move(modelId_)),
               name(std::move(name_)),
-              creaedAt(std::move(creaedAt_)),
+              createdAt(std::move(createdAt_)),
               updatedAt(std::move(updatedAt_)),
               status(std::move(status_)),
               publishedAt(std::move(publishedAt_)),
@@ -442,7 +442,7 @@ namespace CivitAi
                 id = other.id;
                 modelId = other.modelId;
                 name = other.name;
-                creaedAt = other.creaedAt;
+                createdAt = other.createdAt;
                 updatedAt = other.updatedAt;
                 status = other.status;
                 publishedAt = other.publishedAt;
@@ -463,7 +463,7 @@ namespace CivitAi
         nlohmann_json_j["id"] = nlohmann_json_t.id;
         nlohmann_json_j["modelId"] = nlohmann_json_t.modelId;
         nlohmann_json_j["name"] = nlohmann_json_t.name;
-        nlohmann_json_j["creaedAt"] = nlohmann_json_t.creaedAt;
+        nlohmann_json_j["createdAt"] = nlohmann_json_t.createdAt;
         nlohmann_json_j["updatedAt"] = nlohmann_json_t.updatedAt;
         nlohmann_json_j["status"] = nlohmann_json_t.status;
         nlohmann_json_j["publishedAt"] = nlohmann_json_t.publishedAt;
@@ -479,39 +479,81 @@ namespace CivitAi
     inline void from_json(const nlohmann::json &nlohmann_json_j, ModelInfo &nlohmann_json_t)
     {
         const ModelInfo nlohmann_json_default_obj{};
-        nlohmann_json_t.id = nlohmann_json_j.value("id", nlohmann_json_default_obj.id);
-        nlohmann_json_t.modelId = nlohmann_json_j.value("modelId", nlohmann_json_default_obj.modelId);
-        nlohmann_json_t.name = nlohmann_json_j.value("name", nlohmann_json_default_obj.name);
-        nlohmann_json_t.creaedAt = nlohmann_json_j.value("creaedAt", nlohmann_json_default_obj.creaedAt);
-        nlohmann_json_t.updatedAt = nlohmann_json_j.value("updatedAt", nlohmann_json_default_obj.updatedAt);
-        nlohmann_json_t.status = nlohmann_json_j.value("status", nlohmann_json_default_obj.status);
 
-        nlohmann_json_t.publishedAt = nlohmann_json_j.value("publishedAt", nlohmann_json_default_obj.publishedAt);
+        if (nlohmann_json_j.contains("id") && !nlohmann_json_j["id"].is_null())
+        {
+            nlohmann_json_t.id = nlohmann_json_j.value("id", nlohmann_json_default_obj.id);
+        }
+
+        if (nlohmann_json_j.contains("modelId") && !nlohmann_json_j["modelId"].is_null())
+        {
+            nlohmann_json_t.modelId = nlohmann_json_j.value("modelId", nlohmann_json_default_obj.modelId);
+        }
+
+        if (nlohmann_json_j.contains("name") && !nlohmann_json_j["name"].is_null())
+        {
+            nlohmann_json_t.name = nlohmann_json_j.value("name", nlohmann_json_default_obj.name);
+        }
+
+        if (nlohmann_json_j.contains("createdAt") && !nlohmann_json_j["createdAt"].is_null())
+        {
+            nlohmann_json_t.createdAt = nlohmann_json_j.value("createdAt", nlohmann_json_default_obj.createdAt);
+        }
+
+        if (nlohmann_json_j.contains("updatedAt") && !nlohmann_json_j["updatedAt"].is_null())
+        {
+            nlohmann_json_t.updatedAt = nlohmann_json_j.value("updatedAt", nlohmann_json_default_obj.updatedAt);
+        }
+
+        if (nlohmann_json_j.contains("status") && !nlohmann_json_j["status"].is_null())
+        {
+            nlohmann_json_t.status = nlohmann_json_j.value("status", nlohmann_json_default_obj.status);
+        }
+
+        if (nlohmann_json_j.contains("publishedAt") && !nlohmann_json_j["publishedAt"].is_null())
+        {
+            nlohmann_json_t.publishedAt = nlohmann_json_j.value("publishedAt", nlohmann_json_default_obj.publishedAt);
+        }
 
         if (nlohmann_json_j.contains("trainedWords") && !nlohmann_json_j["trainedWords"].is_null())
         {
             nlohmann_json_t.trainedWords = nlohmann_json_j.value("trainedWords", nlohmann_json_default_obj.trainedWords);
         }
 
-        nlohmann_json_t.baseModel = nlohmann_json_j.value("baseModel", nlohmann_json_default_obj.baseModel);
+        if (nlohmann_json_j.contains("baseModel") && !nlohmann_json_j["baseModel"].empty())
+        {
+            nlohmann_json_t.baseModel = nlohmann_json_j.value("baseModel", nlohmann_json_default_obj.baseModel);
+        }
 
-        if (!nlohmann_json_j["baseModelType"].is_null())
+        if (nlohmann_json_j.contains("baseModelType") && !nlohmann_json_j["baseModelType"].is_null())
         {
             nlohmann_json_t.baseModelType = nlohmann_json_j.value("baseModelType", nlohmann_json_default_obj.baseModelType);
         }
 
-        if (!nlohmann_json_j["description"].is_null())
+        if (nlohmann_json_j.contains("description") && !nlohmann_json_j["description"].is_null())
         {
             nlohmann_json_t.description = nlohmann_json_j.value("description", nlohmann_json_default_obj.description);
         }
-        else
+
+        if (nlohmann_json_j.contains("stats") && !nlohmann_json_j["stats"].is_null())
         {
-            nlohmann_json_t.description = nlohmann_json_default_obj.description;
+            nlohmann_json_t.stats = nlohmann_json_j.value("stats", nlohmann_json_default_obj.stats);
         }
-        nlohmann_json_t.stats = nlohmann_json_j.value("stats", nlohmann_json_default_obj.stats);
-        nlohmann_json_t.model = nlohmann_json_j.value("model", nlohmann_json_default_obj.model);
-        nlohmann_json_t.files = nlohmann_json_j.value("files", nlohmann_json_default_obj.files);
-        nlohmann_json_t.images = nlohmann_json_j.value("images", nlohmann_json_default_obj.images);
+
+        if (nlohmann_json_j.contains("model") && !nlohmann_json_j["model"].is_null())
+        {
+            nlohmann_json_t.model = nlohmann_json_j.value("model", nlohmann_json_default_obj.model);
+        }
+
+        if (nlohmann_json_j.contains("files") && !nlohmann_json_j["files"].is_null())
+        {
+            nlohmann_json_t.files = nlohmann_json_j.value("files", nlohmann_json_default_obj.files);
+        }
+
+        if (nlohmann_json_j.contains("images") && !nlohmann_json_j["images"].is_null())
+        {
+            nlohmann_json_t.images = nlohmann_json_j.value("images", nlohmann_json_default_obj.images);
+        }
     }
     // NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelInfo, name, creaedAt, updatedAt, status, publishedAt, baseModel, baseModelType, description, stats, files, images)
 };

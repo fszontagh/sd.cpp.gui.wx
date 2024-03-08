@@ -94,6 +94,7 @@ class UI : public wxFrame
 		wxButton* m_start_jobs;
 		wxButton* m_pause_jobs;
 		wxButton* m_delete_all_jobs;
+		wxStaticText* m_static_number_of_jobs;
 		wxDataViewListCtrl* m_joblist;
 		wxDataViewListCtrl* m_joblist_item_details;
 		wxDataViewColumn* m_dataViewListColumn1;

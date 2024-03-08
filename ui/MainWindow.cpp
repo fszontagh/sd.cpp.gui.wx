@@ -393,18 +393,14 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	wxBoxSizer* bSizer18;
 	bSizer18 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_start_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Start jobs"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_start_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Resume all"), wxDefaultPosition, wxDefaultSize, 0 );
 
 	m_start_jobs->SetBitmap( forward_png_to_wx_bitmap() );
-	m_start_jobs->Enable( false );
-
 	bSizer18->Add( m_start_jobs, 0, wxALL, 5 );
 
-	m_pause_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Pause"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pause_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Pause all"), wxDefaultPosition, wxDefaultSize, 0 );
 
 	m_pause_jobs->SetBitmap( pause_png_to_wx_bitmap() );
-	m_pause_jobs->Enable( false );
-
 	bSizer18->Add( m_pause_jobs, 0, wxALL, 5 );
 
 	m_delete_all_jobs = new wxButton( m_jobs_panel, wxID_ANY, wxT("Delete all"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -413,6 +409,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_delete_all_jobs->Enable( false );
 
 	bSizer18->Add( m_delete_all_jobs, 0, wxALL, 5 );
+
+	m_static_number_of_jobs = new wxStaticText( m_jobs_panel, wxID_ANY, wxT("Number of jobs: 0"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_static_number_of_jobs->Wrap( -1 );
+	bSizer18->Add( m_static_number_of_jobs, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer17->Add( bSizer18, 0, wxEXPAND, 5 );
@@ -817,10 +817,10 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_model_details_imagelist = new wxListCtrl( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxLC_ALIGN_LEFT|wxLC_ICON|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxLC_VRULES );
 	bSizer1001->Add( m_model_details_imagelist, 1, wxEXPAND, 5 );
 
-	m_model_details_description = new wxHtmlWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,80 ), wxHW_SCROLLBAR_AUTO );
+	m_model_details_description = new wxHtmlWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,110 ), wxHW_SCROLLBAR_AUTO );
 	m_model_details_description->Hide();
 
-	bSizer1001->Add( m_model_details_description, 1, wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
+	bSizer1001->Add( m_model_details_description, 0, wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
 
 	bSizer102->Add( bSizer1001, 1, wxEXPAND, 5 );

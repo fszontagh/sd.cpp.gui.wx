@@ -12,6 +12,11 @@ ModelInfo::Manager::Manager(std::string meta_base_path)
 
 ModelInfo::Manager::~Manager()
 {
+    for (auto &pair : ModelInfos)
+    {
+        delete pair.second;
+    }
+    ModelInfos.clear();
 }
 
 void ModelInfo::Manager::addModel(std::string model_path, sd_gui_utils::DirTypes type, std::string name)
@@ -193,10 +198,10 @@ sd_gui_utils::ModelFileInfo ModelInfo::Manager::updateCivitAiInfo(sd_gui_utils::
 
 void ModelInfo::Manager::UpdateInfo(sd_gui_utils::ModelFileInfo *modelinfo)
 {
-    sd_gui_utils::ModelFileInfo * newInfo(modelinfo);
+    sd_gui_utils::ModelFileInfo *newInfo(modelinfo);
     this->ModelInfos[modelinfo->path] = newInfo;
-    //this->ModelInfos.erase(newInfo->path);
-    //this->ModelInfos[newInfo->path] = newInfo;
+    // this->ModelInfos.erase(newInfo->path);
+    // this->ModelInfos[newInfo->path] = newInfo;
     this->WriteIntoMeta(newInfo);
 }
 
