@@ -366,13 +366,18 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 
         menu->AppendSeparator();
         menu->Append(99, "Delete");
+        menu->Enable(99, false);
+        
         if (qitem->status == QM::QueueStatus::RUNNING ||
             qitem->status == QM::QueueStatus::HASHING)
         {
             menu->Enable(1, false);
         }
-        menu->Enable(99, false);
-        if (qitem->status == QM::QueueStatus::PENDING || qitem->status == QM::QueueStatus::PAUSED || qitem->status == QM::QueueStatus::FAILED)
+        
+        if (qitem->status == QM::QueueStatus::PENDING ||
+            qitem->status == QM::QueueStatus::PAUSED ||
+            qitem->status == QM::QueueStatus::FAILED ||
+            qitem->status == QM::QueueStatus::DONE)
         {
             menu->Enable(99, true);
         }
@@ -3535,7 +3540,7 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, "No images found.");
         return;
     }
-    
+
     // remove old files
     for (std::string old_img : modelinfo->preview_images)
     {
