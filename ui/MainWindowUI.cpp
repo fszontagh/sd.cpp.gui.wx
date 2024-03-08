@@ -284,14 +284,12 @@ void MainWindowUI::onJobsStart(wxCommandEvent &event)
 
 void MainWindowUI::onJobsPause(wxCommandEvent &event)
 {
-    // TODO: Implement onJobsPause
     this->qmanager->PauseAll();
 }
 
 void MainWindowUI::onJobsDelete(wxCommandEvent &event)
 {
-    // TODO: Implement onJobsDelete
-    this->qmanager->RestartQueue();
+    // this->qmanager->RestartQueue();
 }
 
 void MainWindowUI::OnJobListItemActivated(wxDataViewEvent &event)
@@ -302,17 +300,15 @@ void MainWindowUI::OnJobListItemActivated(wxDataViewEvent &event)
 void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 {
 
-    auto column = event.GetColumn();
-    if (column == -1)
+    auto *source = (wxDataViewListCtrl *)event.GetEventObject();
+    if (source->GetItemCount() == 0)
     {
         return;
     }
 
-    auto *source = (wxDataViewListCtrl *)event.GetEventObject();
-
     if (source == this->m_joblist)
     {
-        if (this->m_joblist->GetSelectedItemsCount() == 0 || column >= this->m_joblist->GetItemCount())
+        if (this->m_joblist->GetSelectedItemsCount() == 0)
         {
             return;
         }
@@ -387,7 +383,8 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
 
     if (source == this->m_data_model_list)
     {
-        if (this->m_data_model_list->GetSelectedItemsCount() == 0 || column >= this->m_joblist->GetItemCount())
+
+        if (this->m_data_model_list->GetSelectedItemsCount() == 0)
         {
             return;
         }
@@ -3538,7 +3535,17 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, "No images found.");
         return;
     }
-
+    
+    // remove old files
+    for (std::string old_img : modelinfo->preview_images)
+    {
+        if (std::filesystem::exists(old_img))
+        {
+            std::filesystem::remove(old_img);
+        }
+    }
+    // clean up old images
+    modelinfo->preview_images.clear();
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_START, modelinfo);
     int index = 0;
     for (auto img : modelinfo->CivitAiInfo.images)
