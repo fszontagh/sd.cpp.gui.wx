@@ -71,6 +71,13 @@ if(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    message(" - Debug build type detected.")
+else()
+    add_definitions(-DNDEBUG)
+    message(" - Release build type detected. NDEBUG definition added.")
+endif()
+
 include(external/CMakeLists.txt)
 
 if(WIN32)
