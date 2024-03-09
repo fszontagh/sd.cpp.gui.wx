@@ -156,6 +156,7 @@ private:
 	std::string currentTaesdModel;
 	std::string currentControlnetModel;
 	std::string currentUpscalerModel;
+	QM::GenerationMode lastGenerationMode;
 	bool currentVaeDecodeOnly;
 	sd_type_t currentwType = sd_type_t::SD_TYPE_COUNT;
 	wxImage *currentInitialImage;

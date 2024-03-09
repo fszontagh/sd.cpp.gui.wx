@@ -3209,6 +3209,7 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem *m
         this->currentwType = myItem->params.wtype;
         this->currentControlnetModel = myItem->params.controlnet_path;
         this->currentVaeDecodeOnly = myItem->params.vae_decode_only;
+        this->lastGenerationMode = myItem->mode;
     }
     return sd_ctx_;
 }
@@ -3648,7 +3649,7 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem *my
             this->currentTaesdModel != myItem->params.taesd_path ||
             this->currentwType != myItem->params.wtype ||
             this->currentControlnetModel != myItem->params.controlnet_path ||
-            this->currentVaeDecodeOnly != myItem->params.vae_decode_only)
+            this->currentVaeDecodeOnly != myItem->params.vae_decode_only || this->lastGenerationMode != myItem->mode)
         {
             free_sd_ctx(this->txt2img_sd_ctx);
             this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
@@ -3758,7 +3759,7 @@ void MainWindowUI::GenerateImg2img(wxEvtHandler *eventHandler, QM::QueueItem *it
             this->currentVaeModel != item->params.vae_path ||
             this->currentTaesdModel != item->params.taesd_path ||
             this->currentwType != item->params.wtype ||
-            this->currentVaeDecodeOnly != item->params.vae_decode_only)
+            this->currentVaeDecodeOnly != item->params.vae_decode_only || this->lastGenerationMode != item->mode)
         {
             free_sd_ctx(this->txt2img_sd_ctx);
             this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, item);
