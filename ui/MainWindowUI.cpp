@@ -810,7 +810,7 @@ void MainWindowUI::onGenerate(wxCommandEvent &event)
 
     if (item->params.seed == -1)
     {
-        item->params.seed = sd_gui_utils::generateRandomInt(this->m_seed->GetMin(), this->m_seed->GetMax());
+        item->params.seed = sd_gui_utils::generateRandomInt(100000000, this->m_seed->GetMax());
         this->m_seed->SetValue(item->params.seed);
     }
 
