@@ -29,9 +29,8 @@ public:
         wxImage::AddHandler(new wxPNGHandler);
         wxImage::AddHandler(new wxJPEGHandler);
         MainWindowUI *mainFrame = new MainWindowUI(nullptr);
-        SetTopWindow(mainFrame);
 
-        return GetTopWindow()->Show();
+        return mainFrame->Show();
     }
     int MainApp::OnExit()
     {
