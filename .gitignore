@@ -1,51 +1,20 @@
-### C++ ###
-# Prerequisites
-*.d
+# Chalet
+build/
+chalet_external/
+dist/
+.chaletrc
+.env*
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# Editors
+.idea/
+.vs/
+.vscode/
+.fleet/
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-### Git ###
-# Created by git for backups. To disable backups in Git:
-# $ git config --global mergetool.keepBackup false
-*.orig
-
-# Created by git when using merge tools for conflicts
-*.BACKUP.*
-*.BASE.*
-*.LOCAL.*
-*.REMOTE.*
-*_BACKUP_*.txt
-*_BASE_*.txt
-*_LOCAL_*.txt
-*_REMOTE_*.txt
+# Other
+.cache/
+Thumbs.db
+.DS_Store
 
 ### vcpkg ###
 # Vcpkg

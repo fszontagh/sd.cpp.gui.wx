@@ -8,6 +8,7 @@ MIT License
 
 ### Features
 
+- detect environment to which HW available for diffusion
 - text2img generation
 - controlnet support
 - image2image generation
@@ -31,10 +32,12 @@ MIT License
 - [nlohmann/json](https://github.com/nlohmann/json) JSON for Modern C++
 - [{fmt}](https://fmt.dev/)
 - CUDA 
+- ROCm
+- ..
 
 ### Compatibility
 
-Please see [github releases](https://github.com/fszontagh/sd.cpp.gui.wx/releases) for installers. These packages are tested on Windows 11. On linux the GUI may fall apart. 
+Please see [github releases](https://github.com/fszontagh/sd.cpp.gui.wx/releases) for installers. These packages are tested on Windows 11.
 
 _Use only at your own risk!_
 These releases just previews, so crashes may occur. For bugreport, please use [github Issuses](https://github.com/fszontagh/sd.cpp.gui.wx/issues). 
@@ -42,34 +45,22 @@ These releases just previews, so crashes may occur. For bugreport, please use [g
 
 ### Building on Linux / Windows
 
-#### Requirements
-- vcpkg for dependency management
-- latest cmake
+#### Requirements - Windows
+- latest [vcpkg](https://vcpkg.io/en/) for dependency management
+- latest [chalet](https://www.chalet-work.space/download) for building
+- latest [cmake](https://cmake.org/)
 - a compatible compiler
-- if you don't want to build CUDA version (only cpu with or without flags), please remove the "CUDA" from the _vcpkg.json_ file
 
-Configure with **AVX**
- ```Bash
- cmake -B build/ -S . -DCMAKE_TOOLCHAIN_FILE=%vcpkg_root_dir%/scripts/buildsystems/vcpkg.cmake -DGGML_AVX512=OFF -DGGML_AVX2=OFF -DGGML_AVX=ON -DSD_CUBLAS=OFF
- ```
+#### Requirements - Linux
+- latest [chalet](https://www.chalet-work.space/download) for building
+- latest [cmake](https://cmake.org/)
+- build tools
+- a compatible compiler
+- wxWidgets 3.2 libs and header files
 
-Configure with **AVX2**
- ```Bash
- cmake -B build/ -S . -DCMAKE_TOOLCHAIN_FILE=%vcpkg_root_dir%/scripts/buildsystems/vcpkg.cmake -DGGML_AVX512=OFF -DGGML_AVX2=ON -DGGML_AVX=OFF -DSD_CUBLAS=OFF
- ```
+For configuration variations, please see the env-emaple_xxx, pick one and rename to .env
 
-Configure with **AVX512**
- ```Bash
- cmake -B build/ -S . -DCMAKE_TOOLCHAIN_FILE=%vcpkg_root_dir%/scripts/buildsystems/vcpkg.cmake -DGGML_AVX512=ON -DGGML_AVX2=ON -DGGML_AVX=ON -DSD_CUBLAS=OFF
- ```
-
-Configure with **CUDA**
- ```Bash
- cmake -B build/ -S . -DCMAKE_TOOLCHAIN_FILE=%vcpkg_root_dir%/scripts/buildsystems/vcpkg.cmake -DSD_CUBLAS=ON
- ```
-
-Build
- ```Bash
- cmake --build build/ --config Release
- ```
-VCPKG will deploy the dependencies.
+The open a terminal, and run (win / lin too):
+``chalet c -c Release``
+``chalet b all``
+``chalet r sd.ui``
