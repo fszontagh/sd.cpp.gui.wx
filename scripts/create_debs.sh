@@ -6,7 +6,7 @@ SD_VERSION="$1"
 SD_DESCRIPTION="Stable Diffusion C++ Desktop Gui"
 
 SD_BASEDIR="./build/"
-SD_SUFFIX="-${SD_VERSION}-jammy_amd64"
+SD_SUFFIX="-${SD_VERSION}-amd64"
 
 #######################################################################
 # THE BINARY
@@ -27,7 +27,7 @@ mkdir -p ${PACKPATH}/DEBIAN
 mkdir -p ${PACKPATH}/usr/{lib,bin,share}
 mkdir -p ${PACKPATH}/usr/share/{pixmaps,applications}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: sd.cpp.ui
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
@@ -40,14 +40,16 @@ cp -p dist/all/sd.ui ${PACKPATH}/usr/bin/
 cp -p dist/all/sd.ui.desktop ${PACKPATH}/usr/share/applications
 cp -p dist/all/cube_256.png ${PACKPATH}/usr/share/pixmaps/sd.ui.png
 
+dpkg-deb --root-owner-group --build ${PACKPATH}
+
 #######################################################################
 # THE LIBS
 
 
 # CUDA 
 
-PACKNAME="libsdcpp-cuda${SD_SUFFIX}"
-PACKPATH="${SD_BASEDIR}${PACKNAME}"
+PACKNAME="libsdcpp-cuda"
+PACKPATH="${SD_BASEDIR}${PACKNAME}${SD_SUFFIX}"
 
 echo "Creating ${PACKNAME} in ${PACKPATH}"
 
@@ -57,7 +59,7 @@ fi
 
 mkdir -p ${PACKPATH}/{DEBIAN,usr/lib}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: ${PACKNAME}
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
@@ -68,12 +70,13 @@ EOF
 
 
 cp -p dist/all/stable-diffusion_cuda.so ${PACKPATH}/usr/lib/
+
 dpkg-deb --root-owner-group --build ${PACKPATH}
 
 # THE AVX
 
-PACKNAME="libsdcpp-avx${SD_SUFFIX}"
-PACKPATH="${SD_BASEDIR}${PACKNAME}"
+PACKNAME="libsdcpp-avx"
+PACKPATH="${SD_BASEDIR}${PACKNAME}${SD_SUFFIX}"
 
 echo "Creating ${PACKNAME} in ${PACKPATH}"
 
@@ -83,7 +86,7 @@ fi
 
 mkdir -p ${PACKPATH}/{DEBIAN,usr/lib}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: ${PACKNAME}
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
@@ -93,12 +96,13 @@ EOF
 
 
 cp -p dist/all/stable-diffusion_avx.so ${PACKPATH}/usr/lib/
+
 dpkg-deb --root-owner-group --build ${PACKPATH}
 
 # THE AVX2
 
-PACKNAME="libsdcpp-avx2${SD_SUFFIX}"
-PACKPATH="${SD_BASEDIR}${PACKNAME}"
+PACKNAME="libsdcpp-avx2"
+PACKPATH="${SD_BASEDIR}${PACKNAME}${SD_SUFFIX}"
 
 echo "Creating ${PACKNAME} in ${PACKPATH}"
 
@@ -108,7 +112,7 @@ fi
 
 mkdir -p ${PACKPATH}/{DEBIAN,usr/lib}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: ${PACKNAME}
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
@@ -123,8 +127,8 @@ dpkg-deb --root-owner-group --build ${PACKPATH}
 
 # THE AVX512
 
-PACKNAME="libsdcpp-avx512${SD_SUFFIX}"
-PACKPATH="${SD_BASEDIR}${PACKNAME}"
+PACKNAME="libsdcpp-avx512"
+PACKPATH="${SD_BASEDIR}${PACKNAME}${SD_SUFFIX}"
 
 echo "Creating ${PACKNAME} in ${PACKPATH}"
 
@@ -134,7 +138,7 @@ fi
 
 mkdir -p ${PACKPATH}/{DEBIAN,usr/lib}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: ${PACKNAME}
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
@@ -150,8 +154,8 @@ dpkg-deb --root-owner-group --build ${PACKPATH}
 
 # THE ROCM
 
-PACKNAME="libsdcpp-rocm${SD_SUFFIX}"
-PACKPATH="${SD_BASEDIR}${PACKNAME}"
+PACKNAME="libsdcpp-rocm"
+PACKPATH="${SD_BASEDIR}${PACKNAME}${SD_SUFFIX}"
 
 echo "Creating ${PACKNAME} in ${PACKPATH}"
 
@@ -161,7 +165,7 @@ fi
 
 mkdir -p ${PACKPATH}/{DEBIAN,usr/lib}
 
-cat << 'EOF' > ${PACKPATH}/DEBIAN/control
+cat << EOF > ${PACKPATH}/DEBIAN/control
 Package: ${PACKNAME}
 Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
