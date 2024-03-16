@@ -2,7 +2,6 @@
 #define __SD_GUI_MODEL_INFO__
 #include <filesystem>
 #include <vector>
-#include <fmt/format.h>
 #include "utils.hpp"
 
 #include "../helpers/civitai.hpp"
