@@ -33,7 +33,7 @@ Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
 Architecture: amd64
 Description: ${SD_DESCRIPTION}
-Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libcurl4, libcurlpp0, libgtk-3-0, libwxbase3.2-1, libwxgtk-gl3.2-1, libwxgtk-media3.2-1, libwxgtk-webview3.2-1, libwxgtk3.2-1
+Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libexiv2-27, libcurl4, libcurlpp0, libgtk-3-0, libwxbase3.2-1, libwxgtk-gl3.2-1, libwxgtk-media3.2-1, libwxgtk-webview3.2-1, libwxgtk3.2-1
 EOF
 
 cp -p dist/all/sd.ui ${PACKPATH}/usr/bin/
