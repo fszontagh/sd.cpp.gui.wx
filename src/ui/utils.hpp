@@ -14,7 +14,6 @@
 
 #include "../helpers/sd.hpp"
 #include <exiv2/exiv2.hpp>
-#include <fmt/format.h>
 
 #include <openssl/sha.h>
 

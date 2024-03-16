@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <map>
-#include <fmt/format.h>
 #include <chrono>
 #include "utils.hpp"
 

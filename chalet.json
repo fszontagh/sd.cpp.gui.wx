@@ -87,7 +87,6 @@
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:libcrypto-3-x64}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:curlpp}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:exiv2}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:fmt}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:zlib1}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:pcre2-16}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:libpng16}",
@@ -103,7 +102,6 @@
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:libcrypto-3-x64}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:curlpp}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:exiv2}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:fmtd}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:zlibd1}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:pcre2-16d}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:libpng16d}",
@@ -145,7 +143,6 @@
 					"wxmsw32ud_ribbon",
 					"wxmsw32ud_richtext",
 					"wxmsw32ud_stc",
-					"fmtd",
 					"libcurl-d",
 					"libcrypto",
 					"curlpp",
@@ -167,7 +164,6 @@
 					"libcrypto",
 					"curlpp",
 					"exiv2",
-					"fmt",
 					"libcurl"
 				],
 				"links[:linux]": [
@@ -234,7 +230,6 @@
 				"install",
 				"nlohmann-json",
 				"wxwidgets",
-				"fmt",
 				"curlpp",
 				"openssl",
 				"exiv2"
@@ -298,9 +293,11 @@
 				"SD_HIPBLAS=ON"
 			],
 			"defines[:linux]": [
-				"ROCM_PATH=/opt/rocm"
+				"ROCM_PATH=/opt/rocm",
+				"CMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang",
+				"CMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++"
 			]
-		},
+},
 		"stable-diffusion.cpp_avx": {
 			"kind": "cmakeProject",
 			"location": "${external:stable-diffusion}",
