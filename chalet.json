@@ -506,7 +506,7 @@
 		}
 	},
 	"distribution": {
-		"ALL": {
+		"sd.ui": {
 			"kind": "bundle",
 			"condition": "[env:ALL]",
 			"buildTargets": [
