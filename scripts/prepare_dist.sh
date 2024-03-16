@@ -3,7 +3,7 @@
 # $1  - builddir
 # $2  - dist dir
 
-VARIANT_DIR="ext.stable-diffusion_";
+VARIANT_DIR="ext.stable-diffusion.cpp_";
 
 if [ -e "$1/${VARIANT_DIR}avx/bin/libstable-diffusion.so" ]; then
     cp -p "$1/${VARIANT_DIR}avx/bin/libstable-diffusion.so" "$2/stable-diffusion_avx.so"
