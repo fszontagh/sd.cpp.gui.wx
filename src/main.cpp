@@ -79,75 +79,44 @@ public:
         wxString appPath(f.GetPath());
         wxDynamicLibrary *dll = new wxDynamicLibrary();
 
-#ifdef WIN32 || _WIN32_
-        wxString dllName = "stable-diffusion.dll";
-        if (isNvidiaGPU())
-        {
-            dllName = "stable-diffusion_cuda.dll";
-        }
-        else if (isAmdGPU())
-        {
-            dllName = "stable-diffusion_rocm.dll";
-        }
-        else
-        {
-            static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
-            if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl)
-            {
-                dllName = "stable-diffusion_avx512.dll";
-            }
-            else if (features.avx2)
-            {
-                dllName = "stable-diffusion_avx2.dll";
-            }
-            else if (features.avx)
-            {
-                dllName = "stable-diffusion_avx.dll";
-            }
-        }
+        wxString dllName = "stable-diffusion";
 
         if (!forceType.empty())
         {
-            dllName = "stable-diffusion_" + forceType + ".dll";
-        }
-
-#elif
-        wxString dllName = "stable-diffusion.so";
-        if (isNvidiaGPU())
-        {
-            dllName = "stable-diffusion_cuda.so";
-        }
-        else if (isAmdGPU())
-        {
-            dllName = "stable-diffusion_rocm.so";
+            dllName = "stable-diffusion_" + forceType;
         }
         else
         {
-            static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
-            if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl)
+            if (isNvidiaGPU())
             {
-                dllName = "stable-diffusion_avx512.so";
+                dllName = "stable-diffusion_cuda";
             }
-            else if (features.avx2)
+            else if (isAmdGPU())
             {
-                dllName = "stable-diffusion_avx2.so";
+                dllName = "stable-diffusion_rocm";
             }
-            else if (features.avx)
+            else
             {
-                dllName = "stable-diffusion_avx.so";
+                static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
+                if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl)
+                {
+                    dllName = "stable-diffusion_avx512";
+                }
+                else if (features.avx2)
+                {
+                    dllName = "stable-diffusion_avx2";
+                }
+                else if (features.avx)
+                {
+                    dllName = "stable-diffusion_avx";
+                }
             }
         }
-
-        if (!forceType.empty())
-        {
-            dllName = "stable-diffusion_" + forceType + ".so";
-        }
-#endif
-        if (!dll->Load(appPath + "\\" + dllName))
+        if (!dll->Load(dllName, wxDL_QUIET | wxDL_DEFAULT))
         {
             splash->Hide();
             splash->Destroy();
-            wxMessageBox(wxString::Format(_("Can not load backend: %s"), appPath + "\\" + dllName));
+            wxMessageBox(wxString::Format(_("Can not load backend: %s"), dllName));
             exit(1);
         }
 
