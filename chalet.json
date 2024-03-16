@@ -293,9 +293,12 @@
 				"GGML_AVX2=OFF",
 				"GGML_AVX=OFF",
 				"GGML_CUBLAS=OFF",
-				"CMAKE_C_COMPILER=clang.exe",
+				"CMAKE_C_COMPILER=clang",
 				"CMAKE_CXX_COMPILER=clang++",
 				"SD_HIPBLAS=ON"
+			],
+			"defines[:linux]": [
+				"ROCM_PATH=/opt/rocm"
 			]
 		},
 		"stable-diffusion.cpp_avx": {
@@ -514,7 +517,12 @@
 				"stable-diffusion.cpp_rocm",
 				"sd.ui"
 			],
-			"subdirectory": "all"
+			"subdirectory": "all",
+			"linuxDesktopEntry": {
+				"template": "platform/linux/app.desktop",
+				"icon": "graphics/icons/256/cube_256.png",
+				"copyToApplications": true
+			 }
 		},
 		"INNO_avx": {
 			"kind": "script",

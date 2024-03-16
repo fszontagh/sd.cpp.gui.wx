@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=${version}
+Type=Application
+Categories=Application;
+Terminal=false
+Exec=${mainExecutable}
+Path=${path}
+Name=${name}
+Comment=
+Icon=${icon}
