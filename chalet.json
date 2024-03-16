@@ -522,7 +522,16 @@
 				"template": "platform/linux/app.desktop",
 				"icon": "graphics/icons/256/cube_256.png",
 				"copyToApplications": true
-			 }
+			}
+		},
+		"linux_dlls": {
+			"condition": "[env:ALL+:linux]",
+			"kind": "script",
+			"file": "scripts/prepare_dist.sh",
+			"arguments": [
+				"${buildDir}",
+				"${distributionDir}"
+			]
 		},
 		"INNO_avx": {
 			"kind": "script",
