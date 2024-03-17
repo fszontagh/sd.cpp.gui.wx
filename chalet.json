@@ -40,6 +40,13 @@
 			"repository": "https://github.com/google/cpu_features.git",
 			"branch": "main",
 			"tag": "v0.9.0"
+		},
+		"wxWidgets": {
+			"kind": "git",
+			"repository": "https://github.com/wxWidgets/wxWidgets.git",
+			"branch": "master",
+			"submodules": true,
+			"tag": "v3.2.4"
 		}
 	},
 	"package": {
@@ -79,11 +86,30 @@
 				]
 			}
 		},
+		"wxWidgets": {
+			"settings:Cxx": {
+				"includeDirs": [
+					"${external:wxWidgets}/include"
+				],
+				"includeDirs[:windows+:!debug]": [
+					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswu"
+				],
+				"includeDirs[:windows+:debug]": [
+					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswud"
+				],
+				"libDirs[:windows]": [
+					"${externalBuild:wxWidgets}/lib/vc_x64_dll/"
+				],
+				"links[:windows+:debug]": [
+					"wxmsw32ud"
+				],
+				"links[:windows+:!debug]": [
+					"wxmsw32u"
+				]
+			}
+		},
 		"vcpkg": {
 			"copyFilesOnRun[:!debug+:windows]": [
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:wxbase32u_vc_custom}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:wxmsw32u_core_vc_custom}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:wxmsw32u_html_vc_custom}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:libcrypto-3-x64}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:curlpp}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:exiv2}",
@@ -96,9 +122,6 @@
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/bin/${so:libcurl}"
 			],
 			"copyFilesOnRun[:debug+:windows]": [
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:wxbase32ud_vc_custom}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:wxmsw32ud_core_vc_custom}",
-				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:wxmsw32ud_html_vc_custom}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:libcrypto-3-x64}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:curlpp}",
 				"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/bin/${so:exiv2}",
@@ -114,16 +137,6 @@
 				"includeDirs[:windows]": [
 					"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/include"
 				],
-				"includeDirs[:windows+:!debug]": [
-					"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/lib/mswu"
-				],
-				"includeDirs[:windows+:debug]": [
-					"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/lib/mswud"
-				],
-				"includeDirs[:!windows]": [
-					"/usr/lib/x86_64-linux-gnu/wx/include/gtk3-unicode-3.2",
-					"/usr/include/wx-3.2"
-				],
 				"libDirs[:!debug+:windows]": [
 					"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/lib"
 				],
@@ -131,56 +144,19 @@
 					"${var:vcpkg_root}/installed/${var:vcpkg_triplet}/debug/lib"
 				],
 				"links[:debug+:windows]": [
-					"wxbase32ud",
-					"wxbase32ud_net",
-					"wxbase32ud_xml",
-					"wxmsw32ud_adv",
-					"wxmsw32ud_core",
-					"wxmsw32ud_gl",
-					"wxmsw32ud_html",
-					"wxmsw32ud_propgrid",
-					"wxmsw32ud_qa",
-					"wxmsw32ud_ribbon",
-					"wxmsw32ud_richtext",
-					"wxmsw32ud_stc",
 					"libcurl-d",
 					"libcrypto",
 					"curlpp",
 					"exiv2"
 				],
 				"links[:!debug+:windows]": [
-					"wxbase32u",
-					"wxbase32u_net",
-					"wxbase32u_xml",
-					"wxmsw32u_adv",
-					"wxmsw32u_core",
-					"wxmsw32u_gl",
-					"wxmsw32u_html",
-					"wxmsw32u_propgrid",
-					"wxmsw32u_qa",
-					"wxmsw32u_ribbon",
-					"wxmsw32u_richtext",
-					"wxmsw32u_stc",
 					"libcrypto",
 					"curlpp",
 					"exiv2",
+					"fmt",
 					"libcurl"
 				],
 				"links[:linux]": [
-					"wx_baseu-3.2",
-					"wx_baseu_net-3.2",
-					"wx_baseu_xml-3.2",
-					"wx_gtk3u_adv-3.2",
-					"wx_gtk3u_aui-3.2",
-					"wx_gtk3u_core-3.2",
-					"wx_gtk3u_gl-3.2",
-					"wx_gtk3u_html-3.2",
-					"wx_gtk3u_propgrid-3.2",
-					"wx_gtk3u_qa-3.2",
-					"wx_gtk3u_ribbon-3.2",
-					"wx_gtk3u_richtext-3.2",
-					"wx_gtk3u_stc-3.2",
-					"wx_gtk3u_xrc-3.2",
 					"curl",
 					"curlpp",
 					"exiv2",
@@ -229,10 +205,26 @@
 				"${var:vcpkg_root}",
 				"install",
 				"nlohmann-json",
-				"wxwidgets",
 				"curlpp",
 				"openssl",
 				"exiv2"
+			]
+		},
+		"wxWidgets": {
+			"condition": "[:windows]",
+			"kind": "cmakeProject",
+			"location": "${external:wxWidgets}",
+			"recheck": false,
+			"rebuild": false,
+			"clean": false,
+			"defines": [
+				"wxBUILD_TESTS=OFF",
+				"wxBUILD_SAMPLES=OFF",
+				"wxBUILD_SHARED=ON",
+				"wxUSE_GUI=ON",
+				"wxBUILD_PRECOMP=ON",
+				"wxBUILD_MONOLITHIC=ON",
+				"wxBUILD_INSTALL=OFF"
 			]
 		},
 		"sd.cpp.patch.win": {
@@ -288,16 +280,11 @@
 				"GGML_AVX2=OFF",
 				"GGML_AVX=OFF",
 				"GGML_CUBLAS=OFF",
-				"CMAKE_C_COMPILER=clang",
+				"CMAKE_C_COMPILER=clang.exe",
 				"CMAKE_CXX_COMPILER=clang++",
 				"SD_HIPBLAS=ON"
-			],
-			"defines[:linux]": [
-				"ROCM_PATH=/opt/rocm",
-				"CMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang",
-				"CMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++"
 			]
-},
+		},
 		"stable-diffusion.cpp_avx": {
 			"kind": "cmakeProject",
 			"location": "${external:stable-diffusion}",
@@ -411,7 +398,8 @@
 			"language": "C++",
 			"importPackages": [
 				"vcpkg",
-				"cpu_features"
+				"cpu_features",
+				"wxWidgets"
 			],
 			"metadata": "workspace",
 			"settings:Cxx": {
@@ -503,7 +491,7 @@
 		}
 	},
 	"distribution": {
-		"sd.ui": {
+		"ALL": {
 			"kind": "bundle",
 			"condition": "[env:ALL]",
 			"buildTargets": [
@@ -514,21 +502,7 @@
 				"stable-diffusion.cpp_rocm",
 				"sd.ui"
 			],
-			"subdirectory": "all",
-			"linuxDesktopEntry": {
-				"template": "platform/linux/app.desktop",
-				"icon": "graphics/icons/256/cube_256.png",
-				"copyToApplications": true
-			}
-		},
-		"linux_dlls": {
-			"condition": "[env:ALL+:linux]",
-			"kind": "script",
-			"file": "scripts/prepare_dist.sh",
-			"arguments": [
-				"${buildDir}",
-				"${distributionDir}"
-			]
+			"subdirectory": "all"
 		},
 		"INNO_avx": {
 			"kind": "script",

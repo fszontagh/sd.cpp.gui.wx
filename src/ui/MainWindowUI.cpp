@@ -3027,7 +3027,7 @@ QM::QueueItem *MainWindowUI::handleSdImage(sd_image_t result, QM::QueueItem *ite
         img->SetOption("quality", this->cfg->image_quality);
     }
     std::string filename_without_extension;
-    filename = filename + wxFileName::GetPathSeparator();
+    filename = filename + wxString(wxFileName::GetPathSeparator()).ToStdString();
     filename = filename + sd_gui_utils::modes_str[itemPtr->mode];
     filename = filename + "_";
     filename = filename + std::to_string(itemPtr->id);
@@ -3969,7 +3969,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem *it
         }
 
         std::string filename_without_extension;
-        filename = filename + wxFileName::GetPathSeparator();
+        filename = filename + wxString(wxFileName::GetPathSeparator()).ToStdString();
         filename = filename + std::to_string(item->id);
         filename = filename + "_";
         filename = filename + std::to_string(item->params.seed);
