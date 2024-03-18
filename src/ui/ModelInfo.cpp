@@ -133,6 +133,28 @@ sd_gui_utils::ModelFileInfo *ModelInfo::Manager::getIntoPtr(std::string path)
     }
     return nullptr;
 }
+sd_gui_utils::ModelFileInfo *ModelInfo::Manager::getIntoPtrByHash(std::string hash)
+{
+    if (hash.length() == 10)
+    {
+        for (auto model : this->ModelInfos)
+        {
+            if (model.second->sha256.substr(0, 10) == hash)
+            {
+                return model.second;
+            }
+        }
+        return nullptr;
+    }
+    for (auto model : this->ModelInfos)
+    {
+        if (model.second->sha256 == hash)
+        {
+            return model.second;
+        }
+    }    
+    return nullptr;
+}
 // @brief Get a modelinfo by it's name
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfoByName(std::string model_name)
 {

@@ -33,6 +33,7 @@ namespace ModelInfo
         sd_gui_utils::ModelFileInfo getByHash(std::string hash);
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
         sd_gui_utils::ModelFileInfo *getIntoPtr(std::string path);
+        sd_gui_utils::ModelFileInfo *getIntoPtrByHash(std::string hash);
         sd_gui_utils::ModelFileInfo getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo findInfoByName(std::string model_name);
         static std::string GenerateName(std::string model_path, std::string basepath);

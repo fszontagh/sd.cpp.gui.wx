@@ -364,19 +364,26 @@ class CivitAiWindow : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn13;
 		wxPanel* m_panel17;
 		wxHtmlWindow* m_model_description;
+		wxStaticText* m_staticText41;
 		wxDataViewListCtrl* m_model_details;
 		wxDataViewColumn* m_dataViewListColumn111;
 		wxDataViewColumn* m_dataViewListColumn22;
 		wxDataViewColumn* m_dataViewListColumn21;
+		wxHtmlWindow* m_model_version_description;
+		wxStaticText* m_staticText40;
 		wxDataViewListCtrl* m_model_filelist;
 		wxDataViewColumn* m_dataViewListColumn1111;
 		wxDataViewColumn* m_dataViewListColumn211;
+		wxDataViewColumn* m_dataViewListColumn23;
+		wxDataViewColumn* m_dataViewListColumn24;
+		wxDataViewColumn* m_dataViewListColumn25;
 		wxStatusBar* m_statusBar2;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void m_civitai_searchOnTextEnter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void m_searchOnButtonClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
 		virtual void m_model_detailsOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void m_model_filelistOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 

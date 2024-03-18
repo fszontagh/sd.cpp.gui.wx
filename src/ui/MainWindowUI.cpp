@@ -123,7 +123,7 @@ void MainWindowUI::OnCivitAitButton(wxCommandEvent &event)
     icon.CopyFromBitmap(bitmap);
 
     civitwindow->SetIcon(icon);
-
+    civitwindow->SetModelManager(this->ModelManager);
     civitwindow->Show();
 }
 
