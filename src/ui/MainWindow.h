@@ -41,6 +41,7 @@
 #include <wx/frame.h>
 #include <wx/slider.h>
 #include <wx/dialog.h>
+#include <wx/radiobox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -57,6 +58,7 @@ class UI : public wxFrame
 		wxBitmapButton* m_settings;
 		wxBitmapButton* m_refrersh;
 		wxBitmapButton* m_about;
+		wxBitmapButton* m_civitai;
 		wxStaticLine* m_staticline5;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
@@ -177,6 +179,7 @@ class UI : public wxFrame
 		virtual void onSettings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnCivitAitButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
@@ -340,6 +343,49 @@ class AboutDialog : public wxDialog
 		AboutDialog( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("About"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,600 ), long style = wxDEFAULT_DIALOG_STYLE );
 
 		~AboutDialog();
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class CivitAiWindow
+///////////////////////////////////////////////////////////////////////////////
+class CivitAiWindow : public wxFrame
+{
+	private:
+
+	protected:
+		wxPanel* m_panel16;
+		wxTextCtrl* m_civitai_search;
+		wxButton* m_search;
+		wxRadioBox* m_model_type;
+		wxDataViewListCtrl* m_dataViewListCtrl5;
+		wxDataViewColumn* m_dataViewListColumn11;
+		wxDataViewColumn* m_dataViewListColumn12;
+		wxDataViewColumn* m_dataViewListColumn13;
+		wxPanel* m_panel17;
+		wxHtmlWindow* m_model_description;
+		wxDataViewListCtrl* m_model_details;
+		wxDataViewColumn* m_dataViewListColumn111;
+		wxDataViewColumn* m_dataViewListColumn22;
+		wxDataViewColumn* m_dataViewListColumn21;
+		wxDataViewListCtrl* m_model_filelist;
+		wxDataViewColumn* m_dataViewListColumn1111;
+		wxDataViewColumn* m_dataViewListColumn211;
+		wxStatusBar* m_statusBar2;
+
+		// Virtual event handlers, override them in your derived class
+		virtual void m_civitai_searchOnTextEnter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void m_searchOnButtonClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void m_model_detailsOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void m_model_filelistOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+
+
+	public:
+
+		CivitAiWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("CivitAI model downloader"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 700,500 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+
+		~CivitAiWindow();
 
 };
 

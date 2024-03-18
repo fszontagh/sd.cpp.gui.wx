@@ -115,6 +115,18 @@ void MainWindowUI::OnAboutButton(wxCommandEvent &event)
     dialog->ShowModal();
 }
 
+void MainWindowUI::OnCivitAitButton(wxCommandEvent &event)
+{
+    MainWindowCivitAiWindow *civitwindow = new MainWindowCivitAiWindow(this);
+    auto bitmap = app_png_to_wx_bitmap();
+    wxIcon icon;
+    icon.CopyFromBitmap(bitmap);
+
+    civitwindow->SetIcon(icon);
+
+    civitwindow->Show();
+}
+
 void MainWindowUI::onModelSelect(wxCommandEvent &event)
 {
     // check if really selected a model, or just the first element, which is always exists...
