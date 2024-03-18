@@ -63,7 +63,8 @@ enum sd_type_t
     SD_TYPE_I32,
     SD_TYPE_COUNT,
 };
-enum sd_log_level_t {
+enum sd_log_level_t
+{
     SD_LOG_DEBUG,
     SD_LOG_INFO,
     SD_LOG_WARN,
@@ -90,6 +91,7 @@ typedef sd_ctx_t *(*NewSdCtxFunction)(const char *,    // model path
                                       const char *,    // controlnet path
                                       const char *,    // lora path
                                       const char *,    // embed dir
+                                      const char *,    // stacked id embed dir
                                       bool,            // vae decode
                                       bool,            // vae tiling
                                       bool,            // free params
@@ -97,7 +99,8 @@ typedef sd_ctx_t *(*NewSdCtxFunction)(const char *,    // model path
                                       enum sd_type_t,  // wtype
                                       enum rng_type_t, // rng type
                                       enum schedule_t, // sheduler
-                                      bool             // keep contorlnet
+                                      bool,            // keep contorlnet
+                                      bool             // keep vae
 );
 typedef void (*FreeSdCtxFunction)(sd_ctx_t *);
 typedef void (*SdSetLogCallbackFunction)(void (*)(enum sd_log_level_t, const char *, void *), void *);
@@ -117,7 +120,10 @@ typedef sd_image_t *(*Txt2ImgFunction)(
     int64_t,              // seed
     int,                  // batch count
     const sd_image_t *,   // control image
-    float                 // control strength
+    float,                // control strength,
+    float,                // style ratio
+    bool,                 // normalize input
+    const char *          // id images path
 );
 typedef sd_image_t *(*Img2ImgFunction)(
     sd_ctx_t *,           // pointer
@@ -145,7 +151,7 @@ typedef upscaler_ctx_t *(*NewUpscalerCtxFunction)(
     enum sd_type_t // wtype
 );
 typedef void (*FreeUpscalerFunction)(
-    upscaler_ctx_t*);
+    upscaler_ctx_t *);
 // Add more function pointers for other functions...
 
 // Function declarations

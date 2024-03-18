@@ -3170,20 +3170,22 @@ sd_ctx_t *MainWindowUI::LoadModelv2(wxEvtHandler *eventHandler, QM::QueueItem *m
     }
 
     sd_ctx_t *sd_ctx_ = new_sd_ctx(
-        sd_gui_utils::repairPath(myItem->params.model_path).c_str(),      // model path
-        sd_gui_utils::repairPath(myItem->params.vae_path).c_str(),        // vae path
-        sd_gui_utils::repairPath(myItem->params.taesd_path).c_str(),      // taesd path
-        sd_gui_utils::repairPath(myItem->params.controlnet_path).c_str(), // controlnet path
-        sd_gui_utils::repairPath(myItem->params.lora_model_dir).c_str(),  // lora path
-        sd_gui_utils::repairPath(myItem->params.embeddings_path).c_str(), // embedding path
-        (myItem->mode == QM::GenerationMode::TXT2IMG),                    // vae decode only (img2img = false)
-        myItem->params.vae_tiling,                                        // vae tiling
-        false,                                                            // free params immediatelly
-        myItem->params.n_threads,
-        myItem->params.wtype,
-        myItem->params.rng_type,
-        myItem->params.schedule,
-        myItem->params.keep_control_net_cpu);
+        sd_gui_utils::repairPath(myItem->params.model_path).c_str(),         // model path
+        sd_gui_utils::repairPath(myItem->params.vae_path).c_str(),           // vae path
+        sd_gui_utils::repairPath(myItem->params.taesd_path).c_str(),         // taesd path
+        sd_gui_utils::repairPath(myItem->params.controlnet_path).c_str(),    // controlnet path
+        sd_gui_utils::repairPath(myItem->params.lora_model_dir).c_str(),     // lora path
+        sd_gui_utils::repairPath(myItem->params.embeddings_path).c_str(),    // embedding path
+        sd_gui_utils::repairPath(myItem->params.id_embeddings_path).c_str(), // stacked id embedding path
+        (myItem->mode == QM::GenerationMode::TXT2IMG),                       // vae decode only (img2img = false)
+        myItem->params.vae_tiling,                                           // vae tiling
+        false,                                                               // free params immediatelly
+        myItem->params.n_threads,                                            // number of threads
+        myItem->params.wtype,                                                // wtype
+        myItem->params.rng_type,                                             // rng type
+        myItem->params.schedule,                                             // scheduler
+        myItem->params.keep_control_net_cpu,                                 // controlnet on cpu
+        myItem->params.keep_vae_on_cpu);                                     // vae on cpu
 
     if (sd_ctx_ == NULL)
     {
@@ -3728,7 +3730,10 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler *eventHandler, QM::QueueItem *my
                       myItem->params.seed,
                       myItem->params.batch_count,
                       control_image,
-                      myItem->params.control_strength);
+                      myItem->params.control_strength,
+                      myItem->params.style_ratio,
+                      myItem->params.normalize_input,
+                      myItem->params.input_id_images_path.c_str());
 
     control_image = NULL;
     delete control_image;

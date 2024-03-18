@@ -32,8 +32,7 @@
 			"kind": "git",
 			"repository": "https://github.com/leejet/stable-diffusion.cpp.git",
 			"submodules": true,
-			"branch": "master",
-			"commit": "6198017"
+			"branch": "master"
 		},
 		"cpu_features": {
 			"kind": "git",
