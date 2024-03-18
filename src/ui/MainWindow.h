@@ -182,6 +182,7 @@ class UI : public wxFrame
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }

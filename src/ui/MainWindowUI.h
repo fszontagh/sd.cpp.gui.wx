@@ -69,12 +69,13 @@ protected:
 	void onTypeSelect(wxCommandEvent &event);
 	void onVaeSelect(wxCommandEvent &event);
 	void onSamplerSelect(wxCommandEvent &event);
+	void onRandomGenerateButton(wxCommandEvent &event);
+	void OnWHChange(wxSpinEvent &event);
+	void onResolutionSwap(wxCommandEvent &event);
 	void onSavePreset(wxCommandEvent &event);
 	void onLoadPreset(wxCommandEvent &event);
 	void onSelectPreset(wxCommandEvent &event);
 	void onDeletePreset(wxCommandEvent &event);
-	void onRandomGenerateButton(wxCommandEvent &event);
-	void onResolutionSwap(wxCommandEvent &event);
 	void m_notebook1302OnNotebookPageChanged(wxNotebookEvent &event);
 	void onJobsStart(wxCommandEvent &event);
 	void onJobsPause(wxCommandEvent &event);
@@ -149,6 +150,8 @@ private:
 	bool modelLoaded = false;
 	bool upscaleModelLoaded = false;
 	bool firstCfgInit = true;
+	int init_width = 512;
+	int init_height = 512;
 	std::string currentModel;
 	std::string currentVaeModel;
 	std::string currentTaesdModel;

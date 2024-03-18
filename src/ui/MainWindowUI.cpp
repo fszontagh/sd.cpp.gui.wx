@@ -155,6 +155,33 @@ void MainWindowUI::onRandomGenerateButton(wxCommandEvent &event)
     this->m_seed->SetValue(sd_gui_utils::generateRandomInt(100000000, 999999999));
 }
 
+void MainWindowUI::OnWHChange(wxSpinEvent &event)
+{
+    int w = this->m_width->GetValue();
+    int h = this->m_height->GetValue();
+
+    if (!(w % 256 == 0) || !(h % 256 == 0))
+    {
+        this->m_generate2->Enable(false);
+        // wxSpinCtrl *ctrl = static_cast<wxSpinCtrl *>(event.GetEventObject());
+        //  ctrl->SetBackgroundColour(wxColour(255, 0, 0));
+        wxMessageDialog(this, _("The resolution should be divisible by 256")).ShowModal();
+        this->m_width->SetValue(this->init_width);
+        this->m_height->SetValue(this->init_height);
+        return;
+    }
+    else
+    {
+        if (this->m_model->GetCurrentSelection() > 0)
+        {
+            this->m_generate2->Enable(true);
+        }
+    }
+
+    this->init_width = w;
+    this->init_height = h;
+}
+
 void MainWindowUI::onResolutionSwap(wxCommandEvent &event)
 {
     auto oldW = this->m_width->GetValue();
