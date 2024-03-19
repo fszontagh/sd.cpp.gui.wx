@@ -124,6 +124,7 @@ void MainWindowUI::OnCivitAitButton(wxCommandEvent &event)
 
     civitwindow->SetIcon(icon);
     civitwindow->SetModelManager(this->ModelManager);
+    civitwindow->SetCfg(this->cfg);
     civitwindow->Show();
 }
 
@@ -3396,6 +3397,9 @@ void MainWindowUI::initConfig()
     wxString thumbs_path = datapath;
     thumbs_path.append("thumbs");
 
+    wxString tmp_path = datapath;
+    tmp_path.append("tmp");
+
     wxString controlnet_path = datapath;
     controlnet_path.append("controlnet");
 
@@ -3414,7 +3418,9 @@ void MainWindowUI::initConfig()
     this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
 
     this->cfg->jobs = this->fileConfig->Read("/paths/jobs", jobs_path).ToStdString();
-    this->cfg->thumbs_path = thumbs_path;
+    
+    this->cfg->thumbs_path = thumbs_path.ToStdString();
+    this->cfg->tmppath = tmp_path.ToStdString();
 
     this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
     this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
@@ -3468,6 +3474,10 @@ void MainWindowUI::initConfig()
         if (!std::filesystem::exists(embedding_path.ToStdString()))
         {
             std::filesystem::create_directories(embedding_path.ToStdString());
+        }
+        if (!std::filesystem::exists(tmp_path.ToStdString()))
+        {
+            std::filesystem::create_directories(tmp_path.ToStdString());
         }
         if (!std::filesystem::exists(taesd_path.ToStdString()))
         {

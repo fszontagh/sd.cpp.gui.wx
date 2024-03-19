@@ -44,22 +44,40 @@ public:
 
 	~MainWindowCivitAiWindow();
 	void SetModelManager(ModelInfo::Manager *manager);
+	void SetCfg(sd_gui_utils::config *cfg);
 
 private:
 	bool isLoading = false;
+	sd_gui_utils::config *config;
 	std::vector<std::thread *> modelDownloadThread;
 	std::vector<std::thread *> infoDownloadThread;
+	std::vector<std::thread *> imgDownloadThreads;
 	std::vector<nlohmann::json *> loadedJsonDatas;
 	nlohmann::json currentModelVersions;
 	std::vector<nlohmann::json *> modelDetailData;
 	ModelInfo::Manager *ModelInfoManager;
 	std::vector<sd_gui_utils::ModelFileInfo *> localAvailableFiles;
+	std::vector<CivitAi::DownloadItem *> downloads;
+	std::map<int, CivitAi::PreviewImage *> previewImages;
+	std::vector<wxStaticBitmap *> bitmaps;
+	int current_version_id = 0;
 
 	void civitSearchThread(std::string query);
+	void imgDownloadThread(CivitAi::PreviewImage *previewImage, int versionId);
 	void OnSearch(std::string query);
 	void OnThreadMessage(wxThreadEvent &e);
 	void JsonToTable(std::string json_str);
 	bool CheckIfModelDownloaded(nlohmann::json item);
+
+	void populateVersions(nlohmann::json js);
+	void populateFiles(nlohmann::json js);
+
+	void loadImages(nlohmann::json js);
+	void showImages(int version_id, bool from_thread = false);
+
+	void SendThreadEvent(std::string payload);
+	void SendThreadEvent(wxString payload);
+	void SendThreadEvent(std::string str, int id, CivitAi::PreviewImage *payload);
 };
 
 #endif // __MainWindowCivitAiWindow__

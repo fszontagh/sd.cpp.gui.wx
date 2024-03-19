@@ -289,6 +289,11 @@ class Settings : public wxFrame
 		wxCheckBox* m_show_notifications;
 		wxStaticText* m_staticText60;
 		wxSpinCtrl* m_notification_timeout;
+		wxPanel* m_panel18;
+		wxCheckBox* m_checkBox11;
+		wxStaticText* m_staticText42;
+		wxTextCtrl* m_civitai_api_key;
+		wxBitmapButton* m_bpButton15;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
@@ -362,6 +367,10 @@ class CivitAiWindow : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn12;
 		wxDataViewColumn* m_dataViewListColumn13;
+		wxDataViewListCtrl* m_downloads;
+		wxDataViewColumn* m_dataViewListColumn26;
+		wxDataViewColumn* m_dataViewListColumn27;
+		wxDataViewColumn* m_dataViewListColumn28;
 		wxPanel* m_panel17;
 		wxHtmlWindow* m_model_description;
 		wxStaticText* m_staticText41;
@@ -369,14 +378,17 @@ class CivitAiWindow : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn111;
 		wxDataViewColumn* m_dataViewListColumn22;
 		wxDataViewColumn* m_dataViewListColumn21;
+		wxDataViewColumn* m_dataViewListColumn221;
 		wxHtmlWindow* m_model_version_description;
 		wxStaticText* m_staticText40;
+		wxButton* m_model_download;
 		wxDataViewListCtrl* m_model_filelist;
 		wxDataViewColumn* m_dataViewListColumn1111;
 		wxDataViewColumn* m_dataViewListColumn211;
 		wxDataViewColumn* m_dataViewListColumn23;
 		wxDataViewColumn* m_dataViewListColumn24;
 		wxDataViewColumn* m_dataViewListColumn25;
+		wxDataViewColumn* m_dataViewListColumn231;
 		wxStatusBar* m_statusBar2;
 
 		// Virtual event handlers, override them in your derived class
@@ -389,6 +401,8 @@ class CivitAiWindow : public wxFrame
 
 
 	public:
+		wxScrolledWindow* m_scrolledWindow4;
+		wxBoxSizer* image_container;
 
 		CivitAiWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("CivitAI model downloader"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 700,500 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 

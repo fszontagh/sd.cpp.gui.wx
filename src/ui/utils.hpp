@@ -389,6 +389,7 @@ namespace sd_gui_utils
         std::string jobs = "";
         std::string controlnet = "";
         std::string datapath = "";
+        std::string tmppath = "";
         std::string thumbs_path = "";
         bool keep_model_in_memory = true;
         bool save_all_image = true;

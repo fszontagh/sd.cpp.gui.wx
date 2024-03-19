@@ -20,7 +20,29 @@ namespace CivitAi
         "AestheticGradient",
         "LORA",
         "Controlnet",
-        "Poses"
+        "Poses"};
+
+    enum DownloadType
+    {
+        IMAGE,
+        MODELFILE
+    };
+
+    struct PreviewImage
+    {
+        std::string localpath;
+        std::string url;
+        int id;
+        bool downloaded = false;
+        int width, height;
+        bool visible = false;
+    };
+    class DownloadItem
+    {
+        size_t targetSize;
+        size_t downloadedSize;
+        std::string url;
+        CivitAi::DownloadType type;
     };
 } // namespace CivitAi
 
