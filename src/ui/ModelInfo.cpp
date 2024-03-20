@@ -31,10 +31,20 @@ void ModelInfo::Manager::addModel(std::string model_path, sd_gui_utils::DirTypes
         try
         {
             nlohmann::json data = nlohmann::json::parse(f);
+
             sd_gui_utils::ModelFileInfo _z;
             sd_gui_utils::from_json(data, _z);
 
-            this->ModelInfos[model_path] = new sd_gui_utils::ModelFileInfo(_z);
+            /// regenerate the meta file with some exists info, because the meta is older than the model file
+            if (std::filesystem::last_write_time(meta_path) < std::filesystem::last_write_time(path))
+            {
+                this->ModelInfos[model_path] = this->GenerateMeta(path.string(), type, name, _z);
+            }
+            else
+            {
+                this->ModelInfos[model_path] = new sd_gui_utils::ModelFileInfo(_z);
+            }
+
             this->ModelInfos[model_path]->meta_file = meta_path;
             this->ModelInfos[model_path]->model_type = type;
             this->ModelInfos[model_path]->name = name;
@@ -152,7 +162,7 @@ sd_gui_utils::ModelFileInfo *ModelInfo::Manager::getIntoPtrByHash(std::string ha
         {
             return model.second;
         }
-    }    
+    }
     return nullptr;
 }
 // @brief Get a modelinfo by it's name
@@ -223,11 +233,11 @@ void ModelInfo::Manager::UpdateInfo(sd_gui_utils::ModelFileInfo *modelinfo)
     this->WriteIntoMeta(modelinfo);
 }
 
-sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name)
+sd_gui_utils::ModelFileInfo *ModelInfo::Manager::GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name, sd_gui_utils::ModelFileInfo copyMeta)
 {
     auto path = std::filesystem::path(model_path);
 
-    sd_gui_utils::ModelFileInfo *mi = new sd_gui_utils::ModelFileInfo();
+    sd_gui_utils::ModelFileInfo *mi = new sd_gui_utils::ModelFileInfo(copyMeta);
     mi->size = std::filesystem::file_size(path);
     auto s = sd_gui_utils::humanReadableFileSize(mi->size);
     mi->size_f = wxString::Format("%.1f%s", s.first, s.second);

@@ -37,8 +37,25 @@ void MainWindowSettings::onShowNotificationCheck(wxCommandEvent &event)
     }
 }
 
+void MainWindowSettings::OnCivitaiHelpButton(wxCommandEvent &event)
+{
+   wxString civitHelpLink = "https://education.civitai.com/civitais-guide-to-downloading-via-api/#how-do-i-download-via-the-api";
+   wxLaunchDefaultBrowser(civitHelpLink);
+}
+
 void MainWindowSettings::onSave(wxCommandEvent &event)
 {
+
+    // save secret
+    wxString username = "civitai_api_key";
+
+    if (!this->m_civitai_api_key->GetValue().empty())
+    {
+        wxSecretValue password(this->m_civitai_api_key->GetValue());
+        wxSecretStore store = wxSecretStore::GetDefault();
+        store.Save(SD_GUI_HOMEPAGE, username, password);
+    }
+
     this->fileConfig->Write("/paths/lora", this->m_lora_dir->GetPath());
     this->fileConfig->Write("/paths/model", this->m_model_dir->GetPath());
     this->fileConfig->Write("/paths/vae", this->m_vae_dir->GetPath());
@@ -103,6 +120,16 @@ void MainWindowSettings::InitConfig()
     this->cfg->image_quality = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
     this->cfg->show_notifications = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
     this->cfg->notification_timeout = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
+
+    wxString username = "civitai_api_key";
+    wxSecretValue password;
+
+    wxSecretStore store = wxSecretStore::GetDefault();
+
+    if (store.Load(SD_GUI_HOMEPAGE, username, password))
+    {
+        this->m_civitai_api_key->SetValue(password.GetAsString());
+    }
 
     int idx = 0;
     auto saved_image_type = this->fileConfig->Read("/image_type", "JPG");

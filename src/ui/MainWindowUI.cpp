@@ -60,6 +60,10 @@ MainWindowUI::MainWindowUI(wxWindow *parent)
     this->loadEsrganList();
     this->loadEmbeddingList();
     this->refreshModelTable();
+    /// save and restore things
+    // wxPersistenceManager::Get().RegisterAndRestore(this->m_notebook1302);
+    // wxPersistenceManager::Get().RegisterAndRestore(this->m_joblist);
+    // wxPersistenceManager::Get().RegisterAndRestore(this->m_data_model_list);
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 }
@@ -85,6 +89,7 @@ void MainWindowUI::onSettings(wxCommandEvent &event)
 void MainWindowUI::onModelsRefresh(wxCommandEvent &event)
 {
     this->loadModelList();
+    this->loadLoraList();
     this->loadVaeList();
     this->loadTaesdList();
     this->loadControlnetList();
@@ -117,15 +122,26 @@ void MainWindowUI::OnAboutButton(wxCommandEvent &event)
 
 void MainWindowUI::OnCivitAitButton(wxCommandEvent &event)
 {
-    MainWindowCivitAiWindow *civitwindow = new MainWindowCivitAiWindow(this);
-    auto bitmap = app_png_to_wx_bitmap();
-    wxIcon icon;
-    icon.CopyFromBitmap(bitmap);
 
-    civitwindow->SetIcon(icon);
-    civitwindow->SetModelManager(this->ModelManager);
-    civitwindow->SetCfg(this->cfg);
-    civitwindow->Show();
+    if (this->civitwindow == nullptr)
+    {
+        this->civitwindow = new MainWindowCivitAiWindow(this);
+        auto bitmap = app_png_to_wx_bitmap();
+        wxIcon icon;
+        icon.CopyFromBitmap(bitmap);
+
+        this->civitwindow->SetIcon(icon);
+        this->civitwindow->SetModelManager(this->ModelManager);
+        this->civitwindow->SetCfg(this->cfg);
+        this->civitwindow->SetTitle(wxString::Format("%s | %s", this->GetTitle(), this->civitwindow->GetTitle()));
+        this->civitwindow->Bind(wxEVT_THREAD, &MainWindowUI::OnCivitAiThreadMessage, this);
+        this->civitwindow->Bind(wxEVT_CLOSE_WINDOW, &MainWindowUI::OnCloseCivitWindow, this);
+        this->civitwindow->SetName("CivitAiDowloaded");
+        wxPersistenceManager::Get().RegisterAndRestore(this->civitwindow);
+        this->civitwindow->Show();
+        return;
+    }
+    this->civitwindow->RequestUserAttention();
 }
 
 void MainWindowUI::onModelSelect(wxCommandEvent &event)
@@ -146,7 +162,7 @@ void MainWindowUI::onModelSelect(wxCommandEvent &event)
     }
     this->m_generate2->Enable();
     this->sd_params->model_path = this->ModelFiles.at(name);
-    this->m_statusBar166->SetStatusText("Model: " + this->sd_params->model_path);
+    this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), this->sd_params->model_path));
 }
 
 void MainWindowUI::onTypeSelect(wxCommandEvent &event)
@@ -387,7 +403,7 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         {
             if (qitem->images.size() > 0)
             {
-                menu->Append(6, wxString::Format("Upscale again"));
+                menu->Append(6, wxString::Format(_("Upscale again")));
             }
         }
 
@@ -456,17 +472,19 @@ void MainWindowUI::onContextMenu(wxDataViewEvent &event)
         }
         if (modelinfo->model_type == sd_gui_utils::DirTypes::LORA)
         {
-            menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), modelinfo->name));
-            menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), modelinfo->name));
-            menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), modelinfo->name));
-            menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), modelinfo->name));
+            auto shortname = std::filesystem::path(modelinfo->name).replace_extension().string();
+            menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), shortname));
+            menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), shortname));
+            menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), shortname));
+            menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), shortname));
         }
         if (modelinfo->model_type == sd_gui_utils::DirTypes::EMBEDDING)
         {
-            menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), modelinfo->name));
-            menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), modelinfo->name));
-            menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), modelinfo->name));
-            menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), modelinfo->name));
+            auto shortname = std::filesystem::path(modelinfo->name).replace_extension().string();
+            menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), shortname));
+            menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), shortname));
+            menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), shortname));
+            menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), shortname));
         }
         menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
         PopupMenu(menu);
@@ -810,6 +828,7 @@ void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent &event)
 void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
 {
     MainWindowImageDialog *dialog = new MainWindowImageDialog(this);
+    dialog->SetName("controlnet_preview");
     wxImage img(*this->currentControlnetImage);
     auto size = img.GetSize();
 
@@ -818,6 +837,7 @@ void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent &event)
     dialog->SetTitle(title);
     dialog->SetIcon(this->GetIcon());
     dialog->m_bitmap->SetBitmap(img);
+    wxPersistenceManager::Get().RegisterAndRestore(dialog);
     dialog->ShowModal();
 }
 
@@ -860,12 +880,14 @@ void MainWindowUI::OnImageOpenFileChanged(wxFileDirPickerEvent &event)
 void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent &event)
 {
     MainWindowImageDialog *dialog = new MainWindowImageDialog(this);
+    dialog->SetName("img2img_preview");
     wxImage img(*this->currentInitialImage);
     auto size = img.GetSize();
 
     dialog->SetSize(size.GetWidth() + 100, size.GetHeight() + 100);
     dialog->SetTitle(_("IMG2IMG - original image"));
     dialog->m_bitmap->SetBitmap(img);
+    wxPersistenceManager::Get().RegisterAndRestore(dialog);
     dialog->ShowModal();
 }
 
@@ -1294,7 +1316,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
             wxStaticBitmap *bitmap = new wxStaticBitmap(this->m_scrolledWindow4, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(resized.GetSize()), 0);
             bitmap->Hide();
             bitmap->SetBitmap(resized);
-            auto tooltip = wxString::Format("Resolution: %s Seed: %" PRId64 " Steps: %d", img.meta.Size, img.meta.seed, img.meta.steps);
+            auto tooltip = wxString::Format(_("Resolution: %s Seed: %" PRId64 " Steps: %d"), img.meta.Size, img.meta.seed, img.meta.steps);
             this->bSizer891->Add(bitmap, 0, wxALL, 2);
             this->modelImagePreviews.emplace_back(bitmap);
             bitmap->Show();
@@ -1435,6 +1457,10 @@ MainWindowUI::~MainWindowUI()
 {
     FreeSdCtxFunction free_sd_ctx = (FreeSdCtxFunction)this->sd_dll->GetSymbol("free_sd_ctx");
     FreeUpscalerFunction free_upscaler_ctx = (FreeUpscalerFunction)this->sd_dll->GetSymbol("free_upscaler_ctx");
+    if (this->civitwindow != nullptr)
+    {
+        this->civitwindow->Destroy();
+    }
     if (this->modelLoaded)
     {
 
@@ -1618,38 +1644,38 @@ void MainWindowUI::OnPopupClick(wxCommandEvent &evt)
         auto currentItem = store->GetItem(currow);
 
         sd_gui_utils::ModelFileInfo *modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo *>(store->GetItemData(currentItem));
-
+        auto shortname = std::filesystem::path(modelinfo->name).replace_extension().string();
         switch (tu)
         {
         case 100:
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo));
             break;
         case 101:
-            this->m_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt->GetValue(), modelinfo->name));
+            this->m_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt->GetValue(), shortname));
             break;
         case 102:
-            this->m_neg_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt->GetValue(), modelinfo->name));
+            this->m_neg_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt->GetValue(), shortname));
             break;
         case 103:
-            this->m_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt2->GetValue(), modelinfo->name));
+            this->m_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt2->GetValue(), shortname));
             break;
         case 104:
-            this->m_neg_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), modelinfo->name));
+            this->m_neg_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), shortname));
             break;
         case 105:
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
             break;
         case 111:
-            this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), modelinfo->name));
+            this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
             break;
         case 112:
-            this->m_neg_prompt->SetValue(wxString::Format("%s %s", this->m_neg_prompt->GetValue(), modelinfo->name));
+            this->m_neg_prompt->SetValue(wxString::Format("%s %s", this->m_neg_prompt->GetValue(), shortname));
             break;
         case 113:
-            this->m_prompt2->SetValue(wxString::Format("%s %s", this->m_prompt2->GetValue(), modelinfo->name));
+            this->m_prompt2->SetValue(wxString::Format("%s %s", this->m_prompt2->GetValue(), shortname));
             break;
         case 114:
-            this->m_neg_prompt2->SetValue(wxString::Format("%s %s", this->m_neg_prompt2->GetValue(), modelinfo->name));
+            this->m_neg_prompt2->SetValue(wxString::Format("%s %s", this->m_neg_prompt2->GetValue(), shortname));
             break;
         case 115:
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
@@ -1939,16 +1965,16 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type)
                 continue;
             }
         }
-        std::string name = path.filename().replace_extension("").string();
+        std::string name = path.filename().string();
         // prepend the subdirectory to the modelname
         // // wxFileName::GetPathSeparator()
-        auto path_name = path.string();
-        sd_gui_utils::replace(path_name, basepath, "");
-        sd_gui_utils::replace(path_name, "//", "");
-        sd_gui_utils::replace(path_name, "\\\\", "");
-        sd_gui_utils::replace(path_name, ext, "");
+        std::string path_name = path.parent_path().string();
 
-        name = path_name.substr(1);
+        sd_gui_utils::replace(path_name, basepath, "");
+        if (!path_name.empty())
+        {
+            name = path_name.substr(1) + "/" + name;
+        }
 
         if (type == sd_gui_utils::DirTypes::CHECKPOINT)
         {
@@ -2101,6 +2127,11 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent &event)
     this->settingsWindow->Destroy();
     this->Thaw();
     this->Show();
+}
+void MainWindowUI::OnCloseCivitWindow(wxCloseEvent &event)
+{
+    this->civitwindow->Destroy();
+    this->civitwindow = nullptr;
 }
 
 void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> params, sd_gui_utils::SDMode mode)
@@ -2761,6 +2792,55 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent &e)
     }
 }
 
+void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent &e)
+{
+    e.Skip();
+    auto msg = e.GetString().ToStdString();
+    std::string token = msg.substr(0, msg.find(":"));
+    std::string content = msg.substr(msg.find(":") + 1);
+
+    if (token == "DOWNLOAD_FINISH")
+    {
+
+        auto payload = e.GetPayload<CivitAi::DownloadItem *>();
+
+        std::string name = std::filesystem::path(payload->local_file).filename().string();
+
+        if (payload->type == CivitAi::ModelTypes::Checkpoint)
+        {
+            this->loadModelList();
+            //    type = sd_gui_utils::DirTypes::CHECKPOINT;
+        }
+
+        if (payload->type == CivitAi::ModelTypes::LORA)
+        {
+            //  type = sd_gui_utils::DirTypes::LORA;
+            this->loadLoraList();
+        }
+        if (payload->type == CivitAi::ModelTypes::TextualInversion)
+        {
+            // type = sd_gui_utils::DirTypes::EMBEDDING;
+            this->loadEmbeddingList();
+        }
+        auto value = this->m_modellist_filter->GetValue().ToStdString();
+        this->refreshModelTable(value);
+
+        std::string title = _("Model download finished").ToStdString();
+        std::string message = wxString::Format(_("The model download is finished: %s"), name).ToStdString();
+        this->ShowNotification(title, message);
+
+        return;
+    }
+    if (token == "DOWNLOAD_ERROR")
+    {
+        auto payload = e.GetPayload<CivitAi::DownloadItem *>();
+        std::string title = _("Model download failed").ToStdString();
+        std::string message = wxString::Format(_("The model download is failed: %s"), std::filesystem::path(payload->local_file).filename().string()).ToStdString();
+        this->ShowNotification(title, message);
+        return;
+    }
+}
+
 void MainWindowUI::HandleSDProgress(int step, int steps, float time, void *data)
 {
     sd_gui_utils::VoidHolder *objs = (sd_gui_utils::VoidHolder *)data;
@@ -2813,17 +2893,17 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
 
     wxVector<wxVariant> data;
 
-    data.push_back(wxVariant("ID"));
+    data.push_back(wxVariant(_("ID")));
     data.push_back(wxVariant(wxString::Format("%d", item->id)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant("Created at"));
+    data.push_back(wxVariant(_("Created at")));
     data.push_back(wxVariant(sd_gui_utils::formatUnixTimestampToDate(item->created_at)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant("Finished at"));
+    data.push_back(wxVariant(_("Finished at")));
     if (item->finished_at == 0)
     {
         data.push_back(wxVariant("--"));
@@ -2835,24 +2915,24 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant("Mode"));
+    data.push_back(wxVariant(_("Mode")));
     data.push_back(wxVariant(wxString(sd_gui_utils::modes_str[item->mode])));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant("Model"));
+    data.push_back(wxVariant(_("Model")));
     data.push_back(wxVariant(wxString(item->model)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant("Threads"));
+    data.push_back(wxVariant(_("Threads")));
     data.push_back(wxVariant(wxString::Format("%d", item->params.n_threads)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
     if (item->mode == QM::GenerationMode::UPSCALE)
     {
-        data.push_back(wxVariant("Factor"));
+        data.push_back(wxVariant(_("Factor")));
         data.push_back(wxVariant(wxString::Format("%" PRId32, item->upscale_factor)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
@@ -2860,7 +2940,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
 
     if (item->mode == QM::GenerationMode::IMG2IMG || item->mode == QM::GenerationMode::TXT2IMG)
     {
-        data.push_back(wxVariant("Type"));
+        data.push_back(wxVariant(_("Type")));
         data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sd_type_gui_names[item->params.wtype])));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
@@ -2868,12 +2948,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
 
     if (item->mode == QM::GenerationMode::IMG2IMG)
     {
-        data.push_back(wxVariant("Init image"));
+        data.push_back(wxVariant(_("Init image")));
         data.push_back(wxVariant(wxString(item->initial_image)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Strength"));
+        data.push_back(wxVariant(_("Strength")));
         data.push_back(wxVariant(wxString::Format("%.2f", item->params.strength)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
@@ -2881,86 +2961,86 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
 
     if (item->mode == QM::GenerationMode::TXT2IMG || item->mode == QM::GenerationMode::IMG2IMG)
     {
-        data.push_back(wxVariant("Prompt"));
+        data.push_back(wxVariant(_("Prompt")));
         data.push_back(wxVariant(wxString(item->params.prompt)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Neg. prompt"));
+        data.push_back(wxVariant(_("Neg. prompt")));
         data.push_back(wxVariant(wxString(item->params.negative_prompt)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Seed"));
+        data.push_back(wxVariant(_("Seed")));
         data.push_back(wxVariant(wxString::Format("%" PRId64, item->params.seed)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Clip skip"));
+        data.push_back(wxVariant(_("Clip skip")));
         data.push_back(wxVariant(wxString::Format("%d", item->params.clip_skip)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Cfg scale"));
+        data.push_back(wxVariant(_("Cfg scale")));
         data.push_back(wxVariant(wxString::Format("%.1f", item->params.cfg_scale)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Sampler"));
+        data.push_back(wxVariant(_("Sampler")));
         data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sample_method_str[item->params.sample_method])));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Steps"));
+        data.push_back(wxVariant(_("Steps")));
         data.push_back(wxVariant(wxString::Format("%d", item->params.sample_steps)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("VAE"));
+        data.push_back(wxVariant(_("VAE")));
         data.push_back(wxVariant(wxString(item->params.vae_path)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("VAE tiling"));
+        data.push_back(wxVariant(_("VAE tiling")));
         data.push_back(wxVariant(wxString(item->params.vae_tiling == true ? _("yes") : _("no"))));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("TAESD"));
+        data.push_back(wxVariant(_("TAESD")));
         data.push_back(wxVariant(wxString(item->params.taesd_path)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
     }
     if (item->mode == QM::GenerationMode::TXT2IMG)
     {
-        data.push_back(wxVariant("Width"));
+        data.push_back(wxVariant(_("Width")));
         data.push_back(wxVariant(wxString::Format("%dpx", item->params.width)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Height"));
+        data.push_back(wxVariant(_("Height")));
         data.push_back(wxVariant(wxString::Format("%dpx", item->params.height)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant("Batch count"));
+        data.push_back(wxVariant(_("Batch count")));
         data.push_back(wxVariant(wxString::Format("%d", item->params.batch_count)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
         if (!item->params.controlnet_path.empty())
         {
-            data.push_back(wxVariant("CN model"));
+            data.push_back(wxVariant(_("CN model")));
             data.push_back(wxVariant(wxString(item->params.controlnet_path)));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
 
-            data.push_back(wxVariant("CN img"));
+            data.push_back(wxVariant(_("CN img")));
             data.push_back(wxVariant(wxString(item->params.control_image_path)));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
 
-            data.push_back(wxVariant("CN strength"));
+            data.push_back(wxVariant(_("CN strength")));
             data.push_back(wxVariant(wxString::Format("%.2f", item->params.control_strength)));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
@@ -2990,13 +3070,13 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem *item)
                                 menu->Append(6, _("Open image"));
                                 menu->Append(7, _("Open parent folder"));
                                 menu->AppendSeparator();
-                                menu->Append(0, wxString::Format("Copy seed %" PRId64, item->params.seed + img->id));
-                                menu->Append(1, "Copy prompts to text2img");
-                                menu->Append(2, "Copy prompts to img2img");
+                                menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img->id));
+                                menu->Append(1, _("Copy prompts to text2img"));
+                                menu->Append(2, _("Copy prompts to img2img"));
                                 //menu->Append(3, "Send the image to text2img");
-                                menu->Append(3, "Send the image to img2img");
+                                menu->Append(3, _("Send the image to img2img"));
 
-                                menu->Append(5, "Upscale");
+                                menu->Append(5, _("Upscale"));
 
 
                             
@@ -3047,7 +3127,7 @@ QM::QueueItem *MainWindowUI::handleSdImage(sd_image_t result, QM::QueueItem *ite
 
     if (!img->IsOk())
     {
-        itemPtr->status_message = std::string("Invalid image from diffusion...");
+        itemPtr->status_message = std::string(_("Invalid image from diffusion..."));
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         return itemPtr;
     }
@@ -3089,7 +3169,7 @@ QM::QueueItem *MainWindowUI::handleSdImage(sd_image_t result, QM::QueueItem *ite
 
     if (!img->SaveFile(filename, imgHandler))
     {
-        itemPtr->status_message = wxString::Format("Failed to save image into %s", filename);
+        itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename);
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         return itemPtr;
     }
@@ -3418,7 +3498,7 @@ void MainWindowUI::initConfig()
     this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
 
     this->cfg->jobs = this->fileConfig->Read("/paths/jobs", jobs_path).ToStdString();
-    
+
     this->cfg->thumbs_path = thumbs_path.ToStdString();
     this->cfg->tmppath = tmp_path.ToStdString();
 
@@ -3534,9 +3614,28 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler *eventHandler, sd_gui_
 
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_START, modelinfo);
 
+    // get apikey from store, if available
+    wxString username = "civitai_api_key";
+    wxSecretValue password;
+    wxString apikey;
+
+    wxSecretStore store = wxSecretStore::GetDefault();
+
+    if (store.Load(SD_GUI_HOMEPAGE, username, password))
+    {
+        apikey = password.GetAsString();
+    }
+
+    // get http
     std::list<std::string> headers;
-    headers.push_back("Content-Type: text/json;");
+    headers.push_back("Content-Type: application/json;");
     headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
+
+    if (!apikey.empty())
+    {
+        headers.push_back("Authorization: Bearer " + apikey.ToStdString());
+    }
+
     std::string url = "https://civitai.com/api/v1/model-versions/by-hash/" + modelinfo->sha256.substr(0, 10);
     std::ostringstream response;
     try
@@ -3600,13 +3699,32 @@ void MainWindowUI::threadedModelInfoImageDownload(wxEvtHandler *eventHandler, sd
     // clean up old images
     modelinfo->preview_images.clear();
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_START, modelinfo);
+
+    // get apikey from store, if available
+    wxString username = "civitai_api_key";
+    wxSecretValue password;
+    wxString apikey;
+
+    wxSecretStore store = wxSecretStore::GetDefault();
+
+    if (store.Load(SD_GUI_HOMEPAGE, username, password))
+    {
+        apikey = password.GetAsString();
+    }
+
+    // get http
+    std::list<std::string> headers;
+    headers.push_back("Content-Type: application/json;");
+    headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
+
+    if (!apikey.empty())
+    {
+        headers.push_back("Authorization: Bearer " + apikey.ToStdString());
+    }
+
     int index = 0;
     for (CivitAi::image &img : modelinfo->CivitAiInfo.images)
     {
-        /// download
-        std::list<std::string> headers;
-        headers.push_back("Content-Type: text/json;");
-        headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
 
         std::ostringstream response(std::stringstream::binary);
         try
@@ -4036,7 +4154,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem *it
         }
         else
         {
-            item->status_message = wxString::Format("Failed to save image into %s", filename).ToStdString();
+            item->status_message = wxString::Format(_("Failed to save image into %s"), filename).ToStdString();
             MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
         }
 
@@ -4049,7 +4167,7 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler *eventHandler, QM::QueueItem *it
     }
     else
     {
-        item->status_message = wxString::Format("Can not open initial image: %s", item->initial_image).ToStdString();
+        item->status_message = wxString::Format(_("Can not open initial image: %s"), item->initial_image).ToStdString();
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
         return;
     }

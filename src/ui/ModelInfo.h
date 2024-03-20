@@ -13,7 +13,7 @@ namespace ModelInfo
 
     private:
         std::map<std::string, sd_gui_utils::ModelFileInfo *> ModelInfos;
-        sd_gui_utils::ModelFileInfo *GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name);
+        sd_gui_utils::ModelFileInfo *GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name, sd_gui_utils::ModelFileInfo copyMeta = sd_gui_utils::ModelFileInfo());
         void WriteIntoMeta(std::string model_path);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo *modelinfo);
@@ -40,7 +40,6 @@ namespace ModelInfo
         sd_gui_utils::ModelFileInfo updateCivitAiInfo(std::string model_path, std::string info);
         sd_gui_utils::ModelFileInfo updateCivitAiInfo(sd_gui_utils::ModelFileInfo *modelinfo);
         void UpdateInfo(sd_gui_utils::ModelFileInfo *modelinfo);
-        
-    };
+        };
 };
 #endif

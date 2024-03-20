@@ -113,6 +113,7 @@ public:
 	//// end generated class members
 	~MainWindowUI();
 	void OnThreadMessage(wxThreadEvent &e);
+	void OnCivitAiThreadMessage(wxThreadEvent &e);
 	void loadDll(wxDynamicLibrary *dll);
 
 private:
@@ -128,6 +129,8 @@ private:
 	wxTaskBarIcon *TaskBar;
 	wxMenu *TaskBarMenu;
 	wxBitmap TaskBarIcon;
+
+	MainWindowCivitAiWindow *civitwindow = nullptr;
 
 	/// @brief first: model display name
 	/// @brief second: model full path
@@ -196,6 +199,7 @@ private:
 	void loadTypeList();
 	void refreshModelTable(std::string filter = "");
 	void OnCloseSettings(wxCloseEvent &event);
+	void OnCloseCivitWindow(wxCloseEvent &event);
 	void OnExit(wxEvent &event);
 	void OnPopupClick(wxCommandEvent &evt);
 	void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);
