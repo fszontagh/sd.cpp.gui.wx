@@ -224,7 +224,8 @@
 				"wxUSE_GUI=ON",
 				"wxBUILD_PRECOMP=ON",
 				"wxBUILD_MONOLITHIC=ON",
-				"wxBUILD_INSTALL=OFF"
+				"wxBUILD_INSTALL=OFF",
+				"wxUSE_SECRETSTORE=ON"
 			]
 		},
 		"sd.cpp.patch.win": {
