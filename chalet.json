@@ -503,7 +503,7 @@
 			"file": "scripts/prepare_dist.sh",
 			"arguments":[
 				"${buildDir}",
-				"${distributionDir}"
+				"${cwd}/dist/all"
 			]
 		}
 	},
