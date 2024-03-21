@@ -97,20 +97,23 @@
 				"includeDirs[:windows+:debug]": [
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswud"
 				],
-				"includeDirs[:linux]":[
+				"includeDirs[:linux]": [
 					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-3.2"
 				],
 				"libDirs[:windows]": [
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/"
 				],
 				"libDirs[:linux]": [
-					"${externalBuild:wxWidgets}/libs"
+					"${externalBuild:wxWidgets}/lib"
 				],
 				"links[:windows+:debug]": [
 					"wxmsw32ud"
 				],
 				"links[:windows+:!debug]": [
 					"wxmsw32u"
+				],
+				"links[:linux]": [
+					"wx_gtk3u-3.2"
 				]
 			}
 		},
@@ -493,9 +496,25 @@
 				"${externalBuild:stable-diffusion.cpp_avx512}/bin/${so:stable-diffusion_avx512}",
 				"${buildDir}"
 			]
+		},
+		"prepare_distribution_linux": {
+			"condition": "[env:ALL+:linux]",
+			"kind": "script",
+			"file": "scripts/prepare_dist.sh",
+			"arguments":[
+				"${buildDir}",
+				"${distributionDir}"
+			]
 		}
 	},
 	"distribution": {
+		"linux": {
+			"kind": "script",
+			"file": "scripts/create_debs.sh",
+			"arguments": [
+				"${meta:version}"
+			]
+		},
 		"ALL": {
 			"kind": "bundle",
 			"condition": "[env:ALL]",
