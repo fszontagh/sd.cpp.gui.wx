@@ -280,7 +280,7 @@
 				"GGML_AVX2=OFF",
 				"GGML_AVX=OFF",
 				"GGML_CUBLAS=OFF",
-				"CMAKE_C_COMPILER=clang.exe",
+				"CMAKE_C_COMPILER=clang",
 				"CMAKE_CXX_COMPILER=clang++",
 				"SD_HIPBLAS=ON"
 			]
