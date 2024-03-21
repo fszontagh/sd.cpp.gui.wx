@@ -501,21 +501,14 @@
 			"condition": "[env:ALL+:linux]",
 			"kind": "script",
 			"file": "scripts/prepare_dist.sh",
-			"arguments":[
+			"arguments": [
 				"${buildDir}",
-				"${cwd}/dist/all"
+				"${cwd}/dist"
 			]
 		}
 	},
 	"distribution": {
-		"linux": {
-			"kind": "script",
-			"file": "scripts/create_debs.sh",
-			"arguments": [
-				"${meta:version}"
-			]
-		},
-		"ALL": {
+		"sd.ui": {
 			"kind": "bundle",
 			"condition": "[env:ALL]",
 			"buildTargets": [
@@ -531,6 +524,14 @@
 				"icon": "platform/linux/sd_ui.png",
 				"template": "platform/linux/app.desktop"
 			}
+		},
+		"linux": {
+			"condition": "[:linux]",
+			"kind": "script",
+			"file": "scripts/create_debs.sh",
+			"arguments": [
+				"${meta:version}"
+			]
 		},
 		"INNO_avx": {
 			"kind": "script",
