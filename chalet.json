@@ -97,8 +97,14 @@
 				"includeDirs[:windows+:debug]": [
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswud"
 				],
+				"includeDirs[:linux]":[
+					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-3.2"
+				],
 				"libDirs[:windows]": [
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/"
+				],
+				"libDirs[:linux]": [
+					"${externalBuild:wxWidgets}/libs"
 				],
 				"links[:windows+:debug]": [
 					"wxmsw32ud"
@@ -210,7 +216,6 @@
 			]
 		},
 		"wxWidgets": {
-			"condition": "[:windows]",
 			"kind": "cmakeProject",
 			"location": "${external:wxWidgets}",
 			"recheck": false,
