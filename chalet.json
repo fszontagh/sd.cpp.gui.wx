@@ -507,7 +507,11 @@
 				"stable-diffusion.cpp_rocm",
 				"sd.ui"
 			],
-			"subdirectory": "all"
+			"subdirectory": "all",
+			"linuxDesktopEntry": {
+				"icon": "platform/linux/sd_ui.png",
+				"template": "platform/linux/app.desktop"
+			}
 		},
 		"INNO_avx": {
 			"kind": "script",
