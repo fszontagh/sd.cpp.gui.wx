@@ -4,7 +4,7 @@
 	"homepage": "github.com/fszontagh/sd.cpp.gui.wx",
 	"license": "./LICENSE",
 	"readme": "./README.md",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"defaultConfigurations": [
 		"Release",
 		"Debug",
