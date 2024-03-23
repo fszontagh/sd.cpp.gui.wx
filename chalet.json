@@ -92,10 +92,10 @@
 					"${external:wxWidgets}/include"
 				],
 				"includeDirs[:windows+:!debug]": [
-					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswu"
+					"${externalBuild:wxWidgets}/lib/vc_x64_lib/mswu"
 				],
 				"includeDirs[:windows+:debug]": [
-					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswud"
+					"${externalBuild:wxWidgets}/lib/vc_x64_lib/mswud"
 				],
 				"includeDirs[:linux]": [
 					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-static-3.2"
