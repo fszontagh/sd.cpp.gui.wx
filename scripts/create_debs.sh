@@ -5,7 +5,7 @@
 SD_VERSION="$1"
 SD_DESCRIPTION="Stable Diffusion C++ Desktop Gui"
 
-SD_BASEDIR="./build/"
+SD_BASEDIR="./dist/"
 SD_SUFFIX="-${SD_VERSION}-amd64"
 
 #######################################################################
@@ -33,12 +33,24 @@ Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
 Architecture: amd64
 Description: ${SD_DESCRIPTION}
-Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libexiv2-27, libcurl4, libcurlpp0, libgtk-3-0, libwxbase3.2-1, libwxgtk-gl3.2-1, libwxgtk-media3.2-1, libwxgtk-webview3.2-1, libwxgtk3.2-1
+Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libexiv2-27, libcurl4, libcurlpp0, libgtk-3-0
+EOF
+
+cat << EOF > ${PACKPATH}/usr/share/applications/sd.ui.desktop
+[Desktop Entry]
+Version=${SD_VERSION}
+Type=Application
+Categories=Application;Education
+Terminal=false
+Exec=/usr/bin/sd.ui
+Path=/usr/bin
+Name=Stable Diffusion Gui
+Comment=${SD_DESCRIPTION}
+Icon=/usr/share/pixmaps/sd.ui.png
 EOF
 
 cp -p dist/all/sd.ui ${PACKPATH}/usr/bin/
-cp -p dist/all/sd.ui.desktop ${PACKPATH}/usr/share/applications
-cp -p dist/all/cube_256.png ${PACKPATH}/usr/share/pixmaps/sd.ui.png
+cp -p platform/linux/sd_ui.png ${PACKPATH}/usr/share/pixmaps/sd.ui.png
 
 dpkg-deb --root-owner-group --build ${PACKPATH}
 

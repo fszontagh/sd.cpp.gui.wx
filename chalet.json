@@ -98,22 +98,28 @@
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/mswud"
 				],
 				"includeDirs[:linux]": [
-					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-3.2"
+					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-static-3.2"
 				],
 				"libDirs[:windows]": [
 					"${externalBuild:wxWidgets}/lib/vc_x64_dll/"
 				],
 				"libDirs[:linux]": [
-					"${externalBuild:wxWidgets}/lib"
+					"${externalBuild:wxWidgets}/lib",
+					"/usr/lib/x86_64-linux-gnu/"
 				],
-				"links[:windows+:debug]": [
+				"staticLinks[:windows+:debug]": [
 					"wxmsw32ud"
 				],
-				"links[:windows+:!debug]": [
+				"staticLinks[:windows+:!debug]": [
 					"wxmsw32u"
 				],
+				"staticLinks[:linux]": [
+					"wx_gtk3u-3.2",
+					"wxscintilla-3.2"
+				],
 				"links[:linux]": [
-					"wx_gtk3u-3.2"
+					"notify",
+					"secret-1"
 				]
 			}
 		},
@@ -227,7 +233,7 @@
 			"defines": [
 				"wxBUILD_TESTS=OFF",
 				"wxBUILD_SAMPLES=OFF",
-				"wxBUILD_SHARED=ON",
+				"wxBUILD_SHARED=OFF",
 				"wxUSE_GUI=ON",
 				"wxBUILD_PRECOMP=ON",
 				"wxBUILD_MONOLITHIC=ON",
@@ -496,15 +502,6 @@
 				"${externalBuild:stable-diffusion.cpp_avx512}/bin/${so:stable-diffusion_avx512}",
 				"${buildDir}"
 			]
-		},
-		"prepare_distribution_linux": {
-			"condition": "[env:ALL+:linux]",
-			"kind": "script",
-			"file": "scripts/prepare_dist.sh",
-			"arguments": [
-				"${buildDir}",
-				"${cwd}/dist"
-			]
 		}
 	},
 	"distribution": {
@@ -519,11 +516,17 @@
 				"stable-diffusion.cpp_rocm",
 				"sd.ui"
 			],
-			"subdirectory": "all",
-			"linuxDesktopEntry": {
-				"icon": "platform/linux/sd_ui.png",
-				"template": "platform/linux/app.desktop"
-			}
+			"subdirectory": "all"
+		},
+		"prepare_distribution_linux": {
+			"condition": "[env:ALL+:linux]",
+			"kind": "script",
+			"file": "scripts/prepare_dist.sh",
+			"arguments": [
+				"${buildDir}",
+				"${cwd}/dist",
+				"${externalBuild:wxWidgets}/lib"
+			]
 		},
 		"linux": {
 			"condition": "[:linux]",

@@ -182,7 +182,8 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent &e)
     {
         e.Skip();
     }
-    auto msg = e.GetString().ToStdString();
+
+    auto msg = e.GetString().utf8_string();
     std::string token = msg.substr(0, msg.find(":"));
     std::string content = msg.substr(msg.find(":") + 1);
 
@@ -195,6 +196,8 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent &e)
     {
         this->m_statusBar2->SetStatusText(_("Loading response, please wait..."));
         this->current_json_text = content;
+        std::cout << "Content: " << std::endl
+                  << content << std::endl;
         this->JsonToTable(content);
     }
     if (token == "IMGDONE")
@@ -224,7 +227,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent &e)
 
         this->downloads.emplace_back(item);
         // add to the table
-        auto store = this->m_downloads->GetStore();
         wxVector<wxVariant> data;
 
         data.push_back(wxVariant(std::filesystem::path(item->local_file).filename().string()));
@@ -318,6 +320,7 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent &e)
                 store->SetValueByRow(CivitAi::DownloadItemStateNames[payload->state], _i, progressCol - 1); // state
                 store->SetValueByRow(current_progress, _i, progressCol);                                    // progress
                 this->m_downloads->Refresh();
+                this->m_downloads->Layout();
                 break;
             }
         }
@@ -421,7 +424,9 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread)
 
 void MainWindowCivitAiWindow::SendThreadEvent(std::string payload)
 {
-    this->SendThreadEvent(wxString(payload));
+    wxThreadEvent *event = new wxThreadEvent();
+    event->SetString(wxString::FromUTF8(payload));
+    wxQueueEvent(this->GetEventHandler(), event);
 }
 
 void MainWindowCivitAiWindow::loadImages(nlohmann::json js)
@@ -666,7 +671,7 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem *item)
     {
         headers.push_back("Authorization: Bearer " + apikey.ToStdString());
     }
-    
+
     std::string target_path = std::filesystem::path(item->tmp_name).generic_string();
     item->tmp_name = target_path;
     item->local_file = std::filesystem::path(item->local_file).generic_string();
@@ -760,85 +765,94 @@ bool MainWindowCivitAiWindow::CheckIfModelDownloaded(nlohmann::json item)
 void MainWindowCivitAiWindow::JsonToTable(std::string json_str)
 {
 
-    nlohmann::json json_data = nlohmann::json::parse(json_str);
-    if (!json_data.contains("items"))
+    try
     {
-        wxMessageBox(_("Error on parsing response!"));
-        return;
-    }
+        nlohmann::json json_data = nlohmann::json::parse(json_str);
+        if (!json_data.contains("items"))
+        {
+            wxMessageBox(_("Error on parsing response!"));
+            this->m_statusBar2->SetStatusText(_("Error on parsing response!"));
+            return;
+        }
+        this->m_statusBar2->SetStatusText(_("Parsing items"));
 
-    this->m_statusBar2->SetStatusText(_("Parsing items"));
+        this->m_dataViewListCtrl5->DeleteAllItems();
 
-    this->m_dataViewListCtrl5->DeleteAllItems();
+        auto store = this->m_dataViewListCtrl5->GetStore();
 
-    auto store = this->m_dataViewListCtrl5->GetStore();
+        wxVector<wxVariant> data;
+        int index = 0;
+        nlohmann::json firstitem = NULL;
+        for (auto it = json_data["items"].begin(); it != json_data["items"].end(); ++it)
+        {
 
-    wxVector<wxVariant> data;
-    int index = 0;
-    nlohmann::json firstitem = NULL;
-    for (auto it = json_data["items"].begin(); it != json_data["items"].end(); ++it)
-    {
-
-        if (firstitem == NULL)
-        {
-            firstitem = (*it);
-        }
-        nlohmann::json *_json = new nlohmann::json((*it));
-        bool localAvailable = this->CheckIfModelDownloaded(*_json);
-        wxDataViewIconText icont;
-
-        if ((*it).contains("name") && !(*it).is_null())
-        {
-            data.push_back((*it)["name"].get<std::string>());
-        }
-        else
-        {
-            data.push_back(_("N/A"));
-        }
-        if (localAvailable)
-        {
-            data.push_back(wxVariant(_("Local available")));
-        }
-        else
-        {
-            data.push_back(wxVariant("--"));
-        }
-        if ((*it).contains("type") && (*it)["type"].is_string())
-        {
-            data.push_back(wxVariant((*it)["type"].get<std::string>()));
-        }
-        else
-        {
-            data.push_back(wxVariant("--"));
-        }
-        if ((*it).contains("stats"))
-        {
-            auto stats = (*it)["stats"];
-            if (stats.contains("downloadCount"))
+            if (firstitem == NULL)
             {
-                data.push_back(wxString::Format("%d", stats["downloadCount"].get<int>()));
+                firstitem = (*it);
+            }
+            nlohmann::json *_json = new nlohmann::json((*it));
+            bool localAvailable = this->CheckIfModelDownloaded(*_json);
+            wxDataViewIconText icont;
+
+            if ((*it).contains("name") && !(*it).is_null())
+            {
+                data.push_back((*it)["name"].get<std::string>());
+            }
+            else
+            {
+                data.push_back(_("N/A"));
+            }
+            if (localAvailable)
+            {
+                data.push_back(wxVariant(_("Local available")));
             }
             else
             {
                 data.push_back(wxVariant("--"));
             }
-        }
-        else
-        {
-            data.push_back(wxVariant("--"));
-        }
+            if ((*it).contains("type") && (*it)["type"].is_string())
+            {
+                data.push_back(wxVariant((*it)["type"].get<std::string>()));
+            }
+            else
+            {
+                data.push_back(wxVariant("--"));
+            }
+            if ((*it).contains("stats"))
+            {
+                auto stats = (*it)["stats"];
+                if (stats.contains("downloadCount"))
+                {
+                    data.push_back(wxString::Format("%d", stats["downloadCount"].get<int>()));
+                }
+                else
+                {
+                    data.push_back(wxVariant("--"));
+                }
+            }
+            else
+            {
+                data.push_back(wxVariant("--"));
+            }
 
-        store->AppendItem(data, (wxUIntPtr)_json);
-        this->modelDetailData.emplace_back(_json);
-        data.clear();
-        index++;
+            store->AppendItem(data, (wxUIntPtr)_json);
+            this->modelDetailData.emplace_back(_json);
+            data.clear();
+            index++;
+        }
+        this->m_dataViewListCtrl5->Refresh();
+        this->m_statusBar2->SetStatusText("");
+        if (firstitem != NULL)
+        {
+            this->m_dataViewListCtrl5->SelectRow(0);
+            this->populateVersions(firstitem);
+        }
     }
-    this->m_dataViewListCtrl5->Refresh();
-    this->m_statusBar2->SetStatusText("");
-    if (firstitem != NULL)
+    catch (const std::exception &e)
     {
-        this->m_dataViewListCtrl5->SelectRow(0);
-        this->populateVersions(firstitem);
+        std::cerr << e.what() << '\n';
+        this->m_statusBar2->SetStatusText(_("Error on parsing response!"));
+        return;
     }
 }
 
@@ -952,6 +966,7 @@ void MainWindowCivitAiWindow::civitSearchThread(std::string query)
     }
 
     std::string url = "https://civitai.com/api/v1/models?limit=20&query=" + query;
+    std::cout << "URL: " << url << std::endl;
     std::ostringstream response;
     try
     {
@@ -964,7 +979,9 @@ void MainWindowCivitAiWindow::civitSearchThread(std::string query)
         request.setOpt(new curlpp::options::WriteStream(&response));
         request.setOpt<curlpp::options::Url>(url);
         request.perform();
-        this->SendThreadEvent(wxString::Format("JSON:%s", response.str()));
+        std::string js(response.str());
+        js = "JSON:"+js;
+        this->SendThreadEvent(js);
         return;
     }
 
