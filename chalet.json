@@ -101,7 +101,7 @@
 					"${externalBuild:wxWidgets}/lib/wx/include/gtk3-unicode-static-3.2"
 				],
 				"libDirs[:windows]": [
-					"${externalBuild:wxWidgets}/lib/vc_x64_dll/"
+					"${externalBuild:wxWidgets}/lib/vc_x64_lib/"
 				],
 				"libDirs[:linux]": [
 					"${externalBuild:wxWidgets}/lib",
