@@ -111,7 +111,31 @@
 					"wxmsw32ud"
 				],
 				"staticLinks[:windows+:!debug]": [
-					"wxmsw32u"
+					"wxmsw32u",
+					"comctl32",
+					"kernel32",
+					"user32",
+					"gdi32",
+					"winspool",
+					"comdlg32",
+					"advapi32",
+					"shell32",
+					"ole32",
+					"oleaut32",
+					"uuid",
+					"odbc32",
+					"odbccp32",
+					"wininet",
+					"rpcrt4"					
+				],
+				"staticLinks[:windows]": [
+					"wxzlib",
+					"wxregexu",
+					"wxtiff",
+					"wxscintilla",
+					"wxpng",
+					"wxjpeg",
+					"wxexpat"
 				],
 				"staticLinks[:linux]": [
 					"wx_gtk3u-3.2",
@@ -235,10 +259,11 @@
 				"wxBUILD_SAMPLES=OFF",
 				"wxBUILD_SHARED=OFF",
 				"wxUSE_GUI=ON",
-				"wxBUILD_PRECOMP=ON",
+				"wxBUILD_PRECOMP=OFF",
 				"wxBUILD_MONOLITHIC=ON",
 				"wxBUILD_INSTALL=OFF",
-				"wxUSE_SECRETSTORE=ON"
+				"wxUSE_SECRETSTORE=ON",
+				"wxBUILD_OPTIMISE=ON"
 			]
 		},
 		"sd.cpp.patch.win": {
@@ -437,16 +462,11 @@
 					"WIN32",
 					"_WINDOWS",
 					"wxUSE_RC_MANIFEST=1",
-					"__WXMSW__",
-					"WXUSINGDLL"
+					"__WXMSW__"
 				],
 				"defines[:!windows]": [
 					"__WXGTK__",
 					"_FILE_OFFSET_BITS=64"
-				],
-				"links[:windows]": [
-					"gdi32",
-					"dwmapi"
 				]
 			},
 			"files": [
