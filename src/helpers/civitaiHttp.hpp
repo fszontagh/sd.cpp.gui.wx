@@ -88,4 +88,4 @@ namespace CivitAi
     };
 } // namespace CivitAi
 
-#endif;
+#endif

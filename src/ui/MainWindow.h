@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 4.0.0-0-g0efcecf)
+// C++ code generated with wxFormBuilder (version 4.2.1-0-g80c4cb6)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -45,11 +45,10 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
-
 ///////////////////////////////////////////////////////////////////////////////
-/// Class UI
+/// Class mainUI
 ///////////////////////////////////////////////////////////////////////////////
-class UI : public wxFrame
+class mainUI : public wxFrame
 {
 	private:
 
@@ -227,20 +226,20 @@ class UI : public wxFrame
 		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer891;
 
-		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
+		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
-		~UI();
+		~mainUI();
 
 		void m_splitter2OnIdle( wxIdleEvent& )
 		{
 			m_splitter2->SetSashPosition( -200 );
-			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter2OnIdle ), NULL, this );
+			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
 		}
 
 		void m_splitter3OnIdle( wxIdleEvent& )
 		{
 			m_splitter3->SetSashPosition( -300 );
-			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter3OnIdle ), NULL, this );
+			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 		}
 
 };

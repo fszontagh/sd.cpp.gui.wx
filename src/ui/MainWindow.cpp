@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 4.0.0-0-g0efcecf)
+// C++ code generated with wxFormBuilder (version 4.2.1-0-g80c4cb6)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -46,7 +46,7 @@ delete old;
 static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
 ///////////////////////////////////////////////////////////////////////////
 
-UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxFrame( parent, id, title, pos, size, style, name )
+mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxFrame( parent, id, title, pos, size, style, name )
 {
 	this->SetSizeHints( wxSize( -1,-1 ), wxDefaultSize );
 
@@ -293,7 +293,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	m_staticText233->Wrap( 0 );
 	bSizer92->Add( m_staticText233, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_seed = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("-1"), wxDefaultPosition, wxSize( 100,-1 ), wxSP_ARROW_KEYS, -1, 999999999, -1 );
+	m_seed = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("-1"), wxDefaultPosition, wxSize( 100,-1 ), 0, -1, 999999999, -1 );
 	bSizer92->Add( m_seed, 0, wxALL|wxEXPAND, 5 );
 
 	m_random_seed = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
@@ -466,7 +466,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	m_splitter2 = new wxSplitterWindow( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
 	m_splitter2->SetSashGravity( 1 );
-	m_splitter2->Connect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter2OnIdle ), NULL, this );
+	m_splitter2->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
 	m_splitter2->SetMinimumPaneSize( 200 );
 
 	m_panel14 = new wxPanel( m_splitter2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -476,6 +476,8 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	bSizer79 = new wxBoxSizer( wxVERTICAL );
 
 	m_joblist = new wxDataViewListCtrl( m_panel14, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
+	m_joblist->SetExtraStyle( wxWS_EX_VALIDATE_RECURSIVELY );
+
 	bSizer79->Add( m_joblist, 1, wxEXPAND, 5 );
 
 
@@ -888,7 +890,7 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 
 	m_splitter3 = new wxSplitterWindow( m_models_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
 	m_splitter3->SetSashGravity( 1 );
-	m_splitter3->Connect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter3OnIdle ), NULL, this );
+	m_splitter3->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 	m_splitter3->SetMinimumPaneSize( 200 );
 
 	m_panel16 = new wxPanel( m_splitter3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -990,117 +992,117 @@ UI::UI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& p
 	this->Centre( wxBOTH );
 
 	// Connect Events
-	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
-	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
-	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnAboutButton ), NULL, this );
-	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnCivitAitButton ), NULL, this );
-	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
-	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
-	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
-	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
-	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
-	m_width->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnWHChange ), NULL, this );
-	m_width->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnWHChange ), NULL, this );
-	m_height->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnWHChange ), NULL, this );
-	m_height->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnWHChange ), NULL, this );
-	m_button7->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
-	m_save_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
-	m_load_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );
-	m_preset_list->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSelectPreset ), NULL, this );
-	m_delete_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onDeletePreset ), NULL, this );
-	m_notebook1302->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( UI::m_notebook1302OnNotebookPageChanged ), NULL, this );
-	m_start_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsStart ), NULL, this );
-	m_pause_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsPause ), NULL, this );
-	m_delete_all_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
-	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnJobListItemActivated ), NULL, this );
-	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
-	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
-	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
-	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
-	m_controlnetImageDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
-	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
-	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
-	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_open_image->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
-	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
-	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
-	m_upscaler->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
-	m_upscaler_filepicker->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
-	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
-	m_upscaler_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::OnUpscalerModelSelection ), NULL, this );
-	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
-	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
-	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
-	m_checkbox_filter_embeddings->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
-	m_modellist_filter->Connect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
-	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
-	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnDataModelSelected ), NULL, this );
+	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
+	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
+	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
+	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
+	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
+	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
+	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
+	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
+	m_width->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_width->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_height->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_height->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_button7->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onResolutionSwap ), NULL, this );
+	m_save_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSavePreset ), NULL, this );
+	m_load_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onLoadPreset ), NULL, this );
+	m_preset_list->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSelectPreset ), NULL, this );
+	m_delete_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onDeletePreset ), NULL, this );
+	m_notebook1302->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( mainUI::m_notebook1302OnNotebookPageChanged ), NULL, this );
+	m_start_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsStart ), NULL, this );
+	m_pause_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsPause ), NULL, this );
+	m_delete_all_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsDelete ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( mainUI::OnJobListItemActivated ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
+	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnJobListItemSelection ), NULL, this );
+	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
+	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
+	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );
+	m_controlnetImageDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImageDelete ), NULL, this );
+	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_open_image->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
+	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
+	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteInitialImage ), NULL, this );
+	m_upscaler->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnUpscalerDropFile ), NULL, this );
+	m_upscaler_filepicker->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFilePickerChanged ), NULL, this );
+	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnUpscalerModelSelection ), NULL, this );
+	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
+	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
+	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_checkbox_filter_embeddings->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_modellist_filter->Connect( wxEVT_KEY_UP, wxKeyEventHandler( mainUI::OnModellistFilterKeyUp ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( mainUI::OnDataModelActivated ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
+	m_data_model_list->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnDataModelSelected ), NULL, this );
 }
 
-UI::~UI()
+mainUI::~mainUI()
 {
 	// Disconnect Events
-	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSettings ), NULL, this );
-	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onModelsRefresh ), NULL, this );
-	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnAboutButton ), NULL, this );
-	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnCivitAitButton ), NULL, this );
-	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onModelSelect ), NULL, this );
-	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onTypeSelect ), NULL, this );
-	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onVaeSelect ), NULL, this );
-	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSamplerSelect ), NULL, this );
-	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onRandomGenerateButton ), NULL, this );
-	m_width->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnWHChange ), NULL, this );
-	m_width->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnWHChange ), NULL, this );
-	m_height->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnWHChange ), NULL, this );
-	m_height->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnWHChange ), NULL, this );
-	m_button7->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onResolutionSwap ), NULL, this );
-	m_save_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onSavePreset ), NULL, this );
-	m_load_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onLoadPreset ), NULL, this );
-	m_preset_list->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::onSelectPreset ), NULL, this );
-	m_delete_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onDeletePreset ), NULL, this );
-	m_notebook1302->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( UI::m_notebook1302OnNotebookPageChanged ), NULL, this );
-	m_start_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsStart ), NULL, this );
-	m_pause_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsPause ), NULL, this );
-	m_delete_all_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onJobsDelete ), NULL, this );
-	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnJobListItemActivated ), NULL, this );
-	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnJobListItemSelection ), NULL, this );
-	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::onTxt2ImgFileDrop ), NULL, this );
-	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnControlnetImageOpen ), NULL, this );
-	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImagePreviewButton ), NULL, this );
-	m_controlnetImageDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnControlnetImageDelete ), NULL, this );
-	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
-	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnPromptText ), NULL, this );
-	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( UI::OnNegPromptText ), NULL, this );
-	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::Onimg2imgDropFile ), NULL, this );
-	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_open_image->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFileChanged ), NULL, this );
-	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnImg2ImgPreviewButton ), NULL, this );
-	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteInitialImage ), NULL, this );
-	m_upscaler->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( UI::OnUpscalerDropFile ), NULL, this );
-	m_upscaler_filepicker->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( UI::OnImageOpenFilePickerChanged ), NULL, this );
-	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::OnDeleteUpscaleImage ), NULL, this );
-	m_upscaler_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( UI::OnUpscalerModelSelection ), NULL, this );
-	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( UI::OnUpscalerFactorChange ), NULL, this );
-	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( UI::onGenerate ), NULL, this );
-	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxLoraFilter ), NULL, this );
-	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
-	m_checkbox_filter_embeddings->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( UI::OnCheckboxCheckpointFilter ), NULL, this );
-	m_modellist_filter->Disconnect( wxEVT_KEY_UP, wxKeyEventHandler( UI::OnModellistFilterKeyUp ), NULL, this );
-	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( UI::OnDataModelActivated ), NULL, this );
-	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( UI::onContextMenu ), NULL, this );
-	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( UI::OnDataModelSelected ), NULL, this );
+	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
+	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
+	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
+	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
+	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
+	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
+	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
+	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
+	m_width->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_width->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_height->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_height->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
+	m_button7->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onResolutionSwap ), NULL, this );
+	m_save_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSavePreset ), NULL, this );
+	m_load_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onLoadPreset ), NULL, this );
+	m_preset_list->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSelectPreset ), NULL, this );
+	m_delete_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onDeletePreset ), NULL, this );
+	m_notebook1302->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( mainUI::m_notebook1302OnNotebookPageChanged ), NULL, this );
+	m_start_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsStart ), NULL, this );
+	m_pause_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsPause ), NULL, this );
+	m_delete_all_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsDelete ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( mainUI::OnJobListItemActivated ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
+	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnJobListItemSelection ), NULL, this );
+	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
+	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
+	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );
+	m_controlnetImageDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImageDelete ), NULL, this );
+	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_open_image->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
+	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
+	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteInitialImage ), NULL, this );
+	m_upscaler->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnUpscalerDropFile ), NULL, this );
+	m_upscaler_filepicker->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFilePickerChanged ), NULL, this );
+	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteUpscaleImage ), NULL, this );
+	m_upscaler_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnUpscalerModelSelection ), NULL, this );
+	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
+	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
+	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_checkbox_filter_embeddings->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
+	m_modellist_filter->Disconnect( wxEVT_KEY_UP, wxKeyEventHandler( mainUI::OnModellistFilterKeyUp ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler( mainUI::OnDataModelActivated ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
+	m_data_model_list->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnDataModelSelected ), NULL, this );
 
 }
 
