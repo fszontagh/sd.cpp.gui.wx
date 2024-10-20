@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(StableDiffusionGUI VERSION 0.1.6 LANGUAGES CXX)
+project(StableDiffusionGUI VERSION 0.1.7 LANGUAGES CXX)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -26,13 +26,14 @@ FetchContent_Declare(
     curlpp
     GIT_REPOSITORY https://github.com/jpbarrette/curlpp.git
     GIT_TAG v0.8.1
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(curlpp)
 
 
 if(NOT curlpp_POPULATED)
    FetchContent_Populate(curlpp)
-   add_subdirectory(${curlpp_SOURCE_DIR} ${curlpp_BUILD_DIR})
+   add_subdirectory(${curlpp_SOURCE_DIR} ${curlpp_BUILD_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 message(STATUS "curlpp_SOURCE_DIR: ${curlpp_SOURCE_DIR}")
@@ -47,6 +48,7 @@ ExternalProject_Add(
   CMAKE_ARGS -DEXIV2_BUILD_SAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DEXIV2_BUILD_UNIT_TESTS=OFF -DEXIV2_BUILD_EXIV2_COMMAND=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/exiv2-install
   BUILD_BYPRODUCTS <INSTALL_DIR>/lib/${CMAKE_FIND_LIBRARY_PREFIXES}xmp${CMAKE_STATIC_LIBRARY_SUFFIX} <INSTALL_DIR>/lib/${CMAKE_FIND_LIBRARY_PREFIXES}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
   INSTALL_DIR ${CMAKE_BINARY_DIR}/exiv2-install
+  EXCLUDE_FROM_ALL TRUE
 )
 
 set(EXIV2_INCLUDE_DIR ${CMAKE_BINARY_DIR}/exiv2-install/include)
@@ -82,6 +84,9 @@ set(SOURCES
 
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
+
+
+include(cmake/cpack.cmake)
 
 # Include directories
 target_include_directories(sd_ui PRIVATE 
@@ -131,22 +136,15 @@ endif()
 # Add a target for Git hash script
 if(WIN32)
     add_custom_target(get_git_hash ALL
-        COMMAND ${CMAKE_SOURCE_DIR}/scripts/githash.bat
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+        COMMAND ${CMAKE_SOURCE_DIR}/scripts/githash.bat ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Getting Git hash on Windows"
     )
 else()
     add_custom_target(get_git_hash ALL
-        COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/githash.sh
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
+        COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/githash.sh ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Getting Git hash on non-Windows systems"
     )
 endif()
 
-# VCPKG support (optional, depending on your setup)
-if(DEFINED ENV{VCPKG_ROOT} AND DEFINED ENV{VCPKG_TRIPLET})
-    find_package(vcpkg REQUIRED)
-    target_link_libraries(sd_ui PRIVATE
-        ${vcpkg_LIBRARIES}
-    )
-endif()

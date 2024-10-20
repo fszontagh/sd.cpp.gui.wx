@@ -9,6 +9,7 @@ FetchContent_Declare(
     wxWidgets
     GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
     GIT_TAG v3.2.6
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(wxWidgets)
 
@@ -17,5 +18,5 @@ if(NOT wxwidgets_POPULATED)
 
     # Build wxWidgets with Qt support
     set(wxBUILD_QT ON CACHE BOOL "Enable Qt support" FORCE)
-    add_subdirectory(${wxwidgets_SOURCE_DIR} ${wxwidgets_BUILD_DIR})
+    add_subdirectory(${wxwidgets_SOURCE_DIR} ${wxwidgets_BUILD_DIR} EXCLUDE_FROM_ALL)
 endif()
