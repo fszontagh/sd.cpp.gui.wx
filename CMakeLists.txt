@@ -30,7 +30,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(curlpp)
 
-
+include(cmake/curl.cmake)
 if(NOT curlpp_POPULATED)
    FetchContent_Populate(curlpp)
    add_subdirectory(${curlpp_SOURCE_DIR} ${curlpp_BUILD_DIR} EXCLUDE_FROM_ALL)
@@ -85,6 +85,7 @@ set(SOURCES
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
 
+add_dependencies(sd_ui get_git_hash cpu_features curlpp exiv2)
 
 include(cmake/cpack.cmake)
 
