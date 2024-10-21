@@ -1,15 +1,25 @@
-if (WIN32)
-    ExternalProject_Add(curl
-    GIT_REPOSITORY "https://github.com/curl/curl"
-    GIT_TAG "tags/curl-8_8_0"
-    GIT_CONFIG advice.detachedHead=false
-    PREFIX "${CMAKE_BINARY_DIR}/curl"
-    CMAKE_CACHE_ARGS
-        "-DBUILD_SHARED_LIBS:BOOL=OFF"
-        "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
-    )
+#if (WIN32)
 
-    ExternalProject_Get_Property(curl SOURCE_DIR)
-    set(CURL_INCLUDE_DIR "${SOURCE_DIR}/include")
-    set(CURL_LIBRARY "${SOURCE_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}curl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(BUILD_CURL_EXE OFF)
+set(BUILD_CURL_TESTS OFF)
+set(BUILD_CURL_SHARED OFF)
+set(BUILD_CURL_STATIC ON)
+set(HTTP_ONLY ON)
+
+set(BUILD_LIBCURL_DOCS OFF)
+set(BUILD_MISC_DOCS OFF)
+set(ENABLE_CURL_MANUAL OFF)
+
+
+FetchContent_Declare(
+    libcurl
+    GIT_REPOSITORY https://github.com/curl/curl
+    GIT_TAG curl-8_10_1
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(libcurl)
+
+if(NOT libcurl_POPULATED)
+    FetchContent_Populate(libcurl)
+    add_subdirectory(${cURL_SOURCE_DIR} ${cURL_BUILD_DIR} EXCLUDE_FROM_ALL)
 endif()

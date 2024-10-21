@@ -12,9 +12,9 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "applications")
 # Set OS-specific settings
 if(WIN32)
     set(CPACK_GENERATOR "NSIS")
-    set(CPACK_NSIS_DISPLAY_NAME "StableDiffusionGUI")
-    set(CPACK_NSIS_PACKAGE_NAME "StableDiffusionGUI ${PROJECT_VERSION}")
-    set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/fszontagh/sd.cpp.gui.wx")
+    set(CPACK_NSIS_DISPLAY_NAME ${CMAKE_PROJECT_NAME})
+    set(CPACK_NSIS_PACKAGE_NAME "${CMAKE_PROJECT_NAME} ${PROJECT_VERSION}")
+    set(CPACK_NSIS_URL_INFO_ABOUT ${CMAKE_PROJECT_HOMEPAGE_URL})
     set(CPACK_NSIS_HELP_LINK "https://github.com/fszontagh/sd.cpp.gui.wx")
     set(CPACK_NSIS_MODIFY_PATH ON)
     set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/cube.ico")
@@ -32,22 +32,16 @@ elseif(UNIX AND NOT APPLE)
     # DEB package settings
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libcurl3-gnutls | libcurl3-nss | libcurl4 | libcurl3, libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6")
-    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "StableDiffusion GUI for Windows, Linux and MacOS")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
     set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
     set(CPACK_DEBIAN_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 
     
-    set(version "1.0.0")
-    set(mainExecutable "/usr/bin/sd_ui")
-    set(path "/usr/bin")
-    set(name "StableDiffusionGUI")
-    set(icon "stablediffusiongui")
-    
     # Generate the .desktop file by replacing placeholders
     configure_file(${CMAKE_SOURCE_DIR}/platform/linux/app.desktop ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop @ONLY)
     install(FILES ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop DESTINATION share/applications COMPONENT applications)
-    install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/cube_256.png DESTINATION share/icons/hicolor/256x256/apps COMPONENT applications)    
+    install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION share/icons/hicolor/256x256/apps COMPONENT applications)    
 
 
 

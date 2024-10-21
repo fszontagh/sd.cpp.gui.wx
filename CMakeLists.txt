@@ -1,5 +1,10 @@
-cmake_minimum_required(VERSION 3.15)
-project(StableDiffusionGUI VERSION 0.1.7 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.26)
+project(StableDiffusionGUI 
+VERSION 0.1.7 
+LANGUAGES CXX
+DESCRIPTION "Stable Diffusion C++ Desktop Gui"
+HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
+)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -21,24 +26,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cpu_features)
 
-set(CURLPP_BUILD_SHARED_LIBS OFF)
-FetchContent_Declare(
-    curlpp
-    GIT_REPOSITORY https://github.com/jpbarrette/curlpp.git
-    GIT_TAG v0.8.1
-    EXCLUDE_FROM_ALL
-)
-FetchContent_MakeAvailable(curlpp)
 
 include(cmake/curl.cmake)
-if(NOT curlpp_POPULATED)
-   FetchContent_Populate(curlpp)
-   add_subdirectory(${curlpp_SOURCE_DIR} ${curlpp_BUILD_DIR} EXCLUDE_FROM_ALL)
-endif()
 
-message(STATUS "curlpp_SOURCE_DIR: ${curlpp_SOURCE_DIR}")
 # wxWidgets dependency
-
 include(cmake/wxWidgets.cmake)
 
 ExternalProject_Add(
@@ -59,6 +50,15 @@ set(XMP_LIBRARY ${CMAKE_BINARY_DIR}/exiv2-install/lib/${CMAKE_FIND_LIBRARY_PREFI
 message("EXIV2_INCLUDE_DIR: ${EXIV2_INCLUDE_DIR}")
 message("EXIV2_LIBRARY: ${EXIV2_LIBRARY}")
 message("XMP_LIBRARY: ${XMP_LIBRARY}")
+
+execute_process(
+    COMMAND git log -1 --format=%h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    OUTPUT_VARIABLE GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+message("Git hash: ${GIT_HASH}")
+
 
 configure_package_config_file(src/ver.hpp.in ver.hpp
     INSTALL_DESTINATION build/install
@@ -85,7 +85,7 @@ set(SOURCES
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
 
-add_dependencies(sd_ui get_git_hash cpu_features curlpp exiv2)
+add_dependencies(sd_ui get_git_hash cpu_features libcurl exiv2)
 
 include(cmake/cpack.cmake)
 
@@ -95,15 +95,14 @@ target_include_directories(sd_ui PRIVATE
     ${stable_diffusion_SOURCE_DIR}
     ${cpu_features_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
-    ${curlpp_SOURCE_DIR}/include
+    ${libcurl_SOURCE_DIR}/include
 )
 
 # Linking libraries
 target_link_libraries(sd_ui PRIVATE
     cpu_features
     wx::base wx::core wx::xrc wx::aui
-    curlpp_static
-    OpenSSL::Crypto
+    OpenSSL::Crypto libcurl
     ${EXIV2_LIBRARY} ${XMP_LIBRARY}
 )
 

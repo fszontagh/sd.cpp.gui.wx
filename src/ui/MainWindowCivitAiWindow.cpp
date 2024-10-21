@@ -155,8 +155,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
     if (token == "JSON") {
         this->m_statusBar2->SetStatusText(_("Loading response, please wait..."));
         this->current_json_text = content;
-        std::cout << "Content: " << std::endl
-                  << content << std::endl;
         this->JsonToTable(content);
     }
     if (token == "IMGDONE") {
@@ -252,6 +250,16 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
 
             CivitAi::DownloadItem* itemData = reinterpret_cast<CivitAi::DownloadItem*>(this->m_downloads->GetItemData(item));
             if (itemData->local_file == payload->local_file) {
+                if (payload->downloadedSize == 0 || payload->targetSize == 0) {
+                    store->SetValueByRow(0, _i, progressCol); // progress 
+                    store->SetValueByRow(CivitAi::DownloadItemStateNames[payload->state], _i, progressCol - 1); // state
+                    store->SetValueByRow("", _i, progressCol - 2);  // size
+                    store->RowValueChanged(_i, progressCol - 2);
+                    store->RowValueChanged(_i, progressCol - 1);
+                    store->RowValueChanged(_i, progressCol);
+                    this->m_downloads->Refresh();
+                    break;
+                }
                 int current_progress = static_cast<int>((payload->downloadedSize * 100) / payload->targetSize);
                 wxString size;
                 auto target_s  = sd_gui_utils::humanReadableFileSize(payload->targetSize);
@@ -459,132 +467,101 @@ void MainWindowCivitAiWindow::populateVersions(nlohmann::json js) {
         this->m_model_description->SetPage("");
     }
 }
-
 void MainWindowCivitAiWindow::imgDownloadThread(CivitAi::PreviewImage* previewImage, int versionId) {
-    // get apikey from store, if available
+    // Get API key from store, if available
     wxString username = "civitai_api_key";
     wxSecretValue password;
     wxString apikey;
-
     wxSecretStore store = wxSecretStore::GetDefault();
 
     if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
         apikey = password.GetAsString();
     }
 
-    // get http
-    std::list<std::string> headers;
+    // Set up headers
+    std::vector<std::string> headers;
     headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
 
     if (!apikey.empty()) {
         headers.push_back("Authorization: Bearer " + apikey.ToStdString());
     }
 
-    std::ostringstream response(std::stringstream::binary);
     try {
-        curlpp::Cleanup myCleanup;
+        sd_gui_utils::SimpleCurl curl;
 
-        // Our request to be sent.
-        curlpp::Easy request;
-        // request.setOpt(new curlpp::options::HttpHeader(headers));
-        request.setOpt(new curlpp::options::WriteStream(&response));
-        request.setOpt<curlpp::options::Url>(previewImage->url);
-        request.perform();
+        // Set callback to write data to file
         std::string target_path = std::filesystem::path(previewImage->localpath).replace_extension("tmp").generic_string();
-        std::ofstream file(target_path, std::ios::binary);
-        file << response.str();
-        file.close();
 
+        curl.getFile(previewImage->url, headers, target_path);
+
+        // Process downloaded image
         wxImage _tmpImg;
         _tmpImg.SetLoadFlags(_tmpImg.GetLoadFlags() & ~wxImage::Load_Verbose);
 
         if (_tmpImg.LoadFile(target_path)) {
+            std::string new_path;
             if (_tmpImg.GetType() == wxBITMAP_TYPE_JPEG) {
-                std::string new_path = std::filesystem::path(target_path).replace_extension(".jpg").generic_string();
-                std::filesystem::rename(target_path, new_path);
-                previewImage->localpath = new_path;
+                new_path = std::filesystem::path(target_path).replace_extension(".jpg").generic_string();
+            } else if (_tmpImg.GetType() == wxBITMAP_TYPE_PNG) {
+                new_path = std::filesystem::path(target_path).replace_extension(".png").generic_string();
             }
-            if (_tmpImg.GetType() == wxBITMAP_TYPE_PNG) {
-                std::string new_path = std::filesystem::path(target_path).replace_extension(".png").generic_string();
+
+            if (!new_path.empty()) {
                 std::filesystem::rename(target_path, new_path);
-                previewImage->localpath = new_path;
+                previewImage->localpath  = new_path;
+                previewImage->downloaded = true;
+                wxSleep(2);
+                this->SendThreadEvent("IMGDONE", versionId, previewImage);
             }
-            previewImage->downloaded = true;
-            wxSleep(2);
-            this->SendThreadEvent("IMGDONE", versionId, previewImage);
         }
         _tmpImg.Destroy();
-    }
-
-    catch (curlpp::RuntimeError& e) {
-        std::cout << e.what() << std::endl;
-        // MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
-    }
-
-    catch (curlpp::LogicError& f) {
-        std::cout << f.what() << std::endl;
-        // MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
 }
 
 void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
-    // get apikey from store, if available
+    // Get API key from store, if available
     wxString username = "civitai_api_key";
     wxSecretValue password;
     wxString apikey;
-
     wxSecretStore store = wxSecretStore::GetDefault();
 
     if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
         apikey = password.GetAsString();
     }
 
-    // get http
-    std::list<std::string> headers;
+    // Set up headers
+    std::vector<std::string> headers;
     headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
 
     if (!apikey.empty()) {
         headers.push_back("Authorization: Bearer " + apikey.ToStdString());
     }
 
+    // Set up paths
     std::string target_path = std::filesystem::path(item->tmp_name).generic_string();
     item->tmp_name          = target_path;
     item->local_file        = std::filesystem::path(item->local_file).generic_string();
-    item->file              = new std::ofstream(target_path, std::ios::binary);
 
-    std::ostringstream response(std::stringstream::binary);
     try {
-        curlpp::Cleanup myCleanup;
-        curlpp::Easy request;
+        sd_gui_utils::SimpleCurl curl;
 
-        request.setOpt(new curlpp::options::WriteStream(&response));
-        request.setOpt(new curlpp::options::FollowLocation(true));
+        curl.getFile(item->url, headers, target_path, [this, &item](curl_off_t bytes, curl_off_t total) {
+            item->targetSize = total;
+            item->downloadedSize = bytes;
+            this->SendThreadEvent("DOWNLOAD_PROGRESS", item);
+        });
 
-        curlpp::options::WriteFunctionCurlFunction myFunction(&MainWindowCivitAiWindow::curlCppWriteDataToFile);
-        curlpp::OptionTrait<void*, CURLOPT_WRITEDATA> myData(item);
-        request.setOpt(myFunction);
-        request.setOpt(myData);
-
-        request.setOpt<curlpp::options::Url>(item->url);
-        request.perform();
-        item->file->close();
+        // Rename file after download
         std::filesystem::rename(target_path, item->local_file);
         this->SendThreadEvent("DOWNLOAD_FINISH", item);
-    }
 
-    catch (curlpp::RuntimeError& e) {
-        std::cout << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
         item->error = e.what();
         this->SendThreadEvent("DOWNLOAD_ERROR", item);
-    } catch (curlpp::LogicError& f) {
-        std::cout << f.what() << std::endl;
-        item->error = f.what();
-        this->SendThreadEvent("DOWNLOAD_ERROR", item);
     }
-    if (item->file->is_open()) {
-        item->file->close();
-    }
-    delete item->file;
 }
 
 bool MainWindowCivitAiWindow::CheckIfModelDownloaded(nlohmann::json item) {
@@ -761,58 +738,44 @@ MainWindowCivitAiWindow::~MainWindowCivitAiWindow() {
     this->downloads.clear();
 }
 
-void MainWindowCivitAiWindow::civitSearchThread(std::string query) {
-    // get apikey from store, if available
+void MainWindowCivitAiWindow::civitSearchThread(const std::string& query) {
+    // Get API key from store, if available
     wxString username = "civitai_api_key";
     wxSecretValue password;
     wxString apikey;
-
     wxSecretStore store = wxSecretStore::GetDefault();
 
     if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
         apikey = password.GetAsString();
     }
 
-    // get http
-    std::list<std::string> headers;
-    headers.push_back("Content-Type: application/json;");
-    headers.push_back("User-Agent: " + std::string(SD_CURL_USER_AGENT));
+    // Set up headers
+    std::vector<std::string> headers = {
+        "Content-Type: application/json;",
+        "User-Agent: " + std::string(SD_CURL_USER_AGENT)};
 
     if (!apikey.empty()) {
         headers.push_back("Authorization: Bearer " + apikey.ToStdString());
     }
 
     std::string url = "https://civitai.com/api/v1/models?limit=20&query=" + query;
-    std::cout << "URL: " << url << std::endl;
-    std::ostringstream response;
+
     try {
-        // That's all that is needed to do cleanup of used resources (RAII style).
-        curlpp::Cleanup myCleanup;
+        // Use the CurlCppWrapper for easier HTTP management
+        sd_gui_utils::SimpleCurl curl;
 
-        // Our request to be sent.
-        curlpp::Easy request;
-        request.setOpt(new curlpp::options::HttpHeader(headers));
-        request.setOpt(new curlpp::options::WriteStream(&response));
-        request.setOpt<curlpp::options::Url>(url);
-        request.perform();
-        std::string js(response.str());
-        js = "JSON:" + js;
-        this->SendThreadEvent(js);
-        return;
-    }
+        std::string response;
 
-    catch (curlpp::RuntimeError& e) {
+        curl.get(url, headers, response);
+
+        // Process the JSON response
+        std::string jsonResponse = "JSON:" + response;
+        this->SendThreadEvent(jsonResponse);
+
+    } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         this->SendThreadEvent(wxString::Format("ERROR:%s", e.what()));
-        return;
     }
-
-    catch (curlpp::LogicError& e2) {
-        std::cerr << e2.what() << std::endl;
-        this->SendThreadEvent(wxString::Format("ERROR:%s", e2.what()));
-        return;
-    }
-    // get http
 }
 
 void MainWindowCivitAiWindow::SetModelManager(ModelInfo::Manager* manager) {

@@ -129,7 +129,7 @@ namespace QM {
     }
 
     struct QueueItem {
-        int id = 0, created_at = 0, updated_at = 0, finished_at = 0;
+        int id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
         sd_gui_utils::SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         std::vector<QM::QueueItemImage*> images;
@@ -145,7 +145,7 @@ namespace QM {
 
         QueueItem() = default;
         QueueItem(const QueueItem& other)
-            : id(other.id), created_at(other.created_at), updated_at(other.updated_at), finished_at(other.finished_at), params(other.params), status(other.status), images(other.images), step(other.step), steps(other.steps), hash_fullsize(other.hash_fullsize), hash_progress_size(other.hash_progress_size), time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message), upscale_factor(other.upscale_factor), sha256(other.sha256) {}
+            : id(other.id), created_at(other.created_at), updated_at(other.updated_at), finished_at(other.finished_at), started_at(other.started_at), params(other.params), status(other.status), images(other.images), step(other.step), steps(other.steps), hash_fullsize(other.hash_fullsize), hash_progress_size(other.hash_progress_size), time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message), upscale_factor(other.upscale_factor), sha256(other.sha256) {}
 
         ~QueueItem() {}
 
@@ -155,6 +155,7 @@ namespace QM {
                 created_at         = other.created_at;
                 updated_at         = other.updated_at;
                 finished_at        = other.finished_at;
+                started_at         = other.started_at;
                 images             = other.images;
                 params             = other.params;
                 status             = other.status;
@@ -185,6 +186,7 @@ namespace QM {
             {"created_at", p.created_at},
             {"updated_at", p.updated_at},
             {"finished_at", p.finished_at},
+            {"started_at", p.started_at},
             {"status", (int)p.status},
             {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
@@ -200,6 +202,9 @@ namespace QM {
         j.at("id").get_to(p.id);
         j.at("created_at").get_to(p.created_at);
         j.at("updated_at").get_to(p.updated_at);
+        if (j.contains("started_at")) {
+            j.at("started_at").get_to(p.started_at);
+        }
         if (j.contains("upscale_factor")) {
             j.at("upscale_factor").get_to(p.upscale_factor);
         }

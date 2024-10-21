@@ -33,7 +33,7 @@ Version: ${SD_VERSION}
 Maintainer: Ferenc Szontagh <szf@fsociety.hu>
 Architecture: amd64
 Description: ${SD_DESCRIPTION}
-Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libexiv2-27, libcurl4, libcurlpp0, libgtk-3-0
+Depends: libsdcpp-avx | libsdcpp-avx2 | libsdcpp-avx512 | libsdcpp-cuda | libsdcpp-rocm, libexiv2-27, libcurl4, libgtk-3-0
 EOF
 
 cat << EOF > ${PACKPATH}/usr/share/applications/sd.ui.desktop

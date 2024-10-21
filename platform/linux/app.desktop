@@ -2,8 +2,8 @@
 Version=@PROJECT_VERSION@
 Categories=Application;
 Terminal=false
-Exec=${mainExecutable}
-Path=${path}
+Exec=/usr/sbin/sd_ui
+Path=~
 Name=@PROJECT_NAME@
-Comment=
-Icon=${icon}
+Comment=@PROJECT_DESCRIPTION@
+Icon=stablediffusiongui
