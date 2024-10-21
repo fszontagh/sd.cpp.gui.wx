@@ -4,8 +4,9 @@ set(CPACK_PACKAGE_NAME "StableDiffusionGUI")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_CONTACT "Ferenc Szonta'gh <szf@fsociety.hu>")
 
-set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN FALSE)
+set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN TRUE)
 set(CPACK_COMPONENT_UNSPECIFIED_REQUIRED FALSE)
+
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "applications")
 
@@ -23,13 +24,14 @@ if(WIN32)
     
 elseif(UNIX AND NOT APPLE)
     # Linux - AppImage and DEB packages
-    set(CPACK_GENERATOR "DEB;7Z")
+    set(CPACK_GENERATOR "DEB")
     
     # AppImage settings
     set(CPACK_APPIMAGE_FILE_NAME "StableDiffusionGUI-${PROJECT_VERSION}-${CMAKE_SYSTEM_PROCESSOR}.AppImage")
     set(CPACK_APPIMAGE_UPDATE_INFORMATION "gh-releases-zsync|fszontagh|StableDiffusionGUI|latest|StableDiffusionGUI-${PROJECT_VERSION}-${CMAKE_SYSTEM_PROCESSOR}.AppImage.zsync")
 
     # DEB package settings
+    set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libcurl3-gnutls | libcurl3-nss | libcurl4 | libcurl3, libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
@@ -71,7 +73,7 @@ if (SDCPP_ROCM_LIBRARY)
 endif()
 
 #get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
-#list(REMOVE_ITEM CPACK_COMPONENTS_ALL "")
+list(REMOVE_ITEM CPACK_COMPONENTS_ALL "Unspecified")
 set(CPACK_COMPONENTS_ALL applications)
 message("CPACK_COMPONENTS_ALL: ${CPACK_COMPONENTS_ALL}")
 
@@ -85,6 +87,8 @@ set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
+get_cmake_property(LIST_OF_COMPONENTS COMPONENTS)
+message("DEBUG: Component List: ${LIST_OF_COMPONENTS}")
 
 
 include(CPack)
