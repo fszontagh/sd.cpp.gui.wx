@@ -64,8 +64,12 @@ configure_package_config_file(src/ver.hpp.in ver.hpp
     INSTALL_DESTINATION build/install
 )
 
-set(OPENSSL_USE_STATIC_LIBS TRUE)
-find_package(OpenSSL REQUIRED)
+if (NOT MSVC AND NOT APPLE)
+    set(OPENSSL_USE_STATIC_LIBS TRUE)
+    find_package(OpenSSL REQUIRED)
+else()
+    include(cmake/openssl.cmake)
+endif()
 
 # Source files
 set(SOURCES

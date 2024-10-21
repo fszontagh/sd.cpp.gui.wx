@@ -1,9 +1,11 @@
 [Desktop Entry]
-Version=@PROJECT_VERSION@
-Categories=Application;
+Version=1.0
+Categories=Graphics
+StartupNotify=true
 Terminal=false
-Exec=/usr/sbin/sd_ui
-Path=~
+Type=Application
+Exec=sd_ui
 Name=@PROJECT_NAME@
+GenericName=Stale Diffusion
 Comment=@PROJECT_DESCRIPTION@
 Icon=stablediffusiongui
