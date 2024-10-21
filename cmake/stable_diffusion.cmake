@@ -5,15 +5,6 @@ set(SD_BUILD_EXAMPLES OFF)
 set(SD_BUILD_SHARED_LIBS ON)
 
 set(stable_diffusion_install_dir ${CMAKE_BINARY_DIR}/stable_diffusion_cpp)
-#set(stable_diffurions_library ${CMAKE_BINARY_DIR}/exiv2-install/lib/${CMAKE_SHARED_LIBRARY_PREFIX}exiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
-
-set(PATCH_COMMAND "")
-
-if (WIN32)
-    set(PATCH_COMMAND ${CMAKE_SOURCE_DIR}/patches/apply.bat)
-else()
-    set(PATCH_COMMAND ${CMAKE_SOURCE_DIR}/patches/apply.sh)
-endif()
 
 set(SD_GIT_TAG "tags/master-e410aeb")
 
@@ -30,7 +21,6 @@ if (SD_AVX)
     INSTALL_COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_avx/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${SDCPP_AVX_LIBRARY}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx
     BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_avx
-    PATCH_COMMAND ${CMAKE_COMMAND} -E env bash ${PATCH_COMMAND} "${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx"
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/sdcpp_avx/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX}
     INSTALL_BYPRODUCTS ${SDCPP_AVX_LIBRARY}
     )
@@ -52,7 +42,6 @@ if (SD_AVX2)
     INSTALL_COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_avx2/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${SDCPP_AVX2_LIBRARY}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx2
     BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_avx2
-    PATCH_COMMAND ${CMAKE_COMMAND} -E env bash ${PATCH_COMMAND} "${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx2"
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/sdcpp_avx2/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX}
     INSTALL_BYPRODUCTS ${SDCPP_AVX2_LIBRARY}
     )   
@@ -73,7 +62,6 @@ if (SD_AVX512)
     INSTALL_COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_avx512/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${SDCPP_AVX512_LIBRARY}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx512
     BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_avx512
-    PATCH_COMMAND ${CMAKE_COMMAND} -E env bash ${PATCH_COMMAND} "${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_avx512"
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/sdcpp_avx512/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX}
     INSTALL_BYPRODUCTS ${SDCPP_AVX512_LIBRARY}
     )
@@ -97,7 +85,6 @@ if (SD_CUBLAS)
     INSTALL_COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_cuda/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${SDCPP_CUDA_LIBRARY}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_cuda
     BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_cuda
-    PATCH_COMMAND ${CMAKE_COMMAND} -E env bash ${PATCH_COMMAND} "${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_cuda"
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/sdcpp_cuda/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX}
     INSTALL_BYPRODUCTS ${SDCPP_CUDA_LIBRARY}
     )
@@ -118,7 +105,6 @@ if (SD_HIPBLAS)
     INSTALL_COMMAND ${CMAKE_COMMAND} ARGS -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_rocm/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${SDCPP_ROCM_LIBRARY}
     SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_rocm
     BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_rocm
-    PATCH_COMMAND ${CMAKE_COMMAND} -E env bash ${PATCH_COMMAND} "${CMAKE_BINARY_DIR}/_deps/stable_diffusion_cpp_rocm"
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/sdcpp_rocm/bin/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX}
     INSTALL_BYPRODUCTS ${SDCPP_ROCM_LIBRARY}
     )
