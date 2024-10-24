@@ -31,7 +31,7 @@ _Use only at your own risk!_
 These releases just previews, so crashes may occur. For bugreport, please use [github Issuses](https://github.com/fszontagh/sd.cpp.gui.wx/issues).
 
 ### Starting with selected backend
-To select a backend on startup, add the following parameter:
+To select a backend on startup, add one from the following parameters:
  - -cuda
  - -avx
  - -avx2
@@ -48,10 +48,11 @@ To select a backend on startup, add the following parameter:
 - latest [cmake](https://cmake.org/) (```winget install -e --id Kitware.CMake```)
 - a compatible compiler (Visual Studio Community 17 2022) (```winget install --id=Microsoft.VisualStudio.2022.Community  -e```)
 - a git client (```winget install -e --id Git.Git```)
+- Optional NSIS for creating windows installer (```winget install -e --id NSIS.NSIS```)
 
-#### Compile on Windows
+#### Compile on Windows - pre-requirements
 
- Open developer terminal, then run:
+ Open a developer terminal, then run:
  ```
  git clone https://github.com/fszontagh/sd.cpp.gui.wx.git
  mkdir build
@@ -61,45 +62,6 @@ Run conan to gather dependencies:
 ```
 conan install ..
 ```
-Configure the project: 
-```
-cmake .. 
-```
-If you configure without any parameter, the sd.cpp libs will not be compiled. You need to specify the correct backend to compile. For CPU only, please checkout whitch cpu features are available on your platform. 
-For AVX only: 
-```
-cmake .. -DSD_AVX=ON
-```
-
-For AVX2 only:
-```
-cmake .. -DSD_AVX2=ON
-```
-
-For AVX512
-```
-cmake .. -DSD_AVX512=ON
-```
-
-For CUDA only:
-```
-cmake .. -DSD_CUDA=ON
-```
-For VULCAN only:
-```
-cmake .. -DSD_VULKAN=ON
-```
-For ROCM only:
-```
-cmake .. -DROCM=ON
-```
-It is possible to combine all parameters 
-
-```
-cmake .. -DSD_CUDA=ON -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
-```
-
-Of course, for VGA backends, need to be install the required tools. 
 
 #### Requirements - Linux
 - build tools
@@ -149,5 +111,53 @@ Of course, for VGA backends, need to be install the required tools.
   apt install libcurl4-openssl-dev
   ```
 
+#### Configure the project: 
+Run in the build folder:
+```
+cmake .. 
+```
+If you configure without any parameter, the sd.cpp libs will not be compiled. You need to specify the correct backend to compile. For CPU only, please checkout whitch cpu features are available on your platform. 
+For AVX only: 
+```
+cmake .. -DSD_AVX=ON
+```
 
+For AVX2 only:
+```
+cmake .. -DSD_AVX2=ON
+```
 
+For AVX512
+```
+cmake .. -DSD_AVX512=ON
+```
+
+For CUDA only:
+```
+cmake .. -DSD_CUBLAS=ON
+```
+For VULCAN only:
+```
+cmake .. -DSD_VULKAN=ON
+```
+For ROCM only:
+```
+cmake .. -DSD_ROCM=ON
+```
+It is possible to combine more parameters 
+
+```
+cmake .. -DSD_CUBLAS=ON -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=OFF
+```
+
+Of course, for VGA backends, need to be install the required tools. 
+
+To compile, run:
+```
+cmake --build . --config Release
+```
+
+To create package:
+```
+cmake --build . --config Release --target package
+```
