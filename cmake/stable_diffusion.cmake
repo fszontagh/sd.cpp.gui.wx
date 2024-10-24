@@ -73,7 +73,7 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
 
     
 install(FILES ${CMAKE_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX} DESTINATION lib COMPONENT "SD.CPP - ${variant_name}")
-list(APPEND CPACK_COMPONENTS_ALL "SD.CPP - ${variant_name}")
+
 
 endmacro()
 

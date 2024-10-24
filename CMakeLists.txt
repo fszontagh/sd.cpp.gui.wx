@@ -70,7 +70,7 @@ set(SOURCES
 
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
-include(cmake/stable_diffusion.cmake)
+
 
 if (WIN32)
     add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2::exiv2)
@@ -78,7 +78,9 @@ else()
     add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 endif()
 
+include(cmake/stable_diffusion.cmake)
 include(cmake/cpack.cmake)
+
 
 # Include directories
 target_include_directories(sd_ui PRIVATE 
