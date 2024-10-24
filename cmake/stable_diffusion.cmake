@@ -42,7 +42,7 @@ endif(SD_VULKAN)
 # Helper macro to build stable diffusion with different settings
 macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag rocm_flag vulkan_flag)
 
-message(STATUS "Building sd.cpp variant: ${variant_name}")
+
     # Set flags for the variant
     set(SD_AVX "${avx_flag}")
     set(SD_AVX2 "${avx2_flag}")
@@ -57,7 +57,8 @@ message(STATUS "Building sd.cpp variant: ${variant_name}")
         set(EPREFIX "${CMAKE_BUILD_TYPE}/")
     endif()    
 
-    message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUBLAS} ${SD_ROCM} ${SD_VULKAN}")
+    message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUBLAS} ${SD_ROCM} ${SD_VULKAN} EPREFIX: ${EPREFIX}")
+    
    
 
     ExternalProject_Add(
@@ -72,7 +73,7 @@ message(STATUS "Building sd.cpp variant: ${variant_name}")
 
     
 install(FILES ${CMAKE_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX} DESTINATION lib COMPONENT "SD.CPP - ${variant_name}")
-
+list(APPEND CPACK_COMPONENTS_ALL "SD.CPP - ${variant_name}")
 
 endmacro()
 
