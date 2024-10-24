@@ -34,8 +34,8 @@
 #include <wx/statbmp.h>
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
-#include <wx/srchctrl.h>
 #include <wx/html/htmlwin.h>
+#include <wx/srchctrl.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
@@ -216,6 +216,7 @@ class mainUI : public wxFrame
 		virtual void OnDeleteUpscaleImage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerModelSelection( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
+		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
@@ -225,6 +226,7 @@ class mainUI : public wxFrame
 
 	public:
 		wxBoxSizer* bSizer8911;
+		wxHtmlWindow* m_upscalerHelp;
 		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer891;
 

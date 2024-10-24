@@ -821,13 +821,22 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText67->Wrap( -1 );
 	bSizer73->Add( m_staticText67, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 4, 4 );
-	m_upscaler_factor->Enable( false );
-
+	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, 1, 4, 4 );
 	bSizer73->Add( m_upscaler_factor, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer69->Add( bSizer73, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer951;
+	bSizer951 = new wxBoxSizer( wxVERTICAL );
+
+	m_upscalerHelp = new wxHtmlWindow( m_upscaler, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_AUTO );
+	m_upscalerHelp->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+
+	bSizer951->Add( m_upscalerHelp, 1, wxALL|wxEXPAND, 5 );
+
+
+	bSizer69->Add( bSizer951, 1, wxEXPAND, 5 );
 
 
 	bSizer999->Add( bSizer69, 1, wxEXPAND, 5 );
@@ -1055,6 +1064,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_delete_upscale_image->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteUpscaleImage ), NULL, this );
 	m_upscaler_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnUpscalerModelSelection ), NULL, this );
 	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
+	m_upscalerHelp->Connect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
@@ -1114,6 +1124,7 @@ mainUI::~mainUI()
 	m_delete_upscale_image->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteUpscaleImage ), NULL, this );
 	m_upscaler_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnUpscalerModelSelection ), NULL, this );
 	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
+	m_upscalerHelp->Disconnect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );

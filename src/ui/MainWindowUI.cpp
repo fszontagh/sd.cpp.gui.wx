@@ -49,8 +49,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent)
 
     wxPersistentRegisterAndRestore(this, this->GetName());
 
-    this->qmanager =
-        new QM::QueueManager(this->GetEventHandler(), this->cfg->jobs);
+    this->qmanager     = new QM::QueueManager(this->GetEventHandler(), this->cfg->jobs);
     this->ModelManager = new ModelInfo::Manager(this->cfg->datapath);
 
     // load
@@ -69,6 +68,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent)
     // wxPersistenceManager::Get().RegisterAndRestore(this->m_data_model_list);
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
+
+    this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 }
 
 void MainWindowUI::onSettings(wxCommandEvent& event) {
@@ -186,20 +187,20 @@ void MainWindowUI::OnWHChange(wxSpinEvent& event) {
     int w = this->m_width->GetValue();
     int h = this->m_height->GetValue();
 
-    if (!(w % 256 == 0) || !(h % 256 == 0)) {
-        this->m_generate2->Enable(false);
-        // wxSpinCtrl *ctrl = static_cast<wxSpinCtrl *>(event.GetEventObject());
-        //  ctrl->SetBackgroundColour(wxColour(255, 0, 0));
-        wxMessageDialog(this, _("The resolution should be divisible by 256"))
-            .ShowModal();
-        this->m_width->SetValue(this->init_width);
-        this->m_height->SetValue(this->init_height);
-        return;
-    } else {
-        if (this->m_model->GetCurrentSelection() > 0) {
-            this->m_generate2->Enable(true);
-        }
+    // if (!(w % 256 == 0) || !(h % 256 == 0)) {
+    //     this->m_generate2->Enable(false);
+    // wxSpinCtrl *ctrl = static_cast<wxSpinCtrl *>(event.GetEventObject());
+    //  ctrl->SetBackgroundColour(wxColour(255, 0, 0));
+    //     wxMessageDialog(this, _("The resolution should be divisible by 256"))
+    //         .ShowModal();
+    //     this->m_width->SetValue(this->init_width);
+    //     this->m_height->SetValue(this->init_height);
+    //     return;
+    // } else {
+    if (this->m_model->GetCurrentSelection() > 0) {
+        this->m_generate2->Enable(true);
     }
+    //}
 
     this->init_width  = w;
     this->init_height = h;
@@ -530,10 +531,8 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
                 if (it->key() == "Exif.Photo.UserComment") {
                     usercomment = it->getValue()->toString();
                     if (!usercomment.empty()) {
-                        std::map<std::string, std::string> getParams =
-                            sd_gui_utils::parseExifPrompts(usercomment);
-                        this->imageCommentToGuiParams(getParams,
-                                                      sd_gui_utils::SDMode::TXT2IMG);
+                        std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
+                        this->imageCommentToGuiParams(getParams, sd_gui_utils::SDMode::TXT2IMG);
                         break;
                     }
                 }
@@ -1997,7 +1996,7 @@ void MainWindowUI::imageCommentToGuiParams(
     bool modelFound = false;
     for (auto item : params) {
         // sampler
-        if (item.first == "sampler") {
+        if (item.first == "sampler" || item.first == "Sampler") {
             /// we default sampler is euler_a :)
             /// in automatic, the default is unipc, we dont have it
             if (item.second == "Default") {
@@ -2013,13 +2012,28 @@ void MainWindowUI::imageCommentToGuiParams(
                 index++;
             }
         }
+
+        if (item.first == "scheduler" || item.first == "Scheduler") {
+            if (item.second == "Default") {
+                this->m_scheduler->Select(0);
+                continue;
+            }
+            unsigned int index = 0;
+            for (auto scheduler : sd_gui_utils::sd_scheduler_gui_names) {
+                if (scheduler.second == item.second) {
+                    this->m_scheduler->Select(index);
+                    break;
+                }
+                index++;
+            }
+        }
         // the seed
-        if (item.first == "seed") {
+        if (item.first == "seed" || item.first == "Seed") {
             if (this->m_seed->GetMax() >= std::atoi(item.second.c_str())) {
                 this->m_seed->SetValue(std::atoi(item.second.c_str()));
             }
         }
-        if (item.first == "size") {
+        if (item.first == "size" || item.first == "Size") {
             size_t pos = item.second.find("x");
             std::string w, h;
             w = item.second.substr(0, pos);
@@ -2133,10 +2147,8 @@ void MainWindowUI::onimg2ImgImageOpen(std::string file) {
                     if (it->key() == "Exif.Photo.UserComment") {
                         usercomment = it->getValue()->toString();
                         if (!usercomment.empty()) {
-                            std::map<std::string, std::string> getParams =
-                                sd_gui_utils::parseExifPrompts(usercomment);
-                            this->imageCommentToGuiParams(getParams,
-                                                          sd_gui_utils::SDMode::IMG2IMG);
+                            std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
+                            this->imageCommentToGuiParams(getParams, sd_gui_utils::SDMode::IMG2IMG);
                             break;
                         }
                     }
@@ -3072,8 +3084,7 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
         }
         // add generation parameters into the image meta
         if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
-            std::string comment = this->paramsToImageComment(
-                *itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path));
+            std::string comment = this->paramsToImageComment(*itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path));
 
             try {
                 auto image = Exiv2::ImageFactory::open(filename);
@@ -4021,4 +4032,8 @@ void MainWindowUI::GenerateUpscale(wxEvtHandler* eventHandler,
                                       item);
         return;
     }
+}
+
+void MainWindowUI::OnHtmlLinkClicked(wxHtmlLinkEvent& event) {
+    wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
 }

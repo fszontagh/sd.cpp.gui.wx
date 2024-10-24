@@ -1010,6 +1010,18 @@ inline std::string tolower(std::string data) {
     return data;
 }
 inline std::map<std::string, std::string> parseExifPrompts(std::string text) {
+
+
+    size_t pos = text.find("charset=Unicode ");
+    if (pos != std::string::npos) {
+        text.erase(pos, std::string("charset=Unicode ").length());
+    }
+
+    size_t pos_ = text.find("charset=Unicode");
+    if (pos_ != std::string::npos) {
+        text.erase(pos_, std::string("charset=Unicode").length());
+    }
+
     std::map<std::string, std::string> result;
 
     result[std::string("prompt")] = "";
@@ -1087,16 +1099,6 @@ inline std::map<std::string, std::string> parseExifPrompts(std::string text) {
         }
     } else {
         result[std::string("prompt")] = prompt;
-    }
-
-    // remove garbage
-    // charset=Unicode
-    std::string charset1("charset=Unicode ");
-    if (result["prompt"].substr(0, 1) == " ") {
-        result["prompt"] = result["prompt"].substr(1);
-    }
-    if (result["prompt"].substr(0, charset1.length()) == charset1) {
-        result["prompt"] = result["prompt"].substr(charset1.length());
     }
 
     return result;

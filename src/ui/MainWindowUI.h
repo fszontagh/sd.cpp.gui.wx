@@ -198,6 +198,7 @@ private:
     void refreshModelTable(std::string filter = "");
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
+    void OnHtmlLinkClicked(wxHtmlLinkEvent& event);
     void OnExit(wxEvent& event);
     void OnPopupClick(wxCommandEvent& evt);
     void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);

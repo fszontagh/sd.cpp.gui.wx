@@ -92,7 +92,7 @@ target_include_directories(sd_ui PRIVATE
 if(WIN32)
     target_link_libraries(sd_ui PRIVATE
     cpu_features
-    wx::base wx::core wx::xrc wx::aui
+    wx::base wx::core wx::xrc wx::aui wx::richtext
     OpenSSL::Crypto CURL::libcurl exiv2::exiv2
     )
 
@@ -100,7 +100,7 @@ else(WIN32)
 
 target_link_libraries(sd_ui PRIVATE
     cpu_features
-    wx::base wx::core wx::xrc wx::aui
+    wx::base wx::core wx::xrc wx::aui wx::richtext
     OpenSSL::Crypto CURL::libcurl exiv2lib
 )
 
