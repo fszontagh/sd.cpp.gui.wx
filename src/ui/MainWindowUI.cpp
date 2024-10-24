@@ -731,8 +731,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         this->sd_params->control_image_path = "";
     }
 
-    this->sd_params->sample_method =
-        (sample_method_t)this->m_sampler->GetCurrentSelection();
+    this->sd_params->sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
 
     if (this->m_type->GetCurrentSelection() != 0) {
         auto selected = this->m_type->GetStringSelection();
@@ -743,6 +742,17 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         }
     } else {
         this->sd_params->wtype = sd_type_t::SD_TYPE_COUNT;
+    }
+
+    if (this->m_scheduler->GetCurrentSelection() != 0) {
+        auto selected = this->m_scheduler->GetStringSelection();
+        for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
+            if (schedulers.second == selected) {
+                this->sd_params->schedule = (schedule_t)schedulers.first;
+            }
+        }
+    } else {
+        this->sd_params->schedule = schedule_t::DEFAULT;
     }
 
     this->sd_params->batch_count = this->m_batch_count->GetValue();
@@ -1114,7 +1124,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         }
     }
 
-    const char* sheduler_name = sd_gui_utils::schedule_str[item.params.schedule];
+    auto sheduler_name = sd_gui_utils::sd_scheduler_gui_names[item.params.schedule];
 
     for (unsigned int index = 0; index < this->m_scheduler->GetCount(); ++index) {
         if (this->m_scheduler->GetString(index) == wxString(sheduler_name)) {
@@ -2223,8 +2233,8 @@ void MainWindowUI::loadShcedulerList() {
     unsigned int selected = 0;
 
     for (auto type : sd_gui_utils::sd_scheduler_gui_names) {
-        auto _z = this->m_type->Append(type.second);
-        if (type.second == "Count") {
+        auto _z = this->m_scheduler->Append(type.second);
+        if (type.second == "Default") {
             selected = _z;
         }
     }
@@ -2806,6 +2816,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
             "%s", sd_gui_utils::sd_type_gui_names[item->params.wtype])));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
+
+        data.push_back(wxVariant(_("Scheduler")));
+        data.push_back(wxVariant(wxString::Format(
+            "%s", sd_gui_utils::sd_scheduler_gui_names[item->params.schedule])));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
     }
 
     if (item->mode == QM::GenerationMode::IMG2IMG) {
@@ -3225,21 +3241,17 @@ upscaler_ctx_t* MainWindowUI::LoadUpscaleModel(wxEvtHandler* eventHandler,
         (NewUpscalerCtxFunction)this->sd_dll->GetSymbol("new_upscaler_ctx");
 
     if (!new_upscaler_ctx) {
-        myItem->status_message =
-            wxString(_("Failed to load new_upscaler_ctx symbol from backend!"));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      myItem);
+        myItem->status_message = wxString(_("Failed to load new_upscaler_ctx symbol from backend!"));
+        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, myItem);
         return NULL;
     }
     upscaler_ctx_t* u_ctx =
-        new_upscaler_ctx(myItem->params.esrgan_path.c_str(),
-                         myItem->params.n_threads, myItem->params.wtype);
+        new_upscaler_ctx(myItem->params.esrgan_path.c_str(), myItem->params.n_threads, myItem->params.wtype);
     if (u_ctx == NULL) {
         this->upscaleModelLoaded = false;
         return NULL;
     } else {
-        MainWindowUI::SendThreadEvent(eventHandler,
-                                      QM::QueueEvents::ITEM_MODEL_LOADED, myItem);
+        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_LOADED, myItem);
         this->currentUpscalerModel = myItem->params.esrgan_path;
         this->upscaleModelLoaded   = true;
     }
