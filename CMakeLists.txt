@@ -66,7 +66,6 @@ set(SOURCES
     src/ui/MainWindowUI.cpp
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
-    minimal.rc
 )
 
 # Set target for the application
