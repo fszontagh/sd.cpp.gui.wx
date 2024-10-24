@@ -126,6 +126,23 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	sizer0021->Add( bSizer100, 0, wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer1002;
+	bSizer1002 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_schedulertext = new wxStaticText( m_panel10, wxID_ANY, _("Scheduler:"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_schedulertext->Wrap( -1 );
+	bSizer1002->Add( m_schedulertext, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_schedulerChoices;
+	m_scheduler = new wxChoice( m_panel10, wxID_ANY, wxDefaultPosition, wxSize( 200,-1 ), m_schedulerChoices, 0 );
+	m_scheduler->SetSelection( 0 );
+	m_scheduler->SetToolTip( _("Weight type. If not specified, the default is the type of the weight file.") );
+
+	bSizer1002->Add( m_scheduler, 0, wxALL|wxEXPAND, 5 );
+
+
+	sizer0021->Add( bSizer1002, 0, wxEXPAND, 5 );
+
 
 	m_panel10->SetSizer( sizer0021 );
 	m_panel10->Layout();
@@ -998,6 +1015,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
+	m_scheduler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
 	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
@@ -1056,6 +1074,7 @@ mainUI::~mainUI()
 	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
+	m_scheduler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
 	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
@@ -1561,6 +1580,8 @@ CivitAiWindow::CivitAiWindow( wxWindow* parent, wxWindowID id, const wxString& t
 	bSizer86 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_civitai_search = new wxTextCtrl( m_panel16, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 210,-1 ), wxTE_PROCESS_ENTER );
+	m_civitai_search->SetToolTip( _("Search for model names") );
+
 	bSizer86->Add( m_civitai_search, 0, wxALIGN_CENTER_VERTICAL|wxLEFT, 5 );
 
 	m_search = new wxButton( m_panel16, wxID_ANY, _("Search"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -1568,11 +1589,11 @@ CivitAiWindow::CivitAiWindow( wxWindow* parent, wxWindowID id, const wxString& t
 
 	wxString m_model_typeChoices[] = { _("Checkpoints"), _("LORA"), _("Embeddings") };
 	int m_model_typeNChoices = sizeof( m_model_typeChoices ) / sizeof( wxString );
-	m_model_type = new wxRadioBox( m_panel16, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, m_model_typeNChoices, m_model_typeChoices, 3, wxRA_SPECIFY_COLS );
+	m_model_type = new wxRadioBox( m_panel16, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, m_model_typeNChoices, m_model_typeChoices, 1, wxRA_SPECIFY_ROWS );
 	m_model_type->SetSelection( 0 );
 	m_model_type->SetToolTip( _("Select the model type to filter") );
 
-	bSizer86->Add( m_model_type, 0, wxALIGN_CENTER_VERTICAL, 0 );
+	bSizer86->Add( m_model_type, 1, wxALIGN_CENTER_VERTICAL, 0 );
 
 
 	bSizer81->Add( bSizer86, 0, wxEXPAND, 5 );
@@ -1583,14 +1604,22 @@ CivitAiWindow::CivitAiWindow( wxWindow* parent, wxWindowID id, const wxString& t
 	wxBoxSizer* bSizer92;
 	bSizer92 = new wxBoxSizer( wxVERTICAL );
 
-	m_dataViewListCtrl5 = new wxDataViewListCtrl( m_panel16, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText43 = new wxStaticText( m_panel16, wxID_ANY, _("Models"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText43->Wrap( -1 );
+	bSizer92->Add( m_staticText43, 0, wxALL|wxEXPAND, 5 );
+
+	m_dataViewListCtrl5 = new wxDataViewListCtrl( m_panel16, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES );
 	m_dataViewListColumn12 = m_dataViewListCtrl5->AppendTextColumn( _("Name"), wxDATAVIEW_CELL_INERT, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
 	m_dataViewListColumn13 = m_dataViewListCtrl5->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn30 = m_dataViewListCtrl5->AppendTextColumn( _("Type"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn32 = m_dataViewListCtrl5->AppendTextColumn( _("Downloads"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer92->Add( m_dataViewListCtrl5, 1, wxEXPAND|wxALL, 5 );
 
-	m_downloads = new wxDataViewListCtrl( m_panel16, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText431 = new wxStaticText( m_panel16, wxID_ANY, _("Downloads"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText431->Wrap( -1 );
+	bSizer92->Add( m_staticText431, 0, wxALL|wxEXPAND, 5 );
+
+	m_downloads = new wxDataViewListCtrl( m_panel16, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES );
 	m_dataViewListColumn26 = m_downloads->AppendTextColumn( _("File"), wxDATAVIEW_CELL_INERT, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn31 = m_downloads->AppendTextColumn( _("Size"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn301 = m_downloads->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );

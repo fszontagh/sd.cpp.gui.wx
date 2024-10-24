@@ -262,13 +262,13 @@ namespace sd_gui_utils {
         }
 
         std::streamsize bufferSize = 1 * 1024 * 1024;
-        char* buffer = new char[bufferSize];
+        char* buffer               = new char[bufferSize];
 
         std::string hashResult;
         unsigned char hash[EVP_MAX_MD_SIZE];
         unsigned int hashLength;
         EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-        const EVP_MD* md = EVP_sha256();
+        const EVP_MD* md  = EVP_sha256();
         EVP_DigestInit_ex(mdctx, md, NULL);
         callback(file.tellg(), hashResult, custom_pointer);
 
@@ -426,13 +426,17 @@ namespace sd_gui_utils {
         "dpm++2s_a",
         "dpm++2m",
         "dpm++2mv2",
+        "ipndm",
+        "ipndm_v",
         "lcm",
     };
     inline const char* schedule_str[] = {
         "default",
         "discrete",
         "karras",
-    };
+        "exponential",
+        "ays",
+        "gits"};
 
     inline const char* modes_str[] = {"txt2img", "img2img", "convert", "upscale"};
 
@@ -443,15 +447,32 @@ namespace sd_gui_utils {
 
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
     inline std::unordered_map<int, std::string> sd_type_gui_names = {
-        {20, "Default"},
+        {32, "Count"},
         {0, "F32"},
         {1, "F16"},
         {2, "Q4_0"},
         {3, "Q4_1"},
         {6, "Q5_0"},
         {7, "Q5_1"},
-        {8, "Q8_0"}};
+        {8, "Q8_0"},
+        {28, "F64"},
+        {30, "BF16"},
+        {31, "Q4_0_4_4"},
+        {32, "Q4_1_4_4"}
 
+    };
+
+    inline std::unordered_map<int, std::string> sd_scheduler_gui_names = {
+        {0, "Default"},
+        {1, "Discrete"},
+        {2, "Karras"},
+        {3, "Exponential"},
+        {4, "Ays"},
+        {5, "Gits"}
+
+    };
+
+    // from sd_type_t
     inline const char* sd_type_names[] = {"F32",
                                           "F16",
                                           "Q4_0",
@@ -469,9 +490,23 @@ namespace sd_gui_utils {
                                           "Q6_K",
                                           "Q8_K",
                                           "IQ2_XXS",
+                                          "IQ2_XS",
+                                          "IQ3_XXS",
+                                          "IQ1_S",
+                                          "IQ4_NL",
+                                          "IQ3_S",
+                                          "IQ2_S",
+                                          "IQ4_XS",
                                           "I8",
                                           "I16",
                                           "I32",
+                                          "I64",
+                                          "F64",
+                                          "IQ1_M",
+                                          "BF16",
+                                          "Q4_0_4_4",
+                                          "Q4_0_4_8",
+                                          "Q4_0_8_8"
                                           "Default"};
 
     struct SDParams {

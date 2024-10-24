@@ -23,14 +23,6 @@ namespace sd_gui_utils {
             curl_global_cleanup();
         }
 
-        SimpleCurl(const SimpleCurl& other) {
-            std::cout << "SimpleCurl copy constructor called" << std::endl;
-        }
-
-        SimpleCurl(SimpleCurl&& other) {
-            std::cout << "SimpleCurl move constructor called" << std::endl;
-        }
-
         // Perform an HTTP GET request to download a file
         bool getFile(const std::string& url, const std::vector<std::string>& headers, const std::string& outputFilePath, std::function<void(size_t, size_t)> progressCallback = nullptr) {
             if (!curl) {
@@ -168,10 +160,7 @@ namespace sd_gui_utils {
         static int progressCallbackStatic(void* p, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
             auto simpleCurl = static_cast<SimpleCurl*>(p);
             if (simpleCurl->progressCallback_) {
-                std::cout << "Progress callback is valid" << std::endl;
                 simpleCurl->progressCallback_(dlnow, dltotal);
-            } else {
-                std::cout << "Progress callback is invalid" << std::endl;
             }
             return 0;
         }

@@ -1,22 +1,35 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
+
 project(StableDiffusionGUI 
 VERSION 0.1.7 
-LANGUAGES CXX
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 )
 
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Define configurations
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo;RelHighOpt;Profile;DebugSanitize;DebugSanitizeAddress;DebugSanitizeThread;DebugSanitizeMemory;DebugSanitizeLeak;DebugSanitizeUndefined;DebugSanitizeHW;DebugSanitizeHWAddress;ReleaseSanitizeUndefined" CACHE STRING "Configurations" FORCE)
-
-# External dependencies
 include(FetchContent)
+include(ExternalProject)
 
-include(cmake/stable_diffusion.cmake)
+set(BUILD_SHARED_LIBS OFF)
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+
+if (WIN32)
+    find_package(OpenSSL CONFIG REQUIRED)
+    find_package(CURL CONFIG REQUIRED)
+    find_package(Exiv2 CONFIG REQUIRED)
+else()
+    # on ubuntu, there is no CONFIG
+    find_package(OpenSSL REQUIRED)
+    find_package(CURL REQUIRED)
+    find_package(exiv2 REQUIRED)
+endif(WIN32)
+
+
+
+include(cmake/wxWidgets.cmake)
 
 # CPU Features dependency
 FetchContent_Declare(
@@ -24,32 +37,9 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/google/cpu_features.git
     GIT_TAG v0.9.0
 )
+set(BUILD_TESTING OFF)
+
 FetchContent_MakeAvailable(cpu_features)
-
-
-include(cmake/curl.cmake)
-
-# wxWidgets dependency
-include(cmake/wxWidgets.cmake)
-
-ExternalProject_Add(
-  exiv2
-  GIT_REPOSITORY https://github.com/Exiv2/exiv2.git
-  GIT_TAG v0.27.0
-  CMAKE_ARGS -DEXIV2_BUILD_SAMPLES=OFF -DBUILD_SHARED_LIBS=OFF -DEXIV2_BUILD_UNIT_TESTS=OFF -DEXIV2_BUILD_EXIV2_COMMAND=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/exiv2-install
-  BUILD_BYPRODUCTS <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp${CMAKE_STATIC_LIBRARY_SUFFIX} <INSTALL_DIR>/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX}
-  INSTALL_DIR ${CMAKE_BINARY_DIR}/exiv2-install
-  EXCLUDE_FROM_ALL TRUE
-)
-
-set(EXIV2_INCLUDE_DIR ${CMAKE_BINARY_DIR}/exiv2-install/include)
-set(EXIV2_LIBRARY ${CMAKE_BINARY_DIR}/exiv2-install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}exiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(XMP_LIBRARY ${CMAKE_BINARY_DIR}/exiv2-install/lib/${CMAKE_STATIC_LIBRARY_PREFIX}xmp${CMAKE_STATIC_LIBRARY_SUFFIX})
-
-
-message("EXIV2_INCLUDE_DIR: ${EXIV2_INCLUDE_DIR}")
-message("EXIV2_LIBRARY: ${EXIV2_LIBRARY}")
-message("XMP_LIBRARY: ${XMP_LIBRARY}")
 
 execute_process(
     COMMAND git log -1 --format=%h
@@ -58,18 +48,12 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 message("Git hash: ${GIT_HASH}")
-
+message("CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR}")
+message("CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}")
 
 configure_package_config_file(src/ver.hpp.in ver.hpp
     INSTALL_DESTINATION build/install
 )
-
-if (NOT MSVC AND NOT APPLE)
-    set(OPENSSL_USE_STATIC_LIBS TRUE)
-    find_package(OpenSSL REQUIRED)
-else()
-    include(cmake/openssl.cmake)
-endif()
 
 # Source files
 set(SOURCES
@@ -82,14 +66,18 @@ set(SOURCES
     src/ui/MainWindowUI.cpp
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
-
+    minimal.rc
 )
-
 
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
+include(cmake/stable_diffusion.cmake)
 
-add_dependencies(sd_ui get_git_hash cpu_features libcurl exiv2)
+if (WIN32)
+    add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2::exiv2)
+else()
+    add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
+endif()
 
 include(cmake/cpack.cmake)
 
@@ -99,19 +87,31 @@ target_include_directories(sd_ui PRIVATE
     ${stable_diffusion_SOURCE_DIR}
     ${cpu_features_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
-    ${libcurl_SOURCE_DIR}/include
 )
 
-# Linking libraries
+
+if(WIN32)
+    target_link_libraries(sd_ui PRIVATE
+    cpu_features
+    wx::base wx::core wx::xrc wx::aui
+    OpenSSL::Crypto CURL::libcurl exiv2::exiv2
+    )
+
+else(WIN32)
+
 target_link_libraries(sd_ui PRIVATE
     cpu_features
     wx::base wx::core wx::xrc wx::aui
-    OpenSSL::Crypto libcurl
-    ${EXIV2_LIBRARY} ${XMP_LIBRARY}
+    OpenSSL::Crypto CURL::libcurl exiv2lib
 )
+
+endif(WIN32)
+
+
 
 # Windows-specific options
 if(WIN32)
+    target_link_libraries(sd_ui PRIVATE comsuppw.lib wbemuuid.lib)
     target_compile_definitions(sd_ui PRIVATE
         _CRT_SECURE_NO_WARNINGS
         _UNICODE
@@ -122,6 +122,17 @@ if(WIN32)
         __WXMSW__
     )
     set_property(TARGET sd_ui PROPERTY WIN32_EXECUTABLE TRUE)
+    set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+    )
+    foreach(CompilerFlag ${CompilerFlags})
+        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
 endif()
 
 # Linux-specific options
@@ -135,20 +146,3 @@ if(UNIX AND NOT APPLE)
     target_include_directories(sd_ui PRIVATE ${GTK3_INCLUDE_DIRS})
     target_link_libraries(sd_ui PRIVATE ${GTK3_LIBRARIES})
 endif()
-
-
-# Add a target for Git hash script
-if(WIN32)
-    add_custom_target(get_git_hash ALL
-        COMMAND ${CMAKE_SOURCE_DIR}/scripts/githash.bat ${CMAKE_BINARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Getting Git hash on Windows"
-    )
-else()
-    add_custom_target(get_git_hash ALL
-        COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/githash.sh ${CMAKE_BINARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        COMMENT "Getting Git hash on non-Windows systems"
-    )
-endif()
-

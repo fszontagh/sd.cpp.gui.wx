@@ -194,6 +194,7 @@ private:
     void loadSamplerList();
     void loadEsrganList();
     void loadTypeList();
+    void loadShcedulerList();
     void refreshModelTable(std::string filter = "");
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);

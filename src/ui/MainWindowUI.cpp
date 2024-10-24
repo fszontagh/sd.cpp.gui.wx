@@ -1114,6 +1114,15 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         }
     }
 
+    const char* sheduler_name = sd_gui_utils::schedule_str[item.params.schedule];
+
+    for (unsigned int index = 0; index < this->m_scheduler->GetCount(); ++index) {
+        if (this->m_scheduler->GetString(index) == wxString(sheduler_name)) {
+            this->m_scheduler->Select(index);
+            break;
+        }
+    }
+
     this->m_vae_tiling->SetValue(item.params.vae_tiling);
 
     if (!item.params.control_image_path.empty()) {
@@ -1420,18 +1429,6 @@ MainWindowUI::~MainWindowUI() {
     //    delete this->fileConfig;
 
     this->TaskBar->Destroy();
-}
-
-void MainWindowUI::loadSamplerList() {
-    this->m_sampler->Clear();
-    for (auto sampler : sd_gui_utils::sample_method_str) {
-        int _u = this->m_sampler->Append(sampler);
-
-        if (sampler ==
-            sd_gui_utils::sample_method_str[this->sd_params->sample_method]) {
-            this->m_sampler->Select(_u);
-        }
-    }
 }
 
 void MainWindowUI::loadControlnetList() {
@@ -2199,16 +2196,39 @@ void MainWindowUI::StartGeneration(QM::QueueItem* myJob) {
     }
 }
 
+void MainWindowUI::loadSamplerList() {
+    this->m_sampler->Clear();
+    for (auto sampler : sd_gui_utils::sample_method_str) {
+        int _u = this->m_sampler->Append(sampler);
+
+        if (std::string(sampler) == "euler_a") {
+            this->m_sampler->Select(_u);
+        }
+    }
+}
 void MainWindowUI::loadTypeList() {
     this->m_type->Clear();
     unsigned int selected = 0;
     for (auto type : sd_gui_utils::sd_type_gui_names) {
-        this->m_type->Append(type.second);
-        if (type.second == "Default") {
-            this->m_type->Select(selected);
+        auto _z = this->m_type->Append(type.second);
+        if (type.second == "Count") {
+            selected = _z;
         }
-        selected++;
     }
+    this->m_type->Select(selected);
+}
+
+void MainWindowUI::loadShcedulerList() {
+    this->m_scheduler->Clear();
+    unsigned int selected = 0;
+
+    for (auto type : sd_gui_utils::sd_scheduler_gui_names) {
+        auto _z = this->m_type->Append(type.second);
+        if (type.second == "Count") {
+            selected = _z;
+        }
+    }
+    this->m_scheduler->Select(selected);
 }
 
 void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer) {
@@ -2729,7 +2749,6 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-
     data.push_back(wxVariant(_("Started at")));
     if (item->started_at == 0) {
         data.push_back(wxVariant("--"));
@@ -2738,8 +2757,6 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     }
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
-
-
 
     data.push_back(wxVariant(_("Finished at")));
     if (item->finished_at == 0) {
@@ -2750,8 +2767,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-
-   data.push_back(wxVariant(_("Udated at")));
+    data.push_back(wxVariant(_("Udated at")));
     if (item->updated_at == 0) {
         data.push_back(wxVariant("--"));
     } else {
@@ -2759,7 +2775,6 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     }
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
-
 
     data.push_back(wxVariant(_("Mode")));
     data.push_back(wxVariant(wxString(sd_gui_utils::modes_str[item->mode])));
@@ -3400,6 +3415,7 @@ void MainWindowUI::initConfig() {
         this->m_batch_count->SetValue(this->sd_params->batch_count);
         this->loadSamplerList();
         this->loadTypeList();
+        this->loadShcedulerList();
 
         // check if directories exists...
         if (!std::filesystem::exists(model_path.ToStdString())) {

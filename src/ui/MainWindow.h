@@ -63,6 +63,8 @@ class mainUI : public wxFrame
 		wxChoice* m_model;
 		wxStaticText* m_staticText72;
 		wxChoice* m_type;
+		wxStaticText* m_schedulertext;
+		wxChoice* m_scheduler;
 		wxPanel* m_panel12;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
@@ -364,11 +366,13 @@ class CivitAiWindow : public wxFrame
 		wxTextCtrl* m_civitai_search;
 		wxButton* m_search;
 		wxRadioBox* m_model_type;
+		wxStaticText* m_staticText43;
 		wxDataViewListCtrl* m_dataViewListCtrl5;
 		wxDataViewColumn* m_dataViewListColumn12;
 		wxDataViewColumn* m_dataViewListColumn13;
 		wxDataViewColumn* m_dataViewListColumn30;
 		wxDataViewColumn* m_dataViewListColumn32;
+		wxStaticText* m_staticText431;
 		wxDataViewListCtrl* m_downloads;
 		wxDataViewColumn* m_dataViewListColumn26;
 		wxDataViewColumn* m_dataViewListColumn31;
