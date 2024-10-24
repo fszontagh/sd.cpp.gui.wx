@@ -1844,7 +1844,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             }
         }
         if (type == sd_gui_utils::DirTypes::ESRGAN) {
-            if (ext != ".pth") {
+            if (ext != ".pth" && ext != ".pt") {
                 continue;
             }
         }
