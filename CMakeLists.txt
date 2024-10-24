@@ -78,8 +78,7 @@ else()
     add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 endif()
 
-include(cmake/stable_diffusion.cmake)
-include(cmake/cpack.cmake)
+
 
 
 # Include directories
@@ -147,3 +146,6 @@ if(UNIX AND NOT APPLE)
     target_include_directories(sd_ui PRIVATE ${GTK3_INCLUDE_DIRS})
     target_link_libraries(sd_ui PRIVATE ${GTK3_LIBRARIES})
 endif()
+
+include(cmake/stable_diffusion.cmake)
+include(cmake/cpack.cmake)
