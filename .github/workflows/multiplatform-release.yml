@@ -1,0 +1,82 @@
+name: Build and Package
+
+on:
+    push:
+        tags:
+        - '*'
+
+jobs:
+  build-linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev
+          
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
+
+      - name: Build and Package DEB
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+
+      - name: Build AppImage
+        run: |
+          cd build
+          cmake --build . --config Release --target AppImage
+
+      - name: Upload artifacts (Linux)
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-packages
+          path: build/*.deb
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          winget install -e --id Kitware.CMake
+          winget install -e --id JFrog.Conan
+          winget install -e --id Git.Git
+          winget install -e --id NSIS.NSIS
+          winget install -id=Microsoft.VisualStudio.2022.Community -e
+          winget install -e --id Nvidia.CUDA
+
+      - name: Set up Conan
+        run: |
+          mkdir build
+          cd build
+          conan install ..
+
+      - name: Configure CMake
+        run: |
+          cd build
+          cmake .. -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
+
+      - name: Build and Package Installer
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+
+      - name: Upload artifacts (Windows)
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-installer
+          path: build/*.exe
