@@ -72,7 +72,7 @@ set(SOURCES
 add_executable(sd_ui ${SOURCES})
 
 
-set(APPDEPENDS "")
+set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
 
 if (SDGUI_AVX)
   list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
