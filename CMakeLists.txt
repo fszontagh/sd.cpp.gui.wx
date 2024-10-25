@@ -72,14 +72,45 @@ set(SOURCES
 add_executable(sd_ui ${SOURCES})
 
 
-if (WIN32)
-    add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2::exiv2)
-else()
-    add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
+set(APPDEPENDS "")
+
+if (SDGUI_AVX)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
+endif()
+
+if (SDGUI_AVX2)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2)
+endif()
+
+if(SDGUI_AVX512)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512)
+endif()
+
+if(SDGUI_CUBLAS)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda)
+endif()
+
+if(SDGUI_VULKAN)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan)
+endif()
+
+if (SDGUI_ROCM)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_rocm)
 endif()
 
 
+list(APPEND APPDEPENDS cpu_features OpenSSL::Crypto CURL::libcurl)
 
+if (WIN32)
+    list(APPEND APPDEPENDS exiv2::exiv2)
+    #add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2::exiv2)
+else()
+    #add_dependencies(sd_ui cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
+    list(APPEND APPDEPENDS exiv2lib)
+endif()
+
+
+add_dependencies(sd_ui ${APPDEPENDS})
 
 # Include directories
 target_include_directories(sd_ui PRIVATE 

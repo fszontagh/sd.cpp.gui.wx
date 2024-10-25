@@ -4,9 +4,41 @@ set(APP_IMAGE_DESKTOP_FILE ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop)
 
 configure_file(${CMAKE_SOURCE_DIR}/platform/linux/AppImageRecipe.yml.in ${CMAKE_BINARY_DIR}/AppImageRecipe.yml @ONLY)
 
+
+set(APPDEPENDS sd_ui)
+
+if (SDGUI_AVX)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
+endif()
+
+if (SDGUI_AVX2)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2)
+endif()
+
+if(SDGUI_AVX512)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512)
+endif()
+
+if(SDGUI_CUBLAS)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda)
+endif()
+
+if(SDGUI_VULKAN)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan)
+endif()
+
+if (SDGUI_ROCM)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_rocm)
+endif()
+
+
+
+
+
+
 add_custom_target(
   AppImage
-  DEPENDS sd_ui
+  DEPENDS ${APPDEPENDS}
 )
 
 
