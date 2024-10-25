@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev
+          sudo apt install -y fuse3 nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev
           
       - name: Configure CMake
         run: |
