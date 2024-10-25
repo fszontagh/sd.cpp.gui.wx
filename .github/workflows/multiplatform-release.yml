@@ -48,8 +48,6 @@ jobs:
     runs-on: [self-hosted, windows]
     
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
       - name: Install winget
         uses: Cyberboss/install-winget@v1
         with:
@@ -62,7 +60,8 @@ jobs:
           winget install -e --id NSIS.NSIS
           winget install -id=Microsoft.VisualStudio.2022.Community -e
           winget install -e --id Nvidia.CUDA
-
+      - name: Check out code
+        uses: actions/checkout@v3
       - name: Set up Conan
         run: |
           mkdir build
