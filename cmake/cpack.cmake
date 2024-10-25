@@ -23,6 +23,22 @@ if (WIN32)
 endif()
 
 
+if (UNIX AND NOT APPLE)
+    execute_process(
+        COMMAND lsb_release -si
+        OUTPUT_VARIABLE DISTRO_NAME
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    execute_process(
+        COMMAND lsb_release -sr
+        OUTPUT_VARIABLE DISTRO_VER
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    set(DISTRO_VERSION "${DISTRO_NAME}${DISTRO_VER}")
+endif()
+
 # CPack settings
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
@@ -52,8 +68,8 @@ if (SDGUI_AVX)
 	DESTINATION ${lib_INSTALL_PATH_NSIS} 
 	COMPONENT libsdcpp_avx)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_NAME "libstablediffusion-avx")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_RELEASE ${SDCPP_VERSION})
+    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_NAME "libstablediffusion-avx-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_AVX2)
@@ -61,7 +77,8 @@ if (SDGUI_AVX2)
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
 	COMPONENT libsdcpp_avx2)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx2")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_NAME "libstablediffusion-avx2")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_NAME "libstablediffusion-avx2-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_AVX512)
@@ -69,7 +86,8 @@ if (SDGUI_AVX512)
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
 	COMPONENT libsdcpp_avx512)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx512")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_NAME "libstablediffusion-avx512")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_NAME "libstablediffusion-avx512-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_CUBLAS)
@@ -77,7 +95,8 @@ if (SDGUI_CUBLAS)
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
 	COMPONENT libsdcpp_cuda)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_cuda")
-    set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_NAME "libstablediffusion-cuda")
+    set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_NAME "libstablediffusion-cuda-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_ROCM)
@@ -85,7 +104,8 @@ if (SDGUI_ROCM)
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
 	COMPONENT libsdcpp_rocm)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_rocm")
-    set(CPACK_DEBIAN_LIBSDCPP_ROCM_PACKAGE_NAME "libstablediffusion-rocm")
+    set(CPACK_DEBIAN_LIBSDCPP_ROCM_PACKAGE_NAME "libstablediffusion-rocm-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_ROCM_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_VULKAN)
@@ -93,7 +113,8 @@ if (SDGUI_VULKAN)
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
 	COMPONENT libsdcpp_vulkan)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_vulkan")
-    set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_NAME "libstablediffusion-vulkan")
+    set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_NAME "libstablediffusion-vulkan-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 
@@ -110,32 +131,38 @@ if(WIN32)
     
 elseif(UNIX AND NOT APPLE)
 
+    set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PROJECT_VERSION}-${DISTRO_VERSION}")
+
+    string(TIMESTAMP TODAY "%Y%m%d")
     
-    #set(CPACK_GENERATOR "DEB;7Z;TXZ;External")
-    set(CPACK_GENERATOR "External")
+    set(CPACK_GENERATOR "DEB;TGZ")
+    #set(CPACK_GENERATOR "External")
     
     set(CPACK_DEB_COMPONENT_INSTALL ON)
     
     # DEB package settings
     set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9)")
-    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), stablediffusiongui (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
+    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-rocm-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
     set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
     set(CPACK_DEBIAN_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
-    set(CPACK_DEBIAN_PACKAGE_RELEASE "${GIT_HASH}")
+    set(CPACK_DEBIAN_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_NAME "stablediffusiongui")
 
+
     set(SD_UI_EXEC "sd_ui")
+    include(GNUInstallDirs)
+    set(APPIMAGE_SOURCE_DIR "${CMAKE_BINARY_DIR}/AppImageSource")
 
     
     # Generate the .desktop file by replacing placeholders
     configure_file(${CMAKE_SOURCE_DIR}/platform/linux/app.desktop ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop @ONLY)
+    
     install(FILES ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop DESTINATION share/applications COMPONENT "${CMAKE_PROJECT_NAME}")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION share/icons/hicolor/256x256/apps COMPONENT "${CMAKE_PROJECT_NAME}")
-    set(CPACK_COMPONENTS_GROUPING "ALL_COMPONENTS_IN_ONE")
     include(${CMAKE_SOURCE_DIR}/cmake/AppImage.cmake)
 elseif(APPLE)
     #set(CPACK_GENERATOR "DragNDrop")

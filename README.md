@@ -110,6 +110,26 @@ conan install ..
   ```
   apt install libcurl4-openssl-dev
   ```
+- libsecret-1-dev
+
+  ```
+  apt install libsecret-1-dev
+  ```
+- libnotify-dev
+
+  ```
+  apt install libnotify-dev
+  ```
+- libwebkit2gtk-4.1-dev
+
+  ```
+  apt install libwebkit2gtk-4.1-dev
+  ```
+- libsdl2-dev
+
+  ```
+  apt install libsdl2-dev
+  ```
 
 #### Configure the project: 
 Run in the build folder:
