@@ -51,6 +51,10 @@ jobs:
       - name: Get latest CMake and Ninja
         uses: lukka/get-cmake@latest      
       
+      - name: Install python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'       
       - name: Install Conan
         id: conan
         uses: turtlebrowser/get-conan@main
