@@ -48,20 +48,29 @@ jobs:
     runs-on: [self-hosted, windows]
     
     steps:
-       #- name: Install winget
-       # uses: Cyberboss/install-winget@v1
-       # with:
-       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
-      - name: Install dependencies
-        run: |
-          winget install -e --id Kitware.CMake
-          winget install -e --id JFrog.Conan
-          winget install -e --id Git.Git
-          winget install -e --id NSIS.NSIS
-          winget install -id=Microsoft.VisualStudio.2022.Community -e
-          winget install -e --id Nvidia.CUDA
+      - name: Get latest CMake and Ninja
+        uses: lukka/get-cmake@latest      
+      
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@main
+  
+      - name: Conan version
+        run: echo "${{ steps.conan.outputs.version }}"        
+      
+      - name: Get NSIS
+        uses: repolevedavaj/install-nsis@v1.0.1
+        with:
+          nsis-version: 3.08
+      - name: Install CUDA
+        uses: Jimver/cuda-toolkit@master
+      
       - name: Check out code
         uses: actions/checkout@v3
+      
+      - uses: TheMrMilchmann/setup-msvc-dev@v3
+        with:
+          arch: x64      
       - name: Set up Conan
         run: |
           mkdir build
