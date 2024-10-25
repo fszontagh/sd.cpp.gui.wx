@@ -26,7 +26,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
 
       - name: Build and Package DEB
         run: |
@@ -50,7 +50,10 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
+      - name: Install winget
+        uses: Cyberboss/install-winget@v1
+        with:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
       - name: Install dependencies
         run: |
           winget install -e --id Kitware.CMake
@@ -69,7 +72,7 @@ jobs:
       - name: Configure CMake
         run: |
           cd build
-          cmake .. -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
 
       - name: Build and Package Installer
         run: |
