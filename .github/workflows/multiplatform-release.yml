@@ -8,10 +8,10 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ${{ matrix.os }}
+    runs-on: [ self-hosted, "${{ matrix.vm }}" ]
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
+        vm: [ubuntu22, ubuntu24]
     
     steps:
       - name: Check out code
@@ -45,7 +45,7 @@ jobs:
           path: build/*.deb
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows]
     
     steps:
       - name: Check out code
