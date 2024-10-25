@@ -46,7 +46,7 @@ add_custom_command(
   TARGET AppImage POST_BUILD
   MAIN_DEPENDENCY sd_ui
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --prefix ${CMAKE_BINARY_DIR}/AppImageSource/usr
+  COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --prefix ${CMAKE_BINARY_DIR}/AppImageSource/usr --config Release
   COMMAND wget https://github.com/AppImageCommunity/pkg2appimage/releases/download/continuous/pkg2appimage--x86_64.AppImage -O ./pkg2appimage
   COMMAND chmod +x ./pkg2appimage
   COMMAND ./pkg2appimage AppImageRecipe.yml  
