@@ -60,7 +60,7 @@ jobs:
         run: |
             python -m pip install --upgrade pip
             pip install conan
-            conan_version=$(conan --version)
+            $conan_version=conan --version
             echo "version=$conan_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
       - name: Conan version
