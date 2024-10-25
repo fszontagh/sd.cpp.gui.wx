@@ -6,7 +6,7 @@ configure_file(${CMAKE_SOURCE_DIR}/platform/linux/AppImageRecipe.yml.in ${CMAKE_
 
 add_custom_target(
   AppImage
-  DEPENDS sd_gui
+  DEPENDS sd_ui
 )
 
 
