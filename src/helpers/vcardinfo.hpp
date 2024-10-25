@@ -29,29 +29,42 @@ inline bool isAmdGPU()
             }
         }
     }
-
     return false;
 }
 
 inline bool isNvidiaGPU()
 {
-    std::ifstream file("/proc/driver/nvidia/gpus/0/information");
+    // Check if NVIDIA driver directory exists
+    if (!std::filesystem::exists("/proc/driver/nvidia")) {
+        return false;
+    }
 
-    if (file.is_open())
+    // Iterate over all directories in /proc/driver/nvidia/gpus/
+    for (const auto& entry : fs::directory_iterator("/proc/driver/nvidia/gpus"))
     {
-        std::string line;
-        while (std::getline(file, line))
+        if (fs::is_directory(entry))
         {
-            if (line.find("product name") != std::string::npos && line.find("NVIDIA") != std::string::npos)
+            std::string gpuInfoPath = entry.path().string() + "/information";
+            std::ifstream file(gpuInfoPath);
+
+            if (file.is_open())
             {
-                return true;
+                std::string line;
+                while (std::getline(file, line))
+                {
+                    if (line.find("NVIDIA") != std::string::npos)
+                    {
+                        return true;
+                    }
+                }
+                file.close();
             }
         }
-        file.close();
     }
 
     return false;
 }
+
 #else
 #include <iostream>
 #include <Windows.h>

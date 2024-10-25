@@ -1,0 +1,11 @@
+app: @PROJECT_NAME@
+version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
+description: Stable Diffusion GUI
+url: https://github.com/fszontagh/sd.cpp.gui.wx
+icon: @APP_IMAGE_ICON_FILE@
+
+
+script:
+  - cp -pRfv @APPIMAGE_SOURCE_DIR@/* .
+  - cp -p @APP_IMAGE_DESKTOP_FILE@ .
+  - cp -p @APP_IMAGE_ICON_FILE@ .

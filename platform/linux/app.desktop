@@ -1,10 +1,11 @@
 [Desktop Entry]
-Version=${version}
-Type=Application
-Categories=Application;
+Version=1.0
+Categories=Graphics
+StartupNotify=true
 Terminal=false
-Exec=${mainExecutable}
-Path=${path}
-Name=${name}
-Comment=
-Icon=${icon}
+Type=Application
+Exec=@SD_UI_EXEC@
+Name=@PROJECT_NAME@
+GenericName=Stale Diffusion
+Comment=@PROJECT_DESCRIPTION@
+Icon=stablediffusiongui

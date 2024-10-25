@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version 4.0.0-0-g0efcecf)
+// C++ code generated with wxFormBuilder (version 4.2.1-0-g80c4cb6)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -34,8 +34,8 @@
 #include <wx/statbmp.h>
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
-#include <wx/srchctrl.h>
 #include <wx/html/htmlwin.h>
+#include <wx/srchctrl.h>
 #include <wx/notebook.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
@@ -45,11 +45,10 @@
 
 ///////////////////////////////////////////////////////////////////////////
 
-
 ///////////////////////////////////////////////////////////////////////////////
-/// Class UI
+/// Class mainUI
 ///////////////////////////////////////////////////////////////////////////////
-class UI : public wxFrame
+class mainUI : public wxFrame
 {
 	private:
 
@@ -64,6 +63,8 @@ class UI : public wxFrame
 		wxChoice* m_model;
 		wxStaticText* m_staticText72;
 		wxChoice* m_type;
+		wxStaticText* m_schedulertext;
+		wxChoice* m_scheduler;
 		wxPanel* m_panel12;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
@@ -215,6 +216,7 @@ class UI : public wxFrame
 		virtual void OnDeleteUpscaleImage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerModelSelection( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
+		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
@@ -224,23 +226,24 @@ class UI : public wxFrame
 
 	public:
 		wxBoxSizer* bSizer8911;
+		wxHtmlWindow* m_upscalerHelp;
 		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer891;
 
-		UI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
+		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
-		~UI();
+		~mainUI();
 
 		void m_splitter2OnIdle( wxIdleEvent& )
 		{
 			m_splitter2->SetSashPosition( -200 );
-			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter2OnIdle ), NULL, this );
+			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
 		}
 
 		void m_splitter3OnIdle( wxIdleEvent& )
 		{
 			m_splitter3->SetSashPosition( -300 );
-			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( UI::m_splitter3OnIdle ), NULL, this );
+			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 		}
 
 };
@@ -365,11 +368,13 @@ class CivitAiWindow : public wxFrame
 		wxTextCtrl* m_civitai_search;
 		wxButton* m_search;
 		wxRadioBox* m_model_type;
+		wxStaticText* m_staticText43;
 		wxDataViewListCtrl* m_dataViewListCtrl5;
 		wxDataViewColumn* m_dataViewListColumn12;
 		wxDataViewColumn* m_dataViewListColumn13;
 		wxDataViewColumn* m_dataViewListColumn30;
 		wxDataViewColumn* m_dataViewListColumn32;
+		wxStaticText* m_staticText431;
 		wxDataViewListCtrl* m_downloads;
 		wxDataViewColumn* m_dataViewListColumn26;
 		wxDataViewColumn* m_dataViewListColumn31;
