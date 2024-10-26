@@ -2,6 +2,7 @@
 exiv2/0.28.2
 libcurl/8.5.0
 openssl/3.3.2
+wxwidgets/3.2.6
 [generators]
 CMakeDeps
 CMakeToolchain

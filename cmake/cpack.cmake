@@ -20,6 +20,7 @@ set(lib_INSTALL_PATH_NSIS "lib")
 if (WIN32)
 	set(bin_INSTALL_PATH_NSIS ".")
 	set(lib_INSTALL_PATH_NSIS ".")
+	set(CPACK_PACKAGE_ICON ${CMAKE_SOURCE_DIR}\\\\graphics\\\\icons\\\\256\\\\stablediffusiongui.png)
 endif()
 
 
@@ -125,9 +126,14 @@ if(WIN32)
     set(CPACK_NSIS_URL_INFO_ABOUT ${CMAKE_PROJECT_HOMEPAGE_URL})
     set(CPACK_NSIS_HELP_LINK "https://github.com/fszontagh/sd.cpp.gui.wx")
     set(CPACK_NSIS_MODIFY_PATH ON)
-    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/cube.ico")
-    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/cube.ico")
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico")
+    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico")
     set(CPACK_NSIS_INSTALLED_ICON_NAME "StableDiffusionGUI.exe")
+    set(CPACK_NSIS_EXECUTABLES_DIRECTORY "stablediffusiongui.ico")
+    install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
+    install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
+    
+    
     
 elseif(UNIX AND NOT APPLE)
 

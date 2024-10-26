@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(FetchContent)
 include(ExternalProject)
+include(CMakePackageConfigHelpers)
 
 set(BUILD_SHARED_LIBS OFF)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
@@ -68,11 +69,25 @@ set(SOURCES
     src/ui/ModelInfo.cpp
 )
 
+if (WIN32)
+    list(APPEND SOURCES minimal.rc)
+endif()
+
 # Set target for the application
 add_executable(sd_ui ${SOURCES})
 
+if (NOT WIN32)
+	set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
+else()
+	set(APPDEPENDS wxWidgets::wxWidgets)
+    if (MSVC)
+        set_target_properties(${PROJECT_NAME} PROPERTIES
+            COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"
+            LINK_FLAGS "/MANIFEST:NO"
+        )
+    endif()
+endif()
 
-set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
 
 if (SDGUI_AVX)
   list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
@@ -124,7 +139,7 @@ target_include_directories(sd_ui PRIVATE
 if(WIN32)
     target_link_libraries(sd_ui PRIVATE
     cpu_features
-    wx::base wx::core wx::xrc wx::aui wx::richtext
+    wxWidgets::wxWidgets
     OpenSSL::Crypto CURL::libcurl exiv2::exiv2
     )
 
