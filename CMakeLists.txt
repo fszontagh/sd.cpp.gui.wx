@@ -81,7 +81,7 @@ if (NOT WIN32)
 else()
 	set(APPDEPENDS wxWidgets::wxWidgets)
     if (MSVC)
-        set_target_properties(${PROJECT_NAME} PROPERTIES
+        set_target_properties(sd_ui PROPERTIES
             COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"
             LINK_FLAGS "/MANIFEST:NO"
         )
