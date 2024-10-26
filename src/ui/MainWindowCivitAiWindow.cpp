@@ -251,9 +251,9 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
             CivitAi::DownloadItem* itemData = reinterpret_cast<CivitAi::DownloadItem*>(this->m_downloads->GetItemData(item));
             if (itemData->local_file == payload->local_file) {
                 if (payload->downloadedSize == 0 || payload->targetSize == 0) {
-                    store->SetValueByRow(0, _i, progressCol); // progress 
-                    store->SetValueByRow(CivitAi::DownloadItemStateNames[payload->state], _i, progressCol - 1); // state
-                    store->SetValueByRow("", _i, progressCol - 2);  // size
+                    store->SetValueByRow(0, _i, progressCol);                                                    // progress
+                    store->SetValueByRow(CivitAi::DownloadItemStateNames[payload->state], _i, progressCol - 1);  // state
+                    store->SetValueByRow("", _i, progressCol - 2);                                               // size
                     store->RowValueChanged(_i, progressCol - 2);
                     store->RowValueChanged(_i, progressCol - 1);
                     store->RowValueChanged(_i, progressCol);
@@ -548,7 +548,7 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
         sd_gui_utils::SimpleCurl curl;
 
         curl.getFile(item->url, headers, target_path, [this, &item](curl_off_t bytes, curl_off_t total) {
-            item->targetSize = total;
+            item->targetSize     = total;
             item->downloadedSize = bytes;
             this->SendThreadEvent("DOWNLOAD_PROGRESS", item);
         });
@@ -602,7 +602,7 @@ void MainWindowCivitAiWindow::JsonToTable(std::string json_str) {
         nlohmann::json json_data = nlohmann::json::parse(json_str);
         if (!json_data.contains("items")) {
             wxMessageBox(_("Error on parsing response!"));
-            this->m_statusBar2->SetStatusText(_("Error on parsing response!"));
+            this->m_statusBar2->SetStatusText(_("Error on parsing response! (no items in json)"));
             return;
         }
         this->m_statusBar2->SetStatusText(_("Parsing items"));
@@ -661,7 +661,7 @@ void MainWindowCivitAiWindow::JsonToTable(std::string json_str) {
         }
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
-        this->m_statusBar2->SetStatusText(_("Error on parsing response!"));
+        this->m_statusBar2->SetStatusText(_("Error on parsing response: " + std::string(e.what())));
         return;
     }
 }
