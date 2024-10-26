@@ -14,6 +14,7 @@ namespace sd_gui_utils {
         SimpleCurl() {
             curl_global_init(CURL_GLOBAL_DEFAULT);
             curl = curl_easy_init();
+            curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
         }
 
         ~SimpleCurl() {
