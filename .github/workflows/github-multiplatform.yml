@@ -1,0 +1,103 @@
+name: Build and Package
+
+on:
+    push:
+        tags:
+        - '*'
+    workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: [ "${{ matrix.vm }}" ]
+    strategy:
+      matrix:
+        vm: [ubuntu-22.04, ubuntu-24.04]
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y fuse3 cmake git nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev
+          
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON
+
+      - name: Build and Package DEB
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+
+      - name: Build AppImage
+        run: |
+          cd build
+          cmake --build . --config Release --target AppImage
+
+      - name: Upload artifacts (Linux)
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-packages
+          path: build/*.deb
+
+  build-windows:
+    runs-on: [windows-2022]
+    
+    steps:
+      - name: Install Conan
+        id: conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            $conan_version=conan --version
+            echo "version=$conan_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
+      - name: Install cuda-toolkit
+        id: cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: "12.2.0"
+          method: "network"
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust", "visual_studio_integration"]'
+
+      - name: Install rocm-toolkit
+        id: rocm-toolkit
+        uses: Cyberhan123/rocm-toolkit@v0.1.0
+        with:
+          rocm: "5.5.0"
+      
+      - name: Install Ninja
+        id: install-ninja
+        uses: urkle/action-get-ninja@v1
+        with:
+          version: 1.11.1          
+
+      - name: Check out code
+        uses: actions/checkout@v3
+     
+      - name: Set up Conan
+        run: |
+          mkdir build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=missing
+
+      - name: Configure CMake
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON --preset conan-default
+
+      - name: Build and Package Installer
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+
+      - name: Upload artifacts (Windows)
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-installer
+          path: build/*.exe
