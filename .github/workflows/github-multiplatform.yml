@@ -110,5 +110,5 @@ jobs:
           prerelease: true
 
           files: |
-            Release.txt
+            build/*.exe
             build/*.sha256

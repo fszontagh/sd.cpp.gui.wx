@@ -129,7 +129,7 @@ if(WIN32)
     set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico")
     set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico")
     set(CPACK_NSIS_INSTALLED_ICON_NAME "StableDiffusionGUI.exe")
-    set(CPACK_NSIS_EXECUTABLES_DIRECTORY "stablediffusiongui.ico")
+    set(CPACK_NSIS_EXECUTABLES_DIRECTORY "")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
     
