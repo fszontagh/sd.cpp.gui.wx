@@ -118,12 +118,6 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         delete ditem;
         return;
     }
-    if (js.contains("downloadUrl") && !js["downloadUrl"].is_null()) {
-        ditem->url = js["downloadUrl"].get<std::string>();
-    } else {
-        delete ditem;
-        return;
-    }
 
     ditem->local_file = path;
     ditem->tmp_name   = std::filesystem::path(path).replace_extension(".download").string();
@@ -188,11 +182,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         this->m_downloads->AppendItem(data, (wxUIntPtr)item);
         this->m_downloads->Refresh();
         if (start) {
-            // if we start, because no other
-            item->timer = new wxTimer();
-            item->timer->SetClientData((void*)item);
-            item->timer->Bind(wxEVT_TIMER, &MainWindowCivitAiWindow::OnTimer, this);
-            item->timer->Start(500);
             this->modelDownloadThreads.emplace_back(new std::thread(&MainWindowCivitAiWindow::modelDownloadThread, this, item));
         }
         return;
@@ -200,8 +189,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
     if (token == "DOWNLOAD_FINISH") {
         auto payload   = e.GetPayload<CivitAi::DownloadItem*>();
         payload->state = CivitAi::DownloadItemState::FINISHED;
-        payload->timer->Stop();
-        delete payload->timer;
         int progressCol = this->m_downloads->GetColumnCount() - 1;
         auto store      = this->m_downloads->GetStore();
         for (int _i = 0; _i < this->m_downloads->GetItemCount(); ++_i) {
@@ -224,10 +211,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         // start the next if we have in the list
         for (auto& job : this->downloads) {
             if (job->state == CivitAi::DownloadItemState::PENDING) {
-                job->timer = new wxTimer();
-                job->timer->SetClientData((void*)job);
-                job->timer->Bind(wxEVT_TIMER, &MainWindowCivitAiWindow::OnTimer, this);
-                job->timer->Start(500);
                 job->state = CivitAi::DownloadItemState::DOWNLOADING;
                 this->modelDownloadThreads.emplace_back(new std::thread(&MainWindowCivitAiWindow::modelDownloadThread, this, job));
                 break;
@@ -282,7 +265,6 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
     }
     if (token == "DOWNLOAD_ERROR") {
         auto payload = e.GetPayload<CivitAi::DownloadItem*>();
-        payload->timer->Stop();
         payload->state = CivitAi::DownloadItemState::DOWNLOAD_ERROR;
 
         // update info in table
@@ -548,13 +530,21 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
         sd_gui_utils::SimpleCurl curl;
 
         curl.getFile(item->url, headers, target_path, [this, &item](curl_off_t bytes, curl_off_t total) {
-            item->targetSize     = total;
+            // item->targetSize     = total;
             item->downloadedSize = bytes;
-            this->SendThreadEvent("DOWNLOAD_PROGRESS", item);
+            this->SendThreadEvent("DOWNLOAD_UPDATE", item);
         });
 
+        // TODO: check response header, if it is json, then we got error (ef the author not allowing to download without login)
+        // {"error":"Unauthorized","message":"The creator of this asset requires you to be logged in to download it"}
+        if (item->targetSize != item->downloadedSize) {
+            item->error = _("Download failed");
+            this->SendThreadEvent("DOWNLOAD_ERROR", item);
+            return;
+        }
         // Rename file after download
         std::filesystem::rename(target_path, item->local_file);
+
         this->SendThreadEvent("DOWNLOAD_FINISH", item);
 
     } catch (const std::exception& e) {
@@ -703,15 +693,6 @@ void MainWindowCivitAiWindow::SendThreadEvent(std::string str, int id, CivitAi::
     wxQueueEvent(this->GetEventHandler(), event);
 }
 
-void MainWindowCivitAiWindow::OnTimer(wxTimerEvent& e) {
-    auto timer = (wxTimer*)e.GetEventObject();
-    auto item  = reinterpret_cast<CivitAi::DownloadItem*>(timer->GetClientData());
-    if (item->state == CivitAi::DownloadItemState::DOWNLOAD_ERROR) {
-        item->timer->Stop();
-        return;
-    }
-    this->SendThreadEvent("DOWNLOAD_UPDATE", item);
-}
 
 MainWindowCivitAiWindow::~MainWindowCivitAiWindow() {
     for (auto& thread : this->infoDownloadThread) {

@@ -99,8 +99,6 @@ private:
 		item->downloadedSize += written;
 		return written;
 	}
-
-	void OnTimer(wxTimerEvent &e);
 };
 
 #endif // __MainWindowCivitAiWindow__
