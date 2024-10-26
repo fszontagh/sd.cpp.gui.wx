@@ -45,7 +45,7 @@ jobs:
           path: build/*.deb
 
   build-windows:
-    runs-on: [self-hosted, windows]
+    runs-on: [self-hosted, windows11]
     
     steps:
       - name: Get latest CMake and Ninja
