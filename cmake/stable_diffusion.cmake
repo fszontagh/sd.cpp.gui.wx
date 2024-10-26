@@ -60,7 +60,8 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
     message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUBLAS} ${SD_HIPBLAS} ${SD_VULKAN} EPREFIX: ${EPREFIX}")
     
    
-
+if (NOT SD_HIPBLAS)
+    
     ExternalProject_Add(
         stable_diffusion_cpp_${variant_name}
         GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
@@ -70,6 +71,21 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
 	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUBLAS=${SD_CUBLAS} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
     )
+
+    else(NOT SD_HIPBLAS)
+
+    ExternalProject_Add(
+        stable_diffusion_cpp_${variant_name}
+        GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
+        GIT_TAG ${SD_GIT_TAG}
+        EXCLUDE_FROM_ALL
+        BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+	    CMAKE_ARGS -G Ninja -DAMDGPU_TARGETS="gfx1100;gfx1102;gfx1030" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUBLAS=${SD_CUBLAS} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    )    
+
+
+endif(NOT SD_HIPBLAS)
 
 
 endmacro()
