@@ -46,7 +46,7 @@ jobs:
           prerelease: true
           files: |
             build/*.deb
-            build/*.AppImage
+            build/out/*.AppImage
             build/*.tar.gz
             build/*.sha256
 

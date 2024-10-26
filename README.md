@@ -36,7 +36,8 @@ To select a backend on startup, add one from the following parameters:
  - -avx
  - -avx2
  - -avx512
- - rocm
+ - hipblas
+ - vulkan
  
  To allow to run in multi - instance mode, start with ```-allow-multiple``` argument. Otherwise only one instance is allowed to run in
 
@@ -156,13 +157,13 @@ For CUDA only:
 ```
 cmake .. -DSD_CUBLAS=ON
 ```
-For VULCAN only:
+For VULKAN only:
 ```
 cmake .. -DSD_VULKAN=ON
 ```
-For ROCM only:
+For HIPBLAS only:
 ```
-cmake .. -DSD_ROCM=ON
+cmake .. -DSD_HIPBLAS=ON
 ```
 It is possible to combine more parameters 
 

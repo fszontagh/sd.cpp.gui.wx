@@ -100,13 +100,13 @@ if (SDGUI_CUBLAS)
     set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
-if (SDGUI_ROCM)
-	install(FILES ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_rocm${CMAKE_SHARED_LIBRARY_SUFFIX}
+if (SDGUI_HIPBLAS)
+	install(FILES ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_hipblas${CMAKE_SHARED_LIBRARY_SUFFIX}
 	DESTINATION ${lib_INSTALL_PATH_NSIS}  
-	COMPONENT libsdcpp_rocm)
-	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_rocm")
-    set(CPACK_DEBIAN_LIBSDCPP_ROCM_PACKAGE_NAME "libstablediffusion-rocm-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_ROCM_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+	COMPONENT libsdcpp_hipblas)
+	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_hipblas")
+    set(CPACK_DEBIAN_LIBSDCPP_HIPBLAS_PACKAGE_NAME "libstablediffusion-hipblas-${SDCPP_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_HIPBLAS_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_VULKAN)
@@ -150,7 +150,7 @@ elseif(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), stablediffusiongui (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
-    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-rocm-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
+    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
     set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
@@ -224,21 +224,21 @@ endif()
 if (SDGUI_CUBLAS)
     cpack_add_component(libsdcpp_cuda
         DISPLAY_NAME "SD C++ -CUDA"
-        DESCRIPTION "SD CPU backend with CUDA feature"
+        DESCRIPTION "SD CPU backend with CUDA GPU feature"
     )
 endif()
 
-if (SDGUI_ROCM)
-    cpack_add_component(libsdcpp_rocm
-        DISPLAY_NAME "SD C++ -ROCM"
-        DESCRIPTION "SD CPU backend with ROCM feature"
+if (SDGUI_HIPBLAS)
+    cpack_add_component(libsdcpp_hipblas
+        DISPLAY_NAME "SD C++ -HIPBLAS"
+        DESCRIPTION "SD CPU backend with AMD GPU feature"
     )
 endif()
 
-if (SDGUI_VULCAN)
-    cpack_add_component(libsdcpp_vulcan
-        DISPLAY_NAME "SD C++ -VULCAN"
-        DESCRIPTION "SD CPU backend with VULCAN feature"
+if (SDGUI_VULKAN)
+    cpack_add_component(libsdcpp_vulkan
+        DISPLAY_NAME "SD C++ -VULKAN"
+        DESCRIPTION "SD CPU backend with VULKAN feature"
     )
 endif()
 

@@ -32,8 +32,8 @@ public:
             if (wxApp::argv[i] == "-avx512") {
                 forceType = "avx512";
             }
-            if (wxApp::argv[i] == "-rocm") {
-                forceType = "rocm";
+            if (wxApp::argv[i] == "-hipblas") {
+                forceType = "hipblas";
             }
             if (wxApp::argv[i] == "-allow-multiple") {
                 allow_multiple_instance = true;
@@ -83,7 +83,7 @@ public:
             if (isNvidiaGPU()) {
                 dllName = libPrefix + "stable-diffusion_cuda";
             } else if (isAmdGPU()) {
-                dllName = libPrefix + "stable-diffusion_rocm";
+                dllName = libPrefix + "stable-diffusion_hipblas";
             } else {
                 static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
                 if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl) {

@@ -27,8 +27,8 @@ if(SDGUI_VULKAN)
   list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan)
 endif()
 
-if (SDGUI_ROCM)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_rocm)
+if (SDGUI_HIPBLAS)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_hipblas)
 endif()
 
 

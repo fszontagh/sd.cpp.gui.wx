@@ -12,7 +12,7 @@ set(SDGUI_AVX OFF)
 set(SDGUI_AVX2 OFF)
 set(SDGUI_AVX512 OFF)
 set(SDGUI_CUBLAS OFF)
-set(SDGUI_ROCM OFF)
+set(SDGUI_HIPBLAS OFF)
 set(SDGUI_VULKAN OFF)
 
 if (SD_AVX) 
@@ -31,16 +31,16 @@ if(SD_CUBLAS)
     set(SDGUI_CUBLAS ON)
 endif(SD_CUBLAS)
 
-if (SD_ROCM)
-    set(SDGUI_ROCM ON)
-endif(SD_ROCM)
+if (SD_HIPBLAS)
+    set(SDGUI_HIPBLAS ON)
+endif(SD_HIPBLAS)
 
 if (SD_VULKAN)
     set(SDGUI_VULKAN ON)
 endif(SD_VULKAN)
 
 # Helper macro to build stable diffusion with different settings
-macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag rocm_flag vulkan_flag)
+macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag hipblas_flag vulkan_flag)
 
 
     # Set flags for the variant
@@ -48,7 +48,7 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
     set(SD_AVX2 "${avx2_flag}")
     set(SD_AVX512 "${avx512_flag}")
     set(SD_CUBLAS "${cublas_flag}")
-    set(SD_ROCM "${rocm_flag}")
+    set(SD_HIPBLAS "${hipblas_flag}")
     set(SD_VULKAN "${vulkan_flag}")
 
     set(EPREFIX "")
@@ -57,7 +57,7 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
         set(EPREFIX "${CMAKE_BUILD_TYPE}/")
     endif()    
 
-    message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUBLAS} ${SD_ROCM} ${SD_VULKAN} EPREFIX: ${EPREFIX}")
+    message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUBLAS} ${SD_HIPBLAS} ${SD_VULKAN} EPREFIX: ${EPREFIX}")
     
    
 
@@ -67,7 +67,7 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
         GIT_TAG ${SD_GIT_TAG}
         EXCLUDE_FROM_ALL
         BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUBLAS=${SD_CUBLAS} -DSD_ROCM=${SD_ROCM} -DSD_VULKAN=${SD_VULKAN}
+	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUBLAS=${SD_CUBLAS} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
     )
 
@@ -91,9 +91,9 @@ build_stable_diffusion("cuda" OFF OFF OFF ON OFF OFF)
 endif(SDGUI_CUBLAS)
 
 
-if (SDGUI_ROCM)
-build_stable_diffusion("rocm" OFF OFF OFF OFF ON OFF)
-endif(SDGUI_ROCM)
+if (SDGUI_HIPBLAS)
+build_stable_diffusion("hipblas" OFF OFF OFF OFF ON OFF)
+endif(SDGUI_HIPBLAS)
 
 if (SDGUI_VULKAN)
 build_stable_diffusion("vulkan" OFF OFF OFF OFF OFF ON)
