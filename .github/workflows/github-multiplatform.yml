@@ -1,4 +1,4 @@
-name: Build and Package
+name: Build and Package and Relase
 
 on:
     push:
