@@ -39,7 +39,7 @@ void MainWindowSettings::onShowNotificationCheck(wxCommandEvent &event)
 
 void MainWindowSettings::OnCivitaiHelpButton(wxCommandEvent &event)
 {
-   wxString civitHelpLink = "https://education.civitai.com/civitais-guide-to-downloading-via-api/#how-do-i-download-via-the-api";
+   wxString civitHelpLink = "https://education.civitai.com/civitais-guide-to-downloading-via-api/#step-by-step";
    wxLaunchDefaultBrowser(civitHelpLink);
 }
 

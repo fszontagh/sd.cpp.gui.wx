@@ -1,4 +1,4 @@
-app: @PROJECT_NAME@
+app: @CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_NAME@
 version: @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
 description: Stable Diffusion GUI
 url: https://github.com/fszontagh/sd.cpp.gui.wx

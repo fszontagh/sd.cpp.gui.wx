@@ -11648,7 +11648,7 @@
                         <property name="border">5</property>
                         <property name="flag">wxALL|wxEXPAND</property>
                         <property name="proportion">1</property>
-                        <object class="wxDataViewListCtrl" expanded="false">
+                        <object class="wxDataViewListCtrl" expanded="true">
                           <property name="bg"></property>
                           <property name="context_help"></property>
                           <property name="context_menu">1</property>
@@ -11690,7 +11690,7 @@
                             <property name="name">m_dataViewListColumn31</property>
                             <property name="permission">protected</property>
                             <property name="type">Text</property>
-                            <property name="width">-1</property>
+                            <property name="width">200</property>
                           </object>
                           <object class="dataViewListColumn" expanded="false">
                             <property name="align">wxALIGN_LEFT</property>
@@ -11712,7 +11712,7 @@
                             <property name="name">m_dataViewListColumn28</property>
                             <property name="permission">protected</property>
                             <property name="type">Progress</property>
-                            <property name="width">-1</property>
+                            <property name="width">200</property>
                           </object>
                         </object>
                       </object>
