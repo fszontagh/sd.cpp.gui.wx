@@ -152,9 +152,9 @@ elseif(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), stablediffusiongui (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libexiv2-27, libnotify4, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
     if (DISTRO_VER GREATER 23)
-        set(CPACK_DEBIAN_STABLEDIFFUSION_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
+        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     else()
-        set(CPACK_DEBIAN_STABLEDIFFUSION_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
+        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     endif()
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
     set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
@@ -229,21 +229,21 @@ endif()
 if (SDGUI_CUBLAS)
     cpack_add_component(libsdcpp_cuda
         DISPLAY_NAME "SD C++ -CUDA"
-        DESCRIPTION "SD CPU backend with CUDA GPU feature"
+        DESCRIPTION "SD GPU backend with CUDA GPU feature"
     )
 endif()
 
 if (SDGUI_HIPBLAS)
     cpack_add_component(libsdcpp_hipblas
         DISPLAY_NAME "SD C++ -HIPBLAS"
-        DESCRIPTION "SD CPU backend with AMD GPU feature"
+        DESCRIPTION "SD GPU backend with AMD GPU feature"
     )
 endif()
 
 if (SDGUI_VULKAN)
     cpack_add_component(libsdcpp_vulkan
         DISPLAY_NAME "SD C++ -VULKAN"
-        DESCRIPTION "SD CPU backend with VULKAN feature"
+        DESCRIPTION "SD GPU backend with VULKAN feature"
     )
 endif()
 

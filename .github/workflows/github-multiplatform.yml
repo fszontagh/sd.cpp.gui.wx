@@ -1,9 +1,6 @@
 name: Build and Package and Relase
 
 on:
-    push:
-        tags:
-        - '*'
     workflow_dispatch:
 
 jobs:
