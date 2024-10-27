@@ -9,6 +9,15 @@
 #include "ui/MainWindowUI.h"
 #include "ui/embedded_files/app_icon.h"
 
+#include <csignal>
+#include <iostream>
+
+void signalHandler(int signal) {
+    if (signal == SIGABRT) {
+        std::cerr << "Abort signal (SIGABRT) received. Ignoring\n";
+    }
+}
+
 // Define the MainApp
 class MainApp : public wxApp {
 private:
@@ -16,24 +25,32 @@ private:
 
 public:
     bool OnInit() override {
+        std::signal(SIGABRT, signalHandler);
+
         wxString forceType           = "";
         bool allow_multiple_instance = false;
+        std::string usingBackend = "cpu";
 
         for (int i = 0; i < wxApp::argc; ++i) {
             if (wxApp::argv[i] == "-cuda") {
                 forceType = "cuda";
+                usingBackend = "cuda";
             }
             if (wxApp::argv[i] == "-avx") {
                 forceType = "avx";
+                usingBackend = "avx";
             }
             if (wxApp::argv[i] == "-avx2") {
                 forceType = "avx2";
+                usingBackend = "avx2";
             }
             if (wxApp::argv[i] == "-avx512") {
                 forceType = "avx512";
+                usingBackend = "avx512";
             }
             if (wxApp::argv[i] == "-hipblas") {
                 forceType = "hipblas";
+                usingBackend = "hipblas";
             }
             if (wxApp::argv[i] == "-allow-multiple") {
                 allow_multiple_instance = true;
@@ -82,16 +99,21 @@ public:
         } else {
             if (isNvidiaGPU()) {
                 dllName = libPrefix + "stable-diffusion_cuda";
+                usingBackend = "cuda";
             } else if (isAmdGPU()) {
                 dllName = libPrefix + "stable-diffusion_hipblas";
+                usingBackend = "hipblas";
             } else {
                 static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
                 if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl) {
                     dllName = libPrefix + "stable-diffusion_avx512";
+                    usingBackend = "avx512";
                 } else if (features.avx2) {
                     dllName = libPrefix + "stable-diffusion_avx2";
+                    usingBackend = "avx2";
                 } else if (features.avx) {
                     dllName = libPrefix + "stable-diffusion_avx";
+                    usingBackend = "avx";
                 }
             }
         }
@@ -103,7 +125,7 @@ public:
         }
 
         MainWindowUI* mainFrame = new MainWindowUI(nullptr);
-        mainFrame->loadDll(dll);
+        mainFrame->loadDll(dll, usingBackend);
         mainFrame->Show(true);
         SetTopWindow(mainFrame);
         splash->Destroy();

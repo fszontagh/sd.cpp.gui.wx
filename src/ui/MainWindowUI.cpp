@@ -102,19 +102,32 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
 
 void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     // SdGetSystemInfoFunction
-    SdGetSystemInfoFunction sd_get_system_info =
-        (SdGetSystemInfoFunction)this->sd_dll->GetSymbol("sd_get_system_info");
-    auto sysinfo                  = sd_get_system_info();
-    MainWindowAboutDialog* dialog = new MainWindowAboutDialog(this);
-    wxString about                = wxString::Format(
-        "<h2>%s</h2><p>Version: %s </p><p>Git version: %s</p><p>Website: <a "
-                       "target='_blank' href='%s'>%s</a></p><hr/>",
-        PROJECT_NAME, SD_GUI_VERSION, GIT_HASH, SD_GUI_HOMEPAGE, PROJECT_NAME);
+    SdGetSystemInfoFunction sd_get_system_info = (SdGetSystemInfoFunction)this->sd_dll->GetSymbol("sd_get_system_info");
+    auto sysinfo                               = sd_get_system_info();
+    MainWindowAboutDialog* dialog              = new MainWindowAboutDialog(this);
+
+    wxString about = wxString("<p><strong>Disclaimer</strong></p><p>Warning: This application may terminate unexpectedly via an abort signal during runtime. Use of this application is at your own risk. The developer assumes no responsibility or liability for any potential data loss, damage, or other issues arising from its usage. By using this application, you acknowledge and accept these terms.</p>");
+
+    about.Append(wxString::Format(
+        "<h2>%s</h2><p>Version: %s </p><p>Git version: %s</p><p>Website: <a target='_blank' href='%s'>%s</a></p><hr/>",
+        PROJECT_NAME, SD_GUI_VERSION, GIT_HASH, SD_GUI_HOMEPAGE, PROJECT_NAME));
+
+    about.Append(wxString::Format("<p>Loaded backend: %s</p>", usingBackend.c_str()));
     about.append(wxString::Format(
-        "<p>Configuration folder: %s</p><p>Config "
-        "file: %s</p><p>Data folder: %s</p>",
-        wxStandardPaths::Get().GetUserConfigDir(),
-        this->ini_path, this->cfg->datapath));
+        "<p>Configuration folder: %s</p><p>Config file: %s</p><p>Data folder: %s</p>",
+        wxStandardPaths::Get().GetUserConfigDir(), this->ini_path, this->cfg->datapath));
+
+    about.Append(wxString::Format("<p>Model folder: %s</p>", this->cfg->model));
+    about.Append(wxString::Format("<p>Embedding folder: %s</p>", this->cfg->embedding));
+    about.Append(wxString::Format("<p>Lora folder: %s</p>", this->cfg->lora));
+    about.Append(wxString::Format("<p>Vae folder: %s</p>", this->cfg->vae));
+    about.Append(wxString::Format("<p>Controlnet folder: %s</p>", this->cfg->controlnet));
+    about.Append(wxString::Format("<p>Esrgan folder: %s</p>", this->cfg->esrgan));
+    about.Append(wxString::Format("<p>Taesd folder: %s</p>", this->cfg->taesd));
+    about.Append(wxString::Format("<p>Image's output folder: %s</p>", this->cfg->output));
+    about.Append(wxString::Format("<p>Jobs folder: %s</p>", this->cfg->jobs));
+    about.Append(wxString::Format("<p>Presets folder: %s</p>", this->cfg->presets));
+
     about.append(wxString("<pre>"));
     about.append(wxString(sysinfo));
     about.append(wxString("</pre>"));
@@ -3632,20 +3645,17 @@ void MainWindowUI::threadedModelInfoImageDownload(
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_DONE, modelinfo);
 }
 
-void MainWindowUI::loadDll(wxDynamicLibrary* dll) {
-    this->sd_dll = dll;
-    this->sd_set_log_callback =
-        (SdSetLogCallbackFunction)this->sd_dll->GetSymbol("sd_set_log_callback");
+void MainWindowUI::loadDll(wxDynamicLibrary* dll, const std::string& usingBackend) {
+    this->usingBackend        = usingBackend;
+    this->sd_dll              = dll;
+    this->sd_set_log_callback = (SdSetLogCallbackFunction)this->sd_dll->GetSymbol("sd_set_log_callback");
     if (!this->sd_set_log_callback) {
         wxMessageBox(_("Something went wrong. Invalid backend lib"));
         this->Close();
     }
-    this->sd_set_log_callback(MainWindowUI::HandleSDLog,
-                              (void*)this->GetEventHandler());
+    this->sd_set_log_callback(MainWindowUI::HandleSDLog, (void*)this->GetEventHandler());
 
-    this->sd_set_progress_callback =
-        (SdSetProgressCallbackFunction)this->sd_dll->GetSymbol(
-            "sd_set_progress_callback");
+    this->sd_set_progress_callback = (SdSetProgressCallbackFunction)this->sd_dll->GetSymbol("sd_set_progress_callback");
     if (!this->sd_set_progress_callback) {
         wxMessageBox(_("Something went wrong. Invalid backend lib"));
         this->Close();

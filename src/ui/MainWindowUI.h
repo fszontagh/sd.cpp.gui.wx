@@ -111,9 +111,10 @@ public:
     ~MainWindowUI();
     void OnThreadMessage(wxThreadEvent& e);
     void OnCivitAiThreadMessage(wxThreadEvent& e);
-    void loadDll(wxDynamicLibrary* dll);
+    void loadDll(wxDynamicLibrary* dll, const std::string &usingBackend);
 
 private:
+    std::string usingBackend;
     wxFileConfig* fileConfig = nullptr;
     sd_gui_utils::config* cfg;
     wxString ini_path;
