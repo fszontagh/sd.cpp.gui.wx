@@ -21,7 +21,6 @@
 #include "embedded_files/picture.png.h"
 #include "embedded_files/play.png.h"
 #include "embedded_files/refresh.png.h"
-#include "embedded_files/replace.png.h"
 #include "embedded_files/sd.cpp.gui_blankimage.png.h"
 #include "embedded_files/settings.png.h"
 #include "embedded_files/text_box_dots.png.h"
@@ -160,7 +159,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer83;
 	bSizer83 = new wxBoxSizer( wxVERTICAL );
 
-	bSizer83->SetMinSize( wxSize( 300,-1 ) );
+	bSizer83->SetMinSize( wxSize( 305,-1 ) );
 	wxBoxSizer* bSizer76;
 	bSizer76 = new wxBoxSizer( wxVERTICAL );
 
@@ -211,7 +210,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText231->Wrap( 0 );
 	bSizer85->Add( m_staticText231, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_cfg = new wxSpinCtrlDouble( m_scrolledWindow1, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( 100,-1 ), wxSP_ARROW_KEYS, 0, 15, 0, 0.1 );
+	m_cfg = new wxSpinCtrlDouble( m_scrolledWindow1, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 15, 0, 0.1 );
 	m_cfg->SetDigits( 1 );
 	bSizer85->Add( m_cfg, 0, wxALL|wxEXPAND, 5 );
 
@@ -227,7 +226,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer86->Add( m_staticText234, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_clip_skip = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 200,-1 ), wxSP_ARROW_KEYS, -1, 2, 0 );
+	m_clip_skip = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 200,-1 ), wxSP_ARROW_KEYS, -1, 2, -1 );
 	m_clip_skip->SetToolTip( _("ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)\n<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x") );
 
 	bSizer86->Add( m_clip_skip, 0, wxALL|wxEXPAND, 5 );
@@ -310,12 +309,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText233->Wrap( 0 );
 	bSizer92->Add( m_staticText233, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_seed = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("-1"), wxDefaultPosition, wxSize( 100,-1 ), 0, -1, 999999999, -1 );
+	m_seed = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("-1"), wxDefaultPosition, wxSize( 142,-1 ), 0, -1, 999999999, -1 );
 	bSizer92->Add( m_seed, 0, wxALL|wxEXPAND, 5 );
 
 	m_random_seed = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_random_seed->SetBitmap( dice_four_png_to_wx_bitmap() );
+	m_random_seed->SetToolTip( _("Generate a random seed") );
+
 	bSizer92->Add( m_random_seed, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -330,7 +331,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer93->Add( m_staticText14, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_steps = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("20"), wxDefaultPosition, wxSize( 100,-1 ), wxSP_ARROW_KEYS, 0, 100, 20 );
+	m_steps = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("20"), wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 100, 18 );
 	m_steps->SetToolTip( _("number of sample steps (default: 20)") );
 
 	bSizer93->Add( m_steps, 0, wxALL|wxEXPAND, 5 );
@@ -351,7 +352,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText237->Wrap( 0 );
 	bSizer94->Add( m_staticText237, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_width = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( 100,-1 ), wxSP_ARROW_KEYS, 256, 2048, 512 );
+	m_width = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 256, 2048, 512 );
 	bSizer94->Add( m_width, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -364,14 +365,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText239->Wrap( 0 );
 	bSizer95->Add( m_staticText239, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_height = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( 100,-1 ), wxSP_ARROW_KEYS, 256, 2048, 512 );
+	m_height = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 256, 2048, 512 );
 	bSizer95->Add( m_height, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_button7 = new wxButton( m_scrolledWindow1, wxID_ANY, _("Swap"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button7 = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_button7->SetBitmap( replace_png_to_wx_bitmap() );
-	m_button7->SetToolTip( _("Swap width and height") );
-	m_button7->SetHelpText( _("Swap the resolution width and height") );
+	m_button7->SetBitmap( wxBitmap( wxT("../../graphics/icons/16/replace.png"), wxBITMAP_TYPE_ANY ) );
+	m_button7->SetToolTip( _("Swap the resolution") );
 
 	bSizer95->Add( m_button7, 0, wxALL, 5 );
 
@@ -614,7 +614,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer34->Add( m_controlnetModels, 0, wxALL, 5 );
 
-	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
+	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
 	m_controlnetStrength->SetDigits( 1 );
 	bSizer34->Add( m_controlnetStrength, 0, wxALL, 5 );
 
@@ -821,7 +821,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText67->Wrap( -1 );
 	bSizer73->Add( m_staticText67, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, 1, 4, 4 );
+	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 142,-1 ), 0, 1, 4, 4 );
 	bSizer73->Add( m_upscaler_factor, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 

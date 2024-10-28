@@ -90,7 +90,7 @@ class mainUI : public wxFrame
 		wxSpinCtrl* m_width;
 		wxStaticText* m_staticText239;
 		wxSpinCtrl* m_height;
-		wxButton* m_button7;
+		wxBitmapButton* m_button7;
 		wxStaticLine* m_staticline4;
 		wxStaticText* m_staticText17;
 		wxBitmapButton* m_save_preset;

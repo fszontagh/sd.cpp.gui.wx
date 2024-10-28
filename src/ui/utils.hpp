@@ -446,7 +446,7 @@ namespace sd_gui_utils {
                   MODE_COUNT };
 
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
-    inline std::unordered_map<int, std::string> sd_type_gui_names = {
+    inline std::map<int, std::string> sd_type_gui_names = {
         {32, "Count"},
         {0, "F32"},
         {1, "F16"},
@@ -462,7 +462,7 @@ namespace sd_gui_utils {
 
     };
 
-    inline std::unordered_map<int, std::string> sd_scheduler_gui_names = {
+    inline std::map<int, std::string> sd_scheduler_gui_names = {
         {0, "Default"},
         {1, "Discrete"},
         {2, "Karras"},
@@ -506,7 +506,7 @@ namespace sd_gui_utils {
                                           "BF16",
                                           "Q4_0_4_4",
                                           "Q4_0_4_8",
-                                          "Q4_0_8_8"
+                                          "Q4_0_8_8",
                                           "Default"};
 
     struct SDParams {

@@ -115,12 +115,8 @@ typedef sd_ctx_t* (*NewSdCtxFunction)(
 
 );
 typedef void (*FreeSdCtxFunction)(sd_ctx_t*);
-typedef void (*SdSetLogCallbackFunction)(void (*)(enum sd_log_level_t,
-                                                  const char*,
-                                                  void*),
-                                         void*);
-typedef void (*SdSetProgressCallbackFunction)(void (*)(int, int, float, void*),
-                                              void*);
+typedef void (*SdSetLogCallbackFunction)(void (*)(enum sd_log_level_t, const char*, void*), void*);
+typedef void (*SdSetProgressCallbackFunction)(void (*)(int, int, float, void*), void*);
 typedef int32_t (*GetNumPhysicalCoresFunction)();
 typedef const char* (*SdGetSystemInfoFunction)();
 typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
@@ -143,7 +139,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
 
 );
 typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,  // pointer
-                                       sd_image_t init_image,
+                                       sd_image_t,
                                        const char*,           // prompt,
                                        const char*,           // negative_prompt,
                                        int,                   // clip_skip,
