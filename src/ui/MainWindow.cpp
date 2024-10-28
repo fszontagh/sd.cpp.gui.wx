@@ -21,6 +21,7 @@
 #include "embedded_files/picture.png.h"
 #include "embedded_files/play.png.h"
 #include "embedded_files/refresh.png.h"
+#include "embedded_files/replace.png.h"
 #include "embedded_files/sd.cpp.gui_blankimage.png.h"
 #include "embedded_files/settings.png.h"
 #include "embedded_files/text_box_dots.png.h"
@@ -124,23 +125,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 
 	sizer0021->Add( bSizer100, 0, wxEXPAND, 5 );
-
-	wxBoxSizer* bSizer1002;
-	bSizer1002 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_schedulertext = new wxStaticText( m_panel10, wxID_ANY, _("Scheduler:"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	m_schedulertext->Wrap( -1 );
-	bSizer1002->Add( m_schedulertext, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-
-	wxArrayString m_schedulerChoices;
-	m_scheduler = new wxChoice( m_panel10, wxID_ANY, wxDefaultPosition, wxSize( 200,-1 ), m_schedulerChoices, 0 );
-	m_scheduler->SetSelection( 0 );
-	m_scheduler->SetToolTip( _("Weight type. If not specified, the default is the type of the weight file.") );
-
-	bSizer1002->Add( m_scheduler, 0, wxALL|wxEXPAND, 5 );
-
-
-	sizer0021->Add( bSizer1002, 0, wxEXPAND, 5 );
 
 
 	m_panel10->SetSizer( sizer0021 );
@@ -280,7 +264,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer90;
 	bSizer90 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText163 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Sampler"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText163 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Sampler:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
 	m_staticText163->Wrap( 0 );
 	m_staticText163->SetToolTip( _("sampling method (default: \"euler_a\")") );
 
@@ -295,6 +279,23 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 
 	bSizer9->Add( bSizer90, 1, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1002;
+	bSizer1002 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_schedulertext = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Scheduler:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_schedulertext->Wrap( -1 );
+	bSizer1002->Add( m_schedulertext, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_schedulerChoices;
+	m_scheduler = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxSize( 200,-1 ), m_schedulerChoices, 0 );
+	m_scheduler->SetSelection( 0 );
+	m_scheduler->SetToolTip( _("Weight type. If not specified, the default is the type of the weight file.") );
+
+	bSizer1002->Add( m_scheduler, 0, wxALL|wxEXPAND, 5 );
+
+
+	bSizer9->Add( bSizer1002, 1, wxEXPAND, 5 );
 
 
 	bSizer83->Add( bSizer9, 0, wxEXPAND, 5 );
@@ -370,7 +371,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_button7 = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_button7->SetBitmap( wxBitmap( wxT("../../graphics/icons/16/replace.png"), wxBITMAP_TYPE_ANY ) );
+	m_button7->SetBitmap( replace_png_to_wx_bitmap() );
 	m_button7->SetToolTip( _("Swap the resolution") );
 
 	bSizer95->Add( m_button7, 0, wxALL, 5 );
@@ -429,6 +430,44 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 
 	bSizer83->Add( bSizer91, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer741;
+	bSizer741 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer97999;
+	bSizer97999 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText46 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("SD1x Resolutions:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText46->Wrap( -1 );
+	bSizer97999->Add( m_staticText46, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxString m_sd15ResChoices[] = { _("Select one"), _("640x384"), _("512x512"), _("512x768") };
+	int m_sd15ResNChoices = sizeof( m_sd15ResChoices ) / sizeof( wxString );
+	m_sd15Res = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_sd15ResNChoices, m_sd15ResChoices, 0 );
+	m_sd15Res->SetSelection( 0 );
+	bSizer97999->Add( m_sd15Res, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer741->Add( bSizer97999, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer971;
+	bSizer971 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText461 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("SDXL Resolutions:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText461->Wrap( -1 );
+	bSizer971->Add( m_staticText461, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxString m_sdXlresChoices[] = { _("Select one"), _("1024x1024"), _("1152x896"), _("1216x832"), _("1344x768"), _("1536x640") };
+	int m_sdXlresNChoices = sizeof( m_sdXlresChoices ) / sizeof( wxString );
+	m_sdXlres = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_sdXlresNChoices, m_sdXlresChoices, 0 );
+	m_sdXlres->SetSelection( 0 );
+	bSizer971->Add( m_sdXlres, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer741->Add( bSizer971, 1, wxEXPAND, 5 );
+
+
+	bSizer83->Add( bSizer741, 0, wxEXPAND, 5 );
 
 
 	m_scrolledWindow1->SetSizer( bSizer83 );
@@ -1024,9 +1063,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
-	m_scheduler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
+	m_scheduler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
 	m_width->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_width->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
@@ -1037,6 +1076,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_load_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onLoadPreset ), NULL, this );
 	m_preset_list->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSelectPreset ), NULL, this );
 	m_delete_preset->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onDeletePreset ), NULL, this );
+	m_sd15Res->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
+	m_sdXlres->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );
 	m_notebook1302->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( mainUI::m_notebook1302OnNotebookPageChanged ), NULL, this );
 	m_start_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsStart ), NULL, this );
 	m_pause_jobs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsPause ), NULL, this );
@@ -1084,9 +1125,9 @@ mainUI::~mainUI()
 	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
-	m_scheduler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
+	m_scheduler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
 	m_width->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_width->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
@@ -1097,6 +1138,8 @@ mainUI::~mainUI()
 	m_load_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onLoadPreset ), NULL, this );
 	m_preset_list->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSelectPreset ), NULL, this );
 	m_delete_preset->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onDeletePreset ), NULL, this );
+	m_sd15Res->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
+	m_sdXlres->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );
 	m_notebook1302->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( mainUI::m_notebook1302OnNotebookPageChanged ), NULL, this );
 	m_start_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsStart ), NULL, this );
 	m_pause_jobs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onJobsPause ), NULL, this );
@@ -1155,12 +1198,19 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_staticText172410->Wrap( 0 );
 	m_staticText172410->SetMinSize( wxSize( 150,-1 ) );
 
-	bSizer16->Add( m_staticText172410, 0, wxALL, 5 );
+	bSizer16->Add( m_staticText172410, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_model_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_DEFAULT_STYLE|wxDIRP_DIR_MUST_EXIST|wxDIRP_SMALL );
 	m_model_dir->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer16->Add( m_model_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_openModelsPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openModelsPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openModelsPath->SetToolTip( _("Open folder") );
+
+	bSizer16->Add( m_openModelsPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer16, 0, wxALL, 5 );
@@ -1179,6 +1229,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	bSizer19->Add( m_lora_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_openLorasPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openLorasPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openLorasPath->SetToolTip( _("Open folder") );
+
+	bSizer19->Add( m_openLorasPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
 
 	sizer2011->Add( bSizer19, 0, wxALL, 5 );
 
@@ -1195,6 +1252,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_vae_dir->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer17->Add( m_vae_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_openVaesPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openVaesPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openVaesPath->SetToolTip( _("Open folder") );
+
+	bSizer17->Add( m_openVaesPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer17, 0, wxALL, 5 );
@@ -1213,6 +1277,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	bSizer18->Add( m_embedding_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_openEmbeddingsPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openEmbeddingsPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openEmbeddingsPath->SetToolTip( _("Open folder") );
+
+	bSizer18->Add( m_openEmbeddingsPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
 
 	sizer2011->Add( bSizer18, 0, wxALL, 5 );
 
@@ -1229,6 +1300,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_taesd_dir->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer23->Add( m_taesd_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_openTaesdPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openTaesdPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openTaesdPath->SetToolTip( _("Open folder") );
+
+	bSizer23->Add( m_openTaesdPath, 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
 
 	m_bpButton1 = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -1254,6 +1332,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	bSizer35->Add( m_controlnet_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_openControlnetPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openControlnetPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openControlnetPath->SetToolTip( _("Open folder") );
+
+	bSizer35->Add( m_openControlnetPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
 
 	sizer2011->Add( bSizer35, 0, wxALL, 5 );
 
@@ -1269,11 +1354,18 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	bSizer81->Add( m_esrgan_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_openEsrganPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openEsrganPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openEsrganPath->SetToolTip( _("Open folder") );
+
+	bSizer81->Add( m_openEsrganPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
 
 	sizer2011->Add( bSizer81, 0, wxALL, 5 );
 
-	m_staticline7 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
-	sizer2011->Add( m_staticline7, 0, wxEXPAND | wxALL, 5 );
+	m_staticLine223 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+	sizer2011->Add( m_staticLine223, 0, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer20;
 	bSizer20 = new wxBoxSizer( wxHORIZONTAL );
@@ -1289,11 +1381,15 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	bSizer20->Add( m_presets_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_openPresetsPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openPresetsPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openPresetsPath->SetToolTip( _("Open folder") );
+
+	bSizer20->Add( m_openPresetsPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
 
 	sizer2011->Add( bSizer20, 0, wxALL, 5 );
-
-	m_staticLine223 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
-	sizer2011->Add( m_staticLine223, 0, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer21;
 	bSizer21 = new wxBoxSizer( wxHORIZONTAL );
@@ -1308,6 +1404,13 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_images_output->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer21->Add( m_images_output, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_openOutputPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openOutputPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openOutputPath->SetToolTip( _("Open folder") );
+
+	bSizer21->Add( m_openOutputPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer21, 0, wxALL, 5 );
@@ -1399,8 +1502,12 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_threads = new wxSpinCtrl( m_settings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, -1, 100, 2 );
 	bSizer22->Add( m_threads, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_staticNumberOfCores = new wxStaticText( m_settings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticNumberOfCores->Wrap( -1 );
+	bSizer22->Add( m_staticNumberOfCores, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	sizer2017->Add( bSizer22, 0, wxALL, 5 );
+
+	sizer2017->Add( bSizer22, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_settings->SetSizer( sizer2017 );
@@ -1493,6 +1600,16 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	this->Centre( wxBOTH );
 
 	// Connect Events
+	m_openModelsPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openLorasPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openVaesPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openEmbeddingsPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openTaesdPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_bpButton1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnTAESDHelpClick ), NULL, this );
+	m_openControlnetPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openEsrganPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openPresetsPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openOutputPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_image_quality->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
@@ -1511,6 +1628,16 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 Settings::~Settings()
 {
 	// Disconnect Events
+	m_openModelsPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openLorasPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openVaesPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openEmbeddingsPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openTaesdPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_bpButton1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnTAESDHelpClick ), NULL, this );
+	m_openControlnetPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openEsrganPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openPresetsPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openOutputPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_image_quality->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );

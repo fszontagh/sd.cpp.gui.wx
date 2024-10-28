@@ -1,4 +1,5 @@
 #include "MainWindowSettings.h"
+#include "wx/utils.h"
 
 MainWindowSettings::MainWindowSettings(wxWindow *parent)
     : Settings(parent)
@@ -43,6 +44,42 @@ void MainWindowSettings::OnCivitaiHelpButton(wxCommandEvent &event)
    wxLaunchDefaultBrowser(civitHelpLink);
 }
 
+void MainWindowSettings::OnTAESDHelpClick(wxCommandEvent &event) {
+    wxString taesdHelpLink = "https://github.com/leejet/stable-diffusion.cpp/blob/master/docs/taesd.md";
+    wxLaunchDefaultBrowser(taesdHelpLink);
+}
+
+void MainWindowSettings::OnOpenFolder(wxCommandEvent &event) {
+    if (event.GetEventObject() == this->m_openModelsPath) {
+        wxLaunchDefaultApplication(this->m_model_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openLorasPath) {
+        wxLaunchDefaultApplication(this->m_lora_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openVaesPath) {
+        wxLaunchDefaultApplication(this->m_vae_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openEmbeddingsPath) {
+        wxLaunchDefaultApplication(this->m_embedding_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openTaesdPath) {
+        wxLaunchDefaultApplication(this->m_taesd_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openEsrganPath) {
+        wxLaunchDefaultApplication(this->m_esrgan_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openControlnetPath) {
+        wxLaunchDefaultApplication(this->m_controlnet_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openPresetsPath) {
+        wxLaunchDefaultApplication(this->m_presets_dir->GetPath());
+    }
+    if (event.GetEventObject() == this->m_openOutputPath) {
+        wxLaunchDefaultApplication(this->m_images_output->GetPath());
+    }
+
+}
+
 void MainWindowSettings::onSave(wxCommandEvent &event)
 {
 
@@ -78,6 +115,7 @@ void MainWindowSettings::onSave(wxCommandEvent &event)
 
 void MainWindowSettings::InitConfig()
 {
+    this->m_staticNumberOfCores->SetLabel(wxString::Format("%d", cores()));
     wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
     wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
 
@@ -158,6 +196,7 @@ void MainWindowSettings::InitConfig()
     this->m_save_all_image->SetValue(this->cfg->save_all_image);
     this->m_threads->SetValue(this->cfg->n_threads);
     this->m_image_quality->SetValue(this->cfg->image_quality);
+    this->m_image_quality_spin->SetValue(this->cfg->image_quality);
     this->m_image_type->Select((int)this->cfg->image_type);
     this->m_show_notifications->SetValue(this->cfg->show_notifications);
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);

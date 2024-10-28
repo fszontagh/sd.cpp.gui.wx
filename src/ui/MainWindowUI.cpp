@@ -1,6 +1,9 @@
 #include "MainWindowUI.h"
 #include <cstddef>
+#include <ctime>
 #include "utils.hpp"
+#include "ver.hpp"
+#include "wx/string.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent)
     : mainUI(parent) {
@@ -31,7 +34,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent)
     this->m_joblist->GetColumn(1)->SetSortable(true);
     this->m_joblist->GetColumn(1)->SetSortOrder(false);
 
-    this->SetTitle(wxString::Format("%s - %s", PROJECT_NAME, SD_GUI_VERSION));
+    this->SetTitle(wxString::Format("%s - %s (%s)", wxString("Stable Diffusion Gui"), SD_GUI_VERSION, GIT_HASH));
     this->TaskBar = new wxTaskBarIcon();
 
     this->TaskBarIcon = app_png_to_wx_bitmap();
@@ -191,24 +194,39 @@ void MainWindowUI::onRandomGenerateButton(wxCommandEvent& event) {
     this->m_seed->SetValue(sd_gui_utils::generateRandomInt(100000000, 999999999));
 }
 
+void MainWindowUI::onSd15ResSelect(wxCommandEvent& event) {
+    const auto index = this->m_sd15Res->GetSelection();
+    if (index < 1) {
+        return;
+    }
+    const auto text = this->m_sd15Res->GetString(index).ToStdString();
+    size_t pos      = text.find('x');
+    int w           = std::stoi(text.substr(0, pos));
+    int h           = std::stoi(text.substr(pos + 1));
+    this->m_width->SetValue(w);
+    this->m_height->SetValue(h);
+}
+
+void MainWindowUI::onSdXLResSelect(wxCommandEvent& event) {
+    const auto index = this->m_sdXlres->GetSelection();
+    if (index < 1) {
+        return;
+    }
+    const auto text = this->m_sdXlres->GetString(index).ToStdString();
+    size_t pos      = text.find('x');
+    int w           = std::stoi(text.substr(0, pos));
+    int h           = std::stoi(text.substr(pos + 1));
+    this->m_width->SetValue(w);
+    this->m_height->SetValue(h);
+}
+
 void MainWindowUI::OnWHChange(wxSpinEvent& event) {
     int w = this->m_width->GetValue();
     int h = this->m_height->GetValue();
 
-    // if (!(w % 256 == 0) || !(h % 256 == 0)) {
-    //     this->m_generate2->Enable(false);
-    // wxSpinCtrl *ctrl = static_cast<wxSpinCtrl *>(event.GetEventObject());
-    //  ctrl->SetBackgroundColour(wxColour(255, 0, 0));
-    //     wxMessageDialog(this, _("The resolution should be divisible by 256"))
-    //         .ShowModal();
-    //     this->m_width->SetValue(this->init_width);
-    //     this->m_height->SetValue(this->init_height);
-    //     return;
-    // } else {
     if (this->m_model->GetCurrentSelection() > 0) {
         this->m_generate2->Enable(true);
     }
-    //}
 
     this->init_width  = w;
     this->init_height = h;
@@ -2233,9 +2251,8 @@ void MainWindowUI::loadTypeList() {
     }
 
     std::string selectByBackend = "";
-    
-    this->m_type->Select(selected);
 
+    this->m_type->Select(selected);
 
     if (this->usingBackend == "cuda" || this->usingBackend == "hipblas") {
         selectByBackend = "F16";
@@ -2246,15 +2263,13 @@ void MainWindowUI::loadTypeList() {
     }
 
     if (!selectByBackend.empty()) {
-        for (const auto & item : sd_gui_utils::sd_type_gui_names) {
+        for (const auto& item : sd_gui_utils::sd_type_gui_names) {
             if (item.second == selectByBackend) {
                 this->m_type->Select(item.first);
                 break;
-            }    
+            }
         }
-        
     }
-    
 }
 
 void MainWindowUI::loadShcedulerList() {
@@ -3084,20 +3099,17 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
     if (!img->SaveFile(filename, imgHandler)) {
         itemPtr->status_message =
             wxString::Format(_("Failed to save image into %s"), filename);
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      itemPtr);
+        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         return itemPtr;
     } else {
         itemPtr->images.emplace_back(
             new QM::QueueItemImage({filename, QM::QueueItemImageType::GENERATED}));
-        if (itemPtr->params.control_image_path.length() > 0 &&
-            this->cfg->save_all_image) {
+        if (itemPtr->params.control_image_path.length() > 0 && this->cfg->save_all_image) {
             std::string ctrlFilename = this->cfg->output;
             ctrlFilename             = filename_without_extension + "_ctrlimg_" + extension;
             wxImage _ctrlimg(itemPtr->params.control_image_path);
             _ctrlimg.SaveFile(ctrlFilename);
-            itemPtr->images.emplace_back(new QM::QueueItemImage(
-                {ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
+            itemPtr->images.emplace_back(new QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
         }
         // add generation parameters into the image meta
         if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
@@ -3109,9 +3121,18 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
                 Exiv2::ExifData& exifData          = image->exifData();
                 exifData["Exif.Photo.UserComment"] = comment;
                 exifData["Exif.Image.XPComment"]   = comment;
-                // image->setComment(comment);
+                exifData["Exif.Image.Software"]    = EXIF_SOFTWARE;
+                exifData["Exif.Image.ImageWidth"]  = result.width;
+                exifData["Exif.Image.ImageLength"] = result.height;
 
-                // PNG fájl metaadatainak frissítése
+                if (itemPtr->finished_at > 0) {
+                    time_t finishedAt = itemPtr->finished_at;
+                    std::tm* timeinfo = std::localtime(&finishedAt);
+                    char dtimeBuffer[20];
+                    std::strftime(dtimeBuffer, sizeof(dtimeBuffer), "%Y:%m:%d %H:%M:%S", timeinfo);
+                    exifData["Exif.Image.DateTime"] = dtimeBuffer;
+                }
+
                 image->setExifData(exifData);
                 image->writeMetadata();
             } catch (Exiv2::Error& e) {
@@ -3142,6 +3163,7 @@ void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, 
 void MainWindowUI::ShowNotification(std::string title, std::string message) {
     if (this->cfg->show_notifications) {
         wxNotificationMessage notification(title, message, this);
+        notification.SetTitle(title);
 #ifdef _WIN64
         notification.UseTaskBarIcon(this->TaskBar);
 #endif
@@ -3151,8 +3173,7 @@ void MainWindowUI::ShowNotification(std::string title, std::string message) {
         notification.Show(this->cfg->notification_timeout);
     }
 
-    this->TaskBar->SetIcon(this->TaskBarIcon,
-                           wxString::Format("%s - %s", this->GetTitle(), title));
+    this->TaskBar->SetIcon(this->TaskBarIcon, wxString::Format("%s - %s", this->GetTitle(), title));
 }
 
 void MainWindowUI::HandleSDLog(sd_log_level_t level, const char* text, void* data) {
