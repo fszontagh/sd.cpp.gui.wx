@@ -75,7 +75,7 @@ if (NOT SD_HIPBLAS)
     )
 
     else(NOT SD_HIPBLAS)
-    set(AMD_OFFLOAD_ARCH "gfx1100,gfx1102,gfx1030")
+    set(AMD_OFFLOAD_ARCH "gfx1100;gfx1102;gfx1030")
 
     ExternalProject_Add(
         stable_diffusion_cpp_${variant_name}
