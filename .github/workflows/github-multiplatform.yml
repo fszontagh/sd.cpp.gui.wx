@@ -27,7 +27,7 @@ jobs:
           wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/noble/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install_6.2.60202-1_all.deb
           sudo dpkg -i /tmp/amdgpu-install_6.2.60202-1_all.deb
           sudo apt update
-          sudo apt install -y rocm
+          sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
           sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
           /opt/rocm/lib
           /opt/rocm/lib64
@@ -43,7 +43,7 @@ jobs:
           wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/jammy/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install_6.2.60202-1_all.deb
           sudo dpkg -i /tmp/amdgpu-install_6.2.60202-1_all.deb
           sudo apt update
-          sudo apt install -y rocm
+          sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
           sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
           /opt/rocm/lib
           /opt/rocm/lib64

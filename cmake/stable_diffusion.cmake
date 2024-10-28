@@ -41,7 +41,7 @@ endif(SD_VULKAN)
 
 # Helper macro to build stable diffusion with different settings
 macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag hipblas_flag vulkan_flag)
-
+    set(LOG_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name})
 
     # Set flags for the variant
     set(SD_AVX "${avx_flag}")
@@ -67,6 +67,8 @@ if (NOT SD_HIPBLAS)
         GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
         GIT_TAG ${SD_GIT_TAG}
         EXCLUDE_FROM_ALL
+        LOG_CONFIGURE ON
+        LOG_MERGED_STDOUTERR ON
         BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
 	    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUBLAS=${SD_CUBLAS} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
