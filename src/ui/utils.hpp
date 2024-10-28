@@ -515,6 +515,7 @@ namespace sd_gui_utils {
 
         std::string model_path;
         std::string clip_l_path;
+        std::string clip_g_path;
         std::string t5xxl_path;
         std::string diffusion_model_path;
         std::string vae_path;
@@ -1010,8 +1011,6 @@ inline std::string tolower(std::string data) {
     return data;
 }
 inline std::map<std::string, std::string> parseExifPrompts(std::string text) {
-
-
     size_t pos = text.find("charset=Unicode ");
     if (pos != std::string::npos) {
         text.erase(pos, std::string("charset=Unicode ").length());

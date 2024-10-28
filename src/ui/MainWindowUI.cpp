@@ -3188,56 +3188,36 @@ sd_ctx_t* MainWindowUI::LoadModelv2(wxEvtHandler* eventHandler, QM::QueueItem* m
             this->ModelManager->setHash(myItem->params.model_path, hash);
         }
     }
-    NewSdCtxFunction new_sd_ctx =
-        (NewSdCtxFunction)this->sd_dll->GetSymbol("new_sd_ctx");
+    NewSdCtxFunction new_sd_ctx = (NewSdCtxFunction)this->sd_dll->GetSymbol("new_sd_ctx");
     if (!new_sd_ctx) {
-        myItem->status_message =
-            wxString(_("Failed to load new_sd_ctx symbol from backend!"));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      myItem);
+        myItem->status_message = wxString(_("Failed to load new_sd_ctx symbol from backend!"));
+        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, myItem);
         this->modelLoaded = false;
         return nullptr;
     }
-    /*
-        sd_ctx_t *sd_ctx_ = new_sd_ctx(
-            sd_gui_utils::repairPath(myItem->params.model_path).c_str(),      //
-       model path sd_gui_utils::repairPath(myItem->params.vae_path).c_str(), //
-       vae path sd_gui_utils::repairPath(myItem->params.taesd_path).c_str(), //
-       taesd path
-            sd_gui_utils::repairPath(myItem->params.controlnet_path).c_str(), //
-       controlnet path
-            sd_gui_utils::repairPath(myItem->params.lora_model_dir).c_str(),  //
-       lora path sd_gui_utils::repairPath(myItem->params.embeddings_path).c_str(),
-       // embedding path (myItem->mode == QM::GenerationMode::TXT2IMG), // vae
-       decode only (img2img = false) myItem->params.vae_tiling, // vae tiling
-            false,                                                            //
-       free params immediatelly myItem->params.n_threads, myItem->params.wtype,
-            myItem->params.rng_type,
-            myItem->params.schedule,
-            myItem->params.keep_control_net_cpu);
-            */
+
     sd_ctx_t* sd_ctx_ = new_sd_ctx(
-        sd_gui_utils::repairPath(myItem->params.model_path).c_str(),   // model path
-        sd_gui_utils::repairPath(myItem->params.clip_l_path).c_str(),  // clip path
-        sd_gui_utils::repairPath(myItem->params.t5xxl_path).c_str(),   // t5xxl path
-        sd_gui_utils::repairPath(myItem->params.diffusion_model_path)
-            .c_str(),                                                 // t5xxl path
-        sd_gui_utils::repairPath(myItem->params.vae_path).c_str(),    // vae path
-        sd_gui_utils::repairPath(myItem->params.taesd_path).c_str(),  // taesd path
-        sd_gui_utils::repairPath(myItem->params.controlnet_path)
-            .c_str(),  // controlnet path
-        sd_gui_utils::repairPath(myItem->params.lora_model_dir)
-            .c_str(),  // lora path
-        sd_gui_utils::repairPath(myItem->params.embeddings_path)
-            .c_str(),  // embedding path
-        sd_gui_utils::repairPath(myItem->params.stacked_id_embeddings_path)
-            .c_str(),                         // stacked id embedding path
-        this->m_vae_decode_only->GetValue(),  // vae decode only
-        myItem->params.vae_tiling,            // vae tiling
-        false,                                // free params immediatelly
-        myItem->params.n_threads, myItem->params.wtype, myItem->params.rng_type,
-        myItem->params.schedule, myItem->params.clip_on_cpu,
-        myItem->params.control_net_cpu, myItem->params.vae_on_cpu
+        sd_gui_utils::repairPath(myItem->params.model_path).c_str(),                  // model path
+        sd_gui_utils::repairPath(myItem->params.clip_l_path).c_str(),                 // clip path
+        sd_gui_utils::repairPath(myItem->params.clip_g_path).c_str(),                 // clip path
+        sd_gui_utils::repairPath(myItem->params.t5xxl_path).c_str(),                  // t5xxl path
+        sd_gui_utils::repairPath(myItem->params.diffusion_model_path).c_str(),        // t5xxl path
+        sd_gui_utils::repairPath(myItem->params.vae_path).c_str(),                    // vae path
+        sd_gui_utils::repairPath(myItem->params.taesd_path).c_str(),                  // taesd path
+        sd_gui_utils::repairPath(myItem->params.controlnet_path).c_str(),             // controlnet path
+        sd_gui_utils::repairPath(myItem->params.lora_model_dir).c_str(),              // lora path
+        sd_gui_utils::repairPath(myItem->params.embeddings_path).c_str(),             // embedding path
+        sd_gui_utils::repairPath(myItem->params.stacked_id_embeddings_path).c_str(),  // stacked id embedding path
+        this->m_vae_decode_only->GetValue(),                                          // vae decode only
+        myItem->params.vae_tiling,                                                    // vae tiling
+        false,                                                                        // free params immediatelly
+        myItem->params.n_threads,                                                     // number of threads
+        myItem->params.wtype,                                                         // weight type
+        myItem->params.rng_type,                                                      // random generator type
+        myItem->params.schedule,                                                      // scheduler
+        myItem->params.clip_on_cpu,                                                   // clip on cpu
+        myItem->params.control_net_cpu,                                               // controlnet on cpu
+        myItem->params.vae_on_cpu                                                     // vae on cpu
 
     );
 
