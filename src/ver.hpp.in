@@ -2,6 +2,7 @@
 #define VERSION_H_IN
 
 inline const char* PROJECT_NAME          = "@PROJECT_NAME@";
+inline const char* PROJECT_DISPLAY_NAME  = "@PROJECT_DISPLAY_NAME@";
 inline const char* VERSION_MAJOR         = "@PROJECT_VERSION_MAJOR@";
 inline const char* VERSION_MINOR         = "@PROJECT_VERSION_MINOR@";
 inline const char* VERSION_PATCH         = "@PROJECT_VERSION_PATCH@";

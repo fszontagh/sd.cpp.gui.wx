@@ -11,6 +11,16 @@ jobs:
         vm: [ubuntu-22.04, ubuntu-24.04]
     
     steps:
+      - name: Maximize build space
+        uses: AdityaGarg8/remove-unwanted-software@v4.1
+        with:
+          remove-android: 'true'
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          remove-large-packages: 'true'
+          remove-swapfile: 'true'
       - name: Check out code
         uses: actions/checkout@v3
 

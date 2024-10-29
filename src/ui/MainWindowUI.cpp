@@ -34,7 +34,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent)
     this->m_joblist->GetColumn(1)->SetSortable(true);
     this->m_joblist->GetColumn(1)->SetSortOrder(false);
 
-    this->SetTitle(wxString::Format("%s - %s (%s)", wxString("Stable Diffusion Gui"), SD_GUI_VERSION, GIT_HASH));
+    this->SetTitle(wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
     this->TaskBar = new wxTaskBarIcon();
 
     this->TaskBarIcon = app_png_to_wx_bitmap();
@@ -3370,9 +3370,7 @@ void MainWindowUI::initConfig() {
     if (this->fileConfig != nullptr) {
         delete this->fileConfig;
     }
-    this->fileConfig =
-        new wxFileConfig(PROJECT_NAME, SD_GUI_AUTHOR, this->ini_path,
-                         wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
+    this->fileConfig = new wxFileConfig(PROJECT_NAME, SD_GUI_AUTHOR, this->ini_path, wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
     this->fileConfig->SetVendorName(SD_GUI_AUTHOR);
     this->fileConfig->SetAppName(PROJECT_NAME);
 
