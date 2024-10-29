@@ -9,6 +9,9 @@
 #endif
 #include <csignal>
 
+
+#include "libs/SharedLibrary.h"
+
 void signal_handler(int signum) {
     switch (signum) {
         case SIGINT:
@@ -33,13 +36,31 @@ int main(int argc, char* argv[]) {
     sigaction(SIGINT, &action, NULL);
     sigaction(SIGTERM, &action, NULL);
 
-    while (true) {
-#ifdef _WIN32
-        Sleep(1000);
-#else
-        sleep(1);
-#endif
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <shared_library>" << std::endl;
+        return 1;
     }
 
+    
+    SharedLibrary sharedLibrary(argv[1]);
+
+    try {
+        sharedLibrary.load();
+    } catch (std::runtime_error& e) {
+        std::cerr << "Failed to load shared library: " << e.what() << std::endl;
+        return 1;
+    }
+
+    std::string message;
+
+    while (true) {
+        std::getline(std::cin, message);  // Üzenet fogadása
+        if (message == "exit") {
+            break;  // Ha "exit" üzenetet kap, kilép
+        }
+
+        
+    }
+    sharedLibrary.unload();
     return 0;
 }
