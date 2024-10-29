@@ -3739,14 +3739,6 @@ void MainWindowUI::GenerateTxt2img(wxEvtHandler* eventHandler,
             delete input_image_buffer;
         }
     }
-    /*
-      results = txt2img(this->txt2img_sd_ctx, myItem->params.prompt.c_str(),
-                        myItem->params.negative_prompt.c_str(),
-                        myItem->params.clip_skip, myItem->params.cfg_scale,
-                        myItem->params.width, myItem->params.height,
-                        myItem->params.sample_method, myItem->params.sample_steps,
-                        myItem->params.seed, myItem->params.batch_count,
-                        control_image, myItem->params.control_strength);*/
     myItem->started_at = sd_gui_utils::GetCurrentUnixTimestamp();
 
     results = txt2img(

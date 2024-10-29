@@ -78,6 +78,10 @@ if (WIN32)
     list(APPEND SOURCES minimal.rc)
 endif()
 
+
+add_subdirectory(extprocess)
+
+# Set target for the application
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 
 if (NOT WIN32)
