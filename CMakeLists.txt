@@ -78,7 +78,6 @@ if (WIN32)
     list(APPEND SOURCES minimal.rc)
 endif()
 
-
 add_subdirectory(extprocess)
 
 # Set target for the application
