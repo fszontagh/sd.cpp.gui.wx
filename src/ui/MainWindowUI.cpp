@@ -1,12 +1,22 @@
 #include "MainWindowUI.h"
+
 #include <cstddef>
+
+#include <cstdlib>
 #include <ctime>
+#include <memory>
+
+#include "QueueManager.h"
+
 #include "utils.hpp"
+
 #include "ver.hpp"
+
+#include "wx/image.h"
 #include "wx/string.h"
 
-MainWindowUI::MainWindowUI(wxWindow* parent)
-    : mainUI(parent) {
+MainWindowUI::MainWindowUI(wxWindow* parent, ExternalProcess* extProcess, const std::string& usingBackend)
+    : mainUI(parent), extProcess(extProcess), usingBackend(usingBackend) {
     this->ini_path                   = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
     this->sd_params                  = new sd_gui_utils::SDParams;
     this->currentInitialImage        = new wxImage();
@@ -63,14 +73,21 @@ MainWindowUI::MainWindowUI(wxWindow* parent)
     this->loadEsrganList();
     this->loadEmbeddingList();
     this->refreshModelTable();
-    /// save and restore things
-    // wxPersistenceManager::Get().RegisterAndRestore(this->m_notebook1302);
-    // wxPersistenceManager::Get().RegisterAndRestore(this->m_joblist);
-    // wxPersistenceManager::Get().RegisterAndRestore(this->m_data_model_list);
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
     this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
+
+    try {
+        this->extProcess->setOnExitCallback(std::bind(&MainWindowUI::ProcessEventOnExit, this));
+        this->extProcess->setOnStartedCallback(std::bind(&MainWindowUI::ProcessEventOnStarted, this));
+        this->extProcess->start(std::bind(&MainWindowUI::ProcessEventHandler, this, std::placeholders::_1));
+        this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);  // std::thread(&MainWindowUI::ProcessCheckThread, this);
+    } catch (const std::exception& ex) {
+        wxMessageDialog(this, _("The external process could not be started. Check the logs for more information"), _("Error"), wxOK | wxICON_ERROR).ShowModal();
+        std::cerr << ex.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 void MainWindowUI::onSettings(wxCommandEvent& event) {
@@ -100,9 +117,9 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
 
 void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     // SdGetSystemInfoFunction
-    SdGetSystemInfoFunction sd_get_system_info = (SdGetSystemInfoFunction)this->sd_dll->GetSymbol("sd_get_system_info");
-    auto sysinfo                               = sd_get_system_info();
-    MainWindowAboutDialog* dialog              = new MainWindowAboutDialog(this);
+    // SdGetSystemInfoFunction sd_get_system_info = (SdGetSystemInfoFunction)this->sd_dll->GetSymbol("sd_get_system_info");
+    // auto sysinfo                               = //sd_get_system_info();
+    MainWindowAboutDialog* dialog = new MainWindowAboutDialog(this);
 
     wxString about = wxString("<p><strong>Disclaimer</strong></p><p>Warning: This application may terminate unexpectedly via an abort signal during runtime. Use of this application is at your own risk. The developer assumes no responsibility or liability for any potential data loss, damage, or other issues arising from its usage. By using this application, you acknowledge and accept these terms.</p>");
 
@@ -127,7 +144,7 @@ void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     about.Append(wxString::Format("<p>Presets folder: %s</p>", this->cfg->presets));
 
     about.append(wxString("<pre>"));
-    about.append(wxString(sysinfo));
+    about.append(wxString("N/A"));
     about.append(wxString("</pre>"));
     dialog->m_about->SetPage(about);
     dialog->SetIcon(this->GetIcon());
@@ -148,8 +165,7 @@ void MainWindowUI::OnCivitAitButton(wxCommandEvent& event) {
             "%s | %s", this->GetTitle(), this->civitwindow->GetTitle()));
         this->civitwindow->Bind(wxEVT_THREAD, &MainWindowUI::OnCivitAiThreadMessage,
                                 this);
-        this->civitwindow->Bind(wxEVT_CLOSE_WINDOW,
-                                &MainWindowUI::OnCloseCivitWindow, this);
+        this->civitwindow->Bind(wxEVT_CLOSE_WINDOW, &MainWindowUI::OnCloseCivitWindow, this);
         this->civitwindow->SetName("CivitAiDowloaded");
         wxPersistenceManager::Get().RegisterAndRestore(this->civitwindow);
         this->civitwindow->Show();
@@ -277,7 +293,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         }
 
         if (selected == 2)  // not working on img2img.. this is hardcoded in sd.cpp
-                            // to only 1 image...
+        // to only 1 image...
         {
             this->m_batch_count->Disable();
             this->m_batch_count->SetValue(1);
@@ -415,8 +431,7 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
         if (qitem->status == QM::QueueStatus::PAUSED ||
             qitem->status == QM::QueueStatus::PENDING) {
             menu->AppendSeparator();
-            menu->Append(8, qitem->status == QM::QueueStatus::PENDING ? _("Pause")
-                                                                      : _("Resume"));
+            menu->Append(8, qitem->status == QM::QueueStatus::PENDING ? _("Pause") : _("Resume"));
         }
 
         menu->AppendSeparator();
@@ -685,8 +700,8 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.mode      = sd_gui_utils::SDMode::MODE_COUNT;
         item->params.n_threads = this->cfg->n_threads;
         if (this->cfg->save_all_image) {
-            item->images.emplace_back(new QM::QueueItemImage(
-                {item->initial_image, QM::QueueItemImageType::INITIAL}));
+            item->images.emplace_back(new QM::QueueItemImage({item->initial_image,
+                                                              QM::QueueItemImageType::INITIAL}));
         }
         this->qmanager->AddItem(item, false);
         return;
@@ -794,8 +809,8 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (type == QM::GenerationMode::IMG2IMG) {
         item->initial_image = this->currentInitialImagePath;
         if (this->cfg->save_all_image) {
-            item->images.emplace_back(new QM::QueueItemImage(
-                {item->initial_image, QM::QueueItemImageType::INITIAL}));
+            item->images.emplace_back(new QM::QueueItemImage({item->initial_image,
+                                                              QM::QueueItemImageType::INITIAL}));
         }
     }
 
@@ -1090,6 +1105,9 @@ void MainWindowUI::onDeletePreset(wxCommandEvent& event) {
  * @note This function will also set the TAESD, VAE, and ControlNet models if they are not empty.
  */
 void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
+    if (item.id == 0) {
+        return;
+    }
     this->m_seed->SetValue(item.params.seed);
     this->m_width->SetValue(item.params.width);
     this->m_height->SetValue(item.params.height);
@@ -1396,10 +1414,9 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
         data.push_back(wxVariant(std::to_string(item->params.seed)));
     }
 
-    data.push_back(item->status == QM::QueueStatus::DONE ? 100
-                                                         : 1);     // progressbar
-    data.push_back(wxString("-.--it/s"));                          // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item->status]));  // status
+    data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
+    data.push_back(wxString("-.--it/s"));                             // speed
+    data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
 
     auto store = this->m_joblist->GetStore();
 
@@ -1409,21 +1426,47 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
         _("Number of jobs: %d"), this->m_joblist->GetItemCount()));
 }
 
-void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem* item) {}
+void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem* item) {
+    // update column
+    auto store             = this->m_joblist->GetStore();
+    wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
+    int progressCol        = this->m_joblist->GetColumnCount() - 3;
+    int speedCol           = this->m_joblist->GetColumnCount() - 2;
+    float current_progress = 0.f;
+
+    if (item->step > 0 && item->steps > 0) {
+        current_progress = 100.f * (static_cast<float>(item->step) /
+                                    static_cast<float>(item->steps));
+    }
+    if (item->step == item->steps) {
+        current_progress = 100.f;
+    }
+
+    for (unsigned int i = 0; i < store->GetItemCount(); i++) {
+        auto currentItem     = store->GetItem(i);
+        int id               = store->GetItemData(currentItem);
+        QM::QueueItem* qitem = this->qmanager->GetItemPtr(id);
+        if (qitem->id == item->id) {
+            store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
+            store->SetValueByRow(speed, i, speedCol);
+            store->RowValueChanged(i, progressCol);
+            store->RowValueChanged(i, speedCol);
+            this->m_joblist->Refresh();
+            this->m_joblist->Update();
+            break;
+        }
+    }
+
+    return;
+}
 
 MainWindowUI::~MainWindowUI() {
-    FreeSdCtxFunction free_sd_ctx =
-        (FreeSdCtxFunction)this->sd_dll->GetSymbol("free_sd_ctx");
-    FreeUpscalerFunction free_upscaler_ctx =
-        (FreeUpscalerFunction)this->sd_dll->GetSymbol("free_upscaler_ctx");
     if (this->civitwindow != nullptr) {
         this->civitwindow->Destroy();
     }
-    if (this->modelLoaded) {
-        free_sd_ctx(this->txt2img_sd_ctx);
-    }
-    if (this->upscaleModelLoaded) {
-        free_upscaler_ctx(this->upscaler_sd_ctx);
+    this->checkThreadNeedToRun = false;
+    if (this->processCheckThread->joinable()) {
+        this->processCheckThread->join();
     }
     for (auto& threadPtr : threads) {
         if (threadPtr->joinable()) {
@@ -1459,6 +1502,7 @@ MainWindowUI::~MainWindowUI() {
     delete this->currentControlnetImagePreview;
     delete this->currentUpscalerSourceImage;
     delete this->cfg;
+    this->extProcess->stop();
 
     //    delete this->fileConfig;
 
@@ -1668,9 +1712,13 @@ void MainWindowUI::refreshModelTable(std::string filter) {
                 auto name = model.name;
                 auto path = model.path;
                 std::transform(name.begin(), name.end(), name.begin(),
-                               [](unsigned char c) { return std::tolower(c); });
+                               [](unsigned char c) {
+                                   return std::tolower(c);
+                               });
                 std::transform(path.begin(), path.end(), path.begin(),
-                               [](unsigned char c) { return std::tolower(c); });
+                               [](unsigned char c) {
+                                   return std::tolower(c);
+                               });
 
                 return (path.find(filter) != std::string::npos ||
                         name.find(filter) != std::string::npos) ||
@@ -2211,22 +2259,24 @@ void MainWindowUI::onUpscaleImageOpen(std::string file) {
 }
 
 void MainWindowUI::StartGeneration(QM::QueueItem* myJob) {
-    switch (myJob->mode) {
-        case QM::GenerationMode::TXT2IMG:
-            this->threads.emplace_back(new std::thread(
-                &MainWindowUI::GenerateTxt2img, this, this->GetEventHandler(), myJob));
-            break;
-        case QM::GenerationMode::IMG2IMG:
-            this->threads.emplace_back(new std::thread(
-                &MainWindowUI::GenerateImg2img, this, this->GetEventHandler(), myJob));
-            break;
-        case QM::GenerationMode::UPSCALE:
-            this->threads.emplace_back(new std::thread(
-                &MainWindowUI::GenerateUpscale, this, this->GetEventHandler(), myJob));
-            break;
-        default:
-            return;
-            break;
+    if (this->extProcess->isRunning() == false) {
+        wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
+        myJob->status_message = "Error";
+        this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, myJob);
+        errorDialog.ShowModal();
+        return;
+    }
+    try {
+        myJob->updated_at          = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        this->extProcessLastUpdate = myJob->updated_at;
+        this->qmanager->SetStatus(QM::QueueStatus::PENDING, myJob);
+        nlohmann::json j = *myJob;
+        std::string msg  = j.dump();
+        this->extProcess->send(msg);
+        // this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_GENERATION_STARTED, myJob);
+        std::cout << "[GUI] send message to: " << this->extProcess->getArguments() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << __FILE__ << ":" << __LINE__ << e.what() << std::endl;
     }
 }
 
@@ -2321,18 +2371,22 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     auto msg = e.GetString().ToStdString();
 
-    std::string token   = msg.substr(0, msg.find(":"));
-    std::string content = msg.substr(msg.find(":") + 1);
-    sd_gui_utils::ThreadEvents threadEvent =
-        (sd_gui_utils::ThreadEvents)std::stoi(token);
+    std::string token                      = msg.substr(0, msg.find(":"));
+    std::string content                    = msg.substr(msg.find(":") + 1);
+    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
 
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
         // only numbers here...
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
-        QM::QueueItem* item   = e.GetPayload<QM::QueueItem*>();
+
+        QM::QueueItem* item = e.GetPayload<QM::QueueItem*>();
+
+        this->qmanager->UpdateItem(item);
+
         this->UpdateJobInfoDetailsFromJobQueueList(item);
         std::string title;
         std::string message;
+
         switch (event) {
                 // new item added
             case QM::QueueEvents::ITEM_ADDED:
@@ -2342,44 +2396,44 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             case QM::QueueEvents::ITEM_STATUS_CHANGED:
                 this->OnQueueItemManagerItemStatusChanged(item);
                 break;
-                // item updated... ? ? ?
+                // item updated... -> set the progress bar in the queue
             case QM::QueueEvents::ITEM_UPDATED:
                 this->OnQueueItemManagerItemUpdated(item);
                 break;
             case QM::QueueEvents::ITEM_START:  // this is just the item start, if no mode
-                                               // loaded, then wil trigger model load
-                                               // event
-            {
-                this->StartGeneration(item);
-                message = wxString::Format(
-                              _("%s is just stared to generate %d images\nModel: %s"),
-                              sd_gui_utils::modes_str[item->mode],
-                              item->params.batch_count, item->model)
-                              .ToStdString();
-                if (item->mode == QM::GenerationMode::UPSCALE) {
-                    title = _("Upscaling started");
-                    message =
-                        wxString::Format(_("Upscaling the image is started: %s\nModel: %s"),
-                                         item->initial_image, item->model);
-                } else {
-                    if (item->params.batch_count > 1) {
-                        title = wxString::Format(_("%d images generation started"),
-                                                 item->params.batch_count)
-                                    .ToStdString();
-                    } else {
-                        title = _("One image generation started!");
+                // loaded, then wil trigger model load
+                // event
+                {
+                    this->StartGeneration(item);
+                    message = wxString::Format(
+                                  _("%s is just stared to generate %d images\nModel: %s"),
+                                  sd_gui_utils::modes_str[item->mode],
+                                  item->params.batch_count, item->model)
+                                  .ToStdString();
+                    if (item->mode == QM::GenerationMode::UPSCALE) {
+                        title = _("Upscaling started");
                         message =
-                            wxString::Format(
-                                _("%s is just started to generate the image\nModel: %s"),
-                                sd_gui_utils::modes_str[item->mode], item->model)
-                                .ToStdString();
+                            wxString::Format(_("Upscaling the image is started: %s\nModel: %s"),
+                                             item->initial_image, item->model);
+                    } else {
+                        if (item->params.batch_count > 1) {
+                            title = wxString::Format(_("%d images generation started"),
+                                                     item->params.batch_count)
+                                        .ToStdString();
+                        } else {
+                            title = _("One image generation started!");
+                            message =
+                                wxString::Format(
+                                    _("%s is just started to generate the image\nModel: %s"),
+                                    sd_gui_utils::modes_str[item->mode], item->model)
+                                    .ToStdString();
+                        }
                     }
+                    this->ShowNotification(title, message);
                 }
-                this->ShowNotification(title, message);
-            } break;
+                break;
             case QM::QueueEvents::ITEM_FINISHED: {
-                item->finished_at = sd_gui_utils::GetCurrentUnixTimestamp();
-                message           = wxString::Format(
+                message = wxString::Format(
                               _("%s is just finished to generate %d images\nModel: %s"),
                               sd_gui_utils::modes_str[item->mode],
                               item->params.batch_count, item->model)
@@ -2421,7 +2475,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 break;
             case QM::QueueEvents::ITEM_MODEL_FAILED:  // MODEL_LOAD_ERROR
                 this->writeLog(
-                    wxString::Format(_("Model load failed: %s\n"), item->status_message));
+                    wxString::Format(_("Model load failed: %s\n"), item->params.model_path));
 
                 if (item->mode == QM::GenerationMode::IMG2IMG ||
                     item->mode == QM::GenerationMode::TXT2IMG) {
@@ -2431,9 +2485,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                     this->upscaleModelLoaded = false;
                 }
                 title   = _("Model load failed");
-                message = wxString::Format(_("The '%s' just failed to load... for more "
-                                             "details please see the logs!"),
-                                           item->model)
+                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model)
                               .ToStdString();
                 this->ShowNotification(title, message);
                 break;
@@ -2441,8 +2493,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 if (item->mode == QM::GenerationMode::IMG2IMG ||
                     item->mode == QM::GenerationMode::TXT2IMG) {
                     this->writeLog(wxString::Format(
-                        "Diffusion started. Seed: %" PRId64
-                        " Batch: %d %dx%dpx Cfg: %.1f Steps: %d\n",
+                        "Diffusion started. Seed: %" PRId64 " Batch: %d %dx%dpx Cfg: %.1f Steps: %d\n",
                         item->params.seed, item->params.batch_count, item->params.width,
                         item->params.height, item->params.cfg_scale,
                         item->params.sample_steps));
@@ -2462,17 +2513,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         }
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_DONE) {
-        sd_gui_utils::ModelFileInfo* modelinfo =
-            e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         this->ModelManager->UpdateInfo(modelinfo);
-        this->writeLog(wxString::Format(
-            _("Model civitai image downloaded for model: %s\n"), modelinfo->name));
+        this->writeLog(wxString::Format(_("Model civitai image downloaded for model: %s\n"), modelinfo->name));
         // update if the current selected item is the updated item info
         if (this->m_data_model_list->GetSelectedItemsCount() > 0) {
-            wxDataViewItem item = this->m_data_model_list->GetCurrentItem();
-            sd_gui_utils::ModelFileInfo* info =
-                reinterpret_cast<sd_gui_utils::ModelFileInfo*>(
-                    this->m_data_model_list->GetItemData(item));
+            wxDataViewItem item               = this->m_data_model_list->GetCurrentItem();
+            sd_gui_utils::ModelFileInfo* info = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_data_model_list->GetItemData(item));
             if (info->path == modelinfo->path) {
                 this->UpdateModelInfoDetailsFromModelList(modelinfo);
             }
@@ -2649,19 +2696,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 break;
             }
         }
-        this->ModelManager->getIntoPtr(myjob->params.model_path)
-            ->hash_progress_size = 0;
+        this->ModelManager->getIntoPtr(myjob->params.model_path)->hash_progress_size = 0;
         return;
     }
     if (threadEvent == sd_gui_utils::GENERATION_PROGRESS) {
         QM::QueueItem* myjob = e.GetPayload<QM::QueueItem*>();
 
         // update column
-        auto store     = this->m_joblist->GetStore();
-        wxString speed = wxString::Format(
-            myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s",
-            myjob->time > 1.0f || myjob->time == 0 ? myjob->time
-                                                   : (1.0f / myjob->time));
+        auto store             = this->m_joblist->GetStore();
+        wxString speed         = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
         int progressCol        = this->m_joblist->GetColumnCount() - 3;
         int speedCol           = this->m_joblist->GetColumnCount() - 2;
         float current_progress = 100.f * (static_cast<float>(myjob->step) /
@@ -3050,15 +3093,14 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     this->m_scrolledWindow41->FitInside();
 }
 
-QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
-                                           QM::QueueItem* itemPtr,
-                                           wxEvtHandler* eventHandler) {
-    wxImage* img = new wxImage(result.width, result.height, result.data);
-
+QM::QueueItem* MainWindowUI::handleSdImage(const std::string &tmpImagePath, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler) {
+    wxImage *img = new wxImage(tmpImagePath);
+    //wxImage* img = new wxImage(result.width, result.height, result.data, false);
+    // stbi_image_free(result.data);
     if (!img->IsOk()) {
         itemPtr->status_message = std::string(_("Invalid image from diffusion..."));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      itemPtr);
+        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+        delete img;
         return itemPtr;
     }
     std::string filename  = this->cfg->output;
@@ -3082,8 +3124,7 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
     filename = filename + "_";
     filename = filename + std::to_string(itemPtr->params.seed);
     filename = filename + "_";
-    filename = filename + std::to_string(result.width) + "x" +
-               std::to_string(result.height);
+    filename = filename + std::to_string(img->GetWidth()) + "x" + std::to_string(img->GetHeight());
     filename = filename + "_";
 
     filename_without_extension = filename;
@@ -3091,19 +3132,18 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
 
     int _c = 0;
     while (std::filesystem::exists(filename)) {
-        filename =
-            filename_without_extension + "_" + std::to_string(_c) + extension;
+        filename = filename_without_extension + "_" + std::to_string(_c) + extension;
         _c++;
     }
 
     if (!img->SaveFile(filename, imgHandler)) {
-        itemPtr->status_message =
-            wxString::Format(_("Failed to save image into %s"), filename);
+        itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename);
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+        delete img;
+        std::cerr << __FILE__ << " " << __LINE__ << " " << itemPtr->status_message.c_str() << std::endl;
         return itemPtr;
     } else {
-        itemPtr->images.emplace_back(
-            new QM::QueueItemImage({filename, QM::QueueItemImageType::GENERATED}));
+        itemPtr->images.emplace_back(new QM::QueueItemImage({filename, QM::QueueItemImageType::GENERATED}));
         if (itemPtr->params.control_image_path.length() > 0 && this->cfg->save_all_image) {
             std::string ctrlFilename = this->cfg->output;
             ctrlFilename             = filename_without_extension + "_ctrlimg_" + extension;
@@ -3122,8 +3162,8 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
                 exifData["Exif.Photo.UserComment"] = comment;
                 exifData["Exif.Image.XPComment"]   = comment;
                 exifData["Exif.Image.Software"]    = EXIF_SOFTWARE;
-                exifData["Exif.Image.ImageWidth"]  = result.width;
-                exifData["Exif.Image.ImageLength"] = result.height;
+                exifData["Exif.Image.ImageWidth"]  = img->GetWidth();
+                exifData["Exif.Image.ImageLength"] = img->GetHeight();
 
                 if (itemPtr->finished_at > 0) {
                     time_t finishedAt = itemPtr->finished_at;
@@ -3144,16 +3184,14 @@ QM::QueueItem* MainWindowUI::handleSdImage(sd_image_t result,
 }
 
 void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer) {
-    sd_gui_utils::VoidHolder* holder =
-        static_cast<sd_gui_utils::VoidHolder*>(custom_pointer);
-    wxEvtHandler* eventHandler = (wxEvtHandler*)holder->p1;
-    QM::QueueItem* myItem      = (QM::QueueItem*)holder->p2;
+    sd_gui_utils::VoidHolder* holder = static_cast<sd_gui_utils::VoidHolder*>(custom_pointer);
+    wxEvtHandler* eventHandler       = (wxEvtHandler*)holder->p1;
+    QM::QueueItem* myItem            = (QM::QueueItem*)holder->p2;
     // update the model list too
-    sd_gui_utils::ModelFileInfo* modelinfo =
-        (sd_gui_utils::ModelFileInfo*)holder->p3;
-    modelinfo->hash_progress_size = readed_size;
-    modelinfo->hash_fullsize      = myItem->hash_fullsize;
-    myItem->hash_progress_size    = readed_size;
+    sd_gui_utils::ModelFileInfo* modelinfo = (sd_gui_utils::ModelFileInfo*)holder->p3;
+    modelinfo->hash_progress_size          = readed_size;
+    modelinfo->hash_fullsize               = myItem->hash_fullsize;
+    myItem->hash_progress_size             = readed_size;
 
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::HASHING_PROGRESS, myItem);
 
@@ -3176,7 +3214,9 @@ void MainWindowUI::ShowNotification(std::string title, std::string message) {
     this->TaskBar->SetIcon(this->TaskBarIcon, wxString::Format("%s - %s", this->GetTitle(), title));
 }
 
-void MainWindowUI::HandleSDLog(sd_log_level_t level, const char* text, void* data) {
+void MainWindowUI::HandleSDLog(sd_log_level_t level,
+                               const char* text,
+                               void* data) {
     // TODO: hadle visible levels from the GUI
     //  if (level == sd_log_level_t::SD_LOG_INFO || level ==
     //  sd_log_level_t::SD_LOG_ERROR)
@@ -3208,8 +3248,7 @@ sd_ctx_t* MainWindowUI::LoadModelv2(wxEvtHandler* eventHandler, QM::QueueItem* m
             holder->p3                       = (void*)this->ModelManager->getIntoPtr(model.path);
             this->voids.emplace_back(holder);
             auto hash = sd_gui_utils::sha256_file_openssl(
-                model.path.c_str(), (void*)holder,
-                &MainWindowUI::ModelHashingCallback);
+                model.path.c_str(), (void*)holder, &MainWindowUI::ModelHashingCallback);
             this->ModelManager->setHash(myItem->params.model_path, hash);
         }
     }
@@ -3511,8 +3550,7 @@ void MainWindowUI::threadedModelHashCalc(
     holder->p2                       = (void*)modelinfo;
 
     modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(
-        modelinfo->path.c_str(), (void*)holder,
-        &MainWindowUI::ModelStandaloneHashingCallback);
+        modelinfo->path.c_str(), (void*)holder, &MainWindowUI::ModelStandaloneHashingCallback);
     MainWindowUI::SendThreadEvent(
         eventHandler, sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE,
         modelinfo);
@@ -3551,9 +3589,7 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_
         modelinfo->civitaiPlainJson = response;
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FINISHED, modelinfo);
         return;
-    }
-
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
         wxMessageDialog dialog(this, e.what());
         modelinfo->civitaiPlainJson = response;
@@ -3648,384 +3684,77 @@ void MainWindowUI::threadedModelInfoImageDownload(
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_DONE, modelinfo);
 }
 
-void MainWindowUI::loadDll(wxDynamicLibrary* dll, const std::string& usingBackend) {
-    this->usingBackend        = usingBackend;
-    this->sd_dll              = dll;
-    this->sd_set_log_callback = (SdSetLogCallbackFunction)this->sd_dll->GetSymbol("sd_set_log_callback");
-    if (!this->sd_set_log_callback) {
-        wxMessageBox(_("Something went wrong. Invalid backend lib"));
-        this->Close();
-    }
-    this->sd_set_log_callback(MainWindowUI::HandleSDLog, (void*)this->GetEventHandler());
-
-    this->sd_set_progress_callback = (SdSetProgressCallbackFunction)this->sd_dll->GetSymbol("sd_set_progress_callback");
-    if (!this->sd_set_progress_callback) {
-        wxMessageBox(_("Something went wrong. Invalid backend lib"));
-        this->Close();
-    }
-    // reload the type list for selecting one by the used dll
-    this->loadTypeList();
-}
-
-void MainWindowUI::GenerateTxt2img(wxEvtHandler* eventHandler,
-                                   QM::QueueItem* myItem) {
+void MainWindowUI::GenerateTxt2img(wxEvtHandler* eventHandler, QM::QueueItem* myItem) {
     std::lock_guard<std::mutex> lock(this->mutex);
-
-    Txt2ImgFunction txt2img = (Txt2ImgFunction)this->sd_dll->GetSymbol("txt2img");
-
-    if (!txt2img) {
-        myItem->status_message =
-            wxString(_("Failed to load img2img symbol from backend!"));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      myItem);
-        return;
-    }
-    FreeSdCtxFunction free_sd_ctx =
-        (FreeSdCtxFunction)this->sd_dll->GetSymbol("free_sd_ctx");
-
-    sd_gui_utils::VoidHolder* vparams = new sd_gui_utils::VoidHolder;
-    vparams->p1                       = (void*)this->GetEventHandler();
-    vparams->p2                       = (void*)myItem;
-
-    this->sd_set_progress_callback(MainWindowUI::HandleSDProgress,
-                                   (void*)vparams);
-
-    this->voids.emplace_back(vparams);
-
-    if (!this->modelLoaded) {
-        this->txt2img_sd_ctx         = this->LoadModelv2(eventHandler, myItem);
-        this->currentModel           = myItem->params.model_path;
-        this->currentVaeModel        = myItem->params.vae_path;
-        this->currentTaesdModel      = myItem->params.taesd_path;
-        this->currentwType           = myItem->params.wtype;
-        this->currentControlnetModel = myItem->params.controlnet_path;
-    } else {  // the model must be reloaded when: models is changed, vae is
-              // changed, taesd is changed
-        if (myItem->params.model_path != this->currentModel ||
-            this->currentVaeModel != myItem->params.vae_path ||
-            this->currentTaesdModel != myItem->params.taesd_path ||
-            this->currentwType != myItem->params.wtype ||
-            this->currentControlnetModel != myItem->params.controlnet_path ||
-            this->lastGenerationMode != myItem->mode) {
-            free_sd_ctx(this->txt2img_sd_ctx);
-            this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, myItem);
-        }
-    }
-
-    if (!this->modelLoaded || this->txt2img_sd_ctx == nullptr) {
-        myItem->status_message =
-            wxString::Format("Model load failed: %s", myItem->model).ToStdString();
-        MainWindowUI::SendThreadEvent(eventHandler,
-                                      QM::QueueEvents::ITEM_MODEL_FAILED, myItem);
-        return;
-    }
-
-    auto start = std::chrono::system_clock::now();
-
-    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_GENERATION_STARTED, myItem);
-    sd_image_t* control_image = NULL;
-    sd_image_t* results;
-    // prepare controlnet image, if have
-    // if we have, but no model, the myItem will not contains any image
-    if (myItem->params.control_image_path.length() > 0) {
-        if (std::filesystem::exists(myItem->params.control_image_path)) {
-            int c = 0;
-            int w, h;
-            stbi_uc* input_image_buffer =
-                stbi_load(myItem->params.control_image_path.c_str(), &w, &h, &c, 3);
-            control_image =
-                new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-            input_image_buffer = NULL;
-            delete input_image_buffer;
-        }
-    }
-    myItem->started_at = sd_gui_utils::GetCurrentUnixTimestamp();
-
-    results = txt2img(
-        this->txt2img_sd_ctx, myItem->params.prompt.c_str(),
-        myItem->params.negative_prompt.c_str(), myItem->params.clip_skip,
-        myItem->params.cfg_scale, myItem->params.guidance, myItem->params.width,
-        myItem->params.height, myItem->params.sample_method,
-        myItem->params.sample_steps, myItem->params.seed,
-        myItem->params.batch_count, NULL, myItem->params.control_strength,
-        myItem->params.style_ratio, myItem->params.normalize_input, "");
-
-    control_image = NULL;
-    delete control_image;
-    if (results == NULL) {
-        myItem->status_message = "Empty results after txt2img!";
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      myItem);
-        delete results;
-        return;
-    }
-    /* save image(s) */
-
-    // const auto p1 = std::chrono::system_clock::now();
-    //  auto ctime =
-    //  std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
-
-    for (int i = 0; i < myItem->params.batch_count; i++) {
-        if (results[i].data == NULL) {
-            continue;
-        }
-        this->handleSdImage(results[i], myItem, eventHandler);
-        free(results[i].data);
-        results[i].data = NULL;
-    }
-
-    auto end                                      = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-
-    auto msg = wxString::Format("Image generation done in %fs. Saved into %s", elapsed_seconds.count(), this->cfg->output).ToStdString();
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MESSAGE, NULL, msg);
-    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, myItem);
 }
 
 void MainWindowUI::GenerateImg2img(wxEvtHandler* eventHandler, QM::QueueItem* item) {
     std::lock_guard<std::mutex> lock(this->mutex);
-
-    Img2ImgFunction img2img = (Img2ImgFunction)this->sd_dll->GetSymbol("img2img");
-
-    if (!img2img) {
-        item->status_message =
-            wxString(_("Failed to load img2img symbol from backend!"));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
-        return;
-    }
-    FreeSdCtxFunction free_sd_ctx = (FreeSdCtxFunction)this->sd_dll->GetSymbol("free_sd_ctx");
-
-    sd_gui_utils::VoidHolder* vparams = new sd_gui_utils::VoidHolder;
-    vparams->p1                       = (void*)this->GetEventHandler();
-    vparams->p2                       = (void*)item;
-
-    this->sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void*)vparams);
-    this->voids.emplace_back(vparams);
-
-    if (!this->modelLoaded) {
-        this->txt2img_sd_ctx         = this->LoadModelv2(eventHandler, item);
-        this->currentModel           = item->params.model_path;
-        this->currentVaeModel        = item->params.vae_path;
-        this->currentTaesdModel      = item->params.taesd_path;
-        this->currentwType           = item->params.wtype;
-        this->currentControlnetModel = item->params.controlnet_path;
-    } else {  // the model must be reloaded when: models is changed, vae is
-              // changed, taesd is changed
-        if (item->params.model_path != this->currentModel ||
-            this->currentVaeModel != item->params.vae_path ||
-            this->currentTaesdModel != item->params.taesd_path ||
-            this->currentwType != item->params.wtype ||
-            this->lastGenerationMode != item->mode) {
-            free_sd_ctx(this->txt2img_sd_ctx);
-            this->txt2img_sd_ctx = this->LoadModelv2(eventHandler, item);
-        }
-    }
-
-    if (!this->modelLoaded) {
-        item->status_message = wxString::Format("Model load failed: %s", item->model).ToStdString();
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_MODEL_FAILED, item);
-        return;
-    }
-
-    auto start = std::chrono::system_clock::now();
-
-    if (!std::filesystem::exists(item->initial_image)) {
-        item->status_message =
-            wxString::Format("Can not open initial image: %s", item->initial_image).ToStdString();
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
-        return;
-    }
-
-    int c = 0;
-    int w, h;
-    stbi_uc* input_image_buffer = stbi_load(item->initial_image.c_str(), &w, &h, &c, 3);
-    sd_image_t input_image      = {(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-    input_image_buffer          = NULL;
-    delete input_image_buffer;
-
-    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_GENERATION_STARTED, item);
-
-    item->started_at = sd_gui_utils::GetCurrentUnixTimestamp();
-
-    sd_image_t* results = img2img(
-        this->txt2img_sd_ctx,
-        input_image,
-        item->params.prompt.c_str(),
-        item->params.negative_prompt.c_str(),
-        item->params.clip_skip,
-        item->params.cfg_scale,
-        item->params.guidance,
-        item->params.width,
-        item->params.height,
-        item->params.sample_method,
-        item->params.sample_steps,
-        item->params.strength,
-        item->params.seed,
-        item->params.batch_count,
-        NULL,
-        item->params.control_strength,
-        item->params.style_ratio,
-        item->params.normalize_input,
-        NULL);
-
-    if (results == NULL) {
-        item->status_message = "Empty results after img2img!";
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      item);
-        delete results;
-        return;
-    }
-
-    /* save image(s) */
-
-    // const auto p1 = std::chrono::system_clock::now();
-    //  auto ctime =
-    //  std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
-
-    for (int i = 0; i < item->params.batch_count; i++) {
-        if (results[i].data == NULL) {
-            continue;
-        }
-
-        item = this->handleSdImage(results[i], item, eventHandler);
-        free(results[i].data);
-        results[i].data = NULL;
-    }
-    free(results);
-
-    auto end                                      = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-
-    auto msg = wxString::Format("Image generation done in %fs. Saved into %s", elapsed_seconds.count(), this->cfg->output).ToStdString();
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MESSAGE, NULL, msg);
-    MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, item);
 }
 
 void MainWindowUI::GenerateUpscale(wxEvtHandler* eventHandler, QM::QueueItem* item) {
     std::lock_guard<std::mutex> lock(this->mutex);
-
-    UpscalerFunction upscale = (UpscalerFunction)this->sd_dll->GetSymbol("upscale");
-
-    if (!upscale) {
-        item->status_message = wxString(_("Failed to load upscale symbol from backend!"));
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
-        return;
-    }
-    FreeUpscalerFunction free_upscaler_ctx = (FreeUpscalerFunction)this->sd_dll->GetSymbol("free_upscaler_ctx");
-    FreeSdCtxFunction free_sd_ctx          = (FreeSdCtxFunction)this->sd_dll->GetSymbol("free_sd_ctx");
-
-    sd_gui_utils::VoidHolder* vparams = new sd_gui_utils::VoidHolder;
-    vparams->p1                       = (void*)this->GetEventHandler();
-    vparams->p2                       = (void*)item;
-
-    this->sd_set_progress_callback(MainWindowUI::HandleSDProgress, (void*)vparams);
-
-    if (this->currentUpscalerModel != item->params.esrgan_path) {
-        if (this->upscaleModelLoaded == true) {
-            free_upscaler_ctx(this->upscaler_sd_ctx);
-            this->upscaleModelLoaded = false;
-        }
-    }
-
-    if (this->m_keep_other_models_in_memory->GetValue() == false &&
-        this->modelLoaded == true) {
-        free_sd_ctx(this->txt2img_sd_ctx);
-        this->modelLoaded = false;
-    }
-
-    if (this->upscaleModelLoaded == false) {
-        MainWindowUI::SendThreadEvent(eventHandler,
-                                      QM::QueueEvents::ITEM_MODEL_LOAD_START, item);
-        this->upscaler_sd_ctx = this->LoadUpscaleModel(eventHandler, item);
-
-        if (!this->upscaleModelLoaded || this->upscaler_sd_ctx == NULL) {
-            item->status_message =
-                wxString::Format("Model load failed: %s", item->params.esrgan_path)
-                    .ToStdString();
-            MainWindowUI::SendThreadEvent(eventHandler,
-                                          QM::QueueEvents::ITEM_MODEL_FAILED, item);
-            this->upscaleModelLoaded = false;
-            return;
-        }
-        this->upscaleModelLoaded = true;
-    }
-
-    if (std::filesystem::exists(item->initial_image)) {
-        int c = 0;
-        int w, h;
-        stbi_uc* input_image_buffer =
-            stbi_load(item->initial_image.c_str(), &w, &h, &c, 3);
-        sd_image_t control_image =
-            sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-        input_image_buffer = NULL;
-        delete input_image_buffer;
-
-        item->started_at = sd_gui_utils::GetCurrentUnixTimestamp();
-
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_GENERATION_STARTED, item);
-        sd_image_t upscaled_image = upscale(this->upscaler_sd_ctx, control_image, item->upscale_factor);
-
-        // save img
-        wxImage* img = new wxImage(upscaled_image.width, upscaled_image.height,
-                                   upscaled_image.data);
-        if (!img->IsOk()) {
-            item->status_message = "Failed to save image.";
-            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                          item);
-            return;
-        }
-
-        std::string filename  = this->cfg->output;
-        std::string extension = ".jpg";
-        auto imgHandler       = wxBITMAP_TYPE_JPEG;
-
-        if (this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
-            extension  = ".png";
-            imgHandler = wxBITMAP_TYPE_PNG;
-        }
-        if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
-            extension  = ".jpg";
-            imgHandler = wxBITMAP_TYPE_JPEG;
-            img->SetOption("quality", this->cfg->image_quality);
-        }
-
-        std::string filename_without_extension;
-        filename =
-            filename + wxString(wxFileName::GetPathSeparator()).ToStdString();
-        filename = filename + std::to_string(item->id);
-        filename = filename + "_";
-        filename = filename + std::to_string(item->params.seed);
-        filename = filename + "_upscaled";
-        filename = filename + "_";
-        filename = filename + std::to_string(img->GetWidth()) + "x" + std::to_string(img->GetHeight());
-
-        filename_without_extension = filename;
-        filename                   = filename + extension;
-
-        if (img->SaveFile(filename, imgHandler)) {
-            item->images.emplace_back(new QM::QueueItemImage{filename});
-            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FINISHED, item);
-        } else {
-            item->status_message =
-                wxString::Format(_("Failed to save image into %s"), filename).ToStdString();
-            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, item);
-        }
-
-        // save img
-        if (!this->m_keep_upscaler_in_memory->GetValue()) {
-            this->upscaleModelLoaded = false;
-            free_upscaler_ctx(this->upscaler_sd_ctx);
-        }
-    } else {
-        item->status_message = wxString::Format(_("Can not open initial image: %s"),
-                                                item->initial_image)
-                                   .ToStdString();
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED,
-                                      item);
-        return;
-    }
 }
 
 void MainWindowUI::OnHtmlLinkClicked(wxHtmlLinkEvent& event) {
     wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+}
+
+bool MainWindowUI::ProcessEventHandler(std::string message) {
+    try {
+        nlohmann::json msg = nlohmann::json::parse(message);
+        QM::QueueItem item = msg.get<QM::QueueItem>();
+
+        auto itemPtr = this->qmanager->GetItemPtr(item.id);
+
+        if (itemPtr == nullptr) {
+            std::cerr << "[GUI] Could not find item " << item.id << std::endl;
+            return false;
+        }
+
+        if (itemPtr->updated_at != item.updated_at || itemPtr->event != item.event) {
+            std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
+            extProcessLastUpdate      = item.updated_at;
+            this->extProcessLastEvent = item.event;
+
+            *itemPtr = item;
+
+            if (!itemPtr->rawImages.empty()) {
+                std::cout << "[GUI] got raw images, processing them" << std::endl;
+                for (unsigned int i = 0; i < itemPtr->rawImages.size(); i++) {
+                    std::cout << "[GUI] processing image " << itemPtr->rawImages[i].c_str() << std::endl;
+                    this->handleSdImage(itemPtr->rawImages[i], itemPtr, this->GetEventHandler());
+                }
+                itemPtr->rawImages.clear();
+            }
+
+            this->qmanager->SendEventToMainWindow(item.event, itemPtr);
+            return true;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
+
+    return false;
+}
+
+bool MainWindowUI::ProcessEventOnExit() {
+    this->m_statusBar166->SetStatusText(_("Background process stopped... restarting..."), 1);
+    return true;
+}
+
+void MainWindowUI::ProcessEventOnStarted() {
+    this->m_statusBar166->SetStatusText(_("Background process running"), 1);
+}
+
+void MainWindowUI::ProcessCheckThread() {
+    while (this->checkThreadNeedToRun) {
+        if (this->extProcess->restartIfNeeded()) {
+            if (this->qmanager->GetCurrentItem() != nullptr) {// TODO -> get the stderr from the process
+                this->qmanager->resetRunning(this->qmanager->GetCurrentItem(), "Background process stopped");
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }

@@ -1,66 +1,71 @@
+#include <cstddef>
+#include <memory>
+#include "ui/utils.hpp"
+
+#include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <string>
-#ifdef _WIN32
+#include <thread>
+
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <unistd.h>
+#include <cstring>
 #endif
-#include <csignal>
 
-
+#include "helpers/sd.hpp"
 #include "libs/SharedLibrary.h"
+#include "libs/SharedMemoryManager.h"
+#include "libs/json.hpp"
+#include "ui/QueueManager.h"
 
-void signal_handler(int signum) {
-    switch (signum) {
-        case SIGINT:
-            std::cout << "SIGINT received, exiting.\n";
-            exit(0);
-            break;
-        case SIGTERM:
-            std::cout << "SIGTERM received, exiting.\n";
-            exit(0);
-            break;
-        default:
-            std::cout << "Unknown signal " << signum << " received.\n";
-            break;
-    }
-}
+#include "ApplicationLogic.h"
+
+#include "config.hpp"
+
 int main(int argc, char* argv[]) {
-    // install signal handler
-    struct sigaction action;
-    action.sa_handler = signal_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <shared_library>" << std::endl;
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <dynamiclib_name>" << std::endl;
         return 1;
     }
 
-    
-    SharedLibrary sharedLibrary(argv[1]);
+    std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>("/stablediffusionGui", 10240, false);
 
-    try {
-        sharedLibrary.load();
-    } catch (std::runtime_error& e) {
-        std::cerr << "Failed to load shared library: " << e.what() << std::endl;
+    ApplicationLogic appLogic(argv[1], sharedMemory);
+    if (!appLogic.loadLibrary()) {
+        std::cerr << "[EXTPROCESS] Can not load shared library" << std::endl;
         return 1;
     }
-
-    std::string message;
-
-    while (true) {
-        std::getline(std::cin, message);  // Üzenet fogadása
-        if (message == "exit") {
-            break;  // Ha "exit" üzenetet kap, kilép
+    bool needToRun = true;
+    int lastUpdate = 0;
+    int lastId     = 0;
+    while (needToRun) {
+        char buffer[10240];
+        if (sharedMemory->read(buffer, 10240)) {
+            if (std::strlen(buffer) > 0) {
+                std::string message = std::string(buffer, 10240);
+                try {
+                    nlohmann::json j = nlohmann::json::parse(message);
+                    auto item        = j.get<QM::QueueItem>();
+                    if (appLogic.getCurrentItem() == nullptr && item.id != lastId) {
+                        std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
+                        lastId = item.id;
+                        appLogic.processMessage(item);
+                    }
+                } catch (std::exception& e) {
+                    std::cerr << "[EXTPROCESS] Can not parse json message: " << e.what() << std::endl;
+                }
+            }
+        } else {
+            std::cerr << "[EXTPROCESS] Can not read shared memory" << std::endl;
+            needToRun = false;
         }
-
-        
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
     }
-    sharedLibrary.unload();
+
     return 0;
 }

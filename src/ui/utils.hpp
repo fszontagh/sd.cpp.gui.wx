@@ -20,7 +20,7 @@
 #include "../helpers/civitai.hpp"
 #include "../libs/bitmask_operators.h"
 #include "../libs/json.hpp"
-#include "../libs/stb_image.h"
+
 
 namespace sd_gui_utils {
     inline std::string repairPath(std::string path) {
@@ -336,7 +336,6 @@ namespace sd_gui_utils {
         std::time_t time  = static_cast<std::time_t>(timestamp);
         std::tm* timeinfo = std::localtime(&time);
 
-        // A dátum formázása az évszám-hónap-nap formátumba
         std::stringstream ss;
         ss << (timeinfo->tm_year + 1900) << "-" << std::setw(2) << std::setfill('0')
            << (timeinfo->tm_mon + 1) << "-" << std::setw(2) << std::setfill('0')

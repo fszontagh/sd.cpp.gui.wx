@@ -1,55 +1,56 @@
 #include <wx/app.h>
 #include <wx/event.h>
-#define STB_IMAGE_IMPLEMENTATION
 #include <wx/dynlib.h>
 #include <wx/image.h>
 #include <wx/snglinst.h>
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
+#include "libs/ExternalProcess.h"
 #include "ui/MainWindowUI.h"
 #include "ui/embedded_files/app_icon.h"
 
 #include <csignal>
 #include <iostream>
-
-void signalHandler(int signal) {
-    if (signal == SIGABRT) {
-        std::cerr << "Abort signal (SIGABRT) received. Ignoring\n";
-    }
-}
+#include "extprocess/config.hpp"
 
 // Define the MainApp
 class MainApp : public wxApp {
 private:
     wxSingleInstanceChecker* m_checker;
+    ExternalProcess * m_externalProcess = nullptr;
 
 public:
     bool OnInit() override {
-        std::signal(SIGABRT, signalHandler);
+        std::string command = "";
+#ifdef WIN32
+        command = "cmd /c extprocess/extprocess.exe";
+#else
+        command = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
+#endif
 
         wxString forceType           = "";
         bool allow_multiple_instance = false;
-        std::string usingBackend = "cpu";
+        std::string usingBackend     = "cpu";
 
         for (int i = 0; i < wxApp::argc; ++i) {
             if (wxApp::argv[i] == "-cuda") {
-                forceType = "cuda";
+                forceType    = "cuda";
                 usingBackend = "cuda";
             }
             if (wxApp::argv[i] == "-avx") {
-                forceType = "avx";
+                forceType    = "avx";
                 usingBackend = "avx";
             }
             if (wxApp::argv[i] == "-avx2") {
-                forceType = "avx2";
+                forceType    = "avx2";
                 usingBackend = "avx2";
             }
             if (wxApp::argv[i] == "-avx512") {
-                forceType = "avx512";
+                forceType    = "avx512";
                 usingBackend = "avx512";
             }
             if (wxApp::argv[i] == "-hipblas") {
-                forceType = "hipblas";
+                forceType    = "hipblas";
                 usingBackend = "hipblas";
             }
             if (wxApp::argv[i] == "-allow-multiple") {
@@ -60,8 +61,7 @@ public:
             m_checker = new wxSingleInstanceChecker;
             if (m_checker->IsAnotherRunning()) {
                 wxLogError(_("Another program instance is already running, aborting."));
-                delete m_checker;  // OnExit() won't be called if we return false
-                m_checker = NULL;
+                this->OnExit();
                 return false;
             }
         }
@@ -82,7 +82,6 @@ public:
 
         wxFileName f(wxStandardPaths::Get().GetExecutablePath());
         wxString appPath(f.GetPath());
-        wxDynamicLibrary* dll = new wxDynamicLibrary();
         std::string libPrefix = "";
 #ifdef WIN32
         libPrefix = "";
@@ -98,34 +97,29 @@ public:
             dllName = libPrefix + "stable-diffusion_" + forceType;
         } else {
             if (isNvidiaGPU()) {
-                dllName = libPrefix + "stable-diffusion_cuda";
+                dllName      = libPrefix + "stable-diffusion_cuda";
                 usingBackend = "cuda";
             } else if (isAmdGPU()) {
-                dllName = libPrefix + "stable-diffusion_hipblas";
+                dllName      = libPrefix + "stable-diffusion_hipblas";
                 usingBackend = "hipblas";
             } else {
                 static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
                 if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl) {
-                    dllName = libPrefix + "stable-diffusion_avx512";
+                    dllName      = libPrefix + "stable-diffusion_avx512";
                     usingBackend = "avx512";
                 } else if (features.avx2) {
-                    dllName = libPrefix + "stable-diffusion_avx2";
+                    dllName      = libPrefix + "stable-diffusion_avx2";
                     usingBackend = "avx2";
                 } else if (features.avx) {
-                    dllName = libPrefix + "stable-diffusion_avx";
+                    dllName      = libPrefix + "stable-diffusion_avx";
                     usingBackend = "avx";
                 }
             }
         }
-        if (!dll->Load(dllName, wxDL_QUIET | wxDL_DEFAULT)) {
-            splash->Hide();
-            splash->Destroy();
-            wxMessageBox(wxString::Format(_("Can not load backend: %s"), dllName));
-            exit(1);
-        }
 
-        MainWindowUI* mainFrame = new MainWindowUI(nullptr);
-        mainFrame->loadDll(dll, usingBackend);
+        m_externalProcess = new ExternalProcess(command, dllName.ToStdString(), false);
+
+        MainWindowUI* mainFrame = new MainWindowUI(nullptr, m_externalProcess, usingBackend);
         mainFrame->Show(true);
         SetTopWindow(mainFrame);
         splash->Destroy();
@@ -133,6 +127,12 @@ public:
     }
     int OnExit() override {
         delete m_checker;
+        if (m_externalProcess != nullptr) {
+            m_externalProcess->stop();
+            m_externalProcess = nullptr;
+            delete m_externalProcess;
+        }
+
         return 0;
     }
 };

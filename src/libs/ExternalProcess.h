@@ -2,55 +2,61 @@
 #define EXTERNAL_PROCESS_H
 
 #include <atomic>
-#include <condition_variable>
 #include <functional>
-#include <iostream>
-#include <mutex>
+#include <memory>
 #include <string>
 #include <thread>
-#include <vector>
-#include "MessageHandler.h"
+#include "SharedMemoryManager.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
 #endif
+#include "extprocess/config.hpp"
+
+typedef std::function<bool(std::string)> onMessageCallBack;
+typedef std::function<bool()> onExitCallBack;
+typedef std::function<void()> onStartedCallBack;
 
 class ExternalProcess {
 public:
-    ExternalProcess(const std::string& command, bool autoRestart = false);
+    // Constructor to initialize with command, arguments, and auto-restart option
+    ExternalProcess(const std::string& command, const std::string& arguments, bool autoRestart = false);
     ~ExternalProcess();
 
-    void start();
+    void start(onMessageCallBack callback = nullptr);
+    void setOnExitCallback(onExitCallBack callback);
+    void setOnStartedCallback(onStartedCallBack callback);
     void stop();
-    void send(const std::string& message);
+    void send(std::string data);
+    void clear();
     std::string receive();
     bool isRunning() const;
+    inline std::string getArguments() const { return arguments; }
+    bool restartIfNeeded();
 
 private:
-    void processOutput();
-    void restartProcess();
-
+    std::atomic<bool> restartRequested;
     std::string command;
-    bool autoRestart;
+    std::string arguments;
+    bool autoRestart = false;
     std::atomic<bool> running;
     std::thread outputThread;
-    MessageHandler messageHandler;  // Üzenetkezelő példány
+    void processOutput(onMessageCallBack callback);
+    void restartProcess(onMessageCallBack callback = nullptr);
+    onExitCallBack onExit       = nullptr;
+    onStartedCallBack onStarted = nullptr;
+    onMessageCallBack onMessage = nullptr;
+
+    std::shared_ptr<SharedMemoryManager> sharedMemory;
 
 #if defined(_WIN32) || defined(_WIN64)
     PROCESS_INFORMATION processInfo;
-    HANDLE hReadPipe;
-    HANDLE hWritePipe;
+    HANDLE sharedMemoryHandle;
 #else
     pid_t processId;
-    int pipeRead[2];
-    int pipeWrite[2];
+    int shmFd;
 #endif
 };
 

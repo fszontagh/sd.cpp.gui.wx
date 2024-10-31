@@ -15,12 +15,14 @@ void SharedLibrary::load() {
     }
 
 #if defined(_WIN32) || defined(_WIN64)
-    handle = LoadLibraryA(libraryPath.c_str());
+    std::string libname = libraryPath + ".dll";
+    handle              = LoadLibraryA(libname.c_str());
     if (!handle) {
         throw std::runtime_error("Failed to load library: " + libraryPath);
     }
 #else
-    handle = dlopen(libraryPath.c_str(), RTLD_LAZY);
+    std::string libname = libraryPath + ".so";
+    handle              = dlopen(libname.c_str(), RTLD_LAZY);
     if (!handle) {
         throw std::runtime_error("Failed to load library: " + std::string(dlerror()));
     }
@@ -45,23 +47,3 @@ void SharedLibrary::unload() {
     handle = nullptr;
 }
 
-template <typename T>
-T SharedLibrary::getFunction(const std::string& functionName) {
-    if (!handle) {
-        throw std::runtime_error("Library is not loaded. Cannot get function: " + functionName);
-    }
-
-#if defined(_WIN32) || defined(_WIN64)
-    FARPROC func = GetProcAddress(static_cast<HMODULE>(handle), functionName.c_str());
-    if (!func) {
-        throw std::runtime_error("Failed to get function: " + functionName);
-    }
-    return reinterpret_cast<T>(func);
-#else
-    void* func = dlsym(handle, functionName.c_str());
-    if (!func) {
-        throw std::runtime_error("Failed to get function: " + std::string(dlerror()));
-    }
-    return reinterpret_cast<T>(func);
-#endif
-}

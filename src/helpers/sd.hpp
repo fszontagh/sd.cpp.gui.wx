@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <cstdint>
 
 // Enumerations
 enum rng_type_t { STD_DEFAULT_RNG,
@@ -119,6 +120,7 @@ typedef void (*SdSetLogCallbackFunction)(void (*)(enum sd_log_level_t, const cha
 typedef void (*SdSetProgressCallbackFunction)(void (*)(int, int, float, void*), void*);
 typedef int32_t (*GetNumPhysicalCoresFunction)();
 typedef const char* (*SdGetSystemInfoFunction)();
+
 typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        const char*,           // prompt,
                                        const char*,           // negative_prompt,
@@ -163,43 +165,37 @@ typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
                                        sd_image_t,       // inpu image
                                        uint32_t          // upscale factor
 );
+typedef uint8_t* (*ConvertFunction)(
+    const char*,    // input path
+    const char*,    // vae path
+    const char*,    // output path
+    enum sd_type_t  // wtype
+);
+
+typedef uint8_t* (*PreprocessCannyFunction)(
+    uint8_t*,  // image
+    int,       // width
+    int,       // height
+    float,     // high_threshold
+    float,     // low_threshold
+    float,     // weak
+    float,     // strong
+    bool       // inverse
+);
+
 typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,    // esrgan path
                                                   int,            // threads
                                                   enum sd_type_t  // wtype
 );
-typedef void (*FreeUpscalerFunction)(upscaler_ctx_t*);
+typedef void (*FreeUpscalerCtxFunction)(upscaler_ctx_t*);
 // Add more function pointers for other functions...
 
 // Function declarations
-void sd_set_log_callback(void (*sd_log_cb)(enum sd_log_level_t, const char*, void*),
-                         void* data);
+void sd_set_log_callback(void (*sd_log_cb)(enum sd_log_level_t, const char*, void*), void* data);
 void sd_set_progress_callback(void (*cb)(int, int, float, void*), void* data);
 int32_t get_num_physical_cores();
 const char* sd_get_system_info();
-sd_ctx_t* new_sd_ctx(
 
-    const char* model_path,
-    const char* clip_l_path,
-    const char* t5xxl_path,
-    const char* diffusion_model_path,
-    const char* vae_path,
-    const char* taesd_path,
-    const char* control_net_path_c_str,
-    const char* lora_model_dir,
-    const char* embed_dir_c_str,
-    const char* stacked_id_embed_dir_c_str,
-    bool vae_decode_only,
-    bool vae_tiling,
-    bool free_params_immediately,
-    int n_threads,
-    enum sd_type_t wtype,
-    enum rng_type_t rng_type,
-    enum schedule_t s,
-    bool keep_clip_on_cpu,
-    bool keep_control_net_cpu,
-    bool keep_vae_on_cpu
-
-);
 void free_sd_ctx(sd_ctx_t* sd_ctx);
 void free_upscaler_ctx(upscaler_ctx_t* upscaler_ctx_t);
 sd_image_t* txt2img(sd_ctx_t* sd_ctx, sd_image_t init_image, const char* prompt, const char* negative_prompt, int clip_skip, float cfg_scale, float guidance, int width, int height, enum sample_method_t sample_method, int sample_steps, float strength, int64_t seed, int batch_count, const sd_image_t* control_cond, float control_strength, float style_strength, bool normalize_input, const char* input_id_images_path);

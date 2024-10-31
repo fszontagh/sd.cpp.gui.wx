@@ -1052,7 +1052,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	this->SetSizer( sizer0001 );
 	this->Layout();
-	m_statusBar166 = this->CreateStatusBar( 1, wxSTB_DEFAULT_STYLE, wxID_ANY );
+	m_statusBar166 = this->CreateStatusBar( 2, wxSTB_DEFAULT_STYLE, wxID_ANY );
 
 	this->Centre( wxBOTH );
 

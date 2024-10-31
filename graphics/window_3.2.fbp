@@ -8209,7 +8209,7 @@
         <property name="drag_accept_files">0</property>
         <property name="enabled"></property>
         <property name="fg"></property>
-        <property name="fields">1</property>
+        <property name="fields">2</property>
         <property name="font"></property>
         <property name="hidden"></property>
         <property name="id">wxID_ANY</property>

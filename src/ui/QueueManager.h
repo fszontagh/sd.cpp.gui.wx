@@ -4,6 +4,7 @@
 #include <chrono>
 #include <fstream>
 #include <map>
+#include <memory>
 #include "utils.hpp"
 
 #include <wx/event.h>
@@ -62,6 +63,20 @@ namespace QM {
         UNKNOWN = 1 << 3
     };
 
+    inline const std::unordered_map<unsigned int, QueueEvents> QueueEvents_str_by_ui = {
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_DELETED), QueueEvents::ITEM_DELETED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_ADDED), QueueEvents::ITEM_ADDED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_STATUS_CHANGED), QueueEvents::ITEM_STATUS_CHANGED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_UPDATED), QueueEvents::ITEM_UPDATED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_START), QueueEvents::ITEM_START},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_FINISHED), QueueEvents::ITEM_FINISHED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_LOAD_START), QueueEvents::ITEM_MODEL_LOAD_START},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_LOADED), QueueEvents::ITEM_MODEL_LOADED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_FAILED), QueueEvents::ITEM_MODEL_FAILED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_GENERATION_STARTED), QueueEvents::ITEM_GENERATION_STARTED},
+        {static_cast<unsigned int>(QM::QueueEvents::ITEM_FAILED), QueueEvents::ITEM_FAILED},
+        {static_cast<unsigned int>(QM::QueueEvents::SD_MESSAGE), QueueEvents::SD_MESSAGE}};
+
     inline const std::unordered_map<QM::QueueEvents, std::string> QueueEvents_str = {
         {QM::QueueEvents::ITEM_DELETED, "ITEM_DELETED"},
         {QM::QueueEvents::ITEM_ADDED, "ITEM_ADDED"},
@@ -85,8 +100,8 @@ namespace QM {
     /// @brief Store the images from the queue jobs
     struct QueueItemImage {
         std::string pathname;
-        QueueItemImageType type = QM::QueueItemImageType::GENERATED;
-        long id                 = -1;
+        QM::QueueItemImageType type = QM::QueueItemImageType::GENERATED;
+        long id                     = -1;
 
         QueueItemImage() = default;
 
@@ -132,6 +147,7 @@ namespace QM {
         int id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
         sd_gui_utils::SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
+        QM::QueueEvents event  = QM::QueueEvents::ITEM_ADDED;
         std::vector<QM::QueueItemImage*> images;
         int step = 0, steps = 0;
         size_t hash_fullsize = 0, hash_progress_size = 0;
@@ -142,10 +158,31 @@ namespace QM {
         std::string status_message = "";
         uint32_t upscale_factor    = 4;
         std::string sha256;
+        std::vector<std::string> rawImages = {};
 
         QueueItem() = default;
         QueueItem(const QueueItem& other)
-            : id(other.id), created_at(other.created_at), updated_at(other.updated_at), finished_at(other.finished_at), started_at(other.started_at), params(other.params), status(other.status), images(other.images), step(other.step), steps(other.steps), hash_fullsize(other.hash_fullsize), hash_progress_size(other.hash_progress_size), time(other.time), model(other.model), mode(other.mode), initial_image(other.initial_image), status_message(other.status_message), upscale_factor(other.upscale_factor), sha256(other.sha256) {}
+            : id(other.id),
+              created_at(other.created_at),
+              updated_at(other.updated_at),
+              finished_at(other.finished_at),
+              started_at(other.started_at),
+              params(other.params),
+              status(other.status),
+              event(other.event),
+              images(other.images),
+              step(other.step),
+              steps(other.steps),
+              hash_fullsize(other.hash_fullsize),
+              hash_progress_size(other.hash_progress_size),
+              time(other.time),
+              model(other.model),
+              mode(other.mode),
+              initial_image(other.initial_image),
+              status_message(other.status_message),
+              upscale_factor(other.upscale_factor),
+              sha256(other.sha256),
+              rawImages(other.rawImages) {}
 
         ~QueueItem() {}
 
@@ -159,6 +196,7 @@ namespace QM {
                 images             = other.images;
                 params             = other.params;
                 status             = other.status;
+                event              = other.event;
                 step               = other.step;
                 steps              = other.steps;
                 time               = other.time;
@@ -169,6 +207,7 @@ namespace QM {
                 hash_progress_size = other.hash_progress_size;
                 status_message     = other.status_message;
                 upscale_factor     = other.upscale_factor;
+                rawImages          = other.rawImages;
             }
             return *this;
         }
@@ -188,12 +227,17 @@ namespace QM {
             {"finished_at", p.finished_at},
             {"started_at", p.started_at},
             {"status", (int)p.status},
+            {"event", (int)p.event},
             {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
             {"params", p.params},
             {"images", imageArray},
+            {"step", p.step},
+            {"steps", p.steps},
+            {"time", p.time},
             {"upscale_factor", p.upscale_factor},
             {"initial_image", sd_gui_utils::UnicodeToUTF8(p.initial_image)},
+            {"rawImages", p.rawImages}
 
         };
     }
@@ -222,12 +266,35 @@ namespace QM {
                 }
             }
         }
+        if (j.contains("step")) {
+            j.at("step").get_to(p.step);
+        }
+        if (j.contains("steps")) {
+            j.at("steps").get_to(p.steps);
+        }
+        if (j.contains("time")) {
+            j.at("time").get_to(p.time);
+        }
+        if (j.contains("rawImages") && j["rawImages"].is_array()) {
+            auto& rawImages_json = j["rawImages"];
+
+            for (auto& image_json : rawImages_json) {
+                if (image_json.is_string()) {
+                    p.rawImages.push_back(image_json.get<std::string>());
+                }
+            }
+        }
 
         j.at("finished_at").get_to(p.finished_at);
         j.at("model").get_to(p.model);
         j.at("params").get_to(p.params);
         j.at("initial_image").get_to(p.initial_image);
-        p.status        = j.at("status").get<QM::QueueStatus>();
+        p.status = j.at("status").get<QM::QueueStatus>();
+
+        if (j.contains("event")) {
+            p.event = j.at("event").get<QM::QueueEvents>();
+        }
+
         p.mode          = j.at("mode").get<QM::GenerationMode>();
         p.initial_image = sd_gui_utils::UTF8ToUnicode(p.initial_image);
         p.model         = sd_gui_utils::UTF8ToUnicode(p.model);
@@ -238,7 +305,12 @@ namespace QM {
         QueueManager(wxEvtHandler* eventHandler, std::string jobsdir);
         ~QueueManager();
         int AddItem(QM::QueueItem* item, bool fromFile = false);
+        void UpdateItem(QM::QueueItem* item);
         QM::QueueItem* GetItemPtr(int id);
+        /**
+         * @brief Get all the items in the queue as a string formatted like:
+         *
+         */
         QM::QueueItem* GetItemPtr(QM::QueueItem item);
         const std::map<int, const QM::QueueItem*> getList();
         QM::QueueItem* Duplicate(const QM::QueueItem* item);
@@ -256,8 +328,16 @@ namespace QM {
         bool DeleteJob(QM::QueueItem item);
         bool DeleteJob(int id);
         bool IsRunning();
+        inline void resetRunning(QM::QueueItem* item, const std::string &reason) {
+            if (this->QueueList.find(item->id) != this->QueueList.end()) {
+                item->status_message = reason;
+                this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[item->id]);
+            }
+        }
+        inline QM::QueueItem* GetCurrentItem() { return this->currentItem; }
 
     private:
+        std::mutex queueMutex;
         int GetCurrentUnixTimestamp();
         void LoadJobListFromDir();
         std::string jobsDir;
@@ -265,6 +345,7 @@ namespace QM {
         int GetAnId();
         // thread events handler, toupdate main window data table
         void onItemAdded(QM::QueueItem item);
+        QM::QueueItem* currentItem;
 
         // @brief check if something is running or not
         bool isRunning = false;
@@ -273,7 +354,6 @@ namespace QM {
         wxWindow* parent;
         std::map<int, QM::QueueItem*> QueueList;
     };
-
 };
 
 #endif

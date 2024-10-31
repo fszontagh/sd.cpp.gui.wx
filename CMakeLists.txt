@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
 project(StableDiffusionGUI 
 LANGUAGES CXX C 
-VERSION 0.1.7 
+VERSION 0.1.8 
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 
@@ -57,9 +57,8 @@ message("Git hash: ${GIT_HASH}")
 message("CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR}")
 message("CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}")
 
-configure_package_config_file(src/ver.hpp.in ver.hpp
-    INSTALL_DESTINATION build/install
-)
+configure_file(src/ver.hpp.in ver.hpp)
+
 
 # Source files
 set(SOURCES
@@ -73,7 +72,7 @@ set(SOURCES
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
     src/libs/ExternalProcess.cpp
-    src/libs/MessageHandler.cpp
+    src/libs/SharedMemoryManager.cpp
 )
 
 if (WIN32)
