@@ -191,6 +191,7 @@ private:
     std::atomic_bool stop_thread = false;
     ExternalProcess* extProcess;
     unsigned int extProcessLastUpdate = 0;
+    unsigned int extProcessTries = 0;
     QM::QueueEvents extProcessLastEvent = QM::QueueEvents::ITEM_ADDED;
 
     void initConfig();
@@ -219,9 +220,11 @@ private:
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item);
     bool ProcessEventHandler(std::string msg);
-    bool ProcessEventOnExit();
+    bool ProcessEventOnExit(bool calledByUser);
     void ProcessEventOnStarted();
     void ProcessCheckThread();
+    void ProcessStdOutEvenet(const std::string &message);
+    void ProcessStdErrEvenet(const std::string &message);
     std::shared_ptr<std::thread> processCheckThread = nullptr;
     std::atomic_bool checkThreadNeedToRun = true;
 
@@ -275,7 +278,7 @@ private:
         std::exit(EXIT_FAILURE);
     }
 
-    inline void writeLog(const std::string& message) {
+    inline void writeLog(const std::string& message, bool writeIntoGui = true) {
         std::ofstream logfile(this->cfg->datapath + "/app.log", std::ios::app);
         if (!logfile.is_open()) {
             std::cerr << "Err: can not open logfile: " << this->cfg->datapath + "/app.log" << std::endl;
@@ -289,7 +292,9 @@ private:
         wxString logline = wxString::Format("%s: %s", timestamp, message);
         logfile << logline.c_str();
         logfile.close();
-        this->logs->AppendText(logline);
+        if (writeIntoGui) {
+            this->logs->AppendText(logline);
+        }
     }
     inline void writeLog(const wxString& message) {
         this->writeLog(message.ToStdString());

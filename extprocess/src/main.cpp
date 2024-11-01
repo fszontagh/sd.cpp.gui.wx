@@ -32,39 +32,43 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <dynamiclib_name>" << std::endl;
         return 1;
     }
+    try {
+        std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
 
-    std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>("/stablediffusionGui", 10240, false);
-
-    ApplicationLogic appLogic(argv[1], sharedMemory);
-    if (!appLogic.loadLibrary()) {
-        std::cerr << "[EXTPROCESS] Can not load shared library" << std::endl;
-        return 1;
-    }
-    bool needToRun = true;
-    int lastUpdate = 0;
-    int lastId     = 0;
-    while (needToRun) {
-        char buffer[10240];
-        if (sharedMemory->read(buffer, 10240)) {
-            if (std::strlen(buffer) > 0) {
-                std::string message = std::string(buffer, 10240);
-                try {
-                    nlohmann::json j = nlohmann::json::parse(message);
-                    auto item        = j.get<QM::QueueItem>();
-                    if (appLogic.getCurrentItem() == nullptr && item.id != lastId) {
-                        std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
-                        lastId = item.id;
-                        appLogic.processMessage(item);
-                    }
-                } catch (std::exception& e) {
-                    std::cerr << "[EXTPROCESS] Can not parse json message: " << e.what() << std::endl;
-                }
-            }
-        } else {
-            std::cerr << "[EXTPROCESS] Can not read shared memory" << std::endl;
-            needToRun = false;
+        ApplicationLogic appLogic(argv[1], sharedMemory);
+        if (!appLogic.loadLibrary()) {
+            std::cerr << "[EXTPROCESS] Can not load shared library" << std::endl;
+            return 1;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+        bool needToRun = true;
+        int lastUpdate = 0;
+        int lastId     = 0;
+        while (needToRun) {
+            char buffer[10240];
+            if (sharedMemory->read(buffer, SHARED_MEMORY_SIZE)) {
+                if (std::strlen(buffer) > 0) {
+                    std::string message = std::string(buffer, SHARED_MEMORY_SIZE);
+                    try {
+                        nlohmann::json j = nlohmann::json::parse(message);
+                        auto item        = j.get<QM::QueueItem>();
+                        if (appLogic.getCurrentItem() == nullptr && item.id != lastId) {
+                            std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
+                            lastId = item.id;
+                            appLogic.processMessage(item);
+                        }
+                    } catch (std::exception& e) {
+                        std::cerr << "[EXTPROCESS] Can not parse json message: " << e.what() << std::endl;
+                    }
+                }
+            } else {
+                std::cerr << "[EXTPROCESS] Can not read shared memory" << std::endl;
+                needToRun = false;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+        }
+    } catch (std::exception& e) {
+        std::cerr << "[EXTPROCESS] " << e.what() << std::endl;
+        return 1;
     }
 
     return 0;

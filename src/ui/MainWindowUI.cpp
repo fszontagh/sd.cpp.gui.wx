@@ -1,5 +1,6 @@
 #include "MainWindowUI.h"
 
+#include <algorithm>
 #include <cstddef>
 
 #include <cstdlib>
@@ -17,12 +18,11 @@
 
 MainWindowUI::MainWindowUI(wxWindow* parent, ExternalProcess* extProcess, const std::string& usingBackend)
     : mainUI(parent), extProcess(extProcess), usingBackend(usingBackend) {
-    this->ini_path                   = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
-    this->sd_params                  = new sd_gui_utils::SDParams;
-    this->currentInitialImage        = new wxImage();
-    this->currentInitialImagePreview = new wxImage();
-    this->currentUpscalerSourceImage = new wxImage();
-
+    this->ini_path                      = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
+    this->sd_params                     = new sd_gui_utils::SDParams;
+    this->currentInitialImage           = new wxImage();
+    this->currentInitialImagePreview    = new wxImage();
+    this->currentUpscalerSourceImage    = new wxImage();
     this->currentControlnetImage        = new wxImage();
     this->currentControlnetImagePreview = new wxImage();
     this->ControlnetOrigPreviewBitmap   = this->m_controlnetImagePreview->GetBitmap();
@@ -48,7 +48,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, ExternalProcess* extProcess, const 
     this->TaskBar = new wxTaskBarIcon();
 
     this->TaskBarIcon = app_png_to_wx_bitmap();
-    this->TaskBar->SetIcon(this->TaskBarIcon, this->GetTitle());
+    this->TaskBar->SetIcon(this->TaskBarIcon, wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
 
     wxIcon icon;
     icon.CopyFromBitmap(this->TaskBarIcon);
@@ -79,8 +79,10 @@ MainWindowUI::MainWindowUI(wxWindow* parent, ExternalProcess* extProcess, const 
     this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 
     try {
-        this->extProcess->setOnExitCallback(std::bind(&MainWindowUI::ProcessEventOnExit, this));
+        this->extProcess->setOnExitCallback(std::bind(&MainWindowUI::ProcessEventOnExit, this, std::placeholders::_1));
         this->extProcess->setOnStartedCallback(std::bind(&MainWindowUI::ProcessEventOnStarted, this));
+        this->extProcess->setOnStdOutCallback(std::bind(&MainWindowUI::ProcessStdOutEvenet, this, std::placeholders::_1));
+        this->extProcess->setOnStdErrCallback(std::bind(&MainWindowUI::ProcessStdErrEvenet, this, std::placeholders::_1));
         this->extProcess->start(std::bind(&MainWindowUI::ProcessEventHandler, this, std::placeholders::_1));
         this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);  // std::thread(&MainWindowUI::ProcessCheckThread, this);
     } catch (const std::exception& ex) {
@@ -92,7 +94,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, ExternalProcess* extProcess, const 
 
 void MainWindowUI::onSettings(wxCommandEvent& event) {
     if (this->qmanager->IsRunning()) {
-        wxMessageDialog(this, _("Please wait to finish the currently running running jobs!")).ShowModal();
+        wxMessageDialog(this, _("Please wait to finish the currently running jobs!")).ShowModal();
         return;
     }
     auto bitmap = app_png_to_wx_bitmap();
@@ -1877,22 +1879,22 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         std::string ext = path.extension().string();
 
         if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf") {
+            if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), ext) == CHECKPOINT_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
         if (type == sd_gui_utils::DirTypes::LORA) {
-            if (ext != ".safetensors" && ext != ".ckpt" && ext != ".gguf") {
+            if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), ext) == LORA_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
         if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-            if (ext != ".safetensors" && ext != ".pt") {
+            if (std::find(EMBEDDING_FILE_EXTENSIONS.begin(), EMBEDDING_FILE_EXTENSIONS.end(), ext) == EMBEDDING_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
         if (type == sd_gui_utils::DirTypes::VAE) {
-            if (ext != ".safetensors" && ext != ".ckpt") {
+            if (std::find(VAE_FILE_EXTENSIONS.begin(), VAE_FILE_EXTENSIONS.end(), ext) == VAE_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
@@ -1904,17 +1906,17 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
 
         if (type == sd_gui_utils::DirTypes::TAESD) {
-            if (ext != ".pth" && ext != ".safetensors" && ext != ".gguf") {
+            if (std::find(TAESD_FILE_EXTENSIONS.begin(), TAESD_FILE_EXTENSIONS.end(), ext) == TAESD_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
         if (type == sd_gui_utils::DirTypes::ESRGAN) {
-            if (ext != ".pth" && ext != ".pt") {
+            if (std::find(ESRGAN_FILE_EXTENSIONS.begin(), ESRGAN_FILE_EXTENSIONS.end(), ext) == ESRGAN_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
         if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-            if (ext != ".safetensors" && ext != ".pth") {
+            if (std::find(CONTROLNET_FILE_EXTENSIONS.begin(), CONTROLNET_FILE_EXTENSIONS.end(), ext) == CONTROLNET_FILE_EXTENSIONS.end()) {
                 continue;
             }
         }
@@ -1977,8 +1979,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
     }
 
     if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-        this->writeLog(wxString::Format("Loaded checkpoints: %" PRIuMAX "\n",
-                                        this->ModelFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded checkpoints: %" PRIuMAX "\n"), this->ModelFiles.size()));
         if (this->ModelFiles.size() > 0) {
             this->m_model->Enable();
         } else {
@@ -1986,13 +1987,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
     if (type == sd_gui_utils::DirTypes::LORA) {
-        this->writeLog(wxString::Format("Loaded Loras: %" PRIuMAX "\n", this->LoraFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded Loras: %" PRIuMAX "\n"), this->LoraFiles.size()));
     }
     if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-        this->writeLog(wxString::Format("Loaded embeddings: %" PRIuMAX "\n", this->EmbeddingFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded embeddings: %" PRIuMAX "\n"), this->EmbeddingFiles.size()));
     }
     if (type == sd_gui_utils::DirTypes::VAE) {
-        this->writeLog(wxString::Format("Loaded vaes: %" PRIuMAX "\n", this->VaeFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded vaes: %" PRIuMAX "\n"), this->VaeFiles.size()));
         if (this->VaeFiles.size() > 0) {
             this->m_vae->Enable();
         } else {
@@ -2000,8 +2001,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
     if (type == sd_gui_utils::DirTypes::PRESETS) {
-        this->writeLog(wxString::Format("Loaded presets: %" PRIuMAX "\n",
-                                        this->Presets.size()));
+        this->writeLog(wxString::Format(_("Loaded presets: %" PRIuMAX "\n"), this->Presets.size()));
         if (this->Presets.size() > 0) {
             this->m_preset_list->Enable();
         } else {
@@ -2009,8 +2009,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
     if (type == sd_gui_utils::DirTypes::TAESD) {
-        this->writeLog(wxString::Format("Loaded taesd: %" PRIuMAX "\n",
-                                        this->TaesdFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded taesd: %" PRIuMAX "\n"), this->TaesdFiles.size()));
         if (this->TaesdFiles.size() > 0) {
             this->m_taesd->Enable();
         } else {
@@ -2018,8 +2017,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
     if (type == sd_gui_utils::DirTypes::ESRGAN) {
-        this->writeLog(wxString::Format("Loaded esrgan: %" PRIuMAX "\n",
-                                        this->EsrganFiles.size()));
+        this->writeLog(wxString::Format(_("Loaded esrgan: %" PRIuMAX "\n"), this->EsrganFiles.size()));
         if (this->EsrganFiles.size() > 0) {
             this->m_upscaler_model->Enable();
         } else {
@@ -2027,8 +2025,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
     if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-        this->writeLog(wxString::Format("Loaded controlnet: %" PRIuMAX "\n",
-                                        this->ControlnetModels.size()));
+        this->writeLog(wxString::Format(_("Loaded controlnet: %" PRIuMAX "\n"), this->ControlnetModels.size()));
         if (this->ControlnetModels.size() > 0) {
             this->m_controlnetModels->Enable();
         } else {
@@ -3093,10 +3090,10 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
     this->m_scrolledWindow41->FitInside();
 }
 
-QM::QueueItem* MainWindowUI::handleSdImage(const std::string &tmpImagePath, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler) {
-    wxImage *img = new wxImage(tmpImagePath);
-    //wxImage* img = new wxImage(result.width, result.height, result.data, false);
-    // stbi_image_free(result.data);
+QM::QueueItem* MainWindowUI::handleSdImage(const std::string& tmpImagePath, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler) {
+    wxImage* img = new wxImage(tmpImagePath);
+    // wxImage* img = new wxImage(result.width, result.height, result.data, false);
+    //  stbi_image_free(result.data);
     if (!img->IsOk()) {
         itemPtr->status_message = std::string(_("Invalid image from diffusion..."));
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
@@ -3711,6 +3708,12 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             std::cerr << "[GUI] Could not find item " << item.id << std::endl;
             return false;
         }
+        if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
+            return true;
+        }
+        if (itemPtr->status == QM::QueueStatus::FAILED) {
+            return true;
+        }
 
         if (itemPtr->updated_at != item.updated_at || itemPtr->event != item.event) {
             std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
@@ -3739,22 +3742,82 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
     return false;
 }
 
-bool MainWindowUI::ProcessEventOnExit() {
-    this->m_statusBar166->SetStatusText(_("Background process stopped... restarting..."), 1);
-    return true;
+bool MainWindowUI::ProcessEventOnExit(bool calledByUser) {
+    if (calledByUser) {
+        this->m_statusBar166->SetStatusText(_("Can not restart background process, stopped"), 1);
+        return false;
+    }
+    if (this->extProcessTries < 3) {
+        this->m_statusBar166->SetStatusText(_("Background process stopped... restarting..."), 1);
+        if (this->qmanager->GetCurrentItem() != nullptr && this->extProcessTries == 0) {  // TODO -> get the stderr from the process
+            this->qmanager->resetRunning(this->qmanager->GetCurrentItem(), "Background process stopped");
+        }
+        this->extProcessTries++;
+        return true;
+    }
+
+    this->m_statusBar166->SetStatusText(_("Can not restart background process, stopped"), 1);
+
+    return false;
 }
 
 void MainWindowUI::ProcessEventOnStarted() {
-    this->m_statusBar166->SetStatusText(_("Background process running"), 1);
+    this->m_statusBar166->SetStatusText(_("Background process started"), 1);
+}
+void MainWindowUI::ProcessStdOutEvenet(const std::string& message) {
+    if (message.empty()) {
+        return;
+    }
+    std::stringstream ss(message);
+    std::string line;
+
+    // Loop until the end of the string
+    while (getline(ss, line)) {
+        if (!line.empty()) {
+            line = line + "\n";
+            this->writeLog(line, false);
+        }
+    }
+}
+
+void MainWindowUI::ProcessStdErrEvenet(const std::string& message) {
+    if (message.empty()) {
+        return;
+    }
+    std::stringstream ss(message);
+    std::string line;
+
+    // Loop until the end of the string
+    while (getline(ss, line)) {
+        if (!line.empty()) {
+            line = line + "\n";
+            this->writeLog(line, false);
+        }
+    }
 }
 
 void MainWindowUI::ProcessCheckThread() {
+
+
+    this->extProcess->restartIfNeeded();
+    return;
     while (this->checkThreadNeedToRun) {
-        if (this->extProcess->restartIfNeeded()) {
-            if (this->qmanager->GetCurrentItem() != nullptr) {// TODO -> get the stderr from the process
+        bool needRestart = this->extProcess->restartIfNeeded();
+        if (needRestart && this->extProcessTries < 3) {
+            if (this->qmanager->GetCurrentItem() != nullptr) {  // TODO -> get the stderr from the process
                 this->qmanager->resetRunning(this->qmanager->GetCurrentItem(), "Background process stopped");
             }
+            this->extProcessTries++;
         }
+        if (needRestart == false) {
+            this->m_statusBar166->SetStatusText(_("Background process running"), 1);
+        }
+        if (this->extProcessTries == 3) {
+            this->checkThreadNeedToRun = false;
+            this->m_statusBar166->SetStatusText(_("Background process stopped"), 1);
+            return;
+        }
+
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <unordered_map>
 #include "utils.hpp"
 
 #include <wx/event.h>
@@ -25,8 +26,23 @@ namespace QM {
         TXT2IMG,
         IMG2IMG,
         CONVERT,
-        UPSCALE
+        UPSCALE,
+        IMG2VID
     };
+
+    inline const std::unordered_map<QM::GenerationMode, std::string> GenerationMode_str = {
+        {QM::GenerationMode::TXT2IMG, "txt2img"},
+        {QM::GenerationMode::IMG2IMG, "img2img"},
+        {QM::GenerationMode::CONVERT, "convert"},
+        {QM::GenerationMode::UPSCALE, "upscale"},
+        {QM::GenerationMode::IMG2VID, "img2vid"}};
+        
+    inline const std::unordered_map<std::string, QM::GenerationMode> GenerationMode_str_inv = {
+        {"txt2img", QM::GenerationMode::TXT2IMG},
+        {"img2img", QM::GenerationMode::IMG2IMG},
+        {"convert", QM::GenerationMode::CONVERT},
+        {"upscale", QM::GenerationMode::UPSCALE},
+        {"img2vid", QM::GenerationMode::IMG2VID}};
 
     inline const char* QueueStatus_str[] = {
         "pending",
@@ -328,7 +344,11 @@ namespace QM {
         bool DeleteJob(QM::QueueItem item);
         bool DeleteJob(int id);
         bool IsRunning();
-        inline void resetRunning(QM::QueueItem* item, const std::string &reason) {
+        inline void resetRunning(QM::QueueItem* item, const std::string& reason) {
+            if (this->QueueList.empty()) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(queueMutex);
             if (this->QueueList.find(item->id) != this->QueueList.end()) {
                 item->status_message = reason;
                 this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[item->id]);

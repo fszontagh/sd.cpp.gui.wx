@@ -1,8 +1,21 @@
 #ifndef SDGUI_CONFIG_H
 #define SDGUI_CONFIG_H
+#include <string>
+#include <vector>
+
 // Warning: this is an automatic generated header file, do not modify it
-inline const char *EPROCESS_BINARY_NAME = "@EPROCESS_BINARY_NAME@";
-inline const char *SHARED_MEMORY_PATH  = "/@PROJECT_NAME@";
+inline const char* EPROCESS_BINARY_NAME       = "@EPROCESS_BINARY_NAME@";
+inline const char* SHARED_MEMORY_PATH         = "/@PROJECT_NAME@";
 inline const unsigned int SHARED_MEMORY_SIZE  = 10240;
 inline const unsigned int EPROCESS_SLEEP_TIME = 500;
+inline const unsigned int EPROCESS_STD_BUFFER = 10240;
+
+inline const std::vector<std::string> CHECKPOINT_FILE_EXTENSIONS = {".ckpt", ".safetensors", ".gguf"};
+inline const std::vector<std::string> EMBEDDING_FILE_EXTENSIONS  = {".pt", ".safetensors"};
+inline const std::vector<std::string> LORA_FILE_EXTENSIONS       = {".pt", ".ckpt", ".safetensors"};
+inline const std::vector<std::string> VAE_FILE_EXTENSIONS        = {".safetensors", ".ckpt"};
+inline const std::vector<std::string> TAESD_FILE_EXTENSIONS      = {".pth", ".safetensors", ".gguf"};
+inline const std::vector<std::string> ESRGAN_FILE_EXTENSIONS     = {".pth", ".pt"};
+inline const std::vector<std::string> CONTROLNET_FILE_EXTENSIONS = {".pth", ".safetensors"};
+
 #endif
