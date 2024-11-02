@@ -1,4 +1,5 @@
 #include "QueueManager.h"
+#include <netdb.h>
 #include <memory>
 
 QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
@@ -24,9 +25,9 @@ QM::QueueManager::~QueueManager() {
     if (this->currentItem) {
         this->currentItem = nullptr;
     }
-//    if (this->currentItem) {
-//        delete this->currentItem;
-//    }
+    //    if (this->currentItem) {
+    //        delete this->currentItem;
+    //    }
 }
 
 int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
@@ -39,7 +40,6 @@ int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
     }
 
     this->QueueList[item->id] = item;
-    
 
     this->SendEventToMainWindow(QM::QueueEvents::ITEM_ADDED, item);
     if (this->isRunning == false && item->status == QM::QueueStatus::PENDING) {
@@ -90,11 +90,13 @@ QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
 
     QM::QueueItem* newitem = new QM::QueueItem(*item);
     // handle this in the AddItem
-    newitem->id         = 0;
-    newitem->created_at = 0;
-    newitem->updated_at = 0;
-    newitem->started_at = 0;
-    newitem->finished_at = 0;
+    newitem->id             = 0;
+    newitem->created_at     = 0;
+    newitem->updated_at     = 0;
+    newitem->started_at     = 0;
+    newitem->finished_at    = 0;
+    newitem->status         = QM::QueueStatus::PENDING;
+    newitem->status_message = "";
     // clear the list, we need a new later
     newitem->images.clear();
     newitem->rawImages.clear();
@@ -143,7 +145,7 @@ void QM::QueueManager::RestartQueue() {
         for (auto job : this->QueueList) {
             if (job.second->status == QM::QueueStatus::PENDING) {
                 if (this->isRunning == false) {
-                    this->isRunning = true;
+                    this->isRunning   = true;
                     this->currentItem = job.second;
                     this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, job.second);
                 }
@@ -196,13 +198,13 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
         auto payload          = e.GetPayload<QM::QueueItem*>();
         if (event == QM::QueueEvents::ITEM_START) {
             this->SetStatus(QM::QueueStatus::RUNNING, payload);
-            this->isRunning = true;
+            this->isRunning   = true;
             this->currentItem = payload;
             return;
         }
         if (event == QM::QueueEvents::ITEM_FINISHED) {
             this->SetStatus(QM::QueueStatus::DONE, payload);
-            this->isRunning = false;
+            this->isRunning   = false;
             this->currentItem = nullptr;
             // jump to the next item in queue
             // find waiting jobs

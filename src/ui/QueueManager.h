@@ -243,6 +243,7 @@ namespace QM {
             {"finished_at", p.finished_at},
             {"started_at", p.started_at},
             {"status", (int)p.status},
+            {"status_message", p.status_message},
             {"event", (int)p.event},
             {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
@@ -299,6 +300,9 @@ namespace QM {
                     p.rawImages.push_back(image_json.get<std::string>());
                 }
             }
+        }
+        if (j.contains("status_message")) {
+            j.at("status_message").get_to(p.status_message);
         }
 
         j.at("finished_at").get_to(p.finished_at);

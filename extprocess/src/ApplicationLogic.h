@@ -10,7 +10,14 @@ class ApplicationLogic {
 public:
     ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager);
     ~ApplicationLogic();
+
+    // stdout/stderr captured by parent
     inline static void HandleSDLog(sd_log_level_t level, const char* text, void* data) {
+        if (level == SD_LOG_ERROR) {
+            std::cerr << "SD ERR: " << text;
+        } else {
+            std::cout << "SD: "<< text;
+        }
     }
 
     inline static void HandleSDProgress(int step, int steps, float time, void* data) {
@@ -55,6 +62,7 @@ private:
     PreprocessCannyFunction preprocessCannyFuncPtr             = nullptr;
     FreeUpscalerCtxFunction freeUpscalerCtxPtr                 = nullptr;
     SdSetProgressCallbackFunction sdSetProgressCallbackFuncPtr = nullptr;
+    SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
     sd_gui_utils::VoidHolder* voidHolder                       = nullptr;
 
     void Txt2Img();

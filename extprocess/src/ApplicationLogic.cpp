@@ -108,6 +108,15 @@ bool ApplicationLogic::loadLibrary() {
 
         this->sdSetProgressCallbackFuncPtr(ApplicationLogic::HandleSDProgress, (void*)this);
 
+        this->sdSetLogCallbackFuncPtr = (SdSetLogCallbackFunction)sd_dll.getFunction<SdSetLogCallbackFunction>("sd_set_log_callback");
+        if(this->sdSetLogCallbackFuncPtr == nullptr) {
+            std::cerr << "Failed to load function: sd_set_log_callback" << std::endl;
+            this->error = "Failed to load function: sd_set_log_callback";
+            return false;
+        }
+
+        this->sdSetLogCallbackFuncPtr(ApplicationLogic::HandleSDLog, (void*)this);
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Failed to load shared library: " << e.what() << std::endl;

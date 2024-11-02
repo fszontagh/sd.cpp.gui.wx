@@ -36,6 +36,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->m_joblist->AppendProgressColumn(_("Progress"));  // progressbar
     this->m_joblist->AppendTextColumn(_("Speed"));         // speed
     this->m_joblist->AppendTextColumn(_("Status"));        // status
+    this->m_joblist->AppendTextColumn(_(""));              // status_message
 
     this->m_joblist->GetColumn(0)->SetHidden(true);
     this->m_joblist->GetColumn(1)->SetSortable(true);
@@ -603,7 +604,7 @@ void MainWindowUI::OnPromptText(wxCommandEvent& event) {
 
 void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
     event.Skip();  // disabled while really slow
-    return;    
+    return;
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
@@ -1329,29 +1330,28 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
         data.push_back(wxVariant("--"));  // sample method
         data.push_back(wxVariant("--"));  // seed
     } else {
-        data.push_back(wxVariant(
-            sd_gui_utils::sample_method_str[(int)item->params.sample_method]));
+        data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item->params.sample_method]));
         data.push_back(wxVariant(std::to_string(item->params.seed)));
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
     data.push_back(wxString("-.--it/s"));                             // speed
     data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
+    data.push_back(wxVariant(item->status_message));
 
     auto store = this->m_joblist->GetStore();
 
     // only store the queue item id... not the pointer
     store->PrependItem(data, wxUIntPtr(item->id));
-    this->m_static_number_of_jobs->SetLabel(wxString::Format(
-        _("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
 }
 
 void MainWindowUI::OnQueueItemManagerItemUpdated(QM::QueueItem* item) {
     // update column
     auto store             = this->m_joblist->GetStore();
     wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
-    int progressCol        = this->m_joblist->GetColumnCount() - 3;
-    int speedCol           = this->m_joblist->GetColumnCount() - 2;
+    int progressCol        = this->m_joblist->GetColumnCount() - 4;
+    int speedCol           = this->m_joblist->GetColumnCount() - 3;
     float current_progress = 0.f;
 
     if (item->step > 0 && item->steps > 0) {
@@ -2268,15 +2268,20 @@ void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::strin
 void MainWindowUI::OnQueueItemManagerItemStatusChanged(QM::QueueItem* item) {
     auto store = this->m_joblist->GetStore();
 
-    int lastCol = this->m_joblist->GetColumnCount() - 1;
+    int statusCol     = this->m_joblist->GetColumnCount() - 2;
+    int statusTextCol = this->m_joblist->GetColumnCount() - 1;
 
     for (unsigned int i = 0; i < store->GetItemCount(); i++) {
         auto currentItem     = store->GetItem(i);
         int id               = store->GetItemData(currentItem);
         QM::QueueItem* qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item->status]), i, lastCol);
-            store->RowValueChanged(i, lastCol);
+            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item->status]), i, statusCol);
+            store->RowValueChanged(i, statusCol);
+
+            store->SetValueByRow(wxVariant(item->status_message), i, statusTextCol);
+            store->RowValueChanged(i, statusTextCol);
+
             break;
         }
     }
@@ -2302,17 +2307,18 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
 
         this->qmanager->UpdateItem(item);
 
-        this->UpdateJobInfoDetailsFromJobQueueList(item);
         std::string title;
         std::string message;
 
         switch (event) {
                 // new item added
             case QM::QueueEvents::ITEM_ADDED:
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemAdded(item);
                 break;
                 // item status changed
             case QM::QueueEvents::ITEM_STATUS_CHANGED:
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemStatusChanged(item);
                 break;
                 // item updated... -> set the progress bar in the queue
@@ -2323,6 +2329,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 // loaded, then wil trigger model load
                 // event
                 {
+                    this->UpdateJobInfoDetailsFromJobQueueList(item);
                     this->StartGeneration(item);
                     message = wxString::Format(
                                   _("%s is just stared to generate %d images\nModel: %s"),
@@ -2352,6 +2359,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 }
                 break;
             case QM::QueueEvents::ITEM_FINISHED: {
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
                 message = wxString::Format(
                               _("%s is just finished to generate %d images\nModel: %s"),
                               sd_gui_utils::modes_str[item->mode],
@@ -2379,6 +2387,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->ShowNotification(title, message);
             } break;
             case QM::QueueEvents::ITEM_MODEL_LOADED:  // MODEL_LOAD_DONE
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
                 if (item->mode == QM::GenerationMode::IMG2IMG ||
                     item->mode == QM::GenerationMode::TXT2IMG) {
                     this->modelLoaded = true;
@@ -2423,6 +2432,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 break;
             case QM::QueueEvents::ITEM_FAILED:  // GENERATION_ERROR
                 this->writeLog(wxString::Format(_("Generation error: %s\n"), item->status_message));
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
                 break;
             default:
                 break;
@@ -2561,7 +2571,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // update column
         auto store = this->m_joblist->GetStore();
 
-        int progressCol = this->m_joblist->GetColumnCount() - 3;
+        int progressCol = this->m_joblist->GetColumnCount() - 4;
 
         size_t _x            = myjob->hash_progress_size;
         size_t _m            = myjob->hash_fullsize;
@@ -2593,7 +2603,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // update column
         auto store = this->m_joblist->GetStore();
 
-        int progressCol = this->m_joblist->GetColumnCount() - 3;
+        int progressCol = this->m_joblist->GetColumnCount() - 4;
 
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem     = store->GetItem(i);
@@ -2616,8 +2626,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // update column
         auto store             = this->m_joblist->GetStore();
         wxString speed         = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
-        int progressCol        = this->m_joblist->GetColumnCount() - 3;
-        int speedCol           = this->m_joblist->GetColumnCount() - 2;
+        int progressCol        = this->m_joblist->GetColumnCount() - 4;
+        int speedCol           = this->m_joblist->GetColumnCount() - 3;
         float current_progress = 100.f * (static_cast<float>(myjob->step) /
                                           static_cast<float>(myjob->steps));
 
@@ -3667,6 +3677,7 @@ void MainWindowUI::ProcessStdOutEvent(const char* bytes, size_t n) {
     while (std::getline(iss, line, '\n')) {
         this->writeLog("Out:" + line + '\n', false);
     }
+    std::cout << "[DEBUG] " << msg << std::endl;
 }
 
 void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
@@ -3675,12 +3686,12 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
     std::istringstream iss(msg);
     std::string line;
     while (std::getline(iss, line, '\n')) {
-        this->writeLog("ERR: " + line + '\n', false);
+        if (!line.empty()) {
+            this->extprocessLastError = line;
+            this->writeLog("ERR: " + line + '\n', false);
+        }
     }
-    {
-        std::lock_guard<std::mutex> lock(this->mutex);
-        this->extprocessLastError = line;
-    }
+    std::cerr << "[DEBUG] " << msg << std::endl;
 }
 
 void MainWindowUI::ProcessCheckThread() {
@@ -3732,7 +3743,11 @@ void MainWindowUI::ProcessCheckThread() {
                 return;  // stopped normally
             }
 
-            this->qmanager->resetRunning(wxString::Format(_("Background process stopped with status: %d"), exit_status).ToStdString());
+            auto reason = wxString::Format(_("Background process stopped with status: %d"), exit_status).ToStdString();
+            if (this->extprocessLastError.empty() == false) {
+                reason = this->extprocessLastError;
+            }
+            this->qmanager->resetRunning(reason);
             this->sharedMemory->clear();
             // restart process
             this->extProcess = nullptr;
@@ -3744,10 +3759,7 @@ void MainWindowUI::ProcessCheckThread() {
                 },
                 [this](const char* bytes, size_t n) {
                     this->ProcessStdErrEvent(bytes, n);
-                },
-
-                false,
-                TinyProcessLib::Config{});
+                });
         }  // lock
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));  // wait 2sec to recheck
     }  // extProcessNeedToRun
