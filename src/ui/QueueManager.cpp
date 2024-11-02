@@ -1,6 +1,5 @@
 #include "QueueManager.h"
-#include <netdb.h>
-#include <memory>
+
 
 QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
     // need to send events into the mainwindow by the threads...

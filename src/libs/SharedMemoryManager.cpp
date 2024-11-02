@@ -1,4 +1,5 @@
 #include "SharedMemoryManager.h"
+#include <iostream>
 #include <stdexcept>
 
 SharedMemoryManager::SharedMemoryManager(const std::string& shmName, size_t size, bool isMaster)
