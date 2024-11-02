@@ -147,7 +147,7 @@ if(WIN32)
     target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE
     cpu_features
     wxWidgets::wxWidgets
-    OpenSSL::Crypto CURL::libcurl exiv2:: tiny-process-library::tiny-process-library
+    OpenSSL::Crypto CURL::libcurl exiv2::exiv2 tiny-process-library::tiny-process-library
     )
 
 else(WIN32)
