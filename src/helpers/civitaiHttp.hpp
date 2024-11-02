@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include "wx/translation.h"
 
 namespace CivitAi {
     inline std::string urlEncode(const std::string& value) {

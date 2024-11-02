@@ -37,14 +37,14 @@ int main(int argc, char* argv[]) {
         bool needToRun = true;
         int lastId     = 0;
         while (needToRun) {
-            char buffer[10240];
+            char buffer[SHARED_MEMORY_SIZE];
             if (sharedMemory->read(buffer, SHARED_MEMORY_SIZE)) {
                 if (std::strlen(buffer) > 0) {
                     std::string message = std::string(buffer, SHARED_MEMORY_SIZE);
                     try {
                         nlohmann::json j = nlohmann::json::parse(message);
                         auto item        = j.get<QM::QueueItem>();
-                        if (appLogic.getCurrentItem() == nullptr && item.id != lastId) {
+                        if (item.id != lastId) {
                             sharedMemory->clear();
                             std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
                             lastId = item.id;

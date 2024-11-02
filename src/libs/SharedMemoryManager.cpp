@@ -1,5 +1,4 @@
 #include "SharedMemoryManager.h"
-#include <iostream>
 #include <stdexcept>
 
 SharedMemoryManager::SharedMemoryManager(const std::string& shmName, size_t size, bool isMaster)
@@ -44,6 +43,7 @@ SharedMemoryManager::SharedMemoryManager(const std::string& shmName, size_t size
 }
 
 SharedMemoryManager::~SharedMemoryManager() {
+    std::lock_guard<std::mutex> lock(mutex);
 #ifdef _WIN32
     if (shmPtr)
         UnmapViewOfFile(shmPtr);
@@ -67,6 +67,7 @@ bool SharedMemoryManager::write(const void* data, size_t size) {
     if (size > shmSize) {
         return false;
     }
+    std::lock_guard<std::mutex> lock(mutex);
     // clear before write
     this->clear();
     std::memcpy(shmPtr, data, size);
@@ -77,6 +78,7 @@ bool SharedMemoryManager::read(void* buffer, size_t size) {
     if (size > shmSize) {
         return false;
     }
+    std::lock_guard<std::mutex> lock(mutex);
     std::memcpy(buffer, shmPtr, size);
     return true;
 }

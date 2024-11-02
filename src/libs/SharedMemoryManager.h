@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
+#include <mutex>
 
 class SharedMemoryManager {
 public:
@@ -27,6 +28,7 @@ private:
     std::string shmName;
     size_t shmSize;
     bool isMaster;
+    std::mutex mutex;
 
 #ifdef _WIN32
     HANDLE shmHandle;

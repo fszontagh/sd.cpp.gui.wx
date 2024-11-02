@@ -39,6 +39,7 @@ int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
     }
 
     this->QueueList[item->id] = item;
+    
 
     this->SendEventToMainWindow(QM::QueueEvents::ITEM_ADDED, item);
     if (this->isRunning == false && item->status == QM::QueueStatus::PENDING) {
@@ -91,8 +92,12 @@ QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
     // handle this in the AddItem
     newitem->id         = 0;
     newitem->created_at = 0;
+    newitem->updated_at = 0;
+    newitem->started_at = 0;
+    newitem->finished_at = 0;
     // clear the list, we need a new later
     newitem->images.clear();
+    newitem->rawImages.clear();
     // set to paused, user will start manually
     newitem->status = QM::QueueStatus::PAUSED;
     this->AddItem(newitem);
@@ -303,9 +308,15 @@ bool QM::QueueManager::IsRunning() {
     return this->isRunning;
 }
 
-int QM::QueueManager::GetCurrentUnixTimestamp() {
+int QM::QueueManager::GetCurrentUnixTimestamp(bool milliseconds) {
     const auto p1 = std::chrono::system_clock::now();
-    return static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count());
+    auto duration = p1.time_since_epoch();
+
+    if (milliseconds) {
+        return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+    } else {
+        return static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+    }
 }
 
 void QM::QueueManager::LoadJobListFromDir() {
@@ -352,7 +363,7 @@ void QM::QueueManager::LoadJobListFromDir() {
 }
 
 int QM::QueueManager::GetAnId() {
-    int id = this->GetCurrentUnixTimestamp();
+    int id = this->GetCurrentUnixTimestamp(false);
     while (id <= this->lastId) {
         id++;
     }

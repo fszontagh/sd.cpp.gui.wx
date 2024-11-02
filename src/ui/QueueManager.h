@@ -36,7 +36,7 @@ namespace QM {
         {QM::GenerationMode::CONVERT, "convert"},
         {QM::GenerationMode::UPSCALE, "upscale"},
         {QM::GenerationMode::IMG2VID, "img2vid"}};
-        
+
     inline const std::unordered_map<std::string, QM::GenerationMode> GenerationMode_str_inv = {
         {"txt2img", QM::GenerationMode::TXT2IMG},
         {"img2img", QM::GenerationMode::IMG2IMG},
@@ -354,18 +354,33 @@ namespace QM {
                 this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[item->id]);
             }
         }
+        inline void resetRunning(const std::string& reason) {
+            if (this->QueueList.empty()) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(queueMutex);
+            if (this->currentItem == nullptr) {
+                return;
+            }
+            if (this->QueueList.find(this->currentItem->id) != this->QueueList.end()) {
+                if (reason.empty() == false) {
+                    this->currentItem->status_message = reason;
+                }
+                this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[this->currentItem->id]);
+            }
+        }
         inline QM::QueueItem* GetCurrentItem() { return this->currentItem; }
 
     private:
         std::mutex queueMutex;
-        int GetCurrentUnixTimestamp();
+        int GetCurrentUnixTimestamp(bool milliseconds = false);
         void LoadJobListFromDir();
         std::string jobsDir;
         int lastId = 0;
         int GetAnId();
         // thread events handler, toupdate main window data table
         void onItemAdded(QM::QueueItem item);
-        QM::QueueItem* currentItem;
+        QM::QueueItem* currentItem = nullptr;
 
         // @brief check if something is running or not
         bool isRunning = false;

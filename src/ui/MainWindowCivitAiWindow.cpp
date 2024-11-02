@@ -1,4 +1,6 @@
 #include "MainWindowCivitAiWindow.h"
+#include "../helpers/simplecurl.h"
+#include "ver.hpp"
 
 MainWindowCivitAiWindow::MainWindowCivitAiWindow(wxWindow* parent)
     : CivitAiWindow(parent) {
@@ -10,6 +12,7 @@ void MainWindowCivitAiWindow::m_civitai_searchOnTextEnter(wxCommandEvent& event)
         return;
     }
     this->OnSearch(this->m_civitai_search->GetValue().ToStdString());
+    this->m_model_download->Disable();
 }
 
 void MainWindowCivitAiWindow::m_searchOnButtonClick(wxCommandEvent& event) {
@@ -17,6 +20,7 @@ void MainWindowCivitAiWindow::m_searchOnButtonClick(wxCommandEvent& event) {
         return;
     }
     this->OnSearch(this->m_civitai_search->GetValue().ToStdString());
+    this->m_model_download->Disable();
 }
 
 void MainWindowCivitAiWindow::m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged(wxDataViewEvent& event) {
@@ -46,7 +50,17 @@ void MainWindowCivitAiWindow::m_dataViewListCtrl5OnDataViewListCtrlSelectionChan
 }
 
 void MainWindowCivitAiWindow::OnHtmlLinkClicked(wxHtmlLinkEvent& event) {
-    wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+    wxString question = wxString::Format(_("Do you want to open the URL?\n%s"), event.GetLinkInfo().GetHref());
+
+    wxMessageDialog dialog(
+        this,
+        question,
+        _("Open URL"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+
+    if (dialog.ShowModal() == wxID_YES) {
+        wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+    }
 }
 
 void MainWindowCivitAiWindow::m_model_detailsOnDataViewListCtrlSelectionChanged(wxDataViewEvent& event) {
@@ -78,7 +92,6 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         return;
     }
     nlohmann::json js(*jsptr);
-    std::cout << "Downloading: " << js.dump(2) << std::endl;
 
     CivitAi::DownloadItem* ditem = new CivitAi::DownloadItem();
     // get the model type...
@@ -111,6 +124,17 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         delete ditem;
         return;
     }
+    /// this is missing from the documentation
+    /// @url https://github.com/civitai/civitai/wiki/REST-API-Reference#get-apiv1modelsmodelid
+    // example: https://civitai.com/api/v1/models/1102
+    if (js.contains("type")) {
+        if (js["type"].get<std::string>() == "LORA") {
+            path = sd_gui_utils::normalizePath(this->config->lora + "/" + js["name"].get<std::string>());
+        }
+        if (js["type"].get<std::string>() == "VAE") {
+            path = sd_gui_utils::normalizePath(this->config->vae + "/" + js["name"].get<std::string>());
+        }
+    }
 
     ditem->state = CivitAi::DownloadItemState::PENDING;
     if (js.contains("downloadUrl") && !js["downloadUrl"].is_null()) {
@@ -123,6 +147,16 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
     ditem->local_file = path;
     ditem->tmp_name   = std::filesystem::path(path).replace_extension(".download").string();
     ditem->targetSize = js["sizeKB"].get<double>() * 1024;
+    if (std::filesystem::exists(ditem->local_file) || std::filesystem::exists(ditem->tmp_name)) {
+        wxMessageDialog dialog(this, wxString::Format(_("The file \n'%s'\n already exists.\nDo you want to overwrite it?"), ditem->local_file), _("Download Model"), wxYES_NO | wxICON_QUESTION);
+        if (dialog.ShowModal() == wxID_YES) {
+            this->SendThreadEvent("DOWNLOAD_ADD", ditem);
+            return;
+        } else {
+            delete ditem;
+            return;
+        }
+    }
     this->SendThreadEvent("DOWNLOAD_ADD", ditem);
 }
 

@@ -106,6 +106,8 @@ bool ApplicationLogic::loadLibrary() {
             return false;
         }
 
+        this->sdSetProgressCallbackFuncPtr(ApplicationLogic::HandleSDProgress, (void*)this);
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Failed to load shared library: " << e.what() << std::endl;
@@ -119,10 +121,8 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         std::cerr << "[EXTPROCESS] Invalid item id: " << item.id << std::endl;
         return;
     }
-    if (this->currentItem == nullptr) {
-        std::cout << "[EXTPROCESS] New item: " << item.id << " mode: " << QM::GenerationMode_str.at(item.mode) << std::endl;
-        this->currentItem = std::make_shared<QM::QueueItem>(item);
-    }
+
+    this->currentItem = std::make_shared<QM::QueueItem>(item);
 
     this->currentItem->status     = QM::QueueStatus::RUNNING;
     this->currentItem->event      = QM::QueueEvents::ITEM_MODEL_LOAD_START;
@@ -151,6 +151,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         j                             = *this->currentItem;
         std::string jsonString        = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        this->currentItem = nullptr;
         return;
     }
 
@@ -160,7 +161,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     j                             = *this->currentItem;
     jsonString                    = j.dump();
     this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
+    std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
         case QM::GenerationMode::TXT2IMG: {
             std::cout << "[EXTPROCESS] Running txt2img" << std::endl;
@@ -176,12 +177,14 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         } break;
 
         default: {
-            this->currentItem->status     = QM::QueueStatus::RUNNING;
-            this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j              = *this->currentItem;
-            std::string jsonString        = j.dump();
+            this->currentItem->status         = QM::QueueStatus::FAILED;
+            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
+            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            this->currentItem->status_message = wxString::Format(_("Unknown mode: %s"), QM::GenerationMode_str.at(this->currentItem->mode).c_str());
+            nlohmann::json j                  = *this->currentItem;
+            std::string jsonString            = j.dump();
             this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            std::cerr << this->currentItem->status_message << std::endl;
         } break;
     }
     this->lastItem    = this->currentItem;
@@ -203,8 +206,6 @@ void ApplicationLogic::Txt2Img() {
         }
         this->voidHolder = new sd_gui_utils::VoidHolder;
 
-        sdSetProgressCallbackFuncPtr(ApplicationLogic::HandleSDProgress, (void*)this);
-
         if (txt2imgFuncPtr == nullptr) {
             this->currentItem->status     = QM::QueueStatus::FAILED;
             this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
@@ -212,6 +213,8 @@ void ApplicationLogic::Txt2Img() {
             nlohmann::json j              = *this->currentItem;
             std::string jsonString        = j.dump();
             this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            this->currentItem = nullptr;
+            return;
         }
 
         sd_image_t* control_image = NULL;
@@ -307,8 +310,6 @@ void ApplicationLogic::Img2img() {
         }
         this->voidHolder = new sd_gui_utils::VoidHolder;
 
-        sdSetProgressCallbackFuncPtr(ApplicationLogic::HandleSDProgress, (void*)this);
-
         if (this->img2imgFuncPtr == nullptr) {
             this->currentItem->status     = QM::QueueStatus::FAILED;
             this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
@@ -322,13 +323,13 @@ void ApplicationLogic::Img2img() {
         stbi_uc* input_image_buffer;
         sd_image_t* results;
 
-        if (this->currentItem->params.input_path.length() > 0) {
-            if (std::filesystem::exists(this->currentItem->params.input_path)) {
+        if (this->currentItem->initial_image.length() > 0) {
+            if (std::filesystem::exists(this->currentItem->initial_image)) {
                 int c = 0;
                 int w, h;
-                stbi_uc* input_image_buffer = stbi_load(this->currentItem->params.input_path.c_str(), &w, &h, &c, 3);
-                input_image                 = new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-                input_image_buffer          = NULL;
+                input_image_buffer = stbi_load(this->currentItem->params.input_path.c_str(), &w, &h, &c, 3);
+                input_image        = new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
+                input_image_buffer = NULL;
                 delete input_image_buffer;
             }
         }
@@ -352,17 +353,17 @@ void ApplicationLogic::Img2img() {
         int c              = 0;
         int width          = 0;
         int height         = 0;
-        input_image_buffer = stbi_load(this->currentItem->params.input_path.c_str(), &width, &height, &c, 3);
+        input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &width, &height, &c, 3);
 
         if (input_image_buffer == NULL) {
-            this->currentItem->status_message = "Failed to load image from '" + this->currentItem->params.input_path + "'";
+            this->currentItem->status_message = "Failed to load image from '" + this->currentItem->initial_image + "'";
             this->currentItem->status         = QM::QueueStatus::FAILED;
             this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
             this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             nlohmann::json j                  = *this->currentItem;
             std::string jsonString            = j.dump();
             this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            std::cerr << "load image from '" << this->currentItem->params.input_path << "' failed" << std::endl;
+            std::cerr << "load image from '" << this->currentItem->initial_image << "' failed" << std::endl;
             return;
         }
         if (c < 3) {

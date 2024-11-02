@@ -33,10 +33,11 @@
 #include <wx/splitter.h>
 #include <wx/statbmp.h>
 #include <wx/textctrl.h>
+#include <wx/notebook.h>
 #include <wx/filepicker.h>
 #include <wx/html/htmlwin.h>
 #include <wx/srchctrl.h>
-#include <wx/notebook.h>
+#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/slider.h>
@@ -101,6 +102,8 @@ class mainUI : public wxFrame
 		wxChoice* m_sd15Res;
 		wxStaticText* m_staticText461;
 		wxChoice* m_sdXlres;
+		wxStaticText* m_staticText49;
+		wxChoice* m_promptPresets;
 		wxPanel* m_panel11;
 		wxNotebook* m_notebook1302;
 		wxPanel* m_jobs_panel;
@@ -120,7 +123,11 @@ class mainUI : public wxFrame
 		wxPanel* m_text2img_panel;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
+		wxNotebook* m_notebook3;
+		wxPanel* m_controlnetPreviewTab;
 		wxStaticBitmap* m_controlnetImagePreview;
+		wxPanel* m_diffusionPreviewTab;
+		wxStaticBitmap* m_txt2txtDeiffusionPreview;
 		wxButton* m_generate2;
 		wxFilePickerCtrl* m_controlnetImageOpen;
 		wxChoice* m_controlnetModels;
@@ -130,7 +137,11 @@ class mainUI : public wxFrame
 		wxPanel* m_image2image_panel;
 		wxTextCtrl* m_prompt2;
 		wxTextCtrl* m_neg_prompt2;
+		wxNotebook* m_notebook4;
+		wxPanel* m_panel22;
 		wxStaticBitmap* m_img2img_preview;
+		wxPanel* m_panel23;
+		wxStaticBitmap* m_img2imgDiffusionPreview;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_open_image;
 		wxStaticText* m_staticText24;
@@ -157,6 +168,7 @@ class mainUI : public wxFrame
 		wxButton* m_generate_upscaler;
 		wxCheckBox* m_keep_upscaler_in_memory;
 		wxCheckBox* m_keep_other_models_in_memory;
+		wxPanel* m_convert;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
@@ -177,6 +189,7 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
 		wxScrolledWindow* m_scrolledWindow4;
+		wxCollapsiblePane* m_collapsiblePane1;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -382,9 +395,11 @@ class CivitAiWindow : public wxFrame
 
 	protected:
 		wxPanel* m_panel16;
+		wxSplitterWindow* m_splitter3;
+		wxPanel* m_panel24;
+		wxRadioBox* m_model_type;
 		wxTextCtrl* m_civitai_search;
 		wxButton* m_search;
-		wxRadioBox* m_model_type;
 		wxStaticText* m_staticText43;
 		wxDataViewListCtrl* m_dataViewListCtrl5;
 		wxDataViewColumn* m_dataViewListColumn12;
@@ -397,7 +412,7 @@ class CivitAiWindow : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn31;
 		wxDataViewColumn* m_dataViewListColumn301;
 		wxDataViewColumn* m_dataViewListColumn28;
-		wxPanel* m_panel17;
+		wxPanel* m_panel25;
 		wxHtmlWindow* m_model_description;
 		wxStaticText* m_staticText41;
 		wxDataViewListCtrl* m_model_details;
@@ -437,6 +452,12 @@ class CivitAiWindow : public wxFrame
 		CivitAiWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("CivitAI model downloader"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 
 		~CivitAiWindow();
+
+		void m_splitter3OnIdle( wxIdleEvent& )
+		{
+			m_splitter3->SetSashPosition( 0 );
+			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( CivitAiWindow::m_splitter3OnIdle ), NULL, this );
+		}
 
 };
 
