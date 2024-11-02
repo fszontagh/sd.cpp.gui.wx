@@ -7,11 +7,8 @@
 #include "helpers/vcardinfo.hpp"
 #include "libs/ExternalProcess.h"
 #include "ui/MainWindowUI.h"
-#include "ui/embedded_files/app_icon.h"
-
 #include <csignal>
-#include <iostream>
-#include "extprocess/config.hpp"
+#include "ui/embedded_files/splash_image.h"
 
 // Define the MainApp
 class MainApp : public wxApp {
@@ -21,12 +18,6 @@ private:
 
 public:
     bool OnInit() override {
-        std::string command = "";
-#ifdef WIN32
-        command = "cmd /c extprocess/extprocess.exe";
-#else
-        command = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
-#endif
 
         wxString forceType           = "";
         bool allow_multiple_instance = false;
@@ -117,9 +108,9 @@ public:
             }
         }
 
-        m_externalProcess = new ExternalProcess(command, dllName.ToStdString(), false);
+        //m_externalProcess = new ExternalProcess(command, dllName.ToStdString(), false);
 
-        MainWindowUI* mainFrame = new MainWindowUI(nullptr, m_externalProcess, usingBackend);
+        MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend);
         mainFrame->Show(true);
         SetTopWindow(mainFrame);
         splash->Destroy();

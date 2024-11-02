@@ -1,9 +1,5 @@
-#include <cstddef>
 #include <memory>
-#include "ui/utils.hpp"
-
 #include <chrono>
-#include <filesystem>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -17,8 +13,6 @@
 #include <cstring>
 #endif
 
-#include "helpers/sd.hpp"
-#include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
 #include "ui/QueueManager.h"
@@ -41,7 +35,6 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         bool needToRun = true;
-        int lastUpdate = 0;
         int lastId     = 0;
         while (needToRun) {
             char buffer[10240];
@@ -52,9 +45,11 @@ int main(int argc, char* argv[]) {
                         nlohmann::json j = nlohmann::json::parse(message);
                         auto item        = j.get<QM::QueueItem>();
                         if (appLogic.getCurrentItem() == nullptr && item.id != lastId) {
+                            sharedMemory->clear();
                             std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
                             lastId = item.id;
                             appLogic.processMessage(item);
+                            
                         }
                     } catch (std::exception& e) {
                         std::cerr << "[EXTPROCESS] Can not parse json message: " << e.what() << std::endl;

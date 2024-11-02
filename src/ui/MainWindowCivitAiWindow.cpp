@@ -78,6 +78,7 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         return;
     }
     nlohmann::json js(*jsptr);
+    std::cout << "Downloading: " << js.dump(2) << std::endl;
 
     CivitAi::DownloadItem* ditem = new CivitAi::DownloadItem();
     // get the model type...
@@ -187,8 +188,8 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (token == "DOWNLOAD_FINISH") {
-        auto payload   = e.GetPayload<CivitAi::DownloadItem*>();
-        payload->state = CivitAi::DownloadItemState::FINISHED;
+        auto payload    = e.GetPayload<CivitAi::DownloadItem*>();
+        payload->state  = CivitAi::DownloadItemState::FINISHED;
         int progressCol = this->m_downloads->GetColumnCount() - 1;
         auto store      = this->m_downloads->GetStore();
         for (int _i = 0; _i < this->m_downloads->GetItemCount(); ++_i) {
@@ -264,7 +265,7 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (token == "DOWNLOAD_ERROR") {
-        auto payload = e.GetPayload<CivitAi::DownloadItem*>();
+        auto payload   = e.GetPayload<CivitAi::DownloadItem*>();
         payload->state = CivitAi::DownloadItemState::DOWNLOAD_ERROR;
 
         // update info in table
@@ -692,7 +693,6 @@ void MainWindowCivitAiWindow::SendThreadEvent(std::string str, int id, CivitAi::
     event->SetInt(id);
     wxQueueEvent(this->GetEventHandler(), event);
 }
-
 
 MainWindowCivitAiWindow::~MainWindowCivitAiWindow() {
     for (auto& thread : this->infoDownloadThread) {

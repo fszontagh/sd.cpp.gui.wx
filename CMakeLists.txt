@@ -36,6 +36,7 @@ endif(WIN32)
 
 
 include(cmake/wxWidgets.cmake)
+include(cmake/tplib.cmake)
 
 # CPU Features dependency
 FetchContent_Declare(
@@ -122,7 +123,7 @@ if (SDGUI_HIPBLAS)
 endif()
 
 
-list(APPEND APPDEPENDS cpu_features OpenSSL::Crypto CURL::libcurl)
+list(APPEND APPDEPENDS cpu_features OpenSSL::Crypto CURL::libcurl tiny-process-library::tiny-process-library)
 
 if (WIN32)
     list(APPEND APPDEPENDS exiv2::exiv2)
@@ -146,7 +147,7 @@ if(WIN32)
     target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE
     cpu_features
     wxWidgets::wxWidgets
-    OpenSSL::Crypto CURL::libcurl exiv2::exiv2
+    OpenSSL::Crypto CURL::libcurl exiv2:: tiny-process-library::tiny-process-library
     )
 
 else(WIN32)
@@ -154,7 +155,7 @@ else(WIN32)
 target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE
     cpu_features
     wx::base wx::core wx::xrc wx::aui wx::richtext
-    OpenSSL::Crypto CURL::libcurl exiv2lib
+    OpenSSL::Crypto CURL::libcurl exiv2lib tiny-process-library::tiny-process-library
 )
 
 endif(WIN32)
