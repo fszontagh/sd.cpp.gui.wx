@@ -5,7 +5,6 @@
 #include <wx/snglinst.h>
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
-#include "libs/ExternalProcess.h"
 #include "ui/MainWindowUI.h"
 #include <csignal>
 #include "ui/embedded_files/splash_image.h"
@@ -14,7 +13,7 @@
 class MainApp : public wxApp {
 private:
     wxSingleInstanceChecker* m_checker;
-    ExternalProcess * m_externalProcess = nullptr;
+
 
 public:
     bool OnInit() override {
@@ -108,8 +107,6 @@ public:
             }
         }
 
-        //m_externalProcess = new ExternalProcess(command, dllName.ToStdString(), false);
-
         MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend);
         mainFrame->Show(true);
         SetTopWindow(mainFrame);
@@ -117,13 +114,7 @@ public:
         return true;
     }
     int OnExit() override {
-        delete m_checker;
-        if (m_externalProcess != nullptr) {
-            m_externalProcess->stop();
-            m_externalProcess = nullptr;
-            delete m_externalProcess;
-        }
-
+        delete m_checker;       
         return 0;
     }
 };

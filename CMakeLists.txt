@@ -72,7 +72,6 @@ set(SOURCES
     src/ui/MainWindowUI.cpp
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
-    src/libs/ExternalProcess.cpp
     src/libs/SharedMemoryManager.cpp
 )
 
