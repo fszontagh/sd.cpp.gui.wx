@@ -3697,7 +3697,7 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
 void MainWindowUI::ProcessCheckThread() {
     // start up at first run
     this->extProcess = std::make_shared<TinyProcessLib::Process>(
-        this->extprocessCommand,
+        this->extprocessCommand.c_str(),
         "",
         [this](const char* bytes, size_t n) {
             this->ProcessStdOutEvent(bytes, n);
@@ -3752,7 +3752,7 @@ void MainWindowUI::ProcessCheckThread() {
             // restart process
             this->extProcess = nullptr;
             this->extProcess = std::make_shared<TinyProcessLib::Process>(
-                this->extprocessCommand,
+                this->extprocessCommand.c_str(),
                 "",
                 [this](const char* bytes, size_t n) {
                     this->ProcessStdOutEvent(bytes, n);
