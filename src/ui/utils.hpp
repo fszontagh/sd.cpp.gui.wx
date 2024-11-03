@@ -2,7 +2,6 @@
 #define __MAINFRAME_HPP__UTILS
 #include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -10,14 +9,14 @@
 #include <unordered_map>
 
 #include <wx/image.h>
+#include <wx/colour.h>
 
 #include "../helpers/sd.hpp"
-
-#include <openssl/evp.h>
 
 #include "../helpers/civitai.hpp"
 #include "../libs/bitmask_operators.h"
 #include "../libs/json.hpp"
+
 
 namespace sd_gui_utils {
 
@@ -283,45 +282,7 @@ namespace sd_gui_utils {
         }
         return oss.str();
     }
-    inline std::string sha256_file_openssl(const char* path, void* custom_pointer, void (*callback)(size_t, std::string, void* custom_pointer)) {
-        std::ifstream file(path, std::ios::binary);
-        if (!file.is_open()) {
-            return "";
-        }
 
-        std::streamsize bufferSize = 1 * 1024 * 1024;
-        char* buffer               = new char[bufferSize];
-
-        std::string hashResult;
-        unsigned char hash[EVP_MAX_MD_SIZE];
-        unsigned int hashLength;
-        EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-        const EVP_MD* md  = EVP_sha256();
-        EVP_DigestInit_ex(mdctx, md, NULL);
-        callback(file.tellg(), hashResult, custom_pointer);
-
-        while (file.good()) {
-            file.read(buffer, bufferSize);
-            std::streamsize bytesRead = file.gcount();
-            EVP_DigestUpdate(mdctx, buffer, bytesRead);
-
-            if (file.tellg() % (20 * 1024 * 1024) == 0) {
-                callback(file.tellg(), "", custom_pointer);
-            }
-        }
-
-        EVP_DigestFinal_ex(mdctx, hash, &hashLength);
-        EVP_MD_CTX_free(mdctx);
-
-        std::stringstream ss;
-        for (unsigned int i = 0; i < hashLength; i++) {
-            ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-        }
-        callback(std::filesystem::file_size(path), ss.str(), custom_pointer);
-
-        delete[] buffer;
-        return ss.str();
-    }
     inline unsigned long long Bytes2Megabytes(size_t bytes) {
         return bytes / (1024 * 1024);  // 1 MB = 1024 * 1024 bájt
     }
@@ -794,12 +755,9 @@ namespace sd_gui_utils {
         // Üres terület hozzáadása és háttérszínnel való töltése
         if (newWidth < targetWidth || newHeight < targetHeight) {
             wxImage finalImage(targetWidth, targetHeight);
-            finalImage.SetRGB(wxRect(0, 0, targetWidth, targetHeight),
-                              backgroundColor.Red(), backgroundColor.Green(),
-                              backgroundColor.Blue());
+            finalImage.SetRGB(wxRect(0, 0, targetWidth, targetHeight), backgroundColor.Red(), backgroundColor.Green(), backgroundColor.Blue());
 
-            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2,
-                             (targetHeight - newHeight) / 2);
+            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2, (targetHeight - newHeight) / 2);
             if (!cache_name.empty()) {
                 finalImage.SaveFile(cache_name);
             }

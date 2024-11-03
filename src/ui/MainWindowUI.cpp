@@ -8,7 +8,7 @@
 #include "extprocess/config.hpp"
 #include "process.hpp"
 #include "ver.hpp"
-
+#include "../helpers/sslUtils.hpp"
 #include "MainWindowAboutDialog.h"
 #include "MainWindowImageDialog.h"
 #include "embedded_files/app_icon.h"

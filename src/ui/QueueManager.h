@@ -3,6 +3,10 @@
 
 #include <map>
 #include <unordered_map>
+#include <fstream>
+#include <string>
+#include <vector>
+
 #include "utils.hpp"
 
 #include <wx/event.h>
