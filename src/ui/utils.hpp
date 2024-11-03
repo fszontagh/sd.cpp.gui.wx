@@ -10,9 +10,7 @@
 #include <unordered_map>
 
 #include <wx/image.h>
-#include <wx/textctrl.h>
 
-#include <exiv2/exiv2.hpp>
 #include "../helpers/sd.hpp"
 
 #include <openssl/evp.h>
@@ -22,45 +20,76 @@
 #include "../libs/json.hpp"
 
 namespace sd_gui_utils {
-    inline std::string repairPath(std::string path) {
-#if defined(WIN32) || defined(_WIN32) || \
-    defined(__WIN32) && !defined(__CYGWIN__)
-        std::replace(path.begin(), path.end(), '\\', '/');
-#endif
-        return path;
-    }
 
+    /**
+     * \brief Converts a C-style string to a UTF-8 encoded std::string.
+     *
+     * This function takes a C-style string and converts it into a UTF-8 encoded
+     * std::string. On Windows, it uses wxString's utf8_string method for
+     * conversion to ensure proper encoding. On other platforms, it directly
+     * constructs a std::string from the input C-style string.
+     *
+     * \param str The C-style string to be converted.
+     * \return A UTF-8 encoded std::string.
+     */
     inline std::string UnicodeToUTF8(const char* str) {
 #ifdef WIN32
         return wxString(str).utf8_string();
 #endif
         return std::string(str);
     }
+    /**
+     * \brief Converts a wxString to a UTF-8 encoded std::string.
+     *
+     * This function takes a wxString and converts it into a UTF-8 encoded
+     * std::string. On Windows, it uses wxString's utf8_string method to
+     * ensure proper encoding. On other platforms, it uses ToStdString
+     * to return a standard string representation.
+     *
+     * \param str The wxString to be converted.
+     * \return A UTF-8 encoded std::string.
+     */
     inline std::string UnicodeToUTF8(wxString str) {
 #ifdef WIN32
         return str.utf8_string();
 #endif
         return str.ToStdString();
     }
+    /**
+     * \brief Converts a UTF-8 encoded wxString to a std::string.
+     *
+     * This function takes a UTF-8 encoded wxString and converts it into
+     * a standard std::string. On Windows, it uses wxString's FromUTF8 method
+     * to ensure proper conversion. On other platforms, it directly returns
+     * the standard string representation of the wxString.
+     *
+     * \param str The UTF-8 encoded wxString to be converted.
+     * \return A std::string representation of the input wxString.
+     */
     inline std::string UTF8ToUnicode(wxString str) {
 #ifdef WIN32
         return wxString::FromUTF8(str).ToStdString();
 #endif
         return str.ToStdString();
     }
+    /**
+     * \brief Converts a UTF-8 encoded C-string to a std::string.
+     *
+     * This function takes a UTF-8 encoded C-string and converts it into
+     * a standard std::string. On Windows, it uses wxString's FromUTF8 method
+     * to ensure proper conversion. On other platforms, it directly returns
+     * the standard string representation of the C-string.
+     *
+     * \param str The UTF-8 encoded C-string to be converted.
+     * \return A std::string representation of the input C-string.
+     */
     inline std::string UTF8ToUnicode(const char* str) {
 #ifdef WIN32
+
         return wxString::FromUTF8(str).ToStdString();
 #endif
         return wxString(str).ToStdString();
     }
-
-    typedef struct stringformat {
-        size_t start        = -1;
-        size_t end          = -1;
-        wxTextAttr textAttr = wxTextAttr();
-        std::string string  = "";
-    } stringformat;
 
     typedef struct VoidHolder {
         void* p1;  // eventhandler
@@ -436,7 +465,6 @@ namespace sd_gui_utils {
         "ays",
         "gits"};
 
-
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
     inline std::map<int, std::string> sd_type_gui_names = {
         {32, "Count"},
@@ -500,7 +528,6 @@ namespace sd_gui_utils {
                                           "Q4_0_4_8",
                                           "Q4_0_8_8",
                                           "Default"};
-
 
     /* JSONize SD Params*/
     enum ThreadEvents {
@@ -568,22 +595,6 @@ namespace sd_gui_utils {
         return std::make_pair(size, sizes[div]);
     }
 
-    inline void write_comment(std::string file_name, const char* comment) {
-        try {
-            // PNG fájl metaadatainak beolvasása és módosítása
-            auto image = Exiv2::ImageFactory::open(file_name);
-            image->readMetadata();
-            auto& exifData                     = image->exifData();
-            exifData["Exif.Photo.UserComment"] = comment;
-            exifData["Exif.Image.XPComment"]   = comment;
-
-            // PNG fájl metaadatainak frissítése
-            image->setExifData(exifData);
-            image->writeMetadata();
-        } catch (Exiv2::Error& e) {
-            std::cerr << "Err: " << e.what() << std::endl;
-        }
-    }
     inline std::string removeWhitespace(std::string str) {
         std::string::iterator end_pos = std::remove(str.begin(), str.end(), ' ');
         str.erase(end_pos, str.end());

@@ -5,6 +5,9 @@
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
+#include "helpers/sd.hpp"
+#include <string.h>
+#include <memory>
 
 class ApplicationLogic {
 public:
