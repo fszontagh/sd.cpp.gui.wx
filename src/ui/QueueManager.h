@@ -1,10 +1,7 @@
 #ifndef __SD_GUI_QUEUE_MANAGER
 #define __SD_GUI_QUEUE_MANAGER
 
-#include <chrono>
-#include <fstream>
 #include <map>
-#include <memory>
 #include <unordered_map>
 #include "utils.hpp"
 
@@ -161,7 +158,7 @@ namespace QM {
 
     struct QueueItem {
         int id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
-        sd_gui_utils::SDParams params;
+        SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         QM::QueueEvents event  = QM::QueueEvents::ITEM_ADDED;
         std::vector<QM::QueueItemImage*> images;

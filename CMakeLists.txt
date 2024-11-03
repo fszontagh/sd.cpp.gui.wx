@@ -25,7 +25,7 @@ set(OPENSSL_USE_STATIC_LIBS TRUE)
 if (WIN32)
     find_package(OpenSSL CONFIG REQUIRED)
     find_package(CURL CONFIG REQUIRED)
-    find_package(Exiv2 CONFIG REQUIRED)
+    find_package(exiv2 REQUIRED)
 else()
     # on ubuntu, there is no CONFIG
     find_package(OpenSSL REQUIRED)
@@ -125,7 +125,7 @@ endif()
 list(APPEND APPDEPENDS cpu_features OpenSSL::Crypto CURL::libcurl tiny-process-library::tiny-process-library)
 
 if (WIN32)
-    list(APPEND APPDEPENDS exiv2::exiv2)
+    list(APPEND APPDEPENDS exiv2lib)
 else()
     list(APPEND APPDEPENDS exiv2lib)
 endif()
@@ -140,24 +140,10 @@ target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${cpu_features_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
 )
+message(STATUS "APPDEPS: ${APPDEPENDS}")
 
 
-if(WIN32)
-    target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE
-    cpu_features
-    wxWidgets::wxWidgets
-    OpenSSL::Crypto CURL::libcurl exiv2::exiv2 tiny-process-library::tiny-process-library
-    )
-
-else(WIN32)
-
-target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE
-    cpu_features
-    wx::base wx::core wx::xrc wx::aui wx::richtext
-    OpenSSL::Crypto CURL::libcurl exiv2lib tiny-process-library::tiny-process-library
-)
-
-endif(WIN32)
+target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${APPDEPENDS})
 
 
 

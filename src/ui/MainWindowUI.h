@@ -110,10 +110,9 @@ private:
     sd_gui_utils::config* cfg;
     wxString ini_path;
     MainWindowSettings* settingsWindow;
-    sd_gui_utils::SDParams* sd_params;
+    SDParams* sd_params;
     std::vector<wxStaticBitmap*> modelImagePreviews;
     std::vector<wxStaticBitmap*> jobImagePreviews;
-    wxDynamicLibrary* sd_dll;
 
     wxTaskBarIcon* TaskBar;
     wxMenu* TaskBarMenu;
@@ -224,14 +223,11 @@ private:
     QM::QueueItem* handleSdImage(const std::string& tmpImagePath, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler);
 
     std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
-    void imageCommentToGuiParams(std::map<std::string, std::string> params, sd_gui_utils::SDMode mode);
+    void imageCommentToGuiParams(std::map<std::string, std::string> params, SDMode mode);
     void onimg2ImgImageOpen(std::string file);
     void onUpscaleImageOpen(std::string file);
     void onControlnetImageOpen(std::string file);
 
-    // load the model in a new thread
-    sd_ctx_t* LoadModelv2(wxEvtHandler* eventHandler, QM::QueueItem* myItem);
-    upscaler_ctx_t* LoadUpscaleModel(wxEvtHandler* eventHandler, QM::QueueItem* myItem);
     // generate in another thread
     void GenerateTxt2img(wxEvtHandler* eventHandler, QM::QueueItem* myItem);
     void GenerateImg2img(wxEvtHandler* eventHandler, QM::QueueItem* item);
