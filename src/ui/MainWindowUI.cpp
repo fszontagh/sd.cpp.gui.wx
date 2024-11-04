@@ -77,7 +77,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 
-    if (BUILD_TYPE == "Release") {// run it from PATH on unix & win
+    if (BUILD_TYPE == "Release") {  // run it from PATH on unix & win
         this->extprocessCommand = std::string(EPROCESS_BINARY_NAME);
     } else {
         this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
@@ -1405,6 +1405,10 @@ MainWindowUI::~MainWindowUI() {
 
     if (this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
         subprocess_terminate(this->subprocess);
+        while (subprocess_alive(this->subprocess) != 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        subprocess_destroy(this->subprocess);
     }
     if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
         this->processHandleOutput->join();
