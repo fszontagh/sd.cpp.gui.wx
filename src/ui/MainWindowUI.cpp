@@ -134,7 +134,7 @@ void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     // auto sysinfo                               = //sd_get_system_info();
     MainWindowAboutDialog* dialog = new MainWindowAboutDialog(this);
 
-    wxString about = wxString("<p><strong>Disclaimer</strong></p><p>Warning: This application may terminate unexpectedly via an abort signal during runtime. Use of this application is at your own risk. The developer assumes no responsibility or liability for any potential data loss, damage, or other issues arising from its usage. By using this application, you acknowledge and accept these terms.</p>");
+    wxString about = wxString(_("<p><strong>Disclaimer</strong></p><p>Use of this application is at your own risk. The developer assumes no responsibility or liability for any potential data loss, damage, or other issues arising from its usage. By using this application, you acknowledge and accept these terms.</p>"));
 
     about.Append(wxString::Format(
         "<h2>%s</h2><p>Version: %s </p><p>Git version: %s</p><p>Website: <a target='_blank' href='%s'>%s</a></p><hr/>",
