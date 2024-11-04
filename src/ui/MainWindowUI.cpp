@@ -77,11 +77,12 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 
-#ifdef WIN32
-    this->extprocessCommand = "extprocess/" + std::string(EPROCESS_BINARY_NAME);
-#else
-    this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
-#endif
+    if (BUILD_TYPE == "Release") {// run it from PATH on unix & win
+        this->extprocessCommand = std::string(EPROCESS_BINARY_NAME);
+    } else {
+        this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
+    }
+
     this->extProcessParam   = dllName;
     this->extProcessRunning = false;
     // setup shared memory
@@ -91,7 +92,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
     this->subprocess           = new subprocess_s();
 
-    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async, this->subprocess);
+    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
     if (0 != result) {
         wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
         errorDialog.ShowModal();
@@ -1346,7 +1347,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
-    data.push_back(wxString("?.?? it/s 00/000"));                      // speed
+    data.push_back(wxString("?.?? it/s 00/000"));                     // speed
     data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
     data.push_back(wxVariant(item->status_message));
 
@@ -3694,7 +3695,7 @@ void MainWindowUI::ProcessCheckThread() {
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
         if (0 != result) {
             this->m_statusBar166->SetStatusText(_("Failed to restart the background process..."), 1);
         }
