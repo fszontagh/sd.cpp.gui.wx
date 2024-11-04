@@ -478,6 +478,7 @@ void ApplicationLogic::Img2img() {
             nlohmann::json j              = *this->currentItem;
             std::string jsonString        = j.dump();
             this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            return;
         }
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
             if (results[i].data == NULL) {
@@ -513,7 +514,7 @@ void ApplicationLogic::Img2img() {
 }
 
 void ApplicationLogic::Upscale() {
-    sd_image_t* results;
+    sd_image_t results;
     int c = 0;
     int w, h;
     stbi_uc* input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &w, &h, &c, 3);
@@ -521,23 +522,23 @@ void ApplicationLogic::Upscale() {
     input_image_buffer          = NULL;
     delete input_image_buffer;
 
-    sd_image_t upscaled_image = this->upscalerFuncPtr(this->upscale_ctx, control_image, this->currentItem->upscale_factor);
+    results = this->upscalerFuncPtr(this->upscale_ctx, control_image, this->currentItem->upscale_factor);
 
-    if (results == NULL || results[0].data == NULL) {
+    if (results.data == NULL) {
         this->currentItem->status     = QM::QueueStatus::FAILED;
         this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
         this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         nlohmann::json j              = *this->currentItem;
         std::string jsonString        = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        return;
     }
 
-    std::string filepath = this->handleSdImage(results[0]);
+    std::string filepath = this->handleSdImage(results);
     std::cout << "saved tmp image to: " << filepath;
     this->currentItem->rawImages.push_back(filepath);
-    free(results[0].data);
-    results[0].data = NULL;
-    delete results;
+    free(results.data);
+    results.data = NULL;
     this->currentItem->status      = QM::QueueStatus::DONE;
     this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
     this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();

@@ -3,15 +3,17 @@
 #include <cinttypes>
 #include <cstring>
 #include <memory>
+#include <system_error>
 #include <thread>
 #include "../helpers/simplecurl.h"
-#include "extprocess/config.hpp"
-#include "process.hpp"
-#include "ver.hpp"
 #include "../helpers/sslUtils.hpp"
 #include "MainWindowAboutDialog.h"
 #include "MainWindowImageDialog.h"
 #include "embedded_files/app_icon.h"
+#include "extprocess/config.hpp"
+#include "reproc++/arguments.hpp"
+#include "ver.hpp"
+#include "wx/translation.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend)
     : mainUI(parent), usingBackend(usingBackend) {
@@ -76,30 +78,26 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 
-    /*
-        try {
-            this->extProcess->setOnExitCallback(std::bind(&MainWindowUI::ProcessEventOnExit, this, std::placeholders::_1));
-            this->extProcess->setOnStartedCallback(std::bind(&MainWindowUI::ProcessEventOnStarted, this));
-            this->extProcess->setOnStdOutCallback(std::bind(&MainWindowUI::ProcessStdOutEvenet, this, std::placeholders::_1));
-            this->extProcess->setOnStdErrCallback(std::bind(&MainWindowUI::ProcessStdErrEvenet, this, std::placeholders::_1));
-            this->extProcess->start(std::bind(&MainWindowUI::ProcessEventHandler, this, std::placeholders::_1));
-            this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);  // std::thread(&MainWindowUI::ProcessCheckThread, this);
-        } catch (const std::exception& ex) {
-            wxMessageDialog(this, _("The external process could not be started. Check the logs for more information"), _("Error"), wxOK | wxICON_ERROR).ShowModal();
-            std::cerr << ex.what() << std::endl;
-            exit(EXIT_FAILURE);
-        }*/
-
 #ifdef WIN32
-    this->extprocessCommand = "extprocess/" + std::string(EPROCESS_BINARY_NAME) + " " + dllName;
+    this->extprocessCommand = "extprocess/" + std::string(EPROCESS_BINARY_NAME);
 #else
-    this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME) + " " + dllName;
+    this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
 #endif
-
+    this->extProcessParam   = dllName;
     this->extProcessRunning = false;
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
     // start process from the thread
+
+    const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
+    this->subprocess           = new subprocess_s();
+
+    int result = subprocess_create(command_line, 0, this->subprocess);
+    if (0 != result) {
+        wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
+        errorDialog.ShowModal();
+        exit(1);
+    }
     this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
 }
 
@@ -608,7 +606,6 @@ void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
-
     bool generate1State = this->m_generate1->IsEnabled();
     bool generate2State = this->m_generate2->IsEnabled();
     bool generate3State = this->m_generate_upscaler->IsEnabled();
@@ -616,7 +613,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->m_generate1->Enable(false);
     this->m_generate2->Enable(false);
     this->m_generate_upscaler->Enable(false);
-
 
     this->initConfig();
     auto type  = QM::GenerationMode::TXT2IMG;
@@ -763,8 +759,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->m_generate1->Enable(generate1State);
     this->m_generate2->Enable(generate2State);
     this->m_generate_upscaler->Enable(generate3State);
-
-
 }
 
 void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent& event) {
@@ -1400,18 +1394,17 @@ MainWindowUI::~MainWindowUI() {
     if (this->civitwindow != nullptr) {
         this->civitwindow->Destroy();
     }
-    if (this->extProcessRunning == true) {
-        this->extProcessNeedToRun = false;
-        std::this_thread::sleep_for(std::chrono::milliseconds(400));
-        this->extProcess->kill();
-    }
-    int exit_status = -1;
-    while (!this->extProcess->try_get_exit_status(exit_status)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    if (this->processCheckThread->joinable()) {
+
+    this->extProcessNeedToRun = false;
+
+    if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
         this->processCheckThread->join();
     }
+
+    if (this->subprocess != nullptr && subprocess_alive(this->subprocess) > 0) {
+        subprocess_terminate(this->subprocess);
+    }
+
     for (auto& threadPtr : threads) {
         if (threadPtr->joinable()) {
             threadPtr->join();
@@ -2192,9 +2185,9 @@ void MainWindowUI::onUpscaleImageOpen(std::string file) {
 }
 
 void MainWindowUI::StartGeneration(QM::QueueItem* myJob) {
-    if (this->extProcessRunning == false) {
+    if (subprocess_alive(this->subprocess) == 0) {
         wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
-        myJob->status_message = "Error";
+        myJob->status_message = _("Error accessing to the background process. Please try again.");
         // this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, myJob);
         this->qmanager->SetStatus(QM::QueueStatus::FAILED, myJob);
         errorDialog.ShowModal();
@@ -3162,7 +3155,6 @@ void MainWindowUI::HandleSDLog(sd_log_level_t level,
     // TaskBar->SetIcon(, this->GetTitle());
 }
 
-
 void MainWindowUI::onControlnetImageOpen(std::string file) {
     wxImage img;
     if (img.LoadFile(file)) {
@@ -3611,30 +3603,12 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
 }
 
 void MainWindowUI::ProcessCheckThread() {
-    // start up at first run
-    this->extProcess = std::make_shared<TinyProcessLib::Process>(
-        this->extprocessCommand.c_str(),
-        "",
-        [this](const char* bytes, size_t n) {
-            this->ProcessStdOutEvent(bytes, n);
-        },
-        [this](const char* bytes, size_t n) {
-            this->ProcessStdErrEvent(bytes, n);
-        },
-
-        false,
-        TinyProcessLib::Config{});
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
     while (this->extProcessNeedToRun == true) {
-        int exit_status = 0;
+        while (subprocess_alive(this->subprocess) > 0) {
+            // mutex lock
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->m_statusBar166->SetStatusText(_("Process is ready"), 1);
 
-        while (this->extProcess->try_get_exit_status(exit_status) == false) {
-            this->extProcessRunning = true;
-            {
-                std::lock_guard<std::mutex> lock(this->mutex);
-                this->m_statusBar166->SetStatusText(_("Background process running"), 1);
-            }
             char* buffer = new char[SHARED_MEMORY_SIZE];
             this->sharedMemory->read(buffer, SHARED_MEMORY_SIZE);
 
@@ -3645,38 +3619,24 @@ void MainWindowUI::ProcessCheckThread() {
                 }
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (this->extProcessNeedToRun == false) {
+                this->m_statusBar166->SetStatusText(_("Exiting..."), 1);
+                return;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
-        this->extProcessRunning = false;
+        this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
+        delete this->subprocess;
+        // restart
+        const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
+        this->subprocess           = new subprocess_s();
 
-        {  // lock
-            std::lock_guard<std::mutex> lock(this->mutex);
-            this->writeLog("Process exited with status: " + std::to_string(exit_status) + '\n', false);
-            this->m_statusBar166->SetStatusText(wxString::Format(_("Background process stopped with status: %d %s"), exit_status, this->extprocessLastError), 1);
-
-            if (exit_status == 0 || this->extProcessNeedToRun == false) {
-                this->extProcessNeedToRun = false;
-                return;  // stopped normally
-            }
-
-            auto reason = wxString::Format(_("Background process stopped with status: %d"), exit_status).ToStdString();
-            if (this->extprocessLastError.empty() == false) {
-                reason = this->extprocessLastError;
-            }
-            this->qmanager->resetRunning(reason);
-            this->sharedMemory->clear();
-            // restart process
-            this->extProcess = nullptr;
-            this->extProcess = std::make_shared<TinyProcessLib::Process>(
-                this->extprocessCommand.c_str(),
-                "",
-                [this](const char* bytes, size_t n) {
-                    this->ProcessStdOutEvent(bytes, n);
-                },
-                [this](const char* bytes, size_t n) {
-                    this->ProcessStdErrEvent(bytes, n);
-                });
-        }  // lock
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));  // wait 2sec to recheck
-    }  // extProcessNeedToRun
+        int result = subprocess_create(command_line, 0, this->subprocess);
+        if (0 != result) {
+            this->m_statusBar166->SetStatusText(_("Failed to restart the background process..."), 1);
+        }
+        // restart
+        std::this_thread::sleep_for(std::chrono::milliseconds(800));
+    }
 }
