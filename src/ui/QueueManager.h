@@ -1,12 +1,12 @@
 #ifndef __SD_GUI_QUEUE_MANAGER
 #define __SD_GUI_QUEUE_MANAGER
 
-#include <map>
-#include <unordered_map>
 #include <fstream>
-#include <string>
-#include <vector>
+#include <map>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "utils.hpp"
 
@@ -160,12 +160,18 @@ namespace QM {
             item = nullptr;
         }
     }
+    struct QueueItemStats {
+        float time_min = 0.f, time_max = 0.f, time_avg = 0.f, time_total = 0.f;
+        std::map<int, float> time_per_step;
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItemStats, time_min, time_max, time_avg, time_total, time_per_step)
 
     struct QueueItem {
         int id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
         SDParams params;
         QM::QueueStatus status = QM::QueueStatus::PENDING;
         QM::QueueEvents event  = QM::QueueEvents::ITEM_ADDED;
+        QM::QueueItemStats stats;
         std::vector<QM::QueueItemImage*> images;
         int step = 0, steps = 0;
         size_t hash_fullsize = 0, hash_progress_size = 0;
@@ -188,6 +194,7 @@ namespace QM {
               params(other.params),
               status(other.status),
               event(other.event),
+              stats(other.stats),
               images(other.images),
               step(other.step),
               steps(other.steps),
@@ -215,6 +222,7 @@ namespace QM {
                 params             = other.params;
                 status             = other.status;
                 event              = other.event;
+                stats              = other.stats;
                 step               = other.step;
                 steps              = other.steps;
                 time               = other.time;
@@ -247,6 +255,7 @@ namespace QM {
             {"status", (int)p.status},
             {"status_message", p.status_message},
             {"event", (int)p.event},
+            {"stats", p.stats},
             {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
             {"mode", (int)p.mode},
             {"params", p.params},
@@ -284,6 +293,9 @@ namespace QM {
                     p.images.push_back(image);
                 }
             }
+        }
+        if (j.contains("stats")) {
+            j.at("stats").get_to(p.stats);
         }
         if (j.contains("step")) {
             j.at("step").get_to(p.step);

@@ -91,13 +91,15 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
     this->subprocess           = new subprocess_s();
 
-    int result = subprocess_create(command_line, 0, this->subprocess);
+    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr|subprocess_option_enable_async, this->subprocess);
     if (0 != result) {
         wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
         errorDialog.ShowModal();
         exit(1);
     }
+    this->extProcessNeedToRun = true;
     this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
+    this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
 }
 
 void MainWindowUI::onSettings(wxCommandEvent& event) {
@@ -1344,7 +1346,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
-    data.push_back(wxString("-.--it/s"));                             // speed
+    data.push_back(wxString("?.?? it/s 0/0"));                             // speed
     data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
     data.push_back(wxVariant(item->status_message));
 
@@ -1398,6 +1400,9 @@ MainWindowUI::~MainWindowUI() {
 
     if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
         this->processCheckThread->join();
+    }
+    if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
+        this->processHandleOutput->join();
     }
 
     if (this->subprocess != nullptr && subprocess_alive(this->subprocess) > 0) {
@@ -3601,11 +3606,34 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
     std::cerr << "[DEBUG] " << msg << std::endl;
 }
 
+void MainWindowUI::ProcessOutputThread() {
+    if (this->subprocess != nullptr) {
+        int status = 0;
+//        subprocess_join(this->subprocess, &status);
+        char buf[BUFSIZ] = {0};
+        size_t readed_size = 0;
+        while (this->extProcessNeedToRun == true) {
+            readed_size = subprocess_read_stdout(this->subprocess, buf, BUFSIZ);
+            if (readed_size == 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                continue;
+            }
+            this->ProcessStdOutEvent(buf, readed_size);
+            if (this->extProcessNeedToRun == false) {                
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+    }else{
+        std::cout << "subprocess is null" << std::endl;
+    }
+}
+
 void MainWindowUI::ProcessCheckThread() {
     while (this->extProcessNeedToRun == true) {
         while (subprocess_alive(this->subprocess) > 0) {
             // mutex lock
-            std::lock_guard<std::mutex> lock(this->mutex);
+            // std::lock_guard<std::mutex> lock(this->mutex);
             this->m_statusBar166->SetStatusText(_("Process is ready"), 1);
 
             char* buffer = new char[SHARED_MEMORY_SIZE];
@@ -3617,6 +3645,7 @@ void MainWindowUI::ProcessCheckThread() {
                     this->sharedMemory->clear();
                 }
             }
+            delete buffer;
 
             if (this->extProcessNeedToRun == false) {
                 this->m_statusBar166->SetStatusText(_("Exiting..."), 1);
@@ -3625,13 +3654,14 @@ void MainWindowUI::ProcessCheckThread() {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
+        this->qmanager->resetRunning("External process stopped");
         this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
         delete this->subprocess;
         // restart
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, 0, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr|subprocess_option_enable_async, this->subprocess);
         if (0 != result) {
             this->m_statusBar166->SetStatusText(_("Failed to restart the background process..."), 1);
         }

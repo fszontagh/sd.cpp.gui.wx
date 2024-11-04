@@ -396,22 +396,6 @@ class CivitAiWindow : public wxFrame
 	protected:
 		wxPanel* m_panel16;
 		wxSplitterWindow* m_splitter3;
-		wxPanel* m_panel24;
-		wxRadioBox* m_model_type;
-		wxTextCtrl* m_civitai_search;
-		wxButton* m_search;
-		wxStaticText* m_staticText43;
-		wxDataViewListCtrl* m_dataViewListCtrl5;
-		wxDataViewColumn* m_dataViewListColumn12;
-		wxDataViewColumn* m_dataViewListColumn13;
-		wxDataViewColumn* m_dataViewListColumn30;
-		wxDataViewColumn* m_dataViewListColumn32;
-		wxStaticText* m_staticText431;
-		wxDataViewListCtrl* m_downloads;
-		wxDataViewColumn* m_dataViewListColumn26;
-		wxDataViewColumn* m_dataViewListColumn31;
-		wxDataViewColumn* m_dataViewListColumn301;
-		wxDataViewColumn* m_dataViewListColumn28;
 		wxPanel* m_panel25;
 		wxHtmlWindow* m_model_description;
 		wxStaticText* m_staticText41;
@@ -433,16 +417,32 @@ class CivitAiWindow : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn25;
 		wxDataViewColumn* m_dataViewListColumn231;
 		wxDataViewColumn* m_dataViewListColumn29;
+		wxPanel* m_panel24;
+		wxRadioBox* m_model_type;
+		wxTextCtrl* m_civitai_search;
+		wxButton* m_search;
+		wxStaticText* m_staticText43;
+		wxDataViewListCtrl* m_dataViewListCtrl5;
+		wxDataViewColumn* m_dataViewListColumn12;
+		wxDataViewColumn* m_dataViewListColumn13;
+		wxDataViewColumn* m_dataViewListColumn30;
+		wxDataViewColumn* m_dataViewListColumn32;
+		wxStaticText* m_staticText431;
+		wxDataViewListCtrl* m_downloads;
+		wxDataViewColumn* m_dataViewListColumn26;
+		wxDataViewColumn* m_dataViewListColumn31;
+		wxDataViewColumn* m_dataViewListColumn301;
+		wxDataViewColumn* m_dataViewListColumn28;
 		wxStatusBar* m_statusBar2;
 
 		// Virtual event handlers, override them in your derived class
-		virtual void m_civitai_searchOnTextEnter( wxCommandEvent& event ) { event.Skip(); }
-		virtual void m_searchOnButtonClick( wxCommandEvent& event ) { event.Skip(); }
-		virtual void m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
 		virtual void m_model_detailsOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void m_model_downloadOnButtonClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void m_model_filelistOnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void m_civitai_searchOnTextEnter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void m_searchOnButtonClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 
 
 	public:

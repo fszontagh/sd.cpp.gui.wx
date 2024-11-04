@@ -109,7 +109,7 @@ bool ApplicationLogic::loadLibrary() {
         this->sdSetProgressCallbackFuncPtr(ApplicationLogic::HandleSDProgress, (void*)this);
 
         this->sdSetLogCallbackFuncPtr = (SdSetLogCallbackFunction)sd_dll.getFunction<SdSetLogCallbackFunction>("sd_set_log_callback");
-        if(this->sdSetLogCallbackFuncPtr == nullptr) {
+        if (this->sdSetLogCallbackFuncPtr == nullptr) {
             std::cerr << "Failed to load function: sd_set_log_callback" << std::endl;
             this->error = "Failed to load function: sd_set_log_callback";
             return false;
@@ -538,7 +538,7 @@ void ApplicationLogic::Upscale() {
     std::cout << "saved tmp image to: " << filepath;
     this->currentItem->rawImages.push_back(filepath);
     free(results.data);
-    results.data = NULL;
+    results.data                   = NULL;
     this->currentItem->status      = QM::QueueStatus::DONE;
     this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
     this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -703,8 +703,7 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
                     break;
             }
 
-            // load model
-            sd_ctx = this->newSdCtxFuncPtr(
+            this->sd_ctx = this->newSdCtxFuncPtr(
                 item->params.model_path.c_str(),
                 item->params.clip_l_path.c_str(),
                 item->params.clip_g_path.c_str(),
@@ -729,7 +728,9 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
 
             );
             loadedModel = item->params.model_path;
-            return sd_ctx == NULL ? false : true;
+            if (this->sd_ctx == NULL) {
+                return false;
+            }
         }
         return sd_ctx == NULL ? false : true;
     }

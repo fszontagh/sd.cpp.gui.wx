@@ -153,8 +153,8 @@ if(WIN32)
     target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE comsuppw.lib wbemuuid.lib)
     target_compile_definitions(${PROJECT_BINARY_NAME} PRIVATE
         _CRT_SECURE_NO_WARNINGS
-#       _UNICODE
-#        UNICODE
+       _UNICODE
+        UNICODE
         WIN32
         _WINDOWS
         wxUSE_RC_MANIFEST=1

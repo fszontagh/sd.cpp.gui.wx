@@ -1,13 +1,13 @@
 #ifndef EXTPROCESS_APPLICATIONLOGIC_H
 #define EXTPROCESS_APPLICATIONLOGIC_H
 
-#include "ui/QueueManager.h"
+#include <memory>
+#include <string>
+#include "helpers/sd.hpp"
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
-#include "helpers/sd.hpp"
-#include <string>
-#include <memory>
+#include "ui/QueueManager.h"
 
 class ApplicationLogic {
 public:
@@ -19,16 +19,40 @@ public:
         if (level == SD_LOG_ERROR) {
             std::cerr << "SD ERR: " << text;
         } else {
-            std::cout << "SD: "<< text;
+            std::cout << "SD: " << text;
         }
     }
 
     inline static void HandleSDProgress(int step, int steps, float time, void* data) {
         ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
 
-        instance->currentItem->step       = step;
-        instance->currentItem->steps      = steps;
-        instance->currentItem->time       = time;
+        instance->currentItem->step  = step;
+        instance->currentItem->steps = steps;
+        instance->currentItem->time  = time;
+
+        if (instance->currentItem->stats.time_min == 0) {
+            instance->currentItem->stats.time_min = time;
+        } else {
+            instance->currentItem->stats.time_min = instance->currentItem->stats.time_min < time ? time : instance->currentItem->stats.time_min;
+        }
+
+        if (instance->currentItem->stats.time_max == 0) {
+            instance->currentItem->stats.time_max = time;
+        } else {
+            instance->currentItem->stats.time_max = instance->currentItem->stats.time_max > time ? time : instance->currentItem->stats.time_max;
+        }
+
+
+        instance->currentItem->stats.time_per_step[step] = time;
+        instance->currentItem->stats.time_total += time;
+        
+        float sum = std::accumulate(instance->currentItem->stats.time_per_step.begin(), instance->currentItem->stats.time_per_step.end(), 0.0f,
+                                    [](float acc, const auto& pair) {
+                                        return acc + pair.second;
+                                    });
+        instance->currentItem->stats.time_avg = sum / instance->currentItem->stats.time_per_step.size();
+
+
         instance->currentItem->status     = QM::QueueStatus::RUNNING;
         instance->currentItem->event      = QM::QueueEvents::ITEM_UPDATED;
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -51,7 +75,7 @@ private:
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager;
     std::filesystem::path loadedModel;
     std::string error;
-    sd_ctx_t* sd_ctx                                           = nullptr;
+    sd_ctx_t* sd_ctx                                           = NULL;
     upscaler_ctx_t* upscale_ctx                                = nullptr;
     std::shared_ptr<QM::QueueItem> currentItem                 = nullptr;  //< shared pointer to current item>
     std::shared_ptr<QM::QueueItem> lastItem                    = nullptr;  //< shared pointer to last item>

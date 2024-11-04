@@ -209,9 +209,11 @@ private:
     void UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
+    void ProcessOutputThread();
     void ProcessStdOutEvent(const char *bytes, size_t n);
     void ProcessStdErrEvent(const char *bytes, size_t n);
     std::shared_ptr<std::thread> processCheckThread = nullptr;
+    std::shared_ptr<std::thread> processHandleOutput = nullptr;
     std::atomic_bool extProcessRunning = false;
     std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
 
