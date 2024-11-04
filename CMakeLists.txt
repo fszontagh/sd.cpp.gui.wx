@@ -14,6 +14,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PROJECT_BINARY_NAME "stablediffusiongui")
 set(PROJECT_DISPLAY_NAME "Stable Diffusion GUI")
+# in github workflow to minimize output..
+add_definitions(-w)
 
 include(FetchContent)
 include(ExternalProject)

@@ -11,7 +11,6 @@
 #include "MainWindowImageDialog.h"
 #include "embedded_files/app_icon.h"
 #include "extprocess/config.hpp"
-#include "reproc++/arguments.hpp"
 #include "ver.hpp"
 #include "wx/translation.h"
 
