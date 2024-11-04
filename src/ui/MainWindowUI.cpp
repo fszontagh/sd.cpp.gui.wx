@@ -1346,7 +1346,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
-    data.push_back(wxString("?.?? it/s 0/0"));                        // speed
+    data.push_back(wxString("?.?? it/s 00/000"));                      // speed
     data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
     data.push_back(wxVariant(item->status_message));
 
@@ -1397,7 +1397,6 @@ MainWindowUI::~MainWindowUI() {
     }
 
     this->extProcessNeedToRun = false;
-
 
     if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
         this->processCheckThread->join();
@@ -3582,7 +3581,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
 
         if (itemPtr->updated_at != item.updated_at || itemPtr->event != item.event) {
             if (BUILD_TYPE == "Debug") {
-                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;    
+                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
             }
             this->extProcessLastEvent = item.event;
 
@@ -3625,7 +3624,7 @@ void MainWindowUI::ProcessStdOutEvent(const char* bytes, size_t n) {
             this->writeLog("Out:" + line + '\n', false);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[GUI] "<< __FILE__ << ":" << __LINE__ <<" ProcessStdOutEvent: exception: " << e.what() << std::endl;
+        std::cerr << "[GUI] " << __FILE__ << ":" << __LINE__ << " ProcessStdOutEvent: exception: " << e.what() << std::endl;
     }
 }
 
@@ -3653,11 +3652,10 @@ void MainWindowUI::ProcessOutputThread() {
             delete buffer;
         }
         if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));    
-        }else{
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
-        
     }
 }
 

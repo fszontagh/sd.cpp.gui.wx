@@ -96,6 +96,7 @@ QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
     newitem->finished_at    = 0;
     newitem->status         = QM::QueueStatus::PENDING;
     newitem->status_message = "";
+    newitem->stats          = QM::QueueItemStats();
     // clear the list, we need a new later
     newitem->images.clear();
     newitem->rawImages.clear();
