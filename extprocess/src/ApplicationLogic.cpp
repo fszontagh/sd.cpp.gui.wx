@@ -1,6 +1,8 @@
 #include "ApplicationLogic.h"
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <thread>
 #include "ui/QueueManager.h"
 #include "wx/strvararg.h"
 #include "wx/translation.h"
@@ -170,6 +172,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     j                             = *this->currentItem;
     jsonString                    = j.dump();
     this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
         case QM::GenerationMode::TXT2IMG: {
@@ -281,7 +284,7 @@ void ApplicationLogic::Txt2Img() {
             free(results[i].data);
             results[i].data = NULL;
         }
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
         this->currentItem->status      = QM::QueueStatus::RUNNING;
         this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
         this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();

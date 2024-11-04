@@ -13,6 +13,8 @@
 #include <wx/event.h>
 #include <wx/window.h>
 
+#include "ver.hpp"
+
 namespace QM {
     enum QueueStatus {
         PENDING,
@@ -183,6 +185,8 @@ namespace QM {
         uint32_t upscale_factor    = 4;
         std::string sha256;
         std::vector<std::string> rawImages = {};
+        std::string app_version            = SD_GUI_VERSION;
+        std::string git_version            = GIT_HASH;
 
         QueueItem() = default;
         QueueItem(const QueueItem& other)
@@ -207,7 +211,10 @@ namespace QM {
               status_message(other.status_message),
               upscale_factor(other.upscale_factor),
               sha256(other.sha256),
-              rawImages(other.rawImages) {}
+              rawImages(other.rawImages),
+              app_version(other.app_version),
+              git_version(other.git_version)
+                         {}
 
         ~QueueItem() {}
 
@@ -234,6 +241,8 @@ namespace QM {
                 status_message     = other.status_message;
                 upscale_factor     = other.upscale_factor;
                 rawImages          = other.rawImages;
+                git_version        = other.git_version;
+                app_version        = other.app_version;
             }
             return *this;
         }
@@ -265,7 +274,9 @@ namespace QM {
             {"time", p.time},
             {"upscale_factor", p.upscale_factor},
             {"initial_image", sd_gui_utils::UnicodeToUTF8(p.initial_image)},
-            {"rawImages", p.rawImages}
+            {"rawImages", p.rawImages},
+            {"app_version", p.app_version},
+            {"git_version", p.git_version}
 
         };
     }
@@ -332,6 +343,13 @@ namespace QM {
         p.mode          = j.at("mode").get<QM::GenerationMode>();
         p.initial_image = sd_gui_utils::UTF8ToUnicode(p.initial_image);
         p.model         = sd_gui_utils::UTF8ToUnicode(p.model);
+        if (j.contains("git_version")) {
+            j.at("git_version").get_to(p.git_version);
+        }
+
+        if (j.contains("app_version")) {
+            j.at("app_version").get_to(p.app_version);
+        }
     }
 
     class QueueManager {

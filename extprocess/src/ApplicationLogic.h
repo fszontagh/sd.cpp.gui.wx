@@ -33,24 +33,21 @@ public:
         if (instance->currentItem->stats.time_min == 0) {
             instance->currentItem->stats.time_min = time;
         } else {
-            instance->currentItem->stats.time_min = instance->currentItem->stats.time_min < time ? time : instance->currentItem->stats.time_min;
+            instance->currentItem->stats.time_min = instance->currentItem->stats.time_min > time ? time : instance->currentItem->stats.time_min;
         }
 
         if (instance->currentItem->stats.time_max == 0) {
             instance->currentItem->stats.time_max = time;
         } else {
-            instance->currentItem->stats.time_max = instance->currentItem->stats.time_max > time ? time : instance->currentItem->stats.time_max;
+            instance->currentItem->stats.time_max = instance->currentItem->stats.time_max < time ? time : instance->currentItem->stats.time_max;
         }
 
 
         instance->currentItem->stats.time_per_step[step] = time;
         instance->currentItem->stats.time_total += time;
         
-        float sum = std::accumulate(instance->currentItem->stats.time_per_step.begin(), instance->currentItem->stats.time_per_step.end(), 0.0f,
-                                    [](float acc, const auto& pair) {
-                                        return acc + pair.second;
-                                    });
-        instance->currentItem->stats.time_avg = sum / instance->currentItem->stats.time_per_step.size();
+
+        instance->currentItem->stats.time_avg = instance->currentItem->stats.time_total / instance->currentItem->step;
 
 
         instance->currentItem->status     = QM::QueueStatus::RUNNING;

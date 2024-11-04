@@ -3,7 +3,6 @@
 #include <cinttypes>
 #include <cstring>
 #include <memory>
-#include <system_error>
 #include <thread>
 #include "../helpers/simplecurl.h"
 #include "../helpers/sslUtils.hpp"
@@ -61,6 +60,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->qmanager     = new QM::QueueManager(this->GetEventHandler(), this->cfg->jobs);
     this->ModelManager = new ModelInfo::Manager(this->cfg->datapath);
+    this->initLog();
 
     // load
     this->LoadPresets();
@@ -91,14 +91,14 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
     this->subprocess           = new subprocess_s();
 
-    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr|subprocess_option_enable_async, this->subprocess);
+    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async, this->subprocess);
     if (0 != result) {
         wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
         errorDialog.ShowModal();
         exit(1);
     }
     this->extProcessNeedToRun = true;
-    this->processCheckThread = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
+    this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
     this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
 }
 
@@ -1346,7 +1346,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
-    data.push_back(wxString("?.?? it/s 0/0"));                             // speed
+    data.push_back(wxString("?.?? it/s 0/0"));                        // speed
     data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
     data.push_back(wxVariant(item->status_message));
 
@@ -1398,15 +1398,16 @@ MainWindowUI::~MainWindowUI() {
 
     this->extProcessNeedToRun = false;
 
+
     if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
         this->processCheckThread->join();
     }
+
+    if (this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
+        subprocess_terminate(this->subprocess);
+    }
     if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
         this->processHandleOutput->join();
-    }
-
-    if (this->subprocess != nullptr && subprocess_alive(this->subprocess) > 0) {
-        subprocess_terminate(this->subprocess);
     }
 
     for (auto& threadPtr : threads) {
@@ -1447,6 +1448,9 @@ MainWindowUI::~MainWindowUI() {
     //    delete this->fileConfig;
 
     this->TaskBar->Destroy();
+    if (logfile.is_open()) {
+        logfile.close();
+    }
 }
 
 void MainWindowUI::loadControlnetList() {
@@ -2889,10 +2893,31 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item) {
         data.clear();
 
         data.push_back(wxVariant(_("Steps")));
-        data.push_back(
-            wxVariant(wxString::Format("%d", item->params.sample_steps)));
+        data.push_back(wxVariant(wxString::Format("%d", item->params.sample_steps)));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
+
+        if (item->stats.time_total > 0) {
+            data.push_back(wxVariant(_("Time min.")));
+            data.push_back(wxVariant(wxString::Format("%.2fs", item->stats.time_min)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Time max.")));
+            data.push_back(wxVariant(wxString::Format("%.2fs", item->stats.time_max)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Time avg.")));
+            data.push_back(wxVariant(wxString::Format("%.2fs", item->stats.time_avg)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Time total")));
+            data.push_back(wxVariant(wxString::Format("%.2fs", item->stats.time_total)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
 
         data.push_back(wxVariant(_("VAE")));
         data.push_back(wxVariant(wxString(item->params.vae_path)));
@@ -3423,7 +3448,7 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FINISHED, modelinfo);
         return;
     } catch (const std::exception& e) {
-        std::cout << e.what() << std::endl;
+        std::cerr << __FILE__ << ":" << __LINE__ << " " << e.what() << std::endl;
         wxMessageDialog dialog(this, e.what());
         modelinfo->civitaiPlainJson = response;
         MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
@@ -3556,15 +3581,15 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
         std::lock_guard<std::mutex> lock(this->mutex);
 
         if (itemPtr->updated_at != item.updated_at || itemPtr->event != item.event) {
-            std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
+            if (BUILD_TYPE == "Debug") {
+                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;    
+            }
             this->extProcessLastEvent = item.event;
 
             *itemPtr = item;
 
             if (!itemPtr->rawImages.empty()) {
-                std::cout << "[GUI] got raw images, processing them" << std::endl;
                 for (unsigned int i = 0; i < itemPtr->rawImages.size(); i++) {
-                    std::cout << "[GUI] processing image " << itemPtr->rawImages[i].c_str() << std::endl;
                     this->handleSdImage(itemPtr->rawImages[i], itemPtr, this->GetEventHandler());
                 }
                 itemPtr->rawImages.clear();
@@ -3582,14 +3607,26 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
 }
 
 void MainWindowUI::ProcessStdOutEvent(const char* bytes, size_t n) {
+    if (bytes == nullptr) {
+        std::cerr << "[GUI] ProcessStdOutEvent: bytes is null" << std::endl;
+        return;
+    }
+
     std::string msg = std::string(bytes, n);
+    if (msg.empty()) {
+        std::cerr << "[GUI] ProcessStdOutEvent: msg is empty" << std::endl;
+        return;
+    }
 
     std::istringstream iss(msg);
     std::string line;
-    while (std::getline(iss, line, '\n')) {
-        this->writeLog("Out:" + line + '\n', false);
+    try {
+        while (std::getline(iss, line, '\n')) {
+            this->writeLog("Out:" + line + '\n', false);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[GUI] "<< __FILE__ << ":" << __LINE__ <<" ProcessStdOutEvent: exception: " << e.what() << std::endl;
     }
-    std::cout << "[DEBUG] " << msg << std::endl;
 }
 
 void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
@@ -3607,31 +3644,26 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
 }
 
 void MainWindowUI::ProcessOutputThread() {
-    if (this->subprocess != nullptr) {
-        int status = 0;
-//        subprocess_join(this->subprocess, &status);
-        char buf[BUFSIZ] = {0};
-        size_t readed_size = 0;
-        while (this->extProcessNeedToRun == true) {
-            readed_size = subprocess_read_stdout(this->subprocess, buf, BUFSIZ);
-            if (readed_size == 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                continue;
+    while (this->extProcessNeedToRun == true) {
+        if (subprocess_alive(this->subprocess) != 0) {
+            char* buffer = new char[10240];
+            while (subprocess_read_stdout(this->subprocess, buffer, 10240) != 0) {
+                this->ProcessStdOutEvent(buffer, strlen(buffer));
             }
-            this->ProcessStdOutEvent(buf, readed_size);
-            if (this->extProcessNeedToRun == false) {                
-                return;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            delete buffer;
         }
-    }else{
-        std::cout << "subprocess is null" << std::endl;
+        if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));    
+        }else{
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+        
     }
 }
 
 void MainWindowUI::ProcessCheckThread() {
     while (this->extProcessNeedToRun == true) {
-        while (subprocess_alive(this->subprocess) > 0) {
+        while (subprocess_alive(this->subprocess) != 0) {
             // mutex lock
             // std::lock_guard<std::mutex> lock(this->mutex);
             this->m_statusBar166->SetStatusText(_("Process is ready"), 1);
@@ -3648,11 +3680,14 @@ void MainWindowUI::ProcessCheckThread() {
             delete buffer;
 
             if (this->extProcessNeedToRun == false) {
-                this->m_statusBar166->SetStatusText(_("Exiting..."), 1);
+                this->m_statusBar166->SetStatusText(_("Stopping..."), 1);
                 return;
             }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
         }
         this->qmanager->resetRunning("External process stopped");
         this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
@@ -3661,7 +3696,7 @@ void MainWindowUI::ProcessCheckThread() {
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr|subprocess_option_enable_async, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async, this->subprocess);
         if (0 != result) {
             this->m_statusBar166->SetStatusText(_("Failed to restart the background process..."), 1);
         }

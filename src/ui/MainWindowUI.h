@@ -181,6 +181,7 @@ private:
     std::string extProcessParam;
     std::string extprocessLastError;
     QM::QueueEvents extProcessLastEvent = QM::QueueEvents::ITEM_ADDED;
+    std::ofstream logfile;
 
     void initConfig();
     void loadModelList();
@@ -259,25 +260,28 @@ private:
     SdSetLogCallbackFunction sd_set_log_callback;
     SdSetProgressCallbackFunction sd_set_progress_callback;
 
-    inline static void terminateHandler() {
-        std::cout << "Assertion failure caught!" << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    inline void writeLog(const std::string& message, bool writeIntoGui = true) {
-        std::ofstream logfile(this->cfg->datapath + "/app.log", std::ios::app);
+    inline void initLog() {
+        
+        logfile.open(this->cfg->datapath + "/app.log", std::ios::app);
         if (!logfile.is_open()) {
             std::cerr << "Err: can not open logfile: " << this->cfg->datapath + "/app.log" << std::endl;
             return;
-        }
+        }        
+    }
+
+    inline void writeLog(const std::string& message, bool writeIntoGui = true) {
+        
         std::time_t now   = std::time(nullptr);
         std::tm* timeinfo = std::localtime(&now);
         char timestamp[30];
         std::strftime(timestamp, sizeof(timestamp), "[%Y-%m-%d %H:%M:%S]", timeinfo);
         std::lock_guard<std::mutex> lock(this->logMutex);
         wxString logline = wxString::Format("%s: %s", timestamp, message);
-        logfile << logline.c_str();
-        logfile.close();
+        if (logfile.is_open()) {
+            logfile << logline.c_str();    
+        }
+        
+
         if (writeIntoGui) {
             this->logs->AppendText(logline);
         }
