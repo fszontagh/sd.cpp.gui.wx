@@ -1,6 +1,7 @@
 #include <memory>
 #include <chrono>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <thread>
 
@@ -41,6 +42,11 @@ int main(int argc, char* argv[]) {
             if (sharedMemory->read(buffer, SHARED_MEMORY_SIZE)) {
                 if (std::strlen(buffer) > 0) {
                     std::string message = std::string(buffer, SHARED_MEMORY_SIZE);
+                    if (message.find("exit") != std::string::npos) {
+                        std::cout << "Got exit command, exiting... " << std::endl;
+                        needToRun = false;
+                        break;
+                    }
                     try {
                         nlohmann::json j = nlohmann::json::parse(message);
                         auto item        = j.get<QM::QueueItem>();

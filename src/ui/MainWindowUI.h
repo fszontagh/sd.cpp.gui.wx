@@ -172,8 +172,6 @@ private:
     // row,QueueItem
     std::map<int, QM::QueueItem*> JobTableItems;
     std::vector<sd_gui_utils::VoidHolder*> voids;
-
-    //std::shared_ptr<TinyProcessLib::Process> extProcess;
     struct subprocess_s* subprocess = nullptr;
     
     std::atomic<bool> extProcessNeedToRun = true;    
@@ -279,6 +277,7 @@ private:
         wxString logline = wxString::Format("%s: %s", timestamp, message);
         if (logfile.is_open()) {
             logfile << logline.c_str();    
+            logfile.flush();
         }
         
 

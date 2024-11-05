@@ -13,7 +13,7 @@ QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) 
 QM::QueueManager::~QueueManager() {
     for (auto& pair : this->QueueList) {
         for (auto& img : pair.second->images) {
-            if (img != nullptr) {
+            if (img && img != nullptr) {
                 delete img;
             }
         }
@@ -37,6 +37,13 @@ int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
     if (item->created_at == 0) {
         item->created_at = this->GetCurrentUnixTimestamp();
     }
+    if (item->id == this->lastExtId) {
+        return 0;
+    }
+
+    this->lastExtId = item->id;
+
+    
 
     this->QueueList[item->id] = item;
 

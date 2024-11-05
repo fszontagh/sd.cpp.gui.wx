@@ -17,9 +17,9 @@ public:
     // stdout/stderr captured by parent
     inline static void HandleSDLog(sd_log_level_t level, const char* text, void* data) {
         if (level == SD_LOG_ERROR) {
-            std::cerr << "SD ERR: " << text;
+            std::cerr << text;
         } else {
-            std::cout << "SD: " << text;
+            std::cout << text;
         }
     }
 
@@ -42,13 +42,12 @@ public:
             instance->currentItem->stats.time_max = instance->currentItem->stats.time_max < time ? time : instance->currentItem->stats.time_max;
         }
 
-
         instance->currentItem->stats.time_per_step[step] = time;
         instance->currentItem->stats.time_total += time;
-        
 
-        instance->currentItem->stats.time_avg = instance->currentItem->stats.time_total / instance->currentItem->step;
-
+        if (instance->currentItem->step > 0) {
+            instance->currentItem->stats.time_avg = instance->currentItem->stats.time_total / instance->currentItem->step;
+        }
 
         instance->currentItem->status     = QM::QueueStatus::RUNNING;
         instance->currentItem->event      = QM::QueueEvents::ITEM_UPDATED;

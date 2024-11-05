@@ -1125,20 +1125,10 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer781->Fit( m_panel12 );
 	sizer0001->Add( m_panel12, 1, wxEXPAND, 5 );
 
-	m_collapsiblePane1 = new wxCollapsiblePane( this, wxID_ANY, _("Logs"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE );
-	m_collapsiblePane1->Collapse( true );
+	logs = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,140 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL|wxFULL_REPAINT_ON_RESIZE );
+	logs->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 
-	wxBoxSizer* bSizer109;
-	bSizer109 = new wxBoxSizer( wxVERTICAL );
-
-	logs = new wxTextCtrl( m_collapsiblePane1->GetPane(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,140 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL|wxFULL_REPAINT_ON_RESIZE );
-	bSizer109->Add( logs, 1, wxEXPAND, 5 );
-
-
-	m_collapsiblePane1->GetPane()->SetSizer( bSizer109 );
-	m_collapsiblePane1->GetPane()->Layout();
-	bSizer109->Fit( m_collapsiblePane1->GetPane() );
-	sizer0001->Add( m_collapsiblePane1, 0, wxALL|wxEXPAND, 5 );
+	sizer0001->Add( logs, 0, wxEXPAND, 5 );
 
 
 	this->SetSizer( sizer0001 );

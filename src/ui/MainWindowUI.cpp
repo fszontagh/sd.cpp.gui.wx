@@ -1347,8 +1347,11 @@ void MainWindowUI::OnQueueItemManagerItemAdded(QM::QueueItem* item) {
     }
 
     data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
-    data.push_back(wxString("?.?? it/s 00/000"));                     // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item->status]));     // status
+    // calculate the item average speed frrom item->stats in step / seconds or seconds / step
+
+    wxString speed = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
+    data.push_back(wxString(speed));                               // speed
+    data.push_back(wxVariant(QM::QueueStatus_str[item->status]));  // status
     data.push_back(wxVariant(item->status_message));
 
     auto store = this->m_joblist->GetStore();
@@ -1404,11 +1407,24 @@ MainWindowUI::~MainWindowUI() {
     }
 
     if (this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
-        subprocess_terminate(this->subprocess);
-        while (subprocess_alive(this->subprocess) != 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::cout << "Terminating processs" << std::endl;
+        int result = 0;
+        result     = subprocess_terminate(subprocess);
+        if (0 != result) {
+            std::cerr << "Can not terminate extprocess" << std::endl;
         }
-        subprocess_destroy(this->subprocess);
+
+        std::cout << "Join processs" << std::endl;
+        result = subprocess_join(subprocess, NULL);
+        if (0 != result) {
+            std::cerr << "Can not join extprocess" << std::endl;
+        }
+
+        std::cout << "Destroy processs" << std::endl;
+        result = subprocess_destroy(subprocess);
+        if (0 != result) {
+            std::cerr << "Can not destroy extprocess" << std::endl;
+        }
     }
     if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
         this->processHandleOutput->join();
@@ -3622,11 +3638,15 @@ void MainWindowUI::ProcessStdOutEvent(const char* bytes, size_t n) {
         return;
     }
 
+    if (msg.find("PING") != std::string::npos) {
+        return;
+    }
+
     std::istringstream iss(msg);
     std::string line;
     try {
         while (std::getline(iss, line, '\n')) {
-            this->writeLog("Out:" + line + '\n', false);
+            this->writeLog(line + '\n', false);
         }
     } catch (const std::exception& e) {
         std::cerr << "[GUI] " << __FILE__ << ":" << __LINE__ << " ProcessStdOutEvent: exception: " << e.what() << std::endl;
@@ -3641,20 +3661,26 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
     while (std::getline(iss, line, '\n')) {
         if (!line.empty()) {
             this->extprocessLastError = line;
-            this->writeLog("ERR: " + line + '\n', false);
+            this->writeLog(line + '\n', false);
         }
     }
-    std::cerr << "[DEBUG] " << msg << std::endl;
 }
 
 void MainWindowUI::ProcessOutputThread() {
     while (this->extProcessNeedToRun == true) {
         if (subprocess_alive(this->subprocess) != 0) {
-            char* buffer = new char[10240];
-            while (subprocess_read_stdout(this->subprocess, buffer, 10240) != 0) {
-                this->ProcessStdOutEvent(buffer, strlen(buffer));
+            static char stddata[1024] = {0};
+            static char stderrdata[1024]   = {0};
+
+            unsigned int size = sizeof(stderrdata);
+            unsigned index            = 0;
+            unsigned bytes_read       = 0;
+            if (subprocess_read_stdout(this->subprocess, stddata, size)>0) {
+                this->ProcessStdOutEvent(stddata, strlen(stddata));
             }
-            delete buffer;
+            if (subprocess_read_stderr(this->subprocess, stderrdata, size)>0) {
+                this->ProcessStdErrEvent(stderrdata, strlen(stderrdata));
+            }
         }
         if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -3666,7 +3692,7 @@ void MainWindowUI::ProcessOutputThread() {
 
 void MainWindowUI::ProcessCheckThread() {
     while (this->extProcessNeedToRun == true) {
-        while (subprocess_alive(this->subprocess) != 0) {
+        if (subprocess_alive(this->subprocess) != 0) {
             // mutex lock
             // std::lock_guard<std::mutex> lock(this->mutex);
             this->m_statusBar166->SetStatusText(_("Process is ready"), 1);
@@ -3684,6 +3710,9 @@ void MainWindowUI::ProcessCheckThread() {
 
             if (this->extProcessNeedToRun == false) {
                 this->m_statusBar166->SetStatusText(_("Stopping..."), 1);
+                std::string exitMsg = "exit";
+                this->sharedMemory->write(exitMsg.c_str(), exitMsg.size());
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 return;
             }
             if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
@@ -3691,6 +3720,8 @@ void MainWindowUI::ProcessCheckThread() {
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
+            
+            continue;
         }
         this->qmanager->resetRunning("External process stopped");
         this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);

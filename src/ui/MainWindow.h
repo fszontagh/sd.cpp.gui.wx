@@ -37,7 +37,6 @@
 #include <wx/filepicker.h>
 #include <wx/html/htmlwin.h>
 #include <wx/srchctrl.h>
-#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/slider.h>
@@ -189,7 +188,6 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
 		wxScrolledWindow* m_scrolledWindow4;
-		wxCollapsiblePane* m_collapsiblePane1;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 

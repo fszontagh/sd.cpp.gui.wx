@@ -413,6 +413,7 @@ namespace QM {
         void LoadJobListFromDir();
         std::string jobsDir;
         int lastId = 0;
+        int lastExtId = 0;
         int GetAnId();
         // thread events handler, toupdate main window data table
         void onItemAdded(QM::QueueItem item);

@@ -230,6 +230,7 @@ subprocess_weak int subprocess_alive(struct subprocess_s *const process);
 #endif
 
 #if !defined(_WIN32)
+#include <fcntl.h>
 #include <signal.h>
 #include <spawn.h>
 #include <stdlib.h>
@@ -433,7 +434,7 @@ int subprocess_create_named_pipe_helper(void **rd, void **wr) {
   const unsigned long pipeAccessInbound = 0x00000001;
   const unsigned long fileFlagOverlapped = 0x40000000;
   const unsigned long pipeTypeByte = 0x00000000;
-  const unsigned long pipeWait = 0x00000000;
+  const unsigned long pipeNoWait = 0x00000001;
   const unsigned long genericWrite = 0x40000000;
   const unsigned long openExisting = 3;
   const unsigned long fileAttributeNormal = 0x00000080;
@@ -460,7 +461,7 @@ int subprocess_create_named_pipe_helper(void **rd, void **wr) {
 
   *rd =
       CreateNamedPipeA(name, pipeAccessInbound | fileFlagOverlapped,
-                       pipeTypeByte | pipeWait, 1, 4096, 4096, SUBPROCESS_NULL,
+                       pipeTypeByte | pipeNoWait, 1, 4096, 4096, SUBPROCESS_NULL,
                        SUBPROCESS_PTR_CAST(LPSECURITY_ATTRIBUTES, &saAttr));
 
   if (invalidHandleValue == *rd) {
@@ -669,8 +670,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
     len++;
 
     // Quote the argument if it has a space in it
-    if (strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL ||
-        commandLine[i][0] == SUBPROCESS_NULL)
+    if (strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL)
       len += 2;
 
     for (j = 0; '\0' != commandLine[i][j]; j++) {
@@ -705,8 +705,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
       commandLineCombined[len++] = ' ';
     }
 
-    need_quoting = strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL ||
-                   commandLine[i][0] == SUBPROCESS_NULL;
+    need_quoting = strpbrk(commandLine[i], "\t\v ") != SUBPROCESS_NULL;
     if (need_quoting) {
       commandLineCombined[len++] = '"';
     }
@@ -772,6 +771,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
   int stdinfd[2];
   int stdoutfd[2];
   int stderrfd[2];
+  int fd, fd_flags;
   pid_t child;
   extern char **environ;
   char *const empty_environment[1] = {SUBPROCESS_NULL};
@@ -806,7 +806,7 @@ int subprocess_create_ex(const char *const commandLine[], int options,
 #pragma clang diagnostic ignored "-Wcast-qual"
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #endif
-    used_environment = SUBPROCESS_CONST_CAST(char *const *, environment);
+    used_environment = (char *const *)environment;
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -876,15 +876,13 @@ int subprocess_create_ex(const char *const commandLine[], int options,
   if (subprocess_option_search_user_path ==
       (options & subprocess_option_search_user_path)) {
     if (0 != posix_spawnp(&child, commandLine[0], &actions, SUBPROCESS_NULL,
-                          SUBPROCESS_CONST_CAST(char *const *, commandLine),
-                          used_environment)) {
+                          (char *const *)commandLine, used_environment)) {
       posix_spawn_file_actions_destroy(&actions);
       return -1;
     }
   } else {
     if (0 != posix_spawn(&child, commandLine[0], &actions, SUBPROCESS_NULL,
-                         SUBPROCESS_CONST_CAST(char *const *, commandLine),
-                         used_environment)) {
+                         (char *const *)commandLine, used_environment)) {
       posix_spawn_file_actions_destroy(&actions);
       return -1;
     }
@@ -903,6 +901,13 @@ int subprocess_create_ex(const char *const commandLine[], int options,
   // Store the stdout read end
   out_process->stdout_file = fdopen(stdoutfd[0], "rb");
 
+  // Set non blocking if we are async
+  if (options & subprocess_option_enable_async) {
+    fd = fileno(out_process->stdout_file);
+    fd_flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, fd_flags | O_NONBLOCK);
+  }
+
   if (subprocess_option_combined_stdout_stderr ==
       (options & subprocess_option_combined_stdout_stderr)) {
     out_process->stderr_file = out_process->stdout_file;
@@ -911,6 +916,13 @@ int subprocess_create_ex(const char *const commandLine[], int options,
     close(stderrfd[1]);
     // Store the stderr read end
     out_process->stderr_file = fdopen(stderrfd[0], "rb");
+
+    // Set non blocking if we are async
+    if (options & subprocess_option_enable_async) {
+      fd = fileno(out_process->stderr_file);
+      fd_flags = fcntl(fd, F_GETFL, 0);
+      fcntl(fd, F_SETFL, fd_flags | O_NONBLOCK);
+    }
   }
 
   // Store the child's pid
@@ -1074,14 +1086,19 @@ unsigned subprocess_read_stdout(struct subprocess_s *const process,
 
     // Means we've got an async read!
     if (error == errorIoPending) {
+      const uintptr_t statusPending = 0x00000103;
+
+      const int wait = statusPending == overlapped.Internal;
+
       if (!GetOverlappedResult(handle,
                                SUBPROCESS_PTR_CAST(LPOVERLAPPED, &overlapped),
-                               &bytes_read, 1)) {
-        const unsigned long errorIoIncomplete = 996;
+                               &bytes_read, wait)) {
         const unsigned long errorHandleEOF = 38;
+        const unsigned long errorBrokenPipe = 109;
+        const unsigned long errorIoIncomplete = 996;
         error = GetLastError();
 
-        if ((error != errorIoIncomplete) && (error != errorHandleEOF)) {
+        if ((errorHandleEOF != error) && (errorBrokenPipe != error) && (errorIoIncomplete != error)) {
           return 0;
         }
       }
