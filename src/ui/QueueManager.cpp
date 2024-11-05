@@ -15,10 +15,12 @@ QM::QueueManager::~QueueManager() {
         for (auto& img : pair.second->images) {
             if (img && img != nullptr) {
                 delete img;
+                img = nullptr;
             }
         }
         if (pair.second) {
             delete pair.second;
+            pair.second = nullptr;
         }
     }
     if (this->currentItem) {

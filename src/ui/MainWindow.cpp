@@ -999,11 +999,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_upscaler->Layout();
 	bSizer68->Fit( m_upscaler );
 	m_notebook1302->AddPage( m_upscaler, _("Upscaler"), false );
-	m_convert = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_convert->Enable( false );
-	m_convert->Hide();
-
-	m_notebook1302->AddPage( m_convert, _("Convert"), false );
 	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("models") );
 	m_models_panel->SetMinSize( wxSize( 300,-1 ) );
 

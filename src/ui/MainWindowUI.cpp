@@ -13,8 +13,8 @@
 #include "ver.hpp"
 #include "wx/translation.h"
 
-MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend)
-    : mainUI(parent), usingBackend(usingBackend) {
+MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling)
+    : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling) {
     this->ini_path                      = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
     this->sd_params                     = new SDParams;
     this->currentInitialImage           = new wxImage();
@@ -75,32 +75,36 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
-    this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://civitai.com/models/147821/realesrganx4plus-anime-6b\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
+    this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
 
-    if (BUILD_TYPE == "Release") {  // run it from PATH on unix & win
-        this->extprocessCommand = std::string(EPROCESS_BINARY_NAME);
-    } else {
-        this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
-    }
-
-    this->extProcessParam   = dllName;
-    this->extProcessRunning = false;
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
-    // start process from the thread
 
-    const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
-    this->subprocess           = new subprocess_s();
+    if (this->disableExternalProcessHandling == false) {
+        if (BUILD_TYPE == "Release") {  // run it from PATH on unix & win
+            this->extprocessCommand = std::string(EPROCESS_BINARY_NAME);
+        } else {
+            this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
+        }
 
-    int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
-    if (0 != result) {
-        wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
-        errorDialog.ShowModal();
-        exit(1);
+        this->extProcessParam   = dllName;
+        this->extProcessRunning = false;
+
+        // start process from the thread
+
+        const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
+        this->subprocess           = new subprocess_s();
+
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
+        if (0 != result) {
+            wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
+            errorDialog.ShowModal();
+            exit(1);
+        }
+        this->extProcessNeedToRun = true;
+        this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
+        this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
     }
-    this->extProcessNeedToRun = true;
-    this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
-    this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
 }
 
 void MainWindowUI::onSettings(wxCommandEvent& event) {
@@ -2213,14 +2217,17 @@ void MainWindowUI::onUpscaleImageOpen(std::string file) {
 }
 
 void MainWindowUI::StartGeneration(QM::QueueItem* myJob) {
-    if (subprocess_alive(this->subprocess) == 0) {
-        wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
-        myJob->status_message = _("Error accessing to the background process. Please try again.");
-        // this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, myJob);
-        this->qmanager->SetStatus(QM::QueueStatus::FAILED, myJob);
-        errorDialog.ShowModal();
-        return;
+    if (this->disableExternalProcessHandling == false) {
+        if (subprocess_alive(this->subprocess) == 0) {
+            wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
+            myJob->status_message = _("Error accessing to the background process. Please try again.");
+            // this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, myJob);
+            this->qmanager->SetStatus(QM::QueueStatus::FAILED, myJob);
+            errorDialog.ShowModal();
+            return;
+        }
     }
+
     try {
         myJob->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->qmanager->SetStatus(QM::QueueStatus::PENDING, myJob);
@@ -3669,20 +3676,24 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
 void MainWindowUI::ProcessOutputThread() {
     while (this->extProcessNeedToRun == true) {
         if (subprocess_alive(this->subprocess) != 0) {
-            static char stddata[1024] = {0};
-            static char stderrdata[1024]   = {0};
+            static char stddata[1024]    = {0};
+            static char stderrdata[1024] = {0};
 
-            unsigned int size = sizeof(stderrdata);
-            unsigned index            = 0;
-            unsigned bytes_read       = 0;
-            if (subprocess_read_stdout(this->subprocess, stddata, size)>0) {
-                this->ProcessStdOutEvent(stddata, strlen(stddata));
+            unsigned int size             = sizeof(stderrdata);
+            unsigned int stdout_read_size = 0;
+            unsigned int stderr_read_size = 0;
+
+            stdout_read_size = subprocess_read_stdout(this->subprocess, stddata, size);
+            stderr_read_size = subprocess_read_stderr(this->subprocess, stderrdata, size);
+
+            if (stdout_read_size > 0) {
+                this->ProcessStdOutEvent(stddata, stdout_read_size);
             }
-            if (subprocess_read_stderr(this->subprocess, stderrdata, size)>0) {
+            if (stderr_read_size > 0) {
                 this->ProcessStdErrEvent(stderrdata, strlen(stderrdata));
             }
         }
-        if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
+        if (this->qmanager->GetCurrentItem() != nullptr) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -3720,9 +3731,11 @@ void MainWindowUI::ProcessCheckThread() {
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
-            
+
             continue;
         }
+        // clear the last job to avoid restarting the failed job
+        this->sharedMemory->clear();
         this->qmanager->resetRunning("External process stopped");
         this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
         delete this->subprocess;

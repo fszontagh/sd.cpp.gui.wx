@@ -167,7 +167,6 @@ class mainUI : public wxFrame
 		wxButton* m_generate_upscaler;
 		wxCheckBox* m_keep_upscaler_in_memory;
 		wxCheckBox* m_keep_other_models_in_memory;
-		wxPanel* m_convert;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;

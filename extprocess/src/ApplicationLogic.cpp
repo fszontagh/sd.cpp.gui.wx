@@ -1,8 +1,11 @@
 #include "ApplicationLogic.h"
 #include <chrono>
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <ostream>
 #include <thread>
+#include "helpers/sd.hpp"
 #include "ui/QueueManager.h"
 #include "wx/strvararg.h"
 #include "wx/translation.h"
@@ -133,15 +136,10 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         return;
     }
 
-    this->currentItem = std::make_shared<QM::QueueItem>(item);
-
-    this->currentItem->status     = QM::QueueStatus::RUNNING;
-    this->currentItem->event      = QM::QueueEvents::ITEM_MODEL_LOAD_START;
-    this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    this->currentItem             = std::make_shared<QM::QueueItem>(item);
     this->currentItem->started_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    nlohmann::json j              = *this->currentItem;
-    std::string jsonString        = j.dump();
-    this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START);
 
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
@@ -155,24 +153,15 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.esrgan_path << std::endl;
             this->currentItem->status_message = "Failed to load model: " + this->currentItem->params.esrgan_path;
         }
-
-        this->currentItem->status     = QM::QueueStatus::FAILED;
-        this->currentItem->event      = QM::QueueEvents::ITEM_MODEL_FAILED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        j                             = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_MODEL_FAILED);
         this->currentItem = nullptr;
+        this->lastItem    = nullptr;
         return;
     }
 
-    this->currentItem->status     = QM::QueueStatus::RUNNING;
-    this->currentItem->event      = QM::QueueEvents::ITEM_MODEL_LOADED;
-    this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    j                             = *this->currentItem;
-    jsonString                    = j.dump();
-    this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
     std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
         case QM::GenerationMode::TXT2IMG: {
@@ -189,14 +178,12 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         } break;
 
         default: {
-            this->currentItem->status         = QM::QueueStatus::FAILED;
-            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             this->currentItem->status_message = wxString::Format(_("Unknown mode: %s"), QM::GenerationMode_str.at(this->currentItem->mode).c_str());
-            nlohmann::json j                  = *this->currentItem;
-            std::string jsonString            = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
             std::cerr << this->currentItem->status_message << std::endl;
+            this->lastItem    = nullptr;
+            this->currentItem = nullptr;
+            return;
         } break;
     }
     this->lastItem    = this->currentItem;
@@ -205,29 +192,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
 
 void ApplicationLogic::Txt2Img() {
     try {
-        this->currentItem->status     = QM::QueueStatus::RUNNING;
-        this->currentItem->event      = QM::QueueEvents::ITEM_GENERATION_STARTED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j              = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
-        if (this->voidHolder != nullptr) {
-            delete this->voidHolder;
-            this->voidHolder = nullptr;
-        }
-        this->voidHolder = new sd_gui_utils::VoidHolder;
-
-        if (txt2imgFuncPtr == nullptr) {
-            this->currentItem->status     = QM::QueueStatus::FAILED;
-            this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j              = *this->currentItem;
-            std::string jsonString        = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            this->currentItem = nullptr;
-            return;
-        }
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
 
         sd_image_t* control_image = NULL;
         sd_image_t* results;
@@ -240,6 +205,8 @@ void ApplicationLogic::Txt2Img() {
                 control_image               = new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
                 input_image_buffer          = NULL;
                 delete input_image_buffer;
+            } else {
+                std::cerr << "[EXTPROCESS] Control image not found: " << this->currentItem->params.control_image_path << std::endl;
             }
         }
 
@@ -267,12 +234,8 @@ void ApplicationLogic::Txt2Img() {
         delete control_image;
 
         if (results == NULL) {
-            this->currentItem->status     = QM::QueueStatus::FAILED;
-            this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j              = *this->currentItem;
-            std::string jsonString        = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            return;
         }
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
             if (results[i].data == NULL) {
@@ -285,170 +248,68 @@ void ApplicationLogic::Txt2Img() {
             results[i].data = NULL;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
-        this->currentItem->status      = QM::QueueStatus::RUNNING;
-        this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
-        this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        j                              = *this->currentItem;
-        jsonString                     = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
 
+        this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_FINISHED);
         delete results;
 
     } catch (const std::exception& e) {
-        this->currentItem->status     = QM::QueueStatus::RUNNING;
-        this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j              = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
+        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
         std::cerr << "Error calling txt2img: " << e.what() << std::endl;
     }
 }
 
 void ApplicationLogic::Img2img() {
+    std::cout << std::flush;
+    std::cout << "running img2img" << std::endl;
     try {
-        this->currentItem->status     = QM::QueueStatus::RUNNING;
-        this->currentItem->event      = QM::QueueEvents::ITEM_GENERATION_STARTED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j              = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+        std::cout << " sent status" << std::endl;
 
-        if (this->voidHolder != nullptr) {
-            delete this->voidHolder;
-            this->voidHolder = nullptr;
-        }
-        this->voidHolder = new sd_gui_utils::VoidHolder;
-
-        if (this->img2imgFuncPtr == nullptr) {
-            this->currentItem->status     = QM::QueueStatus::FAILED;
-            this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j              = *this->currentItem;
-            std::string jsonString        = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-        }
-
-        sd_image_t* input_image = NULL;
-        stbi_uc* input_image_buffer;
+        unsigned char* input_image_buffer   = NULL;
+        unsigned char* control_image_buffer = NULL;
+        sd_image_t input_image;
+        sd_image_t* control_image = NULL;
         sd_image_t* results;
+
+        int input_w, input_h, input_c       = 0;
+        int control_w, control_h, control_c = 0;
+
+        std::cout << "Checking initial image: " << this->currentItem->initial_image << std::endl;
 
         if (this->currentItem->initial_image.length() > 0) {
             if (std::filesystem::exists(this->currentItem->initial_image)) {
-                int c = 0;
-                int w, h;
-                input_image_buffer = stbi_load(this->currentItem->params.input_path.c_str(), &w, &h, &c, 3);
-                input_image        = new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-                input_image_buffer = NULL;
-                delete input_image_buffer;
+                input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &input_w, &input_h, &input_c, 3);
+                input_image        = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, input_image_buffer};
+                std::cout << " input image loaded: " << this->currentItem->initial_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
+            } else {
+                std::cerr << "Initial image not found: " << this->currentItem->initial_image << std::endl;
+                this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Initial image not found:" + this->currentItem->initial_image);
+                return;
             }
+        } else {
+            std::cerr << "Missing input image" << std::endl;
+            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Missing input image");
+            return;
         }
 
-        sd_image_t* control_image = NULL;
+        std::cout << "Checking control image: " << this->currentItem->params.control_image_path << std::endl;
 
         // prepare control image, if we have one
         if (this->currentItem->params.control_image_path.length() > 0) {
             if (std::filesystem::exists(this->currentItem->params.control_image_path)) {
-                int c = 0;
-                int w, h;
-                stbi_uc* input_image_buffer = stbi_load(this->currentItem->params.control_image_path.c_str(), &w, &h, &c, 3);
-                control_image               = new sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-                input_image_buffer          = NULL;
-                delete input_image_buffer;
-            }
-        }
-
-        // resize the input image
-
-        int c              = 0;
-        int width          = 0;
-        int height         = 0;
-        input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &width, &height, &c, 3);
-
-        if (input_image_buffer == NULL) {
-            this->currentItem->status_message = "Failed to load image from '" + this->currentItem->initial_image + "'";
-            this->currentItem->status         = QM::QueueStatus::FAILED;
-            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j                  = *this->currentItem;
-            std::string jsonString            = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            std::cerr << "load image from '" << this->currentItem->initial_image << "' failed" << std::endl;
-            return;
-        }
-        if (c < 3) {
-            this->currentItem->status_message = "The number of channels for the input image must be >= 3, but got " + std::to_string(c) + " channels";
-            this->currentItem->status         = QM::QueueStatus::FAILED;
-            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j                  = *this->currentItem;
-            std::string jsonString            = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            fprintf(stderr, "the number of channels for the input image must be >= 3, but got %d channels\n", c);
-            free(input_image_buffer);
-            return;
-        }
-        if (width <= 0) {
-            this->currentItem->status_message = "The width of image must be greater than 0";
-            this->currentItem->status         = QM::QueueStatus::FAILED;
-            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j                  = *this->currentItem;
-            std::string jsonString            = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            fprintf(stderr, "error: the width of image must be greater than 0\n");
-            free(input_image_buffer);
-            return;
-        }
-        if (height <= 0) {
-            this->currentItem->status_message = "The height of image must be greater than 0";
-            this->currentItem->status         = QM::QueueStatus::FAILED;
-            this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j                  = *this->currentItem;
-            std::string jsonString            = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-            fprintf(stderr, "error: the height of image must be greater than 0\n");
-            free(input_image_buffer);
-            return;
-        }
-
-        // Resize input image ...
-        if (this->currentItem->params.width != width || this->currentItem->params.height != height) {
-            printf("resize input image from %dx%d to %dx%d\n", width, height, this->currentItem->params.width, this->currentItem->params.height);
-            int resized_height = this->currentItem->params.height;
-            int resized_width  = this->currentItem->params.width;
-
-            uint8_t* resized_image_buffer = (uint8_t*)malloc(resized_height * resized_width * 3);
-            if (resized_image_buffer == NULL) {
-                this->currentItem->status_message = "error: allocate memory for resize input image";
-                this->currentItem->status         = QM::QueueStatus::FAILED;
-                this->currentItem->event          = QM::QueueEvents::ITEM_FAILED;
-                this->currentItem->updated_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                nlohmann::json j                  = *this->currentItem;
-                std::string jsonString            = j.dump();
-                this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-                fprintf(stderr, "error: allocate memory for resize input image\n");
-                free(input_image_buffer);
+                control_image_buffer = stbi_load(this->currentItem->params.control_image_path.c_str(), &control_w, &control_h, &control_c, 3);
+                control_image        = new sd_image_t{(uint32_t)control_w, (uint32_t)control_h, 3, control_image_buffer};
+                std::cout << " control image loaded: " << this->currentItem->params.control_image_path << std::endl;
+            } else {
+                std::cerr << "Control image not found: " << this->currentItem->params.control_image_path << std::endl;
                 return;
             }
-            stbir_resize(input_image_buffer, width, height, 0,
-                         resized_image_buffer, resized_width, resized_height, 0, STBIR_TYPE_UINT8,
-                         3 /*RGB channel*/, STBIR_ALPHA_CHANNEL_NONE, 0,
-                         STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP,
-                         STBIR_FILTER_BOX, STBIR_FILTER_BOX,
-                         STBIR_COLORSPACE_SRGB, nullptr);
-
-            // Save resized result
-            free(input_image_buffer);
-            input_image_buffer = resized_image_buffer;
         }
 
         results = this->img2imgFuncPtr(
             this->sd_ctx,
-            *input_image,
+            input_image,
             this->currentItem->params.prompt.c_str(),
             this->currentItem->params.negative_prompt.c_str(),
             this->currentItem->params.clip_skip,
@@ -466,21 +327,17 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str());
-
+        std::cout << "done" << std::endl;
         // free up the control image
-        free(control_image);
-        free(input_image_buffer);
-        free(input_image->data);
-        input_image = NULL;
+
+        stbi_image_free(input_image_buffer);
+        stbi_image_free(control_image_buffer);
+
+        control_image = NULL;
         delete control_image;
 
         if (results == NULL) {
-            this->currentItem->status     = QM::QueueStatus::FAILED;
-            this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-            this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            nlohmann::json j              = *this->currentItem;
-            std::string jsonString        = j.dump();
-            this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
             return;
         }
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
@@ -494,25 +351,13 @@ void ApplicationLogic::Img2img() {
             results[i].data = NULL;
         }
 
-        this->currentItem->status      = QM::QueueStatus::RUNNING;
-        this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
-        this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        j                              = *this->currentItem;
-        jsonString                     = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_FINISHED);
         delete results;
 
     } catch (const std::exception& e) {
-        this->currentItem->status     = QM::QueueStatus::RUNNING;
-        this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j              = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
-        std::cerr << "Error calling txt2img: " << e.what() << std::endl;
+        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        std::cerr << "Error calling img2img: " << e.what() << std::endl;
     }
 }
 
@@ -582,31 +427,39 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
 
     // hnalde upscaler model
     if (item->mode == QM::GenerationMode::UPSCALE) {
+        std::cout << "Loading upscale model: " << item->params.esrgan_path << std::endl;
         // free up the sd model
         if (this->sd_ctx != nullptr) {
+            std::cout << "Freeing up previous sd model" << std::endl;
             this->freeSdCtxPtr(this->sd_ctx);
             this->sd_ctx = nullptr;
         }
 
         // check if we need reload the model
         if (this->lastItem != nullptr && this->lastItem->mode == QM::GenerationMode::UPSCALE) {
+            std::cout << "Previous model is upscale" << std::endl;
             if (this->lastItem->params.esrgan_path != item->params.esrgan_path) {
+                std::cout << "upscaler model changed" << std::endl;
                 if (this->upscale_ctx != nullptr) {
                     this->freeUpscalerCtxPtr(this->upscale_ctx);
                     this->upscale_ctx = nullptr;
                 }
-                // need to load a new model
+                std::cout << "Loading model: " << item->params.esrgan_path << std::endl;
                 this->upscale_ctx = this->newUpscalerCtxPtr(item->params.esrgan_path.c_str(), item->params.n_threads, item->params.wtype);
                 return this->upscale_ctx != NULL;
             }
+            std::cout << "upscaler model is already loaded" << std::endl;
             return true;  // already loaded the model
         }
-        return false;
+        std::cout << "Loading model: " << item->params.esrgan_path << std::endl;
+        this->upscale_ctx = this->newUpscalerCtxPtr(item->params.esrgan_path.c_str(), item->params.n_threads, item->params.wtype);
+        return this->upscale_ctx != NULL;
     }
     if (item->mode == QM::GenerationMode::TXT2IMG || item->mode == QM::GenerationMode::IMG2IMG) {
-        /// handle sd model
+        std::cout << "Loading sd model: " << item->params.model_path << std::endl;
         bool loadModel = true;
         if (this->lastItem != nullptr) {
+            std::cout << "Previous model is not null" << std::endl;
             if (this->lastItem->params.model_path == item->params.model_path) {
                 loadModel = false;
             }
@@ -686,7 +539,9 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
         }
 
         if (loadModel == true) {
+            std::cout << "Model load required for new item" << std::endl;
             if (this->sd_ctx != nullptr) {
+                std::cout << "Freeing sd_ctx" << std::endl;
                 this->freeSdCtxPtr(this->sd_ctx);
                 this->sd_ctx = nullptr;
             }
@@ -727,9 +582,7 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
                 item->params.schedule,
                 item->params.clip_on_cpu,
                 item->params.control_net_cpu,
-                item->params.vae_on_cpu
-
-            );
+                item->params.vae_on_cpu);
             loadedModel = item->params.model_path;
             if (this->sd_ctx == NULL) {
                 return false;

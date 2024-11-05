@@ -8,6 +8,7 @@
 #include "ui/MainWindowUI.h"
 #include <csignal>
 #include "ui/embedded_files/splash_image.h"
+#include "wx/gtk/app.h"
 
 // Define the MainApp
 class MainApp : public wxApp {
@@ -21,6 +22,7 @@ public:
         wxString forceType           = "";
         bool allow_multiple_instance = false;
         std::string usingBackend     = "cpu";
+        bool disableExternalProcessHandling = false;
 
         for (int i = 0; i < wxApp::argc; ++i) {
             if (wxApp::argv[i] == "-cuda") {
@@ -45,6 +47,9 @@ public:
             }
             if (wxApp::argv[i] == "-allow-multiple") {
                 allow_multiple_instance = true;
+            }
+            if (wxApp::argv[i] == "-disable-external-process-handling") {
+                disableExternalProcessHandling = true;
             }
         }
         if (!allow_multiple_instance) {
@@ -107,7 +112,7 @@ public:
             }
         }
 
-        MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend);
+        MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend, disableExternalProcessHandling);
         mainFrame->Show(true);
         SetTopWindow(mainFrame);
         splash->Destroy();

@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string>
 #include <cstdint>
+#include <string>
 #include "../libs/json.hpp"
 
 // Enumerations
@@ -164,10 +164,11 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        const char*            // input_id_images_path
 
 );
-typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,  // pointer
-                                       sd_image_t,
-                                       const char*,           // prompt,
-                                       const char*,           // negative_prompt,
+
+typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
+                                       sd_image_t,            // init_image
+                                       const char*,           // prompt_c_str,
+                                       const char*,           // negative_prompt_c_str,
                                        int,                   // clip_skip,
                                        float,                 // cfg_scale,
                                        float,                 // guidance,
@@ -180,11 +181,31 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,  // pointer
                                        int,                   // batch_count,
                                        const sd_image_t*,     // control_cond,
                                        float,                 // control_strength,
-                                       float,                 // style_strength,
+                                       float,                 // style_ratio,
                                        bool,                  // normalize_input,
-                                       const char*            // input_id_images_path
+                                       const char*            // input_id_images_path_c_str
 
 );
+
+// sd_ctx_t* sd_ctx,
+// sd_image_t init_image,
+// const char* prompt_c_str,
+// const char* negative_prompt_c_str,
+// int clip_skip,
+// float cfg_scale,
+// float guidance,
+// int width,
+// int height,
+// sample_method_t sample_method,
+// int sample_steps,
+// float strength,
+// int64_t seed,
+// int batch_count,
+// const sd_image_t* control_cond,
+// float control_strength,
+// float style_ratio,
+// bool normalize_input,
+// const char* input_id_images_path_c_str
 
 typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
                                        sd_image_t,       // inpu image
@@ -606,6 +627,5 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j,
                 iter->get_to(nlohmann_json_t.upscale_repeats);
     }
 }
-
 
 #endif  // STABLE_DIFFUSION_WRAPPER_H

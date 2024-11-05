@@ -98,13 +98,14 @@ protected:
 
 public:
     /** Constructor */
-    MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend);
+    MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling);
     //// end generated class members
     ~MainWindowUI();
     void OnThreadMessage(wxThreadEvent& e);
     void OnCivitAiThreadMessage(wxThreadEvent& e);
 
 private:
+    bool disableExternalProcessHandling = false;
     std::string usingBackend;
     wxFileConfig* fileConfig = nullptr;
     sd_gui_utils::config* cfg;

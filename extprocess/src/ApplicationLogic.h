@@ -95,6 +95,20 @@ private:
     bool loadSdModel(std::shared_ptr<QM::QueueItem> item);
 
     std::string handleSdImage(sd_image_t& image);
+
+    inline void sendStatus(QM::QueueStatus status, QM::QueueEvents event, const std::string& reason = "") {
+        this->currentItem->status     = status;
+        this->currentItem->event      = event;
+        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        if (reason.length() > 0) {
+            this->currentItem->status_message = reason;
+        }
+        
+        nlohmann::json j       = *this->currentItem;
+        std::string jsonString = j.dump();
+        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+    }
     std::string generateRandomFilename(const std::string& extension = ".tmp") {
         const char charset[] =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
