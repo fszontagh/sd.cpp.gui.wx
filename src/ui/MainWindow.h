@@ -142,7 +142,7 @@ class mainUI : public wxFrame
 		wxPanel* m_panel23;
 		wxStaticBitmap* m_img2imgDiffusionPreview;
 		wxButton* m_generate1;
-		wxFilePickerCtrl* m_open_image;
+		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
 		wxButton* m_img2im_preview_img;

@@ -793,7 +793,7 @@ void MainWindowCivitAiWindow::civitSearchThread(const std::string& query) {
     }
 }
 
-void MainWindowCivitAiWindow::SetModelManager(ModelInfo::Manager* manager) {
+void MainWindowCivitAiWindow::SetModelManager(std::shared_ptr<ModelInfo::Manager> manager) {
     this->ModelInfoManager = manager;
 }
 
