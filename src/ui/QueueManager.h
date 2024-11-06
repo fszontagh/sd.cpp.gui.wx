@@ -124,6 +124,8 @@ namespace QM {
         long id                     = -1;
 
         QueueItemImage() = default;
+        QueueItemImage(const QueueItemImage* other)
+            : pathname(other->pathname), type(other->type), id(other->id) {}
 
         QueueItemImage(const QueueItemImage& other)
             : pathname(other.pathname), type(other.type), id(other.id) {}

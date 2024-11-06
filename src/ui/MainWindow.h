@@ -318,7 +318,7 @@ class Settings : public wxFrame
 		wxStaticText* m_staticText60;
 		wxSpinCtrl* m_notification_timeout;
 		wxPanel* m_panel18;
-		wxCheckBox* m_checkBox11;
+		wxCheckBox* m_enableCivitai;
 		wxStaticText* m_staticText42;
 		wxTextCtrl* m_civitai_api_key;
 		wxBitmapButton* m_bpButton15;

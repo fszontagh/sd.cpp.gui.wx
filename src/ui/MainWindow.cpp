@@ -85,7 +85,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_civitai->SetToolTip( _("Open CivitAi.com model browser") );
 	m_civitai->SetHelpText( _("With CivitAi.com model browser, you can search for models or download models") );
 
-	bSizer97->Add( m_civitai, 0, wxALL, 5 );
+	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
 	m_staticline5 = new wxStaticLine( m_panel10, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
 	bSizer97->Add( m_staticline5, 0, wxEXPAND | wxALL, 5 );
@@ -690,7 +690,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer34->Add( m_generate2, 0, wxALL, 5 );
 
-	m_controlnetImageOpen = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
+	m_controlnetImageOpen = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
 	m_controlnetImageOpen->SetMinSize( wxSize( 260,-1 ) );
 
 	bSizer34->Add( m_controlnetImageOpen, 0, wxALL, 5 );
@@ -811,7 +811,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer38->Add( m_generate1, 0, wxALL, 5 );
 
-	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, _("Select an image"), _("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
+	m_open_image = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, _("Select an image"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
 	m_open_image->SetMinSize( wxSize( 470,-1 ) );
 
 	bSizer38->Add( m_open_image, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -863,7 +863,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText62->Wrap( -1 );
 	bSizer71->Add( m_staticText62, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_upscaler_filepicker = new wxFilePickerCtrl( m_upscaler, wxID_ANY, wxEmptyString, _("Select a file"), _("PNG files (*.png)|*.png|JPEG (*.jpg)|*.jpg"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE );
+	m_upscaler_filepicker = new wxFilePickerCtrl( m_upscaler, wxID_ANY, wxEmptyString, _("Select an image"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
 	bSizer71->Add( m_upscaler_filepicker, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_delete_upscale_image = new wxBitmapButton( m_upscaler, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
@@ -1627,11 +1627,11 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* bSizer90;
 	bSizer90 = new wxBoxSizer( wxVERTICAL );
 
-	m_checkBox11 = new wxCheckBox( m_panel18, wxID_ANY, _("Enable CivitAi features"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_checkBox11->SetValue(true);
-	m_checkBox11->Enable( false );
+	m_enableCivitai = new wxCheckBox( m_panel18, wxID_ANY, _("Enable CivitAi features"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_enableCivitai->SetValue(true);
+	m_enableCivitai->SetToolTip( _("Enable or disable all CivitAi features") );
 
-	bSizer90->Add( m_checkBox11, 0, wxALL|wxEXPAND, 5 );
+	bSizer90->Add( m_enableCivitai, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer89->Add( bSizer90, 0, wxEXPAND, 5 );

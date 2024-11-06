@@ -200,13 +200,13 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::GenerateMeta(std::string model_
     return mi;
 }
 
-void ModelInfo::Manager::WriteIntoMeta(std::string model_path) {
+void ModelInfo::Manager::WriteIntoMeta(const std::string& model_path) {
     if (this->exists(model_path)) {
         this->WriteIntoMeta(this->ModelInfos[model_path]);
     }
 }
 
-void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo modelinfo) {
+void ModelInfo::Manager::WriteIntoMeta(const sd_gui_utils::ModelFileInfo& modelinfo) {
     nlohmann::json j(modelinfo);
     std::ofstream file(modelinfo.meta_file);
     file << j;
@@ -242,8 +242,26 @@ void ModelInfo::Manager::ParseCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo
     }
 }
 
-std::string ModelInfo::Manager::GetMetaPath(std::string model_path) {
-    auto path           = std::filesystem::path(model_path);
+std::string ModelInfo::Manager::GetMetaPath(const std::string& model_path) {
+    if (model_path.empty()) {
+        throw std::invalid_argument("Model path is empty");
+    }
+
+    auto path = std::filesystem::path(model_path);
+    if (!std::filesystem::exists(path)) {
+        throw std::invalid_argument("Model path does not exist");
+    }
+
     auto meta_file_name = path.filename().replace_extension(".json");
-    return std::filesystem::absolute(std::filesystem::path(this->MetaStorePath + "/" + meta_file_name.string(), std::filesystem::path::format::generic_format)).string();
+    auto meta_path      = std::filesystem::path(this->MetaStorePath + "/" + meta_file_name.string(), std::filesystem::path::format::generic_format);
+
+    if (!std::filesystem::exists(meta_path.parent_path())) {
+        throw std::runtime_error("Meta path parent directory does not exist");
+    }
+
+    if (!std::filesystem::is_directory(meta_path.parent_path())) {
+        throw std::runtime_error("Meta path parent is not a directory");
+    }
+
+    return std::filesystem::absolute(meta_path).string();
 }

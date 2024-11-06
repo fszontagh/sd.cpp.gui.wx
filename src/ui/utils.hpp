@@ -320,6 +320,7 @@ namespace sd_gui_utils {
         unsigned int image_quality = 90;
         bool show_notifications    = true;
         int notification_timeout   = 60;
+        bool enable_civitai        = true;
     };
     inline std::string formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);

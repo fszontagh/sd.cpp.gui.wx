@@ -106,6 +106,8 @@ public:
 
 private:
     bool disableExternalProcessHandling = false;
+    std::atomic<unsigned int> jobsCountSinceSegfault = {0};
+    std::atomic<unsigned int> stepsCountSinceSegfault = {0};
     std::string usingBackend;
     wxFileConfig* fileConfig = nullptr;
     sd_gui_utils::config* cfg;
@@ -192,7 +194,7 @@ private:
     void loadSamplerList();
     void loadEsrganList();
     void loadTypeList();
-    void loadShcedulerList();
+    void loadSchedulerList();
     void refreshModelTable(std::string filter = "");
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
@@ -228,14 +230,12 @@ private:
 
     std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::map<std::string, std::string> params, SDMode mode);
-    void onimg2ImgImageOpen(std::string file);
-    void onUpscaleImageOpen(std::string file);
-    void onControlnetImageOpen(std::string file);
+    void onimg2ImgImageOpen(const std::string &file);
+    void onUpscaleImageOpen(const std::string &file);
+    void onControlnetImageOpen(const std::string &file);
 
-    // generate in another thread
-    void GenerateTxt2img(wxEvtHandler* eventHandler, QM::QueueItem* myItem);
-    void GenerateImg2img(wxEvtHandler* eventHandler, QM::QueueItem* item);
-    void GenerateUpscale(wxEvtHandler* eventHandler, QM::QueueItem* item);
+
+    void PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo);
 
     // start a thread to generate image
     void StartGeneration(QM::QueueItem* myJob);

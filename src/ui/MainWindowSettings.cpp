@@ -109,6 +109,7 @@ void MainWindowSettings::onSave(wxCommandEvent &event)
     this->fileConfig->Write("/image_type", sd_gui_utils::image_types_str[this->m_image_type->GetSelection()]);
     this->fileConfig->Write("/show_notification", this->m_show_notifications->GetValue());
     this->fileConfig->Write("/notification_timeout", this->m_notification_timeout->GetValue());
+    this->fileConfig->Write("/enable_civitai", this->m_enableCivitai->GetValue());
     this->fileConfig->Flush();
     this->Close();
 }
@@ -158,6 +159,8 @@ void MainWindowSettings::InitConfig()
     this->cfg->image_quality = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
     this->cfg->show_notifications = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
     this->cfg->notification_timeout = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
+    this->cfg->enable_civitai = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+
 
     wxString username = "civitai_api_key";
     wxSecretValue password;
@@ -200,4 +203,5 @@ void MainWindowSettings::InitConfig()
     this->m_image_type->Select((int)this->cfg->image_type);
     this->m_show_notifications->SetValue(this->cfg->show_notifications);
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);
+    this->m_enableCivitai->SetValue(this->cfg->enable_civitai);
 }

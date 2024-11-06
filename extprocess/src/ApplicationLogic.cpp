@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ostream>
 #include <thread>
+#include "config.hpp"
 #include "helpers/sd.hpp"
 #include "ui/QueueManager.h"
 #include "wx/strvararg.h"
@@ -143,6 +144,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
 
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
+    // on mode convert always return true, because no model loading
     if (this->loadSdModel(this->currentItem) == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.model_path << std::endl;
@@ -159,8 +161,24 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         return;
     }
 
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    // handle the convert differently
+    if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+        bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype);
+        if (status == false) {
+            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            this->currentItem = nullptr;
+            this->lastItem    = nullptr;
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));    
+        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+        this->currentItem = nullptr;
+        this->lastItem    = nullptr;
+        return;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
 
     std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
@@ -178,6 +196,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         } break;
 
         default: {
+            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
             this->currentItem->status_message = wxString::Format(_("Unknown mode: %s"), QM::GenerationMode_str.at(this->currentItem->mode).c_str());
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
             std::cerr << this->currentItem->status_message << std::endl;
@@ -250,10 +269,13 @@ void ApplicationLogic::Txt2Img() {
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
         this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        // need to wait, because the progress upgrader miss the last step if we overwrite the shared memory
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
         this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_FINISHED);
         delete results;
 
     } catch (const std::exception& e) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
         this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
         std::cerr << "Error calling txt2img: " << e.what() << std::endl;
     }
@@ -420,9 +442,20 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
 }
 
 bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
+    // on covert, there is no model loading into ctx, but need to clean up memory
     if (item->mode == QM::GenerationMode::CONVERT) {
-        this->error = "Not implemented yes";
-        return false;
+        // remove already loaded models
+        if (this->sd_ctx != nullptr) {
+            std::cout << "Freeing up previous sd model" << std::endl;
+            this->freeSdCtxPtr(this->sd_ctx);
+            this->sd_ctx = nullptr;
+        }
+        if (this->upscale_ctx != nullptr) {
+            std::cout << "Freeing up previous upscaler model" << std::endl;
+            this->freeUpscalerCtxPtr(this->upscale_ctx);
+            this->upscale_ctx = nullptr;
+        }
+        return true;
     }
 
     // hnalde upscaler model
