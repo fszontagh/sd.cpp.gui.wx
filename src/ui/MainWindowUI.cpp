@@ -1477,25 +1477,25 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 this->ChangeGuiFromQueueItem(*qitem);
                 break;
             case 3:
-                this->m_prompt->SetValue(qitem->params.prompt);
-                this->m_neg_prompt->SetValue(qitem->params.negative_prompt);
+                this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->params.prompt));
+                this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->params.negative_prompt));
                 break;
             case 4:
-                this->m_prompt2->SetValue(qitem->params.prompt);
-                this->m_neg_prompt2->SetValue(qitem->params.negative_prompt);
+                this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->params.prompt));
+                this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->params.negative_prompt));
                 break;
             case 5: {
                 auto model = this->ModelManager->getInfo(qitem->params.model_path);
                 this->ChangeModelByInfo(model);
             } break;
             case 6: {
-                this->m_upscaler_filepicker->SetPath(qitem->images.back().pathname);
-                this->onUpscaleImageOpen(qitem->images.back().pathname);
+                this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
                 this->m_notebook1302->SetSelection(3);  // switch to the upscaler
             } break;
             case 7: {
-                this->m_img2imgOpen->SetPath(qitem->images.back().pathname);
-                this->onimg2ImgImageOpen(qitem->images.back().pathname);
+                this->m_img2imgOpen->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
                 this->m_notebook1302->SetSelection(2);  // switch to the img2img
             } break;
             case 8: {
@@ -2980,8 +2980,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                             wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.pathname));
                         } break;
                         case 7: {
-                            std::string parent = std::filesystem::path(img.pathname).parent_path().string();
-                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(parent));
+                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.pathname).parent_path().string()));
                         } break;
                         default: {
                             return;

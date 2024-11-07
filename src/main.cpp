@@ -8,7 +8,6 @@
 #include "ui/MainWindowUI.h"
 #include <csignal>
 #include "ui/embedded_files/splash_image.h"
-#include "wx/gtk/app.h"
 
 // Define the MainApp
 class MainApp : public wxApp {

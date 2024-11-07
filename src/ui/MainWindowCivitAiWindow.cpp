@@ -1,6 +1,7 @@
 #include "MainWindowCivitAiWindow.h"
 #include "../helpers/simplecurl.h"
 #include "ver.hpp"
+#include "wx/string.h"
 
 MainWindowCivitAiWindow::MainWindowCivitAiWindow(wxWindow* parent)
     : CivitAiWindow(parent) {
@@ -208,7 +209,7 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         // add to the table
         wxVector<wxVariant> data;
 
-        data.push_back(wxVariant(std::filesystem::path(item->local_file).filename().string()));
+        data.push_back(wxVariant(wxString::FromUTF8Unchecked(std::filesystem::path(item->local_file).filename().string())));
         auto s = sd_gui_utils::humanReadableFileSize(item->targetSize);
         data.push_back(wxString::Format("%.2f %s", s.first, s.second));
         data.push_back(wxVariant(CivitAi::DownloadItemStateNames[item->state]));
@@ -340,7 +341,7 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread) {
         for (auto& bm : this->bitmaps) {
             auto img = static_cast<CivitAi::PreviewImage*>(bm->GetClientData());
             if (img->downloaded && std::filesystem::exists(img->localpath)) {
-                auto resized = sd_gui_utils::cropResizeImage(img->localpath, 200, 200, wxColour(0, 0, 0), this->config->thumbs_path);
+                auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img->localpath), 200, 200, wxColour(0, 0, 0), wxString::FromUTF8Unchecked(this->config->thumbs_path));
                 bm->SetBitmap(resized);
             }
         }
@@ -354,7 +355,7 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread) {
 
         for (auto& img : this->previewImages) {
             if (img.second->downloaded && std::filesystem::exists(img.second->localpath)) {
-                auto resized           = sd_gui_utils::cropResizeImage(img.second->localpath, 200, 200, wxColour(0, 0, 0), this->config->thumbs_path);
+                auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.second->localpath), 200, 200, wxColour(0, 0, 0, 0), wxString::FromUTF8Unchecked(this->config->thumbs_path));
                 wxStaticBitmap* bitmap = new wxStaticBitmap(m_scrolledWindow4, wxID_ANY, resized, wxDefaultPosition, wxSize(200, 200), 0);
                 bitmap->SetClientData((void*)img.second);
                 image_container->Add(bitmap, 0, wxALL | wxRESERVE_SPACE_EVEN_IF_HIDDEN, 1);
@@ -429,7 +430,7 @@ void MainWindowCivitAiWindow::populateVersions(nlohmann::json js) {
 
     for (auto modelVersion : js["modelVersions"]) {
         if (modelVersion.contains("name") && !modelVersion["name"].is_null()) {
-            data.push_back(modelVersion["name"].get<std::string>());
+            data.push_back(wxString::FromUTF8Unchecked(modelVersion["name"].get<std::string>()));
         } else {
             data.push_back("");
         }
@@ -479,7 +480,7 @@ void MainWindowCivitAiWindow::populateVersions(nlohmann::json js) {
     this->m_model_details->Refresh();
 
     if (js.contains("description") && !js["description"].is_null()) {
-        this->m_model_description->SetPage(js["description"].get<std::string>());
+        this->m_model_description->SetPage(wxString::FromUTF8Unchecked(js["description"].get<std::string>()));
     } else {
         this->m_model_description->SetPage("");
     }
@@ -648,7 +649,7 @@ void MainWindowCivitAiWindow::JsonToTable(std::string json_str) {
             wxDataViewIconText icont;
 
             if ((*it).contains("name") && !(*it).is_null()) {
-                data.push_back((*it)["name"].get<std::string>());
+                data.push_back(wxString::FromUTF8Unchecked((*it)["name"].get<std::string>()));
             } else {
                 data.push_back(_("N/A"));
             }
@@ -799,7 +800,8 @@ void MainWindowCivitAiWindow::SetModelManager(std::shared_ptr<ModelInfo::Manager
 
 void MainWindowCivitAiWindow::populateFiles(nlohmann::json js) {
     if (js.contains("description") && !js["description"].is_null()) {
-        this->m_model_version_description->SetPage(js["description"].get<std::string>());
+        std::string description = js["description"].get<std::string>();
+        this->m_model_version_description->SetPage(wxString::FromUTF8Unchecked(description));
     } else {
         this->m_model_version_description->SetPage("");
     }
@@ -808,7 +810,7 @@ void MainWindowCivitAiWindow::populateFiles(nlohmann::json js) {
         for (auto file : js["files"]) {
             wxVector<wxVariant> data;
             if (file.contains("name") && file["name"].is_string()) {
-                data.push_back(file["name"].get<std::string>());
+                data.push_back(wxString::FromUTF8Unchecked(file["name"].get<std::string>()));
             } else {
                 data.push_back(_("N/A"));
             }
