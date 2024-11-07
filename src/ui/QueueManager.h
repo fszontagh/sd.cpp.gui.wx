@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -14,6 +15,7 @@
 #include <wx/window.h>
 
 #include "ver.hpp"
+#include "wx/string.h"
 
 namespace QM {
     enum QueueStatus {
@@ -124,13 +126,18 @@ namespace QM {
         long id                     = -1;
 
         QueueItemImage() = default;
+
         QueueItemImage(const QueueItemImage* other)
             : pathname(other->pathname), type(other->type), id(other->id) {}
 
         QueueItemImage(const QueueItemImage& other)
             : pathname(other.pathname), type(other.type), id(other.id) {}
-        QueueItemImage(std::string pathname_, QM::QueueItemImageType type_ = QM::QueueItemImageType::GENERATED, long id_ = -1)
+        QueueItemImage(const std::string& pathname_, QM::QueueItemImageType type_ = QM::QueueItemImageType::GENERATED, long id_ = -1)
             : pathname(pathname_), type(type_), id(id_) {}
+
+        QueueItemImage(const wxString& pathname_, QM::QueueItemImageType type_ = QM::QueueItemImageType::GENERATED, long id_ = -1)
+            : pathname(pathname_.utf8_string()), type(type_), id(id_) {}
+
         QueueItemImage& operator=(const QueueItemImage& other) {
             if (this == &other) {
                 return *this;
@@ -146,7 +153,7 @@ namespace QM {
             return (pathname == other.pathname);
         }
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QueueItemImage, pathname, type)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QueueItemImage, pathname, type, id)
     inline void to_json(nlohmann::json& j, const QueueItemImage* item) {
         if (item) {
             j = nlohmann::json{{"pathname", sd_gui_utils::UnicodeToUTF8(item->pathname)}, {"type", item->type}};
@@ -172,25 +179,25 @@ namespace QM {
 
     struct QueueItem {
         int id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
-        SDParams params;
-        QM::QueueStatus status = QM::QueueStatus::PENDING;
-        QM::QueueEvents event  = QM::QueueEvents::ITEM_ADDED;
-        QM::QueueItemStats stats;
-        std::vector<QM::QueueItemImage*> images;
+        SDParams params                        = SDParams();
+        QM::QueueStatus status                 = QM::QueueStatus::PENDING;
+        QM::QueueEvents event                  = QM::QueueEvents::ITEM_ADDED;
+        QM::QueueItemStats stats               = QM::QueueItemStats();
+        std::vector<QM::QueueItemImage> images = {};
         int step = 0, steps = 0;
         size_t hash_fullsize = 0, hash_progress_size = 0;
-        float time = 0;
-        std::string model;
-        QM::GenerationMode mode = QM::GenerationMode::TXT2IMG;
-        std::string initial_image;
-        std::string status_message = "";
-        uint32_t upscale_factor    = 4;
-        std::string sha256;
+        float time                         = 0;
+        std::string model                  = "";
+        QM::GenerationMode mode            = QM::GenerationMode::TXT2IMG;
+        std::string initial_image          = "";
+        std::string status_message         = "";
+        uint32_t upscale_factor            = 4;
+        std::string sha256                 = "";
         std::vector<std::string> rawImages = {};
         std::string app_version            = SD_GUI_VERSION;
         std::string git_version            = GIT_HASH;
-
-        QueueItem() = default;
+        bool keep_checkpoint_in_memory     = false;
+        bool keep_upscaler_in_memory       = false;
         QueueItem(const QueueItem& other)
             : id(other.id),
               created_at(other.created_at),
@@ -215,174 +222,72 @@ namespace QM {
               sha256(other.sha256),
               rawImages(other.rawImages),
               app_version(other.app_version),
-              git_version(other.git_version)
-                         {}
-
-        ~QueueItem() {}
-
-        QueueItem& operator=(const QueueItem& other) {
-            if (this != &other) {
-                id                 = other.id;
-                created_at         = other.created_at;
-                updated_at         = other.updated_at;
-                finished_at        = other.finished_at;
-                started_at         = other.started_at;
-                images             = other.images;
-                params             = other.params;
-                status             = other.status;
-                event              = other.event;
-                stats              = other.stats;
-                step               = other.step;
-                steps              = other.steps;
-                time               = other.time;
-                model              = other.model;
-                mode               = other.mode;
-                initial_image      = other.initial_image;
-                hash_fullsize      = other.hash_fullsize;
-                hash_progress_size = other.hash_progress_size;
-                status_message     = other.status_message;
-                upscale_factor     = other.upscale_factor;
-                rawImages          = other.rawImages;
-                git_version        = other.git_version;
-                app_version        = other.app_version;
-            }
-            return *this;
-        }
+              git_version(other.git_version),
+              keep_checkpoint_in_memory(other.keep_checkpoint_in_memory),
+              keep_upscaler_in_memory(other.keep_upscaler_in_memory)
+               {}
+        QueueItem() = default;
     };
 
-    inline void to_json(nlohmann::json& j, const QueueItem& p) {
-        nlohmann::json imageArray = nlohmann::json::array();
-        for (const auto& imagePtr : p.images) {
-            nlohmann::json imageJson = nullptr;
-            to_json(imageJson, imagePtr);
-            imageArray.push_back(imageJson);
-        }
-        j = nlohmann::json{
-            {"id", p.id},
-            {"created_at", p.created_at},
-            {"updated_at", p.updated_at},
-            {"finished_at", p.finished_at},
-            {"started_at", p.started_at},
-            {"status", (int)p.status},
-            {"status_message", p.status_message},
-            {"event", (int)p.event},
-            {"stats", p.stats},
-            {"model", sd_gui_utils::UnicodeToUTF8(p.model)},
-            {"mode", (int)p.mode},
-            {"params", p.params},
-            {"images", imageArray},
-            {"step", p.step},
-            {"steps", p.steps},
-            {"time", p.time},
-            {"upscale_factor", p.upscale_factor},
-            {"initial_image", sd_gui_utils::UnicodeToUTF8(p.initial_image)},
-            {"rawImages", p.rawImages},
-            {"app_version", p.app_version},
-            {"git_version", p.git_version}
-
-        };
-    }
-
-    inline void from_json(const nlohmann::json& j, QueueItem& p) {
-        j.at("id").get_to(p.id);
-        j.at("created_at").get_to(p.created_at);
-        j.at("updated_at").get_to(p.updated_at);
-        if (j.contains("started_at")) {
-            j.at("started_at").get_to(p.started_at);
-        }
-        if (j.contains("upscale_factor")) {
-            j.at("upscale_factor").get_to(p.upscale_factor);
-        }
-
-        if (j.contains("images") && j["images"].is_array()) {
-            auto& images_json = j["images"];
-
-            for (auto& image_json : images_json) {
-                if (image_json.is_string()) {
-                    p.images.push_back(new QueueItemImage({image_json.get<std::string>()}));
-                } else {
-                    QueueItemImage* image = new QueueItemImage();
-                    from_json(image_json, *image);
-                    p.images.push_back(image);
-                }
-            }
-        }
-        if (j.contains("stats")) {
-            j.at("stats").get_to(p.stats);
-        }
-        if (j.contains("step")) {
-            j.at("step").get_to(p.step);
-        }
-        if (j.contains("steps")) {
-            j.at("steps").get_to(p.steps);
-        }
-        if (j.contains("time")) {
-            j.at("time").get_to(p.time);
-        }
-        if (j.contains("rawImages") && j["rawImages"].is_array()) {
-            auto& rawImages_json = j["rawImages"];
-
-            for (auto& image_json : rawImages_json) {
-                if (image_json.is_string()) {
-                    p.rawImages.push_back(image_json.get<std::string>());
-                }
-            }
-        }
-        if (j.contains("status_message")) {
-            j.at("status_message").get_to(p.status_message);
-        }
-
-        j.at("finished_at").get_to(p.finished_at);
-        j.at("model").get_to(p.model);
-        j.at("params").get_to(p.params);
-        j.at("initial_image").get_to(p.initial_image);
-        p.status = j.at("status").get<QM::QueueStatus>();
-
-        if (j.contains("event")) {
-            p.event = j.at("event").get<QM::QueueEvents>();
-        }
-
-        p.mode          = j.at("mode").get<QM::GenerationMode>();
-        p.initial_image = sd_gui_utils::UTF8ToUnicode(p.initial_image);
-        p.model         = sd_gui_utils::UTF8ToUnicode(p.model);
-        if (j.contains("git_version")) {
-            j.at("git_version").get_to(p.git_version);
-        }
-
-        if (j.contains("app_version")) {
-            j.at("app_version").get_to(p.app_version);
-        }
-    }
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
+        QueueItem,
+        id,
+        created_at,
+        updated_at,
+        finished_at,
+        started_at,
+        params,
+        status,
+        event,
+        stats,
+        images,
+        step,
+        steps,
+        hash_fullsize,
+        hash_progress_size,
+        time,
+        model,
+        mode,
+        initial_image,
+        status_message,
+        upscale_factor,
+        sha256,
+        rawImages,
+        app_version,
+        git_version,
+        keep_checkpoint_in_memory,
+        keep_upscaler_in_memory)
 
     class QueueManager {
     public:
         QueueManager(wxEvtHandler* eventHandler, std::string jobsdir);
         ~QueueManager();
-        int AddItem(QM::QueueItem* item, bool fromFile = false);
-        void UpdateItem(QM::QueueItem* item);
-        QM::QueueItem* GetItemPtr(int id);
+        int AddItem(const QM::QueueItem& _item, bool fromFile = false);
+        int AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);
+        void UpdateItem(const QM::QueueItem& item);
+        std::shared_ptr<QM::QueueItem> GetItemPtr(int id);
         /**
          * @brief Get all the items in the queue as a string formatted like:
          *
          */
-        QM::QueueItem* GetItemPtr(QM::QueueItem item);
-        const std::map<int, const QM::QueueItem*> getList();
-        QM::QueueItem* Duplicate(const QM::QueueItem* item);
-        QM::QueueItem* Duplicate(int id);
+        std::shared_ptr<QM::QueueItem> GetItemPtr(const QM::QueueItem& item);
+        const std::map<int, std::shared_ptr<QM::QueueItem>> getList();
+        std::shared_ptr<QM::QueueItem> Duplicate(std::shared_ptr<QM::QueueItem> item);
+        std::shared_ptr<QM::QueueItem> Duplicate(int id);
         // @brief Update the item too then update the status. This will store the list of the generated images too
-        void SetStatus(QM::QueueStatus status, QM::QueueItem* item);
+        void SetStatus(QM::QueueStatus status, std::shared_ptr<QM::QueueItem>);
         void PauseAll();
         void RestartQueue();
-        void UnPauseItem(QM::QueueItem* item);
-        void PauseItem(QM::QueueItem* item);
-        void SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem* item = nullptr);
+        void UnPauseItem(std::shared_ptr<QM::QueueItem> item);
+        void PauseItem(std::shared_ptr<QM::QueueItem> item);
+        void SendEventToMainWindow(QM::QueueEvents eventType, std::shared_ptr<QM::QueueItem> item = nullptr);
         void OnThreadMessage(wxThreadEvent& e);
         void SaveJobToFile(int id);
         void SaveJobToFile(const QM::QueueItem& item);
-        bool DeleteJob(QM::QueueItem item);
+        bool DeleteJob(const QM::QueueItem& item);
         bool DeleteJob(int id);
         bool IsRunning();
-        inline void resetRunning(QM::QueueItem* item, const std::string& reason) {
+        inline void resetRunning(std::shared_ptr<QM::QueueItem> item, const std::string& reason) {
             if (this->QueueList.empty()) {
                 return;
             }
@@ -407,26 +312,26 @@ namespace QM {
                 this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[this->currentItem->id]);
             }
         }
-        inline QM::QueueItem* GetCurrentItem() { return this->currentItem; }
+        inline std::shared_ptr<QM::QueueItem> GetCurrentItem() { return this->currentItem; }
 
     private:
         std::mutex queueMutex;
         int GetCurrentUnixTimestamp(bool milliseconds = false);
         void LoadJobListFromDir();
         std::string jobsDir;
-        int lastId = 0;
+        int lastId    = 0;
         int lastExtId = 0;
         int GetAnId();
         // thread events handler, toupdate main window data table
         void onItemAdded(QM::QueueItem item);
-        QM::QueueItem* currentItem = nullptr;
+        std::shared_ptr<QM::QueueItem> currentItem = nullptr;
 
         // @brief check if something is running or not
         bool isRunning = false;
 
         wxEvtHandler* eventHandler;
         wxWindow* parent;
-        std::map<int, QM::QueueItem*> QueueList;
+        std::map<int, std::shared_ptr<QM::QueueItem>> QueueList;
     };
 };
 

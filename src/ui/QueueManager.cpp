@@ -1,41 +1,24 @@
 #include "QueueManager.h"
+#include <memory>
 
 QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
     // need to send events into the mainwindow by the threads...
     this->eventHandler = eventHandler;
     this->eventHandler->Bind(wxEVT_THREAD, &QueueManager::OnThreadMessage, this);
     this->jobsDir   = jobsdir;
-    this->QueueList = std::map<int, QM::QueueItem*>();
+    this->QueueList = std::map<int, std::shared_ptr<QM::QueueItem>>();
     this->LoadJobListFromDir();
 }
 
 QM::QueueManager::~QueueManager() {
-    for (auto it = this->QueueList.begin(); it != this->QueueList.end();) {
-        auto& images = it->second->images;
-        for (auto& img : images) {
-            if (img) {
-                delete img;
-                img = nullptr;
-            }
-        }
-        it->second->images.clear();
-
-        if (it->second) {
-            delete it->second;
-            it->second = nullptr;
-        }
-
-        // Töröljük az elemet a map-ből és lépünk a következő elemre
-        it = this->QueueList.erase(it);
-    }
-
     if (this->currentItem) {
         this->currentItem = nullptr;
     }
 }
 
-int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
+int QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
     std::lock_guard<std::mutex> lock(queueMutex);
+    std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(_item);
     if (item->id == 0) {
         item->id = this->GetAnId();
     }
@@ -50,27 +33,28 @@ int QM::QueueManager::AddItem(QM::QueueItem* item, bool fromFile) {
 
     this->QueueList[item->id] = item;
 
+    if (fromFile == false) {
+        this->SaveJobToFile(*item);
+    }
+
     this->SendEventToMainWindow(QM::QueueEvents::ITEM_ADDED, item);
     if (this->isRunning == false && item->status == QM::QueueStatus::PENDING) {
         this->currentItem = item;
         this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, item);
         this->isRunning = true;
     }
-    if (!fromFile) {
-        this->SaveJobToFile(*item);
-    }
 
     return item->id;
 }
-void QM::QueueManager::UpdateItem(QM::QueueItem* item) {
+void QM::QueueManager::UpdateItem(const QM::QueueItem& item) {
     std::lock_guard<std::mutex> lock(queueMutex);
-    if (this->QueueList.find(item->id) != this->QueueList.end()) {
-        *this->QueueList[item->id] = *item;
-        this->SaveJobToFile(*item);
+    if (this->QueueList.find(item.id) != this->QueueList.end()) {
+        *this->QueueList[item.id] = item;
+        this->SaveJobToFile(item);
     }
 }
 
-QM::QueueItem* QM::QueueManager::GetItemPtr(int id) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::GetItemPtr(int id) {
     std::lock_guard<std::mutex> lock(queueMutex);
     if (this->QueueList.find(id) == this->QueueList.end()) {
         return nullptr;
@@ -79,25 +63,25 @@ QM::QueueItem* QM::QueueManager::GetItemPtr(int id) {
     }
 }
 
-QM::QueueItem* QM::QueueManager::GetItemPtr(QM::QueueItem item) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::GetItemPtr(const QM::QueueItem& item) {
     return this->GetItemPtr(item.id);
 }
 
-const std::map<int, const QM::QueueItem*> QM::QueueManager::getList() {
+const std::map<int, std::shared_ptr<QM::QueueItem>> QM::QueueManager::getList() {
     std::lock_guard<std::mutex> lock(queueMutex);
-    std::map<int, const QM::QueueItem*> newlist;
+    std::map<int, std::shared_ptr<QM::QueueItem>> newlist;
     for (auto item : this->QueueList) {
         newlist[item.first] = item.second;
     }
     return newlist;
 }
 
-QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::Duplicate(std::shared_ptr<QM::QueueItem> item) {
     if (this->QueueList.find(item->id) == this->QueueList.end()) {
         return nullptr;
     }
 
-    QM::QueueItem* newitem = new QM::QueueItem(*item);
+    std::shared_ptr<QM::QueueItem> newitem = std::make_shared<QM::QueueItem>(*item);
     // handle this in the AddItem
     newitem->id             = 0;
     newitem->created_at     = 0;
@@ -117,13 +101,8 @@ QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
         newitem->mode == QM::GenerationMode::UPSCALE) {
         newitem->images.erase(
             std::remove_if(newitem->images.begin(), newitem->images.end(),
-                           [](QM::QueueItemImage* ptr) {
-                               bool state = ptr == nullptr || ptr->type == QM::QueueItemImageType::GENERATED;
-                               if (state == true) {
-                                   delete ptr;
-                                   ptr = nullptr;
-                               }
-                               return state;
+                           [](QM::QueueItemImage img) {
+                               return img.type == QM::QueueItemImageType::GENERATED;
                            }),
             newitem->images.end());
     }
@@ -148,15 +127,18 @@ QM::QueueItem* QM::QueueManager::Duplicate(const QM::QueueItem* item) {
     this->AddItem(newitem);
     return newitem;
 }
+int QM::QueueManager::AddItem(std::shared_ptr<QM::QueueItem> item, bool fromFile) {
+    return this->AddItem(*item, fromFile);
+}
 
-QM::QueueItem* QM::QueueManager::Duplicate(int id) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::Duplicate(int id) {
     if (this->QueueList.find(id) != this->QueueList.end()) {
         return this->Duplicate(this->QueueList[id]);
     }
     return nullptr;
 }
 
-void QM::QueueManager::SetStatus(QM::QueueStatus status, QM::QueueItem* item) {
+void QM::QueueManager::SetStatus(QM::QueueStatus status, std::shared_ptr<QM::QueueItem> item) {
     if (this->QueueList.find(item->id) != this->QueueList.end()) {
         if (item->finished_at == 0 && status == QM::QueueStatus::DONE) {
             item->finished_at = this->GetCurrentUnixTimestamp();
@@ -198,7 +180,7 @@ void QM::QueueManager::RestartQueue() {
     }
 }
 
-void QM::QueueManager::UnPauseItem(QM::QueueItem* item) {
+void QM::QueueManager::UnPauseItem(std::shared_ptr<QM::QueueItem> item) {
     if (item->status == QM::QueueStatus::PAUSED) {
         this->SetStatus(QM::QueueStatus::PENDING, item);
         // check if queue is active
@@ -210,13 +192,13 @@ void QM::QueueManager::UnPauseItem(QM::QueueItem* item) {
     }
 }
 
-void QM::QueueManager::PauseItem(QM::QueueItem* item) {
+void QM::QueueManager::PauseItem(std::shared_ptr<QM::QueueItem> item) {
     if (item->status == QM::QueueStatus::PENDING) {
         this->SetStatus(QM::QueueStatus::PAUSED, item);
     }
 }
 
-void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, QM::QueueItem* item) {
+void QM::QueueManager::SendEventToMainWindow(QM::QueueEvents eventType, std::shared_ptr<QM::QueueItem> item) {
     // TODO: e->SetInt instead of SetString
     wxThreadEvent* e = new wxThreadEvent();
     e->SetString(wxString::Format("%d:%d", (int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType));
@@ -238,7 +220,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     // only handle the QUEUE messages, what this class generate
     if (threadEvent == sd_gui_utils::QUEUE) {
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
-        auto payload          = e.GetPayload<QM::QueueItem*>();
+        auto payload          = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
         if (event == QM::QueueEvents::ITEM_START) {
             this->SetStatus(QM::QueueStatus::RUNNING, payload);
             this->isRunning   = true;
@@ -264,11 +246,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             return;
         }
         if (event == QM::QueueEvents::ITEM_MODEL_LOAD_START) {
-            auto payload = e.GetPayload<QM::QueueItem*>();
+            auto payload = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
             this->SetStatus(QM::QueueStatus::MODEL_LOADING, payload);
         }
         if (event == QM::QueueEvents::ITEM_MODEL_FAILED) {
-            auto payload = e.GetPayload<QM::QueueItem*>();
+            auto payload = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
             this->SetStatus(QM::QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
@@ -284,7 +266,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             }
         }
         if (event == QM::QueueEvents::ITEM_FAILED) {
-            auto payload = e.GetPayload<QM::QueueItem*>();
+            auto payload = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
             this->SetStatus(QM::QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
@@ -300,14 +282,14 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             }
         }
         if (event == QM::QueueEvents::ITEM_GENERATION_STARTED) {
-            auto payload = e.GetPayload<QM::QueueItem*>();
+            auto payload = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
             this->SetStatus(QM::QueueStatus::RUNNING, payload);
             this->isRunning = true;
         }
     }
 
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
-        auto payload = e.GetPayload<QM::QueueItem*>();
+        auto payload = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
         this->SetStatus(QM::QueueStatus::HASHING, payload);
     }
 }
@@ -329,7 +311,7 @@ void QM::QueueManager::SaveJobToFile(const QM::QueueItem& item) {
     }
 }
 
-bool QM::QueueManager::DeleteJob(QM::QueueItem item) {
+bool QM::QueueManager::DeleteJob(const QM::QueueItem& item) {
     return this->DeleteJob(item.id);
 }
 
@@ -341,7 +323,6 @@ bool QM::QueueManager::DeleteJob(int id) {
     std::string filename = this->jobsDir + "/" + std::to_string(item->id) + ".json";
     if (std::filesystem::exists(filename)) {
         if (std::filesystem::remove(filename)) {
-            delete this->QueueList[item->id];
             this->QueueList[item->id] = nullptr;
             this->QueueList.erase(item->id);
             return true;
@@ -388,8 +369,8 @@ void QM::QueueManager::LoadJobListFromDir() {
         std::ifstream f(path.string());
 
         try {
-            nlohmann::json data = nlohmann::json::parse(f);
-            QM::QueueItem* item = new QM::QueueItem(data.get<QM::QueueItem>());
+            nlohmann::json data                 = nlohmann::json::parse(f);
+            std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(data.get<QM::QueueItem>());
             if (item->status == QM::QueueStatus::RUNNING) {
                 item->status = QM::QueueStatus::PAUSED;
             }

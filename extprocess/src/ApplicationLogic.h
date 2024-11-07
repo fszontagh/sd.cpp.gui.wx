@@ -24,6 +24,9 @@ public:
     }
 
     inline static void HandleSDProgress(int step, int steps, float time, void* data) {
+        if (step == 0) {
+            return;
+        }
         ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
 
         instance->currentItem->step  = step;
@@ -48,13 +51,10 @@ public:
         if (instance->currentItem->step > 0) {
             instance->currentItem->stats.time_avg = instance->currentItem->stats.time_total / instance->currentItem->step;
         }
-
-        instance->currentItem->status     = QM::QueueStatus::RUNNING;
-        instance->currentItem->event      = QM::QueueEvents::ITEM_UPDATED;
+        
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j                  = *instance->currentItem;
-        std::string jsonString            = j.dump();
-        instance->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        instance->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_UPDATED);
+        std::cout << "[EXTPROCESS] Item: " << instance->currentItem->id << " Step: " << instance->currentItem->step << "/" << instance->currentItem->steps << " Time: " << instance->currentItem->time << "s" << std::endl;
     }
 
     bool loadLibrary();
@@ -69,7 +69,6 @@ public:
 private:
     SharedLibrary sd_dll;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager;
-    std::filesystem::path loadedModel;
     std::string error;
     sd_ctx_t* sd_ctx                                           = NULL;
     upscaler_ctx_t* upscale_ctx                                = nullptr;
@@ -87,12 +86,13 @@ private:
     SdSetProgressCallbackFunction sdSetProgressCallbackFuncPtr = nullptr;
     SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
     sd_gui_utils::VoidHolder* voidHolder                       = nullptr;
+    std::mutex itemMutex;
 
     void Txt2Img();
     void Img2img();
     void Upscale();
 
-    bool loadSdModel(std::shared_ptr<QM::QueueItem> item);
+    bool loadSdModel();
 
     std::string handleSdImage(sd_image_t& image);
 
@@ -100,6 +100,7 @@ private:
         if (this->currentItem == nullptr) {
             return;
         }
+        std::lock_guard<std::mutex> lock(this->itemMutex);
         this->currentItem->status     = status;
         this->currentItem->event      = event;
         this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -108,7 +109,7 @@ private:
             this->currentItem->status_message = reason;
         }
 
-        nlohmann::json j       = *this->currentItem;
+        nlohmann::json j       = *this->currentItem.get();
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
     }

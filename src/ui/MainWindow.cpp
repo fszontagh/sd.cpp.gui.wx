@@ -9,6 +9,7 @@
 
 #include "embedded_files/civitai.png.h"
 #include "embedded_files/controlnet.png.h"
+#include "embedded_files/cross_circle.png.h"
 #include "embedded_files/cube.png.h"
 #include "embedded_files/dice_four.png.h"
 #include "embedded_files/disk.png.h"
@@ -86,6 +87,16 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_civitai->SetHelpText( _("With CivitAi.com model browser, you can search for models or download models") );
 
 	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
+
+	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_stop_background_process->SetBitmap( cross_circle_png_to_wx_bitmap() );
+	m_stop_background_process->Enable( false );
+	m_stop_background_process->Hide();
+	m_stop_background_process->SetToolTip( _("Stop and restart the background process") );
+	m_stop_background_process->SetHelpText( _("This will send a terminate to the background diffuser process. This will clear up all used memory (eg. freeing up all the loaded models)") );
+
+	bSizer97->Add( m_stop_background_process, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
 	m_staticline5 = new wxStaticLine( m_panel10, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
 	bSizer97->Add( m_staticline5, 0, wxEXPAND | wxALL, 5 );
@@ -552,6 +563,16 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_joblist = new wxDataViewListCtrl( m_panel14, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
 	m_joblist->SetExtraStyle( wxWS_EX_VALIDATE_RECURSIVELY );
 
+	m_dataViewListColumn32 = m_joblist->AppendTextColumn( _("Id"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn321 = m_joblist->AppendTextColumn( _("Crated at"), wxDATAVIEW_CELL_INERT, 120, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn3211 = m_joblist->AppendTextColumn( _("Type"), wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32111 = m_joblist->AppendTextColumn( _("Model"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn321111 = m_joblist->AppendTextColumn( _("Sampler"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn3211111 = m_joblist->AppendTextColumn( _("Seed"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32111111 = m_joblist->AppendProgressColumn( _("Progress"), wxDATAVIEW_CELL_INERT, 80, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn321111111 = m_joblist->AppendTextColumn( _("Speed"), wxDATAVIEW_CELL_INERT, 110, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn3211111111 = m_joblist->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_ACTIVATABLE, 150, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32111111111 = m_joblist->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer79->Add( m_joblist, 1, wxEXPAND, 5 );
 
 
@@ -638,24 +659,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer331->SetMinSize( wxSize( -1,100 ) );
 	m_notebook3 = new wxNotebook( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_LEFT );
-	m_controlnetPreviewTab = new wxPanel( m_notebook3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* bSizer981;
-	bSizer981 = new wxBoxSizer( wxVERTICAL );
-
-	m_controlnetImagePreview = new wxStaticBitmap( m_controlnetPreviewTab, wxID_ANY, controlnet_png_to_wx_bitmap(), wxDefaultPosition, wxSize( -1,-1 ), wxFULL_REPAINT_ON_RESIZE );
-	m_controlnetImagePreview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
-	m_controlnetImagePreview->SetMinSize( wxSize( 200,-1 ) );
-
-	bSizer981->Add( m_controlnetImagePreview, 1, wxEXPAND, 5 );
-
-
-	m_controlnetPreviewTab->SetSizer( bSizer981 );
-	m_controlnetPreviewTab->Layout();
-	bSizer981->Fit( m_controlnetPreviewTab );
-	m_notebook3->AddPage( m_controlnetPreviewTab, _("Controlnet"), true );
 	m_diffusionPreviewTab = new wxPanel( m_notebook3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	m_diffusionPreviewTab->Enable( false );
-	m_diffusionPreviewTab->Hide();
 
 	wxBoxSizer* bSizer991;
 	bSizer991 = new wxBoxSizer( wxVERTICAL );
@@ -671,6 +676,21 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_diffusionPreviewTab->Layout();
 	bSizer991->Fit( m_diffusionPreviewTab );
 	m_notebook3->AddPage( m_diffusionPreviewTab, _("Diffusion"), false );
+	m_controlnetPreviewTab = new wxPanel( m_notebook3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer981;
+	bSizer981 = new wxBoxSizer( wxVERTICAL );
+
+	m_controlnetImagePreview = new wxStaticBitmap( m_controlnetPreviewTab, wxID_ANY, controlnet_png_to_wx_bitmap(), wxDefaultPosition, wxSize( -1,-1 ), wxFULL_REPAINT_ON_RESIZE );
+	m_controlnetImagePreview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
+	m_controlnetImagePreview->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer981->Add( m_controlnetImagePreview, 1, wxEXPAND, 5 );
+
+
+	m_controlnetPreviewTab->SetSizer( bSizer981 );
+	m_controlnetPreviewTab->Layout();
+	bSizer981->Fit( m_controlnetPreviewTab );
+	m_notebook3->AddPage( m_controlnetPreviewTab, _("Controlnet"), true );
 
 	bSizer331->Add( m_notebook3, 1, wxEXPAND, 5 );
 
@@ -758,22 +778,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer29 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_notebook4 = new wxNotebook( m_image2image_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_LEFT );
-	m_panel22 = new wxPanel( m_notebook4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* bSizer101;
-	bSizer101 = new wxBoxSizer( wxVERTICAL );
-
-	m_img2img_preview = new wxStaticBitmap( m_panel22, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
-	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
-	m_img2img_preview->DragAcceptFiles( true );
-	m_img2img_preview->SetMinSize( wxSize( 200,-1 ) );
-
-	bSizer101->Add( m_img2img_preview, 1, wxEXPAND, 5 );
-
-
-	m_panel22->SetSizer( bSizer101 );
-	m_panel22->Layout();
-	bSizer101->Fit( m_panel22 );
-	m_notebook4->AddPage( m_panel22, _("Input image"), true );
 	m_panel23 = new wxPanel( m_notebook4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	m_panel23->Enable( false );
 
@@ -792,6 +796,22 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_panel23->Layout();
 	bSizer1003->Fit( m_panel23 );
 	m_notebook4->AddPage( m_panel23, _("Diffusion"), false );
+	m_panel22 = new wxPanel( m_notebook4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer101;
+	bSizer101 = new wxBoxSizer( wxVERTICAL );
+
+	m_img2img_preview = new wxStaticBitmap( m_panel22, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
+	m_img2img_preview->DragAcceptFiles( true );
+	m_img2img_preview->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer101->Add( m_img2img_preview, 1, wxEXPAND, 5 );
+
+
+	m_panel22->SetSizer( bSizer101 );
+	m_panel22->Layout();
+	bSizer101->Fit( m_panel22 );
+	m_notebook4->AddPage( m_panel22, _("Input image"), true );
 
 	bSizer29->Add( m_notebook4, 1, wxEXPAND, 5 );
 
@@ -941,6 +961,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer73->Add( m_staticText67, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_upscaler_factor = new wxSpinCtrl( m_upscaler, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 142,-1 ), 0, 1, 4, 4 );
+	m_upscaler_factor->Enable( false );
+
 	bSizer73->Add( m_upscaler_factor, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -985,10 +1007,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer77->Add( m_generate_upscaler, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, _("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_upscaler_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, _("Keep upscale model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_upscaler_in_memory->SetToolTip( _("WARNING: If you check this box, the upscaler model will remain in memory for the next job, which could lead to a memory overflow or program crash (segfault).") );
+
 	bSizer77->Add( m_keep_upscaler_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_keep_other_models_in_memory = new wxCheckBox( m_upscaler, wxID_ANY, _("Keep checkpoints in memory"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_keep_other_models_in_memory->SetToolTip( _("WARNING: If you check this box, the SD model from the previous job will remain in RAM/VRAM, which could potentially lead to a program crash (segfault).") );
+
 	bSizer77->Add( m_keep_other_models_in_memory, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -1137,6 +1163,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
 	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_stop_background_process->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnStopBackgroundProcess ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
@@ -1171,8 +1198,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
-	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imgDiffusionPreview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
@@ -1200,6 +1227,7 @@ mainUI::~mainUI()
 	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
 	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_stop_background_process->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnStopBackgroundProcess ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
@@ -1234,8 +1262,8 @@ mainUI::~mainUI()
 	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
-	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imgDiffusionPreview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );

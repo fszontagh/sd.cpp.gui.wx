@@ -58,6 +58,7 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_refrersh;
 		wxBitmapButton* m_about;
 		wxBitmapButton* m_civitai;
+		wxBitmapButton* m_stop_background_process;
 		wxStaticLine* m_staticline5;
 		wxStaticText* m_staticText160;
 		wxChoice* m_model;
@@ -113,6 +114,16 @@ class mainUI : public wxFrame
 		wxSplitterWindow* m_splitter2;
 		wxPanel* m_panel14;
 		wxDataViewListCtrl* m_joblist;
+		wxDataViewColumn* m_dataViewListColumn32;
+		wxDataViewColumn* m_dataViewListColumn321;
+		wxDataViewColumn* m_dataViewListColumn3211;
+		wxDataViewColumn* m_dataViewListColumn32111;
+		wxDataViewColumn* m_dataViewListColumn321111;
+		wxDataViewColumn* m_dataViewListColumn3211111;
+		wxDataViewColumn* m_dataViewListColumn32111111;
+		wxDataViewColumn* m_dataViewListColumn321111111;
+		wxDataViewColumn* m_dataViewListColumn3211111111;
+		wxDataViewColumn* m_dataViewListColumn32111111111;
 		wxPanel* m_panel15;
 		wxDataViewListCtrl* m_joblist_item_details;
 		wxDataViewColumn* m_dataViewListColumn1;
@@ -123,10 +134,10 @@ class mainUI : public wxFrame
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
 		wxNotebook* m_notebook3;
-		wxPanel* m_controlnetPreviewTab;
-		wxStaticBitmap* m_controlnetImagePreview;
 		wxPanel* m_diffusionPreviewTab;
 		wxStaticBitmap* m_txt2txtDeiffusionPreview;
+		wxPanel* m_controlnetPreviewTab;
+		wxStaticBitmap* m_controlnetImagePreview;
 		wxButton* m_generate2;
 		wxFilePickerCtrl* m_controlnetImageOpen;
 		wxChoice* m_controlnetModels;
@@ -137,10 +148,10 @@ class mainUI : public wxFrame
 		wxTextCtrl* m_prompt2;
 		wxTextCtrl* m_neg_prompt2;
 		wxNotebook* m_notebook4;
-		wxPanel* m_panel22;
-		wxStaticBitmap* m_img2img_preview;
 		wxPanel* m_panel23;
 		wxStaticBitmap* m_img2imgDiffusionPreview;
+		wxPanel* m_panel22;
+		wxStaticBitmap* m_img2img_preview;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
@@ -195,6 +206,7 @@ class mainUI : public wxFrame
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitAitButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnStopBackgroundProcess( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }

@@ -145,7 +145,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
     // on mode convert always return true, because no model loading
-    if (this->loadSdModel(this->currentItem) == false) {
+    if (this->loadSdModel() == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.model_path << std::endl;
             this->currentItem->status_message = "Failed to load model: " + this->currentItem->params.model_path;
@@ -160,10 +160,13 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         this->lastItem    = nullptr;
         return;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED);
 
     // handle the convert differently
     if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
         this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
         bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype);
         if (status == false) {
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
@@ -171,14 +174,12 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
             this->lastItem    = nullptr;
             return;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));    
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
         this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
         this->currentItem = nullptr;
         this->lastItem    = nullptr;
         return;
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
 
     std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
@@ -211,6 +212,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
 
 void ApplicationLogic::Txt2Img() {
     try {
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
         this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
 
         sd_image_t* control_image = NULL;
@@ -253,25 +255,26 @@ void ApplicationLogic::Txt2Img() {
         delete control_image;
 
         if (results == NULL) {
+            std::cout << "[EXTPROCESS] txt2img failed" << std::endl;
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
             return;
         }
+
+        std::cout << "Processing images " << this->currentItem->params.batch_count << std::endl;
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
             if (results[i].data == NULL) {
                 continue;
             }
             std::string filepath = this->handleSdImage(results[i]);
-            std::cout << "saved tmp image to: " << filepath;
             this->currentItem->rawImages.push_back(filepath);
             free(results[i].data);
             results[i].data = NULL;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        // need to wait, because the progress upgrader miss the last step if we overwrite the shared memory
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_FINISHED);
+        auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
+        this->currentItem->finished_at = finished_at;
+        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
         delete results;
 
     } catch (const std::exception& e) {
@@ -285,6 +288,7 @@ void ApplicationLogic::Img2img() {
     std::cout << std::flush;
     std::cout << "running img2img" << std::endl;
     try {
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
         this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
         std::cout << " sent status" << std::endl;
 
@@ -306,11 +310,13 @@ void ApplicationLogic::Img2img() {
                 std::cout << " input image loaded: " << this->currentItem->initial_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
             } else {
                 std::cerr << "Initial image not found: " << this->currentItem->initial_image << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
                 this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Initial image not found:" + this->currentItem->initial_image);
                 return;
             }
         } else {
             std::cerr << "Missing input image" << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Missing input image");
             return;
         }
@@ -373,8 +379,11 @@ void ApplicationLogic::Img2img() {
             results[i].data = NULL;
         }
 
-        this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_FINISHED);
+        auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
+        this->currentItem->finished_at = finished_at;
+        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+
         delete results;
 
     } catch (const std::exception& e) {
@@ -389,18 +398,15 @@ void ApplicationLogic::Upscale() {
     int w, h;
     stbi_uc* input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &w, &h, &c, 3);
     sd_image_t control_image    = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-    input_image_buffer          = NULL;
-    delete input_image_buffer;
+    stbi_image_free(input_image_buffer);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
 
     results = this->upscalerFuncPtr(this->upscale_ctx, control_image, this->currentItem->upscale_factor);
 
     if (results.data == NULL) {
-        this->currentItem->status     = QM::QueueStatus::FAILED;
-        this->currentItem->event      = QM::QueueEvents::ITEM_FAILED;
-        this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json j              = *this->currentItem;
-        std::string jsonString        = j.dump();
-        this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
         return;
     }
 
@@ -408,14 +414,12 @@ void ApplicationLogic::Upscale() {
     std::cout << "saved tmp image to: " << filepath;
     this->currentItem->rawImages.push_back(filepath);
     free(results.data);
-    results.data                   = NULL;
-    this->currentItem->status      = QM::QueueStatus::DONE;
-    this->currentItem->event       = QM::QueueEvents::ITEM_FINISHED;
-    this->currentItem->updated_at  = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    this->currentItem->finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    nlohmann::json j               = *this->currentItem;
-    std::string jsonString         = j.dump();
-    this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+    results.data = NULL;
+
+    auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
+    this->currentItem->finished_at = finished_at;
+    this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
 }
 
 std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
@@ -441,16 +445,16 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
     return filename;
 }
 
-bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
+bool ApplicationLogic::loadSdModel() {
     // on covert, there is no model loading into ctx, but need to clean up memory
-    if (item->mode == QM::GenerationMode::CONVERT) {
+    if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
         // remove already loaded models
-        if (this->sd_ctx != nullptr) {
+        if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
             std::cout << "Freeing up previous sd model" << std::endl;
             this->freeSdCtxPtr(this->sd_ctx);
             this->sd_ctx = nullptr;
         }
-        if (this->upscale_ctx != nullptr) {
+        if (this->upscale_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
             std::cout << "Freeing up previous upscaler model" << std::endl;
             this->freeUpscalerCtxPtr(this->upscale_ctx);
             this->upscale_ctx = nullptr;
@@ -459,10 +463,10 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
     }
 
     // hnalde upscaler model
-    if (item->mode == QM::GenerationMode::UPSCALE) {
-        std::cout << "Loading upscale model: " << item->params.esrgan_path << std::endl;
+    if (this->currentItem->mode == QM::GenerationMode::UPSCALE) {
+        std::cout << "Loading upscale model: " << this->currentItem->params.esrgan_path << std::endl;
         // free up the sd model
-        if (this->sd_ctx != nullptr) {
+        if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
             std::cout << "Freeing up previous sd model" << std::endl;
             this->freeSdCtxPtr(this->sd_ctx);
             this->sd_ctx = nullptr;
@@ -471,102 +475,102 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
         // check if we need reload the model
         if (this->lastItem != nullptr && this->lastItem->mode == QM::GenerationMode::UPSCALE) {
             std::cout << "Previous model is upscale" << std::endl;
-            if (this->lastItem->params.esrgan_path != item->params.esrgan_path) {
+            if (this->lastItem->params.esrgan_path != this->currentItem->params.esrgan_path) {
                 std::cout << "upscaler model changed" << std::endl;
                 if (this->upscale_ctx != nullptr) {
                     this->freeUpscalerCtxPtr(this->upscale_ctx);
                     this->upscale_ctx = nullptr;
                 }
-                std::cout << "Loading model: " << item->params.esrgan_path << std::endl;
-                this->upscale_ctx = this->newUpscalerCtxPtr(item->params.esrgan_path.c_str(), item->params.n_threads, item->params.wtype);
+                std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
+                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
                 return this->upscale_ctx != NULL;
             }
             std::cout << "upscaler model is already loaded" << std::endl;
             return true;  // already loaded the model
         }
-        std::cout << "Loading model: " << item->params.esrgan_path << std::endl;
-        this->upscale_ctx = this->newUpscalerCtxPtr(item->params.esrgan_path.c_str(), item->params.n_threads, item->params.wtype);
+        std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
+        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
         return this->upscale_ctx != NULL;
     }
-    if (item->mode == QM::GenerationMode::TXT2IMG || item->mode == QM::GenerationMode::IMG2IMG) {
-        std::cout << "Loading sd model: " << item->params.model_path << std::endl;
+    if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
+        std::cout << "Loading sd model: " << this->currentItem->params.model_path << std::endl;
         bool loadModel = true;
         if (this->lastItem != nullptr) {
             std::cout << "Previous model is not null" << std::endl;
-            if (this->lastItem->params.model_path == item->params.model_path) {
+            if (this->lastItem->params.model_path == this->currentItem->params.model_path) {
                 loadModel = false;
             }
 
-            if (this->lastItem->mode != item->mode) {
+            if (this->lastItem->mode != this->currentItem->mode) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.clip_l_path != item->params.clip_l_path) {
+            if (this->lastItem->params.clip_l_path != this->currentItem->params.clip_l_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.clip_g_path != item->params.clip_g_path) {
+            if (this->lastItem->params.clip_g_path != this->currentItem->params.clip_g_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.t5xxl_path != item->params.t5xxl_path) {
+            if (this->lastItem->params.t5xxl_path != this->currentItem->params.t5xxl_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.diffusion_model_path != item->params.diffusion_model_path) {
+            if (this->lastItem->params.diffusion_model_path != this->currentItem->params.diffusion_model_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.vae_path != item->params.vae_path) {
+            if (this->lastItem->params.vae_path != this->currentItem->params.vae_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.taesd_path != item->params.taesd_path) {
+            if (this->lastItem->params.taesd_path != this->currentItem->params.taesd_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.controlnet_path != item->params.controlnet_path) {
+            if (this->lastItem->params.controlnet_path != this->currentItem->params.controlnet_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.lora_model_dir != item->params.lora_model_dir) {
+            if (this->lastItem->params.lora_model_dir != this->currentItem->params.lora_model_dir) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.embeddings_path != item->params.embeddings_path) {
+            if (this->lastItem->params.embeddings_path != this->currentItem->params.embeddings_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.stacked_id_embeddings_path != item->params.stacked_id_embeddings_path) {
+            if (this->lastItem->params.stacked_id_embeddings_path != this->currentItem->params.stacked_id_embeddings_path) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.vae_tiling != item->params.vae_tiling) {
+            if (this->lastItem->params.vae_tiling != this->currentItem->params.vae_tiling) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.n_threads != item->params.n_threads) {
+            if (this->lastItem->params.n_threads != this->currentItem->params.n_threads) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.wtype != item->params.wtype) {
+            if (this->lastItem->params.wtype != this->currentItem->params.wtype) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.rng_type != item->params.rng_type) {
+            if (this->lastItem->params.rng_type != this->currentItem->params.rng_type) {
                 loadModel = true;
             }
 
-            if (this->lastItem->params.schedule != item->params.schedule) {
+            if (this->lastItem->params.schedule != this->currentItem->params.schedule) {
                 loadModel = true;
             }
-            if (this->lastItem->params.clip_on_cpu != item->params.clip_on_cpu) {
+            if (this->lastItem->params.clip_on_cpu != this->currentItem->params.clip_on_cpu) {
                 loadModel = true;
             }
-            if (this->lastItem->params.control_net_cpu != item->params.control_net_cpu) {
+            if (this->lastItem->params.control_net_cpu != this->currentItem->params.control_net_cpu) {
                 loadModel = true;
             }
-            if (this->lastItem->params.vae_on_cpu != item->params.vae_on_cpu) {
+            if (this->lastItem->params.vae_on_cpu != this->currentItem->params.vae_on_cpu) {
                 loadModel = true;
             }
         }
@@ -579,10 +583,10 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
                 this->sd_ctx = nullptr;
             }
 
-            std::cout << "[EXTPROCESS] Loading model: " << item->params.model_path << std::endl;
+            std::cout << "[EXTPROCESS] Loading model: " << this->currentItem->params.model_path << std::endl;
             bool vae_decode_only = true;
 
-            switch (item->mode) {
+            switch (this->currentItem->mode) {
                 case QM::GenerationMode::IMG2IMG:
                     // case QM::GenerationMode::IMG2VID:
                     vae_decode_only = false;
@@ -594,29 +598,35 @@ bool ApplicationLogic::loadSdModel(std::shared_ptr<QM::QueueItem> item) {
                     break;
             }
 
+            if (this->upscale_ctx != nullptr && this->currentItem->keep_upscaler_in_memory == false) {
+                std::cout << "Freeing upscale_ctx" << std::endl;
+                this->freeUpscalerCtxPtr(this->upscale_ctx);
+                this->upscale_ctx = nullptr;                
+            }
+
             this->sd_ctx = this->newSdCtxFuncPtr(
-                item->params.model_path.c_str(),
-                item->params.clip_l_path.c_str(),
-                item->params.clip_g_path.c_str(),
-                item->params.t5xxl_path.c_str(),
-                item->params.diffusion_model_path.c_str(),
-                item->params.vae_path.c_str(),
-                item->params.taesd_path.c_str(),
-                item->params.controlnet_path.c_str(),
-                item->params.lora_model_dir.c_str(),
-                item->params.embeddings_path.c_str(),
-                item->params.stacked_id_embeddings_path.c_str(),
+                this->currentItem->params.model_path.c_str(),
+                this->currentItem->params.clip_l_path.c_str(),
+                this->currentItem->params.clip_g_path.c_str(),
+                this->currentItem->params.t5xxl_path.c_str(),
+                this->currentItem->params.diffusion_model_path.c_str(),
+                this->currentItem->params.vae_path.c_str(),
+                this->currentItem->params.taesd_path.c_str(),
+                this->currentItem->params.controlnet_path.c_str(),
+                this->currentItem->params.lora_model_dir.c_str(),
+                this->currentItem->params.embeddings_path.c_str(),
+                this->currentItem->params.stacked_id_embeddings_path.c_str(),
                 vae_decode_only,  // vae decode only
-                item->params.vae_tiling,
+                this->currentItem->params.vae_tiling,
                 false,  // free params immediately
-                item->params.n_threads,
-                item->params.wtype,
-                item->params.rng_type,
-                item->params.schedule,
-                item->params.clip_on_cpu,
-                item->params.control_net_cpu,
-                item->params.vae_on_cpu);
-            loadedModel = item->params.model_path;
+                this->currentItem->params.n_threads,
+                this->currentItem->params.wtype,
+                this->currentItem->params.rng_type,
+                this->currentItem->params.schedule,
+                this->currentItem->params.clip_on_cpu,
+                this->currentItem->params.control_net_cpu,
+                this->currentItem->params.vae_on_cpu);
+
             if (this->sd_ctx == NULL) {
                 return false;
             }

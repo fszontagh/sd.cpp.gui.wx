@@ -8,15 +8,15 @@
 #include <string>
 #include <unordered_map>
 
-#include <wx/image.h>
 #include <wx/colour.h>
+#include <wx/image.h>
 
 #include "../helpers/sd.hpp"
 
 #include "../helpers/civitai.hpp"
 #include "../libs/bitmask_operators.h"
 #include "../libs/json.hpp"
-
+#include "wx/string.h"
 
 namespace sd_gui_utils {
 
@@ -697,84 +697,23 @@ namespace sd_gui_utils {
 
         return resizedImage;
     }
-    inline std::string cropResizeCacheName(int targetWidth, int targetHeight, const std::string orig_filename, const std::string cache_path) {
-        auto cache_name_path     = std::filesystem::path(orig_filename);
+    inline wxString cropResizeCacheName(int targetWidth, int targetHeight, const wxString& orig_filename, const wxString& cache_path) {
+        auto cache_name_path     = std::filesystem::path(orig_filename.utf8_string());
         std::string ext          = cache_name_path.extension().string();
         auto filename            = cache_name_path.filename().replace_extension();
-        std::string new_filename = filename.string() + "_" +
-                                   std::to_string(targetWidth) + "x" +
-                                   std::to_string(targetHeight);
-        filename = filename.replace_filename(new_filename);
-        filename = filename.replace_extension(ext);
+        std::string new_filename = filename.string() + "_" + std::to_string(targetWidth) + "x" + std::to_string(targetHeight);
+        filename                 = filename.replace_filename(new_filename);
+        filename                 = filename.replace_extension(ext);
 
-        return sd_gui_utils::normalizePath(cache_path + "/" + filename.string());
+        return wxString::FromUTF8Unchecked(sd_gui_utils::normalizePath(cache_path.utf8_string() + "/" + filename.string()));
     }
-    inline bool cropResizeImageCacheExists(int targetWidth, int targetHeight, const std::string orig_filename = "", const std::string cache_path = "") {
-        return std::filesystem::exists(sd_gui_utils::cropResizeCacheName(
-            targetWidth, targetHeight, orig_filename, cache_path));
-    }
-    inline wxImage cropResizeImageCachedImage(int targetWidth, int targetHeight, const std::string orig_filename, const std::string cache_path) {
-        wxImage img;
-        img.LoadFile(sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight,
-                                                       orig_filename, cache_path));
-        return img;
-    }
-    inline wxImage cropResizeImage(const wxImage& originalImage, int targetWidth, int targetHeight, const wxColour& backgroundColor, const std::string orig_filename = "", const std::string cache_path = "") {
-        std::string cache_name;
-        if (!orig_filename.empty() && !cache_path.empty()) {
-            if (std::filesystem::exists(cache_name)) {
-                wxImage cached_img;
-                cached_img.LoadFile(cache_name);
-                return cached_img;
-            }
-        }
 
-        int originalWidth  = originalImage.GetWidth();
-        int originalHeight = originalImage.GetHeight();
 
-        double aspectRatio =
-            static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
-        int newWidth  = targetWidth;
-        int newHeight = targetHeight;
-
-        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
-        if (originalWidth > targetWidth || originalHeight > targetHeight) {
-            if (aspectRatio > 1.0) {
-                // Szélesség alapján skálázzuk az új méretet
-                newWidth  = targetWidth;
-                newHeight = static_cast<int>(targetWidth / aspectRatio);
-            } else {
-                // Magasság alapján skálázzuk az új méretet
-                newHeight = targetHeight;
-                newWidth  = static_cast<int>(targetHeight * aspectRatio);
-            }
-        }
-
-        // Méretezzük az eredeti képet az új méretekre
-        wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
-
-        // Üres terület hozzáadása és háttérszínnel való töltése
-        if (newWidth < targetWidth || newHeight < targetHeight) {
-            wxImage finalImage(targetWidth, targetHeight);
-            finalImage.SetRGB(wxRect(0, 0, targetWidth, targetHeight), backgroundColor.Red(), backgroundColor.Green(), backgroundColor.Blue());
-
-            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2, (targetHeight - newHeight) / 2);
-            if (!cache_name.empty()) {
-                finalImage.SaveFile(cache_name);
-            }
-            return finalImage;
-        }
-        if (!cache_name.empty()) {
-            resizedImage.SaveFile(cache_name);
-        }
-        return resizedImage;
-    }
-    inline wxImage cropResizeImage(const std::string image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const std::string cache_path = "") {
-        std::string cache_name;
+    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
+        wxString cache_name;
         if (!cache_path.empty()) {
-            cache_name = sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight,
-                                                           image_path, cache_path);
-            if (std::filesystem::exists(cache_name)) {
+            cache_name = sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight, image_path, cache_path);
+            if (std::filesystem::exists(cache_name.utf8_string())) {
                 wxImage cached_img;
                 cached_img.LoadFile(cache_name);
                 return cached_img;

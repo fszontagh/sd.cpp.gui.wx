@@ -53,6 +53,7 @@ protected:
     void onModelsRefresh(wxCommandEvent& event) override;
     void OnAboutButton(wxCommandEvent& event) override;
     void OnCivitAitButton(wxCommandEvent& event) override;
+    void OnStopBackgroundProcess(wxCommandEvent& event) override;
     void onModelSelect(wxCommandEvent& event) override;
     void onTypeSelect(wxCommandEvent& event) override;
     void onVaeSelect(wxCommandEvent& event) override;
@@ -139,6 +140,7 @@ private:
     std::shared_ptr<QM::QueueManager> qmanager;
     std::mutex mutex;
     std::mutex logMutex;
+    std::mutex taskBarMutex;
     bool firstCfgInit = true;
     int init_width    = 512;
     int init_height   = 512;
@@ -149,7 +151,7 @@ private:
     wxBitmap AppOrigPlaceHolderBitmap;
 
     // row,QueueItem
-    std::map<int, QM::QueueItem*> JobTableItems;
+    std::map<int, std::shared_ptr<QM::QueueItem>> JobTableItems;
     std::vector<sd_gui_utils::VoidHolder*> voids;
     struct subprocess_s* subprocess = nullptr;
 
@@ -171,7 +173,7 @@ private:
     void loadEsrganList();
     void loadTypeList();
     void loadSchedulerList();
-    void refreshModelTable(std::string filter = "");
+    void refreshModelTable(const wxString& filter = wxEmptyString);
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
     void OnHtmlLinkClicked(wxHtmlLinkEvent& event) override;
@@ -179,12 +181,12 @@ private:
     void OnPopupClick(wxCommandEvent& evt);
     void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);
     void LoadPresets();
-    void ShowNotification(std::string title, std::string message);
+    void ShowNotification(const wxString& title, const wxString& message);
     void ChangeModelByName(wxString ModelName);
     void ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info);
     void ChangeGuiFromQueueItem(const QM::QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
-    void UpdateJobInfoDetailsFromJobQueueList(QM::QueueItem* item);
+    void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::QueueItem> item);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
     void ProcessOutputThread();
@@ -198,11 +200,9 @@ private:
     static void ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
     static void ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
 
-    static void HandleSDLog(sd_log_level_t level, const char* text, void* data);
-    static void HandleSDProgress(int step, int steps, float time, void* data);
 
-    // QM::QueueItem* handleSdImage(std::string result, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler);
-    QM::QueueItem* handleSdImage(const std::string& tmpImagePath, QM::QueueItem* itemPtr, wxEvtHandler* eventHandler);
+    // std::shared_ptr<QM::QueueItem> handleSdImage(std::string result, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
+    std::shared_ptr<QM::QueueItem> handleSdImage(const std::string& tmpImagePath, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
 
     std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::map<std::string, std::string> params, SDMode mode);
@@ -213,12 +213,12 @@ private:
     void PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo);
 
     // start a thread to generate image
-    void StartGeneration(QM::QueueItem* myJob);
+    void StartGeneration(std::shared_ptr<QM::QueueItem> myJob);
 
     // handle queue managers events, manipulate data table by events
-    void OnQueueItemManagerItemAdded(QM::QueueItem* item);
-    void OnQueueItemManagerItemUpdated(QM::QueueItem* item);
-    void OnQueueItemManagerItemStatusChanged(QM::QueueItem* item);
+    void OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> item);
+    void OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> item);
+    void OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::QueueItem> item);
 
     template <typename T>
     static void SendThreadEvent(wxEvtHandler* eventHandler, QM::QueueEvents eventType, const T& payload, std::string text = "");
@@ -248,7 +248,7 @@ private:
         char timestamp[30];
         std::strftime(timestamp, sizeof(timestamp), "[%Y-%m-%d %H:%M:%S]", timeinfo);
         std::lock_guard<std::mutex> lock(this->logMutex);
-        wxString logline = wxString::Format("%s: %s", timestamp, message);
+        wxString logline = wxString::Format("%s: %s", timestamp, wxString::FromUTF8Unchecked(message));
         if (logfile.is_open()) {
             logfile << logline.c_str();
             logfile.flush();

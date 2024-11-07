@@ -5,7 +5,12 @@ set(SD_BUILD_EXAMPLES OFF)
 set(SD_BUILD_SHARED_LIBS ON)
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS ON)
 set(SDCPP_VERSION "ac54e00")
-set(SD_GIT_TAG "tags/master-${SDCPP_VERSION}")
+
+if (SDCPP_VERSION STREQUAL "master")
+    set(SD_GIT_TAG "${SDCPP_VERSION}")
+else()
+    set(SD_GIT_TAG "tags/master-${SDCPP_VERSION}")
+endif()
 
 
 set(SDGUI_AVX OFF)
