@@ -171,9 +171,15 @@ namespace QM {
             item = nullptr;
         }
     }
+    struct QueueStatsStepItem {
+        int step;
+        int steps;
+        float time;
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueStatsStepItem, step, steps, time)
     struct QueueItemStats {
         float time_min = 0.f, time_max = 0.f, time_avg = 0.f, time_total = 0.f;
-        std::map<int, float> time_per_step;
+        std::vector<QM::QueueStatsStepItem> time_per_step = {};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItemStats, time_min, time_max, time_avg, time_total, time_per_step)
 
@@ -224,8 +230,7 @@ namespace QM {
               app_version(other.app_version),
               git_version(other.git_version),
               keep_checkpoint_in_memory(other.keep_checkpoint_in_memory),
-              keep_upscaler_in_memory(other.keep_upscaler_in_memory)
-               {}
+              keep_upscaler_in_memory(other.keep_upscaler_in_memory) {}
         QueueItem() = default;
     };
 

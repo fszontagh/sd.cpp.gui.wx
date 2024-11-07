@@ -2360,7 +2360,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 break;
             case QM::QueueEvents::ITEM_FINISHED: {
                 // update again
-                //this->SendThreadEvent(this->GetEventHandler(), QM::QueueEvents::ITEM_UPDATED, item);
+                this->SendThreadEvent(this->GetEventHandler(), QM::QueueEvents::ITEM_UPDATED, item);
                 this->m_stop_background_process->Enable();
                 this->jobsCountSinceSegfault++;
                 this->stepsCountSinceSegfault += item->steps;

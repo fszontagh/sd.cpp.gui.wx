@@ -24,7 +24,7 @@ public:
     }
 
     inline static void HandleSDProgress(int step, int steps, float time, void* data) {
-        if (step == 0) {
+        if (time == 0.0f) {
             return;
         }
         ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
@@ -45,13 +45,14 @@ public:
             instance->currentItem->stats.time_max = instance->currentItem->stats.time_max < time ? time : instance->currentItem->stats.time_max;
         }
 
-        instance->currentItem->stats.time_per_step[step] = time;
+        // instance->currentItem->stats.time_per_step[step] = time;
+        instance->currentItem->stats.time_per_step.emplace_back(QM::QueueStatsStepItem(step, steps, time));
         instance->currentItem->stats.time_total += time;
 
         if (instance->currentItem->step > 0) {
             instance->currentItem->stats.time_avg = instance->currentItem->stats.time_total / instance->currentItem->step;
         }
-        
+
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         instance->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_UPDATED);
         std::cout << "[EXTPROCESS] Item: " << instance->currentItem->id << " Step: " << instance->currentItem->step << "/" << instance->currentItem->steps << " Time: " << instance->currentItem->time << "s" << std::endl;
