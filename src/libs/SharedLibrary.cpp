@@ -15,13 +15,13 @@ void SharedLibrary::load() {
     }
 
 #if defined(_WIN32) || defined(_WIN64)
-    std::string libname = libraryPath + ".dll";
+    std::string libname = libraryPath;
     handle              = LoadLibraryA(libname.c_str());
     if (!handle) {
         throw std::runtime_error("Failed to load library: " + libraryPath);
     }
 #else
-    std::string libname = libraryPath + ".so";
+    std::string libname = libraryPath;
     handle              = dlopen(libname.c_str(), RTLD_LAZY);
     if (!handle) {
         throw std::runtime_error("Failed to load library: " + std::string(dlerror()));

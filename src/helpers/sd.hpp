@@ -5,8 +5,17 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <cstdint>
+#include <fstream>
+#include <iostream>
 #include <string>
 #include "../libs/json.hpp"
+
+inline static void writeCriticalLog(const std::string& log, std::string filename) {
+    std::filesystem::path p = std::filesystem::current_path() / filename;
+    std::ofstream logFile(p, std::ios::app);
+    logFile << log << std::endl;
+    logFile.close();
+}
 
 // Enumerations
 enum rng_type_t { STD_DEFAULT_RNG,

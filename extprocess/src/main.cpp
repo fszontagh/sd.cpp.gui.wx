@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 
+
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
@@ -19,12 +20,13 @@
 #include "ui/QueueManager.h"
 
 #include "ApplicationLogic.h"
-
+#include "helpers/sd.hpp"
 #include "config.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <dynamiclib_name>" << std::endl;
+        writeCriticalLog("wrong parameters: " + std::string(argv[0]), "stablediffusiongui_diffuser.log");
         return 1;
     }
     try {
@@ -33,6 +35,7 @@ int main(int argc, char* argv[]) {
         ApplicationLogic appLogic(argv[1], sharedMemory);
         if (!appLogic.loadLibrary()) {
             std::cerr << "[EXTPROCESS] Can not load shared library" << std::endl;
+            writeCriticalLog("[EXTPROCESS] Can not load shared library: " + std::string(argv[1]), "stablediffusiongui_diffuser.log");
             return 1;
         }
         bool needToRun = true;
@@ -69,6 +72,7 @@ int main(int argc, char* argv[]) {
         }
     } catch (std::exception& e) {
         std::cerr << "[EXTPROCESS] " << e.what() << std::endl;
+        writeCriticalLog("[EXTPROCESS] ERR: " + std::string(e.what()), "stablediffusiongui_diffuser.log");
         return 1;
     }
 

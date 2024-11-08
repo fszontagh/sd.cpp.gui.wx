@@ -4,10 +4,13 @@
 #include <vector>
 
 // Warning: this is an automatic generated header file, do not modify it
+#if defined(_WIN32) || defined(WIN32) || defined(WIN64)
+inline const char* EPROCESS_BINARY_NAME       = "@EPROCESS_BINARY_NAME@.exe";
+#else
 inline const char* EPROCESS_BINARY_NAME       = "@EPROCESS_BINARY_NAME@";
+#endif
 inline const char* SHARED_MEMORY_PATH         = "/@PROJECT_NAME@";
-// 1MB shared memory for larger jobs
-inline const unsigned int SHARED_MEMORY_SIZE  = 1024*1024;
+inline const unsigned int SHARED_MEMORY_SIZE  = 10240;
 inline const unsigned int EPROCESS_SLEEP_TIME = 500;
 inline const unsigned int EPROCESS_STD_BUFFER = 10240;
 

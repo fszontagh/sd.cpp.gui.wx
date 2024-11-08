@@ -80,15 +80,47 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
         }
 
-        this->extProcessParam   = dllName;
+        wxFileName f(wxStandardPaths::Get().GetExecutablePath());
+        wxString appPath(f.GetPathWithSep());
+
+        wxString commandFullPath = appPath + wxString::FromUTF8Unchecked(this->extprocessCommand.c_str());
+        
+
+        this->extprocessCommand = commandFullPath.utf8_string();
+        
+
+        if (std::filesystem::exists(this->extprocessCommand) == false) {
+            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
+            this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));
+            errorDialog.ShowModal();
+            this->Destroy();
+            return;
+        }
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+            wxString dllFullPath     = appPath + wxString::FromUTF8Unchecked(dllName.c_str());
+            this->extProcessParam   = dllFullPath.utf8_string() + ".dll";
+
+        if (std::filesystem::exists(this->extProcessParam) == false) {
+            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam), _("Error"), wxOK | wxICON_ERROR);
+            this->writeLog(wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam));
+            errorDialog.ShowModal();
+            this->Destroy();
+            return;
+        }
+#else
+            this->extProcessParam   = dllName + ".so";
+#endif
+
         this->extProcessRunning = false;
 
         // start process from the thread
 
-        const char* command_line[] = {this->extprocessCommand.c_str(), dllName.c_str(), nullptr};
+        this->writeLog("Starting external process: " + this->extprocessCommand + " " + this->extProcessParam + "\n");
+        const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
         if (0 != result) {
             wxMessageDialog errorDialog(this, _("An error occurred when trying to start external process. Please try again."), _("Error"), wxOK | wxICON_ERROR);
             errorDialog.ShowModal();
@@ -3718,7 +3750,7 @@ void MainWindowUI::ProcessCheckThread() {
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
         if (0 != result) {
             {
                 std::lock_guard<std::mutex> lock(this->taskBarMutex);
