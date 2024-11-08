@@ -88,6 +88,7 @@ private:
     SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
     sd_gui_utils::VoidHolder* voidHolder                       = nullptr;
     std::mutex itemMutex;
+    std::string tempPath;
 
     void Txt2Img();
     void Img2img();
@@ -105,12 +106,13 @@ private:
         this->currentItem->status     = status;
         this->currentItem->event      = event;
         this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        this->currentItem->update_index++;
 
         if (reason.length() > 0) {
             this->currentItem->status_message = reason;
         }
 
-        nlohmann::json j       = *this->currentItem.get();
+        nlohmann::json j       = *this->currentItem;
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
     }

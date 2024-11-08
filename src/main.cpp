@@ -1,12 +1,12 @@
 #include <wx/app.h>
-#include <wx/event.h>
 #include <wx/dynlib.h>
+#include <wx/event.h>
 #include <wx/image.h>
 #include <wx/snglinst.h>
+#include <csignal>
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
 #include "ui/MainWindowUI.h"
-#include <csignal>
 #include "ui/embedded_files/splash_image.h"
 
 // Define the MainApp
@@ -14,13 +14,11 @@ class MainApp : public wxApp {
 private:
     wxSingleInstanceChecker* m_checker;
 
-
 public:
     bool OnInit() override {
-
-        wxString forceType           = "";
-        bool allow_multiple_instance = false;
-        std::string usingBackend     = "cpu";
+        wxString forceType                  = "";
+        bool allow_multiple_instance        = false;
+        std::string usingBackend            = "cpu";
         bool disableExternalProcessHandling = false;
 
         for (int i = 0; i < wxApp::argc; ++i) {
@@ -112,13 +110,18 @@ public:
         }
 
         MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend, disableExternalProcessHandling);
-        mainFrame->Show(true);
         SetTopWindow(mainFrame);
+        if (mainFrame->IsBeingDeleted() == false) {
+            splash->Hide();
+            mainFrame->Show(true);
+            splash->Destroy();
+            return true;
+        }
         splash->Destroy();
-        return true;
+        return false;
     }
     int OnExit() override {
-        delete m_checker;       
+        delete m_checker;
         return 0;
     }
 };

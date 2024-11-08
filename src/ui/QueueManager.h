@@ -204,6 +204,7 @@ namespace QM {
         std::string git_version            = GIT_HASH;
         bool keep_checkpoint_in_memory     = false;
         bool keep_upscaler_in_memory       = false;
+        int update_index                   = -1;
         QueueItem(const QueueItem& other)
             : id(other.id),
               created_at(other.created_at),
@@ -230,7 +231,8 @@ namespace QM {
               app_version(other.app_version),
               git_version(other.git_version),
               keep_checkpoint_in_memory(other.keep_checkpoint_in_memory),
-              keep_upscaler_in_memory(other.keep_upscaler_in_memory) {}
+              keep_upscaler_in_memory(other.keep_upscaler_in_memory),
+              update_index(other.update_index) {}
         QueueItem() = default;
     };
 
@@ -261,7 +263,9 @@ namespace QM {
         app_version,
         git_version,
         keep_checkpoint_in_memory,
-        keep_upscaler_in_memory)
+        keep_upscaler_in_memory,
+        update_index
+        )
 
     class QueueManager {
     public:

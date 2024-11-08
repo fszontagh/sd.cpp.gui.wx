@@ -90,9 +90,12 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
         int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path, this->subprocess);
         if (0 != result) {
-            wxMessageDialog errorDialog(this, _("An error occurred. Please try again."), _("Error"), wxOK | wxICON_ERROR);
+            wxMessageDialog errorDialog(this, _("An error occurred when trying to start external process. Please try again."), _("Error"), wxOK | wxICON_ERROR);
             errorDialog.ShowModal();
-            exit(1);
+            delete this->subprocess;
+            this->subprocess = nullptr;
+            this->Destroy();
+            return;
         }
         this->extProcessNeedToRun = true;
         this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
@@ -644,6 +647,22 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.n_threads              = this->cfg->n_threads;
         item->keep_checkpoint_in_memory     = this->m_keep_other_models_in_memory->GetValue();
         item->keep_upscaler_in_memory       = this->m_keep_upscaler_in_memory->GetValue();
+
+        auto selectedwType = this->m_type->GetStringSelection();
+        for (auto types : sd_gui_utils::sd_type_gui_names) {
+            if (types.second == selectedwType) {
+                item->params.wtype = (sd_type_t)types.first;
+            }
+        }
+
+        auto selectedScheduler = this->m_scheduler->GetStringSelection();
+        for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
+            if (schedulers.second == selectedScheduler) {
+                item->params.schedule = (schedule_t)schedulers.first;
+                break;
+            }
+        }
+
         if (this->cfg->save_all_image) {
             item->images.emplace_back(new QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
         }
@@ -709,27 +728,19 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     item->params.sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
 
-    if (this->m_type->GetCurrentSelection() != 0) {
-        auto selected = this->m_type->GetStringSelection();
-        for (auto types : sd_gui_utils::sd_type_gui_names) {
-            if (types.second == selected) {
-                item->params.wtype = (sd_type_t)types.first;
-            }
+    auto selectedwType = this->m_type->GetStringSelection();
+    for (auto types : sd_gui_utils::sd_type_gui_names) {
+        if (types.second == selectedwType) {
+            item->params.wtype = (sd_type_t)types.first;
         }
-    } else {
-        item->params.wtype = sd_type_t::SD_TYPE_COUNT;
     }
 
-    if (this->m_scheduler->GetCurrentSelection() != 0) {
-        auto selected = this->m_scheduler->GetStringSelection();
-        for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
-            if (schedulers.second == selected) {
-                item->params.schedule = (schedule_t)schedulers.first;
-                break;
-            }
+    auto selectedScheduler = this->m_scheduler->GetStringSelection();
+    for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
+        if (schedulers.second == selectedScheduler) {
+            item->params.schedule = (schedule_t)schedulers.first;
+            break;
         }
-    } else {
-        item->params.schedule = schedule_t::DEFAULT;
     }
 
     item->params.batch_count = this->m_batch_count->GetValue();
@@ -3483,6 +3494,21 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
     item->params.output_path            = modelOutName;
     item->params.model_path             = modelInfo->path;
 
+    auto selectedwType = this->m_type->GetStringSelection();
+    for (auto types : sd_gui_utils::sd_type_gui_names) {
+        if (types.second == selectedwType) {
+            item->params.wtype = (sd_type_t)types.first;
+        }
+    }
+
+    auto selectedScheduler = this->m_scheduler->GetStringSelection();
+    for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
+        if (schedulers.second == selectedScheduler) {
+            item->params.schedule = (schedule_t)schedulers.first;
+            break;
+        }
+    }
+
     if (this->m_vae->GetCurrentSelection() > 0) {
         usingVae              = this->m_vae->GetStringSelection().utf8_string();
         item->params.vae_path = this->VaeFiles.at(usingVae);
@@ -3498,7 +3524,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
     if (dialog.ShowModal() == wxID_YES) {
         if (std::filesystem::exists(modelOutName)) {
             wxString overwriteQuestion = wxString::Format(_("The file %s already exists. Do you want to overwrite it?"), modelOutName);
-            wxMessageDialog overwriteDialog(this, _("Overwrite File?"), overwriteQuestion, wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
+            wxMessageDialog overwriteDialog(this, overwriteQuestion, _("Overwrite File?"), wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
             if (overwriteDialog.ShowModal() != wxID_YES) {
                 return;
             }
@@ -3533,7 +3559,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
         // mutex lock
         std::lock_guard<std::mutex> lock(this->mutex);
 
-        if (itemPtr->updated_at != item.updated_at || itemPtr->event != item.event) {
+        if (itemPtr->update_index != item.update_index || itemPtr->event != item.event) {
             if (BUILD_TYPE == "Debug") {
                 std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
             }

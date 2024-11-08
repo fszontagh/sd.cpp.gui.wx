@@ -29,7 +29,15 @@
 #include "libs/stb_image_resize.h"
 
 ApplicationLogic::ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager)
-    : sd_dll(libName), sharedMemoryManager(sharedMemoryManager) {}
+    : sd_dll(libName), sharedMemoryManager(sharedMemoryManager) {
+#if defined(WIN32) || defined(_WIN32) || defined(_WIN64)
+    auto TempDir   = std::getenv("Temp");
+    this->tempPath = std::filesystem::path(TempDir).string();
+#else
+    this->tempPath = std::filesystem::temp_directory_path().string();
+#endif
+    std::cout << "Using tmp path: " << this->tempPath << std::endl;
+}
 
 ApplicationLogic::~ApplicationLogic() {
     if (sd_ctx) {
@@ -428,16 +436,15 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         return "";
     }
 
-    std::filesystem::path tempPath = std::filesystem::temp_directory_path();
-    if (!std::filesystem::exists(tempPath)) {
+    if (!std::filesystem::exists(this->tempPath)) {
         std::cerr << __FILE__ << ":" << __LINE__ << ": temp directory does not exist" << std::endl;
         return "";
     }
 
-    std::string filename = tempPath.string() + "/" + generateRandomFilename(".jpg");
+    std::string filename = this->tempPath + "/" + generateRandomFilename(".jpg");
 
     if (stbi_write_jpg(filename.c_str(), image.width, image.height, 3, image.data, 100) == 0) {
-        std::cerr << __FILE__ << ":" << __LINE__ << ": stbi_write_jpg failed" << std::endl;
+        std::cerr << __FILE__ << ":" << __LINE__ << ": stbi_write_jpg failed: " << filename.c_str() << std::endl;
         return "";
     }
     std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;
@@ -601,7 +608,7 @@ bool ApplicationLogic::loadSdModel() {
             if (this->upscale_ctx != nullptr && this->currentItem->keep_upscaler_in_memory == false) {
                 std::cout << "Freeing upscale_ctx" << std::endl;
                 this->freeUpscalerCtxPtr(this->upscale_ctx);
-                this->upscale_ctx = nullptr;                
+                this->upscale_ctx = nullptr;
             }
 
             this->sd_ctx = this->newSdCtxFuncPtr(
