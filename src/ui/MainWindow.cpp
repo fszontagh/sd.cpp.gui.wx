@@ -1690,6 +1690,52 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panel18->Layout();
 	bSizer89->Fit( m_panel18 );
 	m_notebook1696->AddPage( m_panel18, _("CivitAi"), false );
+	m_panel24 = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer100;
+	bSizer100 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer101;
+	bSizer101 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_addBackend = new wxButton( m_panel24, wxID_ANY, _("Add backend"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer101->Add( m_addBackend, 0, wxALL, 5 );
+
+	m_hostname = new wxTextCtrl( m_panel24, wxID_ANY, _("127.0.0.1"), wxDefaultPosition, wxSize( 180,-1 ), wxTE_DONTWRAP );
+	#ifdef __WXGTK__
+	if ( !m_hostname->HasFlag( wxTE_MULTILINE ) )
+	{
+	m_hostname->SetMaxLength( 128 );
+	}
+	#else
+	m_hostname->SetMaxLength( 128 );
+	#endif
+	bSizer101->Add( m_hostname, 0, wxALL, 5 );
+
+	m_port = new wxSpinCtrl( m_panel24, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, 10000, 20000, 11000 );
+	bSizer101->Add( m_port, 0, wxALL, 5 );
+
+	m_deleteBackend = new wxBitmapButton( m_panel24, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_deleteBackend->SetBitmap( trash_png_to_wx_bitmap() );
+	m_deleteBackend->Enable( false );
+	m_deleteBackend->SetToolTip( _("Delete selected backend") );
+
+	bSizer101->Add( m_deleteBackend, 0, wxALL, 5 );
+
+
+	bSizer100->Add( bSizer101, 0, 0, 5 );
+
+	m_backendList = new wxDataViewListCtrl( m_panel24, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES );
+	m_dataViewListColumn42 = m_backendList->AppendTextColumn( _("Host"), wxDATAVIEW_CELL_EDITABLE, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn43 = m_backendList->AppendTextColumn( _("Port"), wxDATAVIEW_CELL_EDITABLE, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn44 = m_backendList->AppendToggleColumn( _("Active"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	bSizer100->Add( m_backendList, 1, wxALL|wxEXPAND, 5 );
+
+
+	m_panel24->SetSizer( bSizer100 );
+	m_panel24->Layout();
+	bSizer100->Fit( m_panel24 );
+	m_notebook1696->AddPage( m_panel24, _("Backends"), false );
 
 	sizer2010->Add( m_notebook1696, 1, wxALL|wxEXPAND, 5 );
 
@@ -1728,6 +1774,9 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_image_quality_spin->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( Settings::OnImgQualitySpin ), NULL, this );
 	m_show_notifications->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
+	m_addBackend->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnAddBackend ), NULL, this );
+	m_deleteBackend->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnRemoveBackend ), NULL, this );
+	m_backendList->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( Settings::OnBackendListSelectionChanged ), NULL, this );
 	m_save->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
 }
 
@@ -1756,6 +1805,9 @@ Settings::~Settings()
 	m_image_quality_spin->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( Settings::OnImgQualitySpin ), NULL, this );
 	m_show_notifications->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
+	m_addBackend->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnAddBackend ), NULL, this );
+	m_deleteBackend->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnRemoveBackend ), NULL, this );
+	m_backendList->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( Settings::OnBackendListSelectionChanged ), NULL, this );
 	m_save->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
 
 }

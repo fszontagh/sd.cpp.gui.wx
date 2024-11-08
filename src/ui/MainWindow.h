@@ -334,6 +334,15 @@ class Settings : public wxFrame
 		wxStaticText* m_staticText42;
 		wxTextCtrl* m_civitai_api_key;
 		wxBitmapButton* m_bpButton15;
+		wxPanel* m_panel24;
+		wxButton* m_addBackend;
+		wxTextCtrl* m_hostname;
+		wxSpinCtrl* m_port;
+		wxBitmapButton* m_deleteBackend;
+		wxDataViewListCtrl* m_backendList;
+		wxDataViewColumn* m_dataViewListColumn42;
+		wxDataViewColumn* m_dataViewListColumn43;
+		wxDataViewColumn* m_dataViewListColumn44;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
@@ -343,6 +352,9 @@ class Settings : public wxFrame
 		virtual void OnImgQualitySpin( wxSpinEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnAddBackend( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnRemoveBackend( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnBackendListSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }
 
 

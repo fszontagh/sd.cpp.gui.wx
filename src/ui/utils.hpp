@@ -299,28 +299,35 @@ namespace sd_gui_utils {
     enum imageTypes { JPG,
                       PNG };
     inline const char* image_types_str[] = {"JPG", "PNG"};
+
+    struct backends {
+        std::string hostname;
+        unsigned int port = 0;
+        bool enabled      = false;
+    };
     struct config {
-        std::string model          = "";
-        std::string vae            = "";
-        std::string lora           = "";
-        std::string embedding      = "";
-        std::string taesd          = "";
-        std::string esrgan         = "";
-        std::string presets        = "";
-        std::string output         = "";
-        std::string jobs           = "";
-        std::string controlnet     = "";
-        std::string datapath       = "";
-        std::string tmppath        = "";
-        std::string thumbs_path    = "";
-        bool keep_model_in_memory  = true;
-        bool save_all_image        = true;
-        int n_threads              = 2;
-        imageTypes image_type      = imageTypes::JPG;
-        unsigned int image_quality = 90;
-        bool show_notifications    = true;
-        int notification_timeout   = 60;
-        bool enable_civitai        = true;
+        std::string model                            = "";
+        std::string vae                              = "";
+        std::string lora                             = "";
+        std::string embedding                        = "";
+        std::string taesd                            = "";
+        std::string esrgan                           = "";
+        std::string presets                          = "";
+        std::string output                           = "";
+        std::string jobs                             = "";
+        std::string controlnet                       = "";
+        std::string datapath                         = "";
+        std::string tmppath                          = "";
+        std::string thumbs_path                      = "";
+        bool keep_model_in_memory                    = true;
+        bool save_all_image                          = true;
+        int n_threads                                = 2;
+        imageTypes image_type                        = imageTypes::JPG;
+        unsigned int image_quality                   = 90;
+        bool show_notifications                      = true;
+        int notification_timeout                     = 60;
+        bool enable_civitai                          = true;
+        std::vector<sd_gui_utils::backends> backends = {};
     };
     inline std::string formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);
@@ -707,7 +714,6 @@ namespace sd_gui_utils {
 
         return wxString::FromUTF8Unchecked(sd_gui_utils::normalizePath(cache_path.utf8_string() + "/" + filename.string()));
     }
-
 
     inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
         wxString cache_name;

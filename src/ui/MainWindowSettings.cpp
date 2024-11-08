@@ -1,55 +1,17 @@
 #include "MainWindowSettings.h"
-#include "wx/utils.h"
+#include "utils.hpp"
 
-MainWindowSettings::MainWindowSettings(wxWindow *parent)
-    : Settings(parent)
-{
+MainWindowSettings::MainWindowSettings(wxWindow* parent)
+    : Settings(parent) {
     this->ini_path = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
 
-    this->cfg = new sd_gui_utils::config;
+    this->cfg        = new sd_gui_utils::config;
     this->fileConfig = new wxFileConfig("sd.cpp.ui", wxEmptyString, this->ini_path);
     wxConfigBase::Set(fileConfig);
     this->InitConfig();
 }
 
-void MainWindowSettings::OnImgQualityScroll(wxScrollEvent &event)
-{
-    // TODO: Implement OnImgQualityScroll
-    this->m_image_quality_spin->SetValue(this->m_image_quality->GetValue());
-}
-
-void MainWindowSettings::OnImgQualitySpin(wxSpinEvent &event)
-{
-    // TODO: Implement OnImgQualitySpin
-    this->m_image_quality->SetValue(this->m_image_quality_spin->GetValue());
-}
-
-void MainWindowSettings::onShowNotificationCheck(wxCommandEvent &event)
-{
-    // TODO: Implement onShowNotificationCheck
-    if (!this->m_show_notifications->IsChecked())
-    {
-        this->m_notification_timeout->Disable();
-        this->cfg->notification_timeout = 60;
-    }
-    else
-    {
-        this->m_notification_timeout->Enable();
-    }
-}
-
-void MainWindowSettings::OnCivitaiHelpButton(wxCommandEvent &event)
-{
-   wxString civitHelpLink = "https://education.civitai.com/civitais-guide-to-downloading-via-api/#step-by-step";
-   wxLaunchDefaultBrowser(civitHelpLink);
-}
-
-void MainWindowSettings::OnTAESDHelpClick(wxCommandEvent &event) {
-    wxString taesdHelpLink = "https://github.com/leejet/stable-diffusion.cpp/blob/master/docs/taesd.md";
-    wxLaunchDefaultBrowser(taesdHelpLink);
-}
-
-void MainWindowSettings::OnOpenFolder(wxCommandEvent &event) {
+void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
     if (event.GetEventObject() == this->m_openModelsPath) {
         wxLaunchDefaultApplication(this->m_model_dir->GetPath());
     }
@@ -77,17 +39,55 @@ void MainWindowSettings::OnOpenFolder(wxCommandEvent &event) {
     if (event.GetEventObject() == this->m_openOutputPath) {
         wxLaunchDefaultApplication(this->m_images_output->GetPath());
     }
-
 }
 
-void MainWindowSettings::onSave(wxCommandEvent &event)
-{
+void MainWindowSettings::OnTAESDHelpClick(wxCommandEvent& event) {
+    wxString taesdHelpLink = "https://github.com/leejet/stable-diffusion.cpp/blob/master/docs/taesd.md";
+    wxLaunchDefaultBrowser(taesdHelpLink);
+}
 
+void MainWindowSettings::OnImgQualityScroll(wxScrollEvent& event) {
+    // TODO: Implement OnImgQualityScroll
+    this->m_image_quality_spin->SetValue(this->m_image_quality->GetValue());
+}
+
+void MainWindowSettings::OnImgQualitySpin(wxSpinEvent& event) {
+    // TODO: Implement OnImgQualitySpin
+    this->m_image_quality->SetValue(this->m_image_quality_spin->GetValue());
+}
+
+void MainWindowSettings::onShowNotificationCheck(wxCommandEvent& event) {
+    // TODO: Implement onShowNotificationCheck
+    if (!this->m_show_notifications->IsChecked()) {
+        this->m_notification_timeout->Disable();
+        this->cfg->notification_timeout = 60;
+    } else {
+        this->m_notification_timeout->Enable();
+    }
+}
+
+void MainWindowSettings::OnCivitaiHelpButton(wxCommandEvent& event) {
+    wxString civitHelpLink = "https://education.civitai.com/civitais-guide-to-downloading-via-api/#step-by-step";
+    wxLaunchDefaultBrowser(civitHelpLink);
+}
+
+void MainWindowSettings::OnAddBackend(wxCommandEvent& event) {
+    // TODO: Implement OnAddBackend
+}
+
+void MainWindowSettings::OnRemoveBackend(wxCommandEvent& event) {
+    // TODO: Implement OnRemoveBackend
+}
+
+void MainWindowSettings::OnBackendListSelectionChanged(wxDataViewEvent& event) {
+    auto col = event.GetDataViewColumn();
+}
+
+void MainWindowSettings::onSave(wxCommandEvent& event) {
     // save secret
     wxString username = "civitai_api_key";
 
-    if (!this->m_civitai_api_key->GetValue().empty())
-    {
+    if (!this->m_civitai_api_key->GetValue().empty()) {
         wxSecretValue password(this->m_civitai_api_key->GetValue());
         wxSecretStore store = wxSecretStore::GetDefault();
         store.Save(SD_GUI_HOMEPAGE, username, password);
@@ -114,10 +114,9 @@ void MainWindowSettings::onSave(wxCommandEvent &event)
     this->Close();
 }
 
-void MainWindowSettings::InitConfig()
-{
+void MainWindowSettings::InitConfig() {
     this->m_staticNumberOfCores->SetLabel(wxString::Format("%d", cores()));
-    wxString datapath = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
+    wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
     wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
 
     wxString model_path = datapath;
@@ -144,41 +143,53 @@ void MainWindowSettings::InitConfig()
     wxString esrgan_path = datapath;
     esrgan_path.append("esrgan");
 
-    this->cfg->lora = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
-    this->cfg->model = this->fileConfig->Read("/paths/model", model_path).ToStdString();
-    this->cfg->vae = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
-    this->cfg->embedding = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
-    this->cfg->taesd = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
-    this->cfg->esrgan = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
-    this->cfg->controlnet = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
-    this->cfg->presets = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
-    this->cfg->output = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
+    this->cfg->lora                 = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
+    this->cfg->model                = this->fileConfig->Read("/paths/model", model_path).ToStdString();
+    this->cfg->vae                  = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
+    this->cfg->embedding            = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
+    this->cfg->taesd                = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->esrgan               = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
+    this->cfg->controlnet           = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
+    this->cfg->presets              = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
+    this->cfg->output               = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
     this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads = this->fileConfig->Read("/n_threads", cores());
-    this->cfg->image_quality = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
-    this->cfg->show_notifications = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
+    this->cfg->save_all_image       = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads            = this->fileConfig->Read("/n_threads", cores());
+    this->cfg->image_quality        = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
+    this->cfg->show_notifications   = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
     this->cfg->notification_timeout = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
-    this->cfg->enable_civitai = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+    this->cfg->enable_civitai       = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
 
+
+    std::vector<sd_gui_utils::backends> backends;
+    wxString oldPath = this->fileConfig->GetPath();
+    this->fileConfig->SetPath("/backends");
+    long dummy;
+    wxString name;
+
+    bool bcount = this->fileConfig->GetFirstGroup(name, dummy);
+    while (bcount) {
+
+
+        bcount = this->fileConfig->GetNextEntry(name, dummy);
+    }
+
+    this->fileConfig->SetPath(oldPath);
 
     wxString username = "civitai_api_key";
     wxSecretValue password;
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(SD_GUI_HOMEPAGE, username, password))
-    {
+    if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 
-    int idx = 0;
+    int idx               = 0;
     auto saved_image_type = this->fileConfig->Read("/image_type", "JPG");
 
-    for (auto type : sd_gui_utils::image_types_str)
-    {
-        if (saved_image_type == type)
-        {
+    for (auto type : sd_gui_utils::image_types_str) {
+        if (saved_image_type == type) {
             this->m_image_type->Select(idx);
             this->cfg->image_type = (sd_gui_utils::imageTypes)idx;
             break;
@@ -204,4 +215,12 @@ void MainWindowSettings::InitConfig()
     this->m_show_notifications->SetValue(this->cfg->show_notifications);
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);
     this->m_enableCivitai->SetValue(this->cfg->enable_civitai);
+
+    for (const auto backend : this->cfg->backends) {
+        wxVector<wxVariant> backendListRow;
+        backendListRow.push_back(wxString::Format("%s", backend.hostname));
+        backendListRow.push_back(wxString::Format("%s", backend.port));
+        backendListRow.push_back(backend.enabled);
+        this->m_backendList->AppendItem(backendListRow);
+    }
 }
