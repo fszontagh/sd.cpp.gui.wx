@@ -84,10 +84,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         wxString appPath(f.GetPathWithSep());
 
         wxString commandFullPath = appPath + wxString::FromUTF8Unchecked(this->extprocessCommand.c_str());
-        
 
         this->extprocessCommand = commandFullPath.utf8_string();
-        
 
         if (std::filesystem::exists(this->extprocessCommand) == false) {
             wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
@@ -98,8 +96,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-            wxString dllFullPath     = appPath + wxString::FromUTF8Unchecked(dllName.c_str());
-            this->extProcessParam   = dllFullPath.utf8_string() + ".dll";
+        wxString dllFullPath  = appPath + wxString::FromUTF8Unchecked(dllName.c_str());
+        this->extProcessParam = dllFullPath.utf8_string() + ".dll";
 
         if (std::filesystem::exists(this->extProcessParam) == false) {
             wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam), _("Error"), wxOK | wxICON_ERROR);
@@ -109,7 +107,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             return;
         }
 #else
-            this->extProcessParam   = dllName + ".so";
+        this->extProcessParam = dllName + ".so";
 #endif
 
         this->extProcessRunning = false;
@@ -3761,8 +3759,8 @@ void MainWindowUI::ProcessCheckThread() {
         this->jobsCountSinceSegfault  = 0;
         this->stepsCountSinceSegfault = 0;
         if (BUILD_TYPE == "Debug") {
-            std::cout << "[GUI] restart sleep time: " << (EPROCESS_SLEEP_TIME) << std::endl;
+            std::cout << "[GUI] restart sleep time: " << (EPROCESS_SLEEP_TIME * 10) << std::endl;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 10));
     }
 }
