@@ -11,31 +11,23 @@ if (WIN32)
 endif()
 
 
-# Setting up Internationalisation (i18n)
-find_package (Intl REQUIRED)
-if (Intl_FOUND)
-    message(STATUS "Internationalization (i18n) found")
-    include_directories(${INTL_INCLUDE_DIRS})
-    link_directories(${INTL_LIBRARY_DIRS})
-else ()
-    message(STATUS "Internationalization (i18n) Not found!")
-endif ()
-
 find_package(Gettext REQUIRED)
 if (Gettext_FOUND)
-    message(STATUS "Gettext found:")
-    message(STATUS " Version: ${GETTEXT_VERSION_STRING}")
+    message(STATUS "Gettext found")
 else ()
     message(STATUS "Gettext Not found!")
 endif ()
 
-find_program(GETTEXT_XGETTEXT_EXECUTABLE xgettext)
-find_program(GETTEXT_MSGMERGE_EXECUTABLE msgmerge)
-find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt)
+# in github runner, there is msys2 installed in C:\msys64
+find_program(GETTEXT_XGETTEXT_EXECUTABLE xgettext PATHS "C:\\msys64\\usr\\bin\\")
+find_program(GETTEXT_MSGMERGE_EXECUTABLE msgmerge PATHS "C:\\msys64\\usr\\bin\\")
+find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt PATHS "C:\\msys64\\usr\\bin\\")
+
+message(STATUS " xgettext: ${GETTEXT_XGETTEXT_EXECUTABLE}")
+message(STATUS " msgmerge: ${GETTEXT_MSGMERGE_EXECUTABLE}")
+message(STATUS " msgfmt: ${GETTEXT_MSGFMT_EXECUTABLE}")
 
 if (GETTEXT_XGETTEXT_EXECUTABLE)
-
-    message(DEBUG " xgettext: ${GETTEXT_XGETTEXT_EXECUTABLE}")
     file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS RELATIVE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h ${CMAKE_SOURCE_DIR}/extprocess/*.cpp ${CMAKE_SOURCE_DIR}/extprocess/*.h)
     add_custom_target(
         pot-update
@@ -66,9 +58,7 @@ if (GETTEXT_XGETTEXT_EXECUTABLE)
 
 endif (GETTEXT_XGETTEXT_EXECUTABLE)
 
-if (GETTEXT_MSGMERGE_EXECUTABLE)
-
-    message(STATUS " msgmerge: ${GETTEXT_MSGMERGE_EXECUTABLE}")
+if (GETTEXT_MSGMERGE_EXECUTABLE)   
 
     add_custom_target(
         pot-merge
