@@ -14,6 +14,7 @@
 #include <wx/event.h>
 #include <wx/window.h>
 
+#include <wx/intl.h>
 #include "ver.hpp"
 #include "wx/string.h"
 
@@ -51,13 +52,13 @@ namespace QM {
         {"img2vid", QM::GenerationMode::IMG2VID}};
 
     inline const char* QueueStatus_str[] = {
-        "pending",
-        "running",
-        "paused",
-        "failed",
-        "model loading...",
-        "finished",
-        "model hashing..."};
+        _("pending"),
+        _("running"),
+        _("paused"),
+        _("failed"),
+        _("model loading..."),
+        _("finished"),
+        _("model hashing...")};
 
     /// @brief Event commands to inter thread communication
     enum class QueueEvents : unsigned int {
@@ -264,8 +265,7 @@ namespace QM {
         git_version,
         keep_checkpoint_in_memory,
         keep_upscaler_in_memory,
-        update_index
-        )
+        update_index)
 
     class QueueManager {
     public:
@@ -321,6 +321,21 @@ namespace QM {
                 this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[this->currentItem->id]);
             }
         }
+        inline void resetRunning(const wxString& reason) {
+            if (this->QueueList.empty()) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(queueMutex);
+            if (this->currentItem == nullptr) {
+                return;
+            }
+            if (this->QueueList.find(this->currentItem->id) != this->QueueList.end()) {
+                if (reason.empty() == false) {
+                    this->currentItem->status_message = reason.utf8_string();
+                }
+                this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[this->currentItem->id]);
+            }
+        }        
         inline std::shared_ptr<QM::QueueItem> GetCurrentItem() { return this->currentItem; }
 
     private:

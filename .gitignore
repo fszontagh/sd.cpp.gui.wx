@@ -41,3 +41,4 @@ vcpkg_installed/
 /build
 /external/stable-diffusion
 /ui/ver.hpp
+locale/**/*.mo

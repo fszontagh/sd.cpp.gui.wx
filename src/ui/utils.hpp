@@ -10,13 +10,14 @@
 
 #include <wx/colour.h>
 #include <wx/image.h>
+#include <wx/string.h>
 
 #include "../helpers/sd.hpp"
 
 #include "../helpers/civitai.hpp"
 #include "../libs/bitmask_operators.h"
 #include "../libs/json.hpp"
-#include "wx/string.h"
+
 
 namespace sd_gui_utils {
 

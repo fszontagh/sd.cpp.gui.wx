@@ -4,10 +4,14 @@
 #include <wx/image.h>
 #include <wx/snglinst.h>
 #include <csignal>
+#include <iostream>
+#include <ostream>
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
 #include "ui/MainWindowUI.h"
 #include "ui/embedded_files/splash_image.h"
+#include "wx/intl.h"
+#include "wx/uilocale.h"
 
 // Define the MainApp
 class MainApp : public wxApp {
@@ -109,8 +113,34 @@ public:
             }
         }
 
+
+        // load locale
+
+        // locales files are in the same directory as the executable
+        wxFileTranslationsLoader::AddCatalogLookupPathPrefix(".");
+#ifdef USE_COREUTILS_MO
+
+        g_loadedCoreutilsMO = trans->AddCatalog("coreutils");
+#endif  // USE_COREUTILS_MO
+
+        const wxLanguageInfo* const langInfo = wxUILocale::GetLanguageInfo(wxLANGUAGE_DEFAULT);
+        const wxString langDesc              = langInfo ? langInfo->Description : wxString("the default system language");
+
+        wxUILocale::UseDefault();
+        auto locale                 = wxUILocale::GetCurrent();
+        wxTranslations* const trans = new wxTranslations();
+        wxTranslations::Set(trans);
+
+        if ( !trans->AddCatalog("stablediffusiongui") )
+        {
+            std::cerr << "Couldn't find/load 'stablediffusiongui' catalog for " << langDesc << std::endl;
+        }
+
+        // load locale
+
         MainWindowUI* mainFrame = new MainWindowUI(nullptr, dllName.ToStdString(), usingBackend, disableExternalProcessHandling);
         SetTopWindow(mainFrame);
+
         if (mainFrame->IsBeingDeleted() == false) {
             splash->Hide();
             mainFrame->Show(true);

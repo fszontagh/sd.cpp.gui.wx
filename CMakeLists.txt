@@ -131,8 +131,9 @@ else()
     list(APPEND APPDEPENDS exiv2lib)
 endif()
 
+include(cmake/intl.cmake)
 
-add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS})
+add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile)
 
 # Include directories
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE 

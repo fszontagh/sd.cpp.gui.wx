@@ -14,8 +14,6 @@
 #include "extprocess/config.hpp"
 #include "ver.hpp"
 #include "wx/colour.h"
-#include "wx/file.h"
-#include "wx/filefn.h"
 #include "wx/filename.h"
 #include "wx/image.h"
 #include "wx/string.h"
@@ -67,7 +65,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
-    this->m_upscalerHelp->SetPage(wxString("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"https://civitai.com/models/147817/realesrganx4plus\">RealESRGAN_x4Plus</a>"));
+    this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
 
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
@@ -166,28 +164,34 @@ void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
 
     wxString about = wxString(_("<p><strong>Disclaimer</strong></p><p>Use of this application is at your own risk. The developer assumes no responsibility or liability for any potential data loss, damage, or other issues arising from its usage. By using this application, you acknowledge and accept these terms.</p>"));
 
-    about.Append(wxString::Format(
-        "<h2>%s</h2><p>Version: %s </p><p>Git version: %s</p><p>Website: <a target='_blank' href='%s'>%s</a></p><hr/>",
-        PROJECT_NAME, SD_GUI_VERSION, GIT_HASH, SD_GUI_HOMEPAGE, PROJECT_NAME));
+    // about.Append(wxString::Format(
+    //     "<h2>%s</h2><p>Version: %s </p><p>Git version: %s</p><p>Website: <a target='_blank' href='%s'>%s</a></p><hr/>",
+    //     PROJECT_NAME, SD_GUI_VERSION, GIT_HASH, SD_GUI_HOMEPAGE, PROJECT_NAME));
 
-    about.Append(wxString::Format("<p>Loaded backend: %s</p>", usingBackend.c_str()));
+    about.Append(wxString::Format("<h2>%s</h2>", PROJECT_NAME));
+    about.Append(wxString::Format(_("<p>Version: %s</p>"), SD_GUI_VERSION));
+    about.Append(wxString::Format(_("<p>Git version: %s</p>"), GIT_HASH));
+    about.Append(wxString::Format(_("<p>Website: <a target='_blank' href='%s'>%s</a></p>"), SD_GUI_HOMEPAGE, SD_GUI_HOMEPAGE));
+
+    about.Append(wxString::Format(_("<p>Loaded backend: %s</p>"), usingBackend.c_str()));
     about.append(wxString::Format(
-        "<p>Configuration folder: %s</p><p>Config file: %s</p><p>Data folder: %s</p>",
-        wxStandardPaths::Get().GetUserConfigDir(), this->ini_path, this->cfg->datapath));
+        "<p>%s %s</p><p>%s %s</p><p>%s %s</p>", _("Configuration folder:"),
+        wxStandardPaths::Get().GetUserConfigDir(), _("Config file:"), this->ini_path, _("Data folder:"), this->cfg->datapath));
 
-    about.Append(wxString::Format("<p>Model folder: %s</p>", this->cfg->model));
-    about.Append(wxString::Format("<p>Embedding folder: %s</p>", this->cfg->embedding));
-    about.Append(wxString::Format("<p>Lora folder: %s</p>", this->cfg->lora));
-    about.Append(wxString::Format("<p>Vae folder: %s</p>", this->cfg->vae));
-    about.Append(wxString::Format("<p>Controlnet folder: %s</p>", this->cfg->controlnet));
-    about.Append(wxString::Format("<p>Esrgan folder: %s</p>", this->cfg->esrgan));
-    about.Append(wxString::Format("<p>Taesd folder: %s</p>", this->cfg->taesd));
-    about.Append(wxString::Format("<p>Image's output folder: %s</p>", this->cfg->output));
-    about.Append(wxString::Format("<p>Jobs folder: %s</p>", this->cfg->jobs));
-    about.Append(wxString::Format("<p>Presets folder: %s</p>", this->cfg->presets));
+    wxString format_string = "<p>%s %s</p>";
+    about.Append(wxString::Format(format_string, _("Model folder:"), this->cfg->model));
+    about.Append(wxString::Format(format_string, _("Embedding folder:"), this->cfg->embedding));
+    about.Append(wxString::Format(format_string, _("Lora folder:"), this->cfg->lora));
+    about.Append(wxString::Format(format_string, _("Vae folder:"), this->cfg->vae));
+    about.Append(wxString::Format(format_string, _("Controlnet folder:"), this->cfg->controlnet));
+    about.Append(wxString::Format(format_string, _("ESRGAN folder:"), this->cfg->esrgan));
+    about.Append(wxString::Format(format_string, _("TAESD folder:"), this->cfg->taesd));
+    about.Append(wxString::Format(format_string, _("Output folder:"), this->cfg->output));
+    about.Append(wxString::Format(format_string, _("Jobs folder:"), this->cfg->jobs));
+    about.Append(wxString::Format(format_string, _("Presets folder:"), this->cfg->presets));
 
     about.append(wxString("<pre>"));
-    about.append(wxString("N/A"));
+    about.append(wxString(_("N/A")));
     about.append(wxString("</pre>"));
     dialog->m_about->SetPage(about);
     dialog->SetIcon(this->GetIcon());
@@ -495,7 +499,7 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
         }
 
         menu->AppendSeparator();
-        menu->Append(99, "Delete");
+        menu->Append(99, _("Delete"));
         menu->Enable(99, false);
 
         if (qitem->status == QM::QueueStatus::RUNNING ||
@@ -2481,7 +2485,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_START) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         this->ModelManager->UpdateInfo(modelinfo);
-        this->writeLog(wxString::Format("Model civitai %" PRIuMAX " image(s) download started for model: %s\n", modelinfo->CivitAiInfo.images.size(), modelinfo->name));
+        this->writeLog(wxString::Format(_("Model civitai %" PRIuMAX " image(s) download started for model: %s\n"), modelinfo->CivitAiInfo.images.size(), modelinfo->name));
         return;
     }
 
@@ -2493,8 +2497,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_START) {
         sd_gui_utils::ModelFileInfo* modelinfo =
             e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        this->writeLog(wxString::Format(
-            _("Model civitai info download start: %s\n"), modelinfo->name));
+        this->writeLog(wxString::Format(_("Model civitai info download start: %s\n"), modelinfo->name));
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FINISHED) {
@@ -2506,15 +2509,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->ModelManager->getIntoPtr(newInfo.path);
 
         if (newInfo.state == sd_gui_utils::CivitAiState::OK) {
-            this->writeLog(
-                wxString::Format(_("Model civitai info download finished: %s\n"),
-                                 newInfo.CivitAiInfo.name));
-            this->threads.emplace_back(
-                new std::thread(&MainWindowUI::threadedModelInfoImageDownload, this, this->GetEventHandler(), newInfoptr));
+            this->writeLog(wxString::Format(_("Model civitai info download finished: %s\n"), newInfo.CivitAiInfo.name));
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoImageDownload, this, this->GetEventHandler(), newInfoptr));
         }
         if (newInfo.state == sd_gui_utils::CivitAiState::NOT_FOUND) {
-            this->writeLog(
-                wxString::Format(_("Model civitai info not found: %s Hash: %s\n"), newInfo.name, newInfo.sha256.substr(0, 10)));
+            this->writeLog(wxString::Format(_("Model civitai info not found: %s Hash: %s\n"), newInfo.name, newInfo.sha256.substr(0, 10)));
         }
         if (newInfo.state == sd_gui_utils::CivitAiState::ERR) {
             this->writeLog(wxString::Format(_("Model civitai info unkown parsing error happened: %s Hash: %s\n"), newInfo.name, newInfo.sha256.substr(0, 10)));
@@ -2522,9 +2521,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // update anyway
         this->UpdateModelInfoDetailsFromModelList(modelinfo);
         // update table
-        auto store = this->m_data_model_list->GetStore();
-        int civitAiCol =
-            this->m_data_model_list->GetColumnCount() - 2;  // civitai col
+        auto store     = this->m_data_model_list->GetStore();
+        int civitAiCol = this->m_data_model_list->GetColumnCount() - 2;  // civitai col
 
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto _item      = store->GetItem(i);
@@ -2919,20 +2917,24 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             data.clear();
         }
 
-        data.push_back(wxVariant(_("VAE")));
-        data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.vae_path)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
+        if (item->params.vae_path.empty() == false) {
+            data.push_back(wxVariant(_("VAE")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.vae_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
 
         data.push_back(wxVariant(_("VAE tiling")));
         data.push_back(wxVariant(wxString(item->params.vae_tiling == true ? _("yes") : _("no"))));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant(_("TAESD")));
-        data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.taesd_path)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
+        if (item->params.taesd_path.empty() == false) {
+            data.push_back(wxVariant(_("TAESD")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.taesd_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
     }
     if (item->mode == QM::GenerationMode::TXT2IMG) {
         data.push_back(wxVariant(_("Width")));
@@ -3738,7 +3740,7 @@ void MainWindowUI::ProcessCheckThread() {
         }
         // clear the last job to avoid restarting the failed job
         this->sharedMemory->clear();
-        this->qmanager->resetRunning("External process stopped");
+        this->qmanager->resetRunning(_("External process stopped"));
         {
             std::lock_guard<std::mutex> lock(this->taskBarMutex);
             this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
