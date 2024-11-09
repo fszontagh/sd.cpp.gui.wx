@@ -2418,7 +2418,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                         title = wxString::Format(_("%d images generation done"), item->params.batch_count);
                     } else {
                         title   = _("Image generation done!");
-                        message = wxString::Format(_("%s is just finished to generate the image\nModel: %s"), modes_str[item->mode], item->model).utf8_string();
+                        message = wxString::Format(_("%s is just finished to generate the image with model: %s"), modes_str[item->mode], item->model).utf8_string();
                     }
                 }
                 this->ShowNotification(title, message);
