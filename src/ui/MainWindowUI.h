@@ -259,7 +259,7 @@ private:
         }
     }
     inline void writeLog(const wxString& message) {
-        this->writeLog(message.ToStdString());
+        this->writeLog(message.utf8_string());
     }
 };
 

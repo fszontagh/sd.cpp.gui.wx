@@ -149,6 +149,11 @@ jobs:
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSD_CUBLAS=ON -DSD_HIPBLAS=ON --preset conan-default
 
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config Release --target po-compile
+
       - name: Build and Package Installer
         run: |
           cd build
