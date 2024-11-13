@@ -11,7 +11,7 @@ if (WIN32)
 endif()
 
 
-find_package(Gettext REQUIRED)
+find_package(Gettext)
 if (Gettext_FOUND)
     message(STATUS "Gettext found")
 else ()
