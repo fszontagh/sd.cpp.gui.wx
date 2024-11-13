@@ -3,7 +3,19 @@ set(EPROCESS_BINARY_NAME "${PROJECT_BINARY_NAME}_diffuser")
 configure_file(src/config.hpp.in config.hpp)
 
 
-add_executable(${EPROCESS_BINARY_NAME} src/main.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp)
+set(SOURCES "src/main.cpp")
+
+if (WIN32)
+    list(APPEND SOURCES ${CMAKE_SOURCE_DIR}/minimal.rc)
+endif()
+
+add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp)
+
+
+if (WIN32)
+    target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:2097152)
+    target_compile_options(${EPROCESS_BINARY_NAME} PRIVATE /Zc:__cplusplus)
+endif()
 
 target_include_directories(${EPROCESS_BINARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${wxWidgets_SOURCE_DIR}/include ${exiv2_INCLUDE_DIR} ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 

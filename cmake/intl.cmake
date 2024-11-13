@@ -18,7 +18,6 @@ else ()
     message(STATUS "Gettext Not found!")
 endif ()
 
-# in github runner, there is msys2 installed in C:\msys64
 find_program(GETTEXT_XGETTEXT_EXECUTABLE xgettext PATHS "C:\\msys64\\usr\\bin\\")
 find_program(GETTEXT_MSGMERGE_EXECUTABLE msgmerge PATHS "C:\\msys64\\usr\\bin\\")
 find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt PATHS "C:\\msys64\\usr\\bin\\")
