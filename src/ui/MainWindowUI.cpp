@@ -2428,12 +2428,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 } else if (item->mode == QM::GenerationMode::CONVERT) {
                     title   = _("Conversion done");
                     message = wxString::Format(_("Conversion the model is done: %s\nModel: %s"), item->model, item->params.output_path);
+                    this->loadModelList();
                 } else {
                     if (item->params.batch_count > 1) {
                         title = wxString::Format(_("%d images generation done"), item->params.batch_count);
                     } else {
                         title   = _("Image generation done!");
-                        message = wxString::Format(_("%s is just finished to generate the image with model: %s"), modes_str[item->mode], item->model).utf8_string();
+                        message = wxString::Format(_("%s is just finished to generate the image with model: %s"), modes_str[item->mode], item->model);
                     }
                 }
                 this->ShowNotification(title, message);
@@ -2461,7 +2462,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             case QM::QueueEvents::ITEM_MODEL_FAILED:  // MODEL_LOAD_ERROR
                 this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->params.model_path));
                 title   = _("Model load failed");
-                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model).utf8_string();
+                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model);
                 this->ShowNotification(title, message);
                 break;
             case QM::QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
@@ -2518,12 +2519,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FINISHED) {
-        sd_gui_utils::ModelFileInfo* modelinfo =
-            e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        sd_gui_utils::ModelFileInfo newInfo =
-            this->ModelManager->updateCivitAiInfo(modelinfo);
-        sd_gui_utils::ModelFileInfo* newInfoptr =
-            this->ModelManager->getIntoPtr(newInfo.path);
+        sd_gui_utils::ModelFileInfo* modelinfo  = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        sd_gui_utils::ModelFileInfo newInfo     = this->ModelManager->updateCivitAiInfo(modelinfo);
+        sd_gui_utils::ModelFileInfo* newInfoptr = this->ModelManager->getIntoPtr(newInfo.path);
 
         if (newInfo.state == sd_gui_utils::CivitAiState::OK) {
             this->writeLog(wxString::Format(_("Model civitai info download finished: %s\n"), newInfo.CivitAiInfo.name));
@@ -2707,8 +2705,7 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
     if (token == "DOWNLOAD_FINISH") {
         auto payload = e.GetPayload<CivitAi::DownloadItem*>();
 
-        std::string name =
-            std::filesystem::path(payload->local_file).filename().string();
+        std::string name = std::filesystem::path(payload->local_file).filename().string();
 
         if (payload->type == CivitAi::ModelTypes::Checkpoint) {
             this->loadModelList();
@@ -2723,25 +2720,19 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
             // type = sd_gui_utils::DirTypes::EMBEDDING;
             this->loadEmbeddingList();
         }
-        auto value = this->m_modellist_filter->GetValue().utf8_string();
+        auto value = this->m_modellist_filter->GetValue();
         this->refreshModelTable(value);
 
-        std::string title = _("Model download finished").utf8_string();
-        std::string message =
-            wxString::Format(_("The model download is finished: %s"), name)
-                .utf8_string();
+        auto title   = _("Model download finished");
+        auto message = wxString::Format(_("The model download is finished: %s"), name);
         this->ShowNotification(title, message);
 
         return;
     }
     if (token == "DOWNLOAD_ERROR") {
-        auto payload      = e.GetPayload<CivitAi::DownloadItem*>();
-        std::string title = _("Model download failed").utf8_string();
-        std::string message =
-            wxString::Format(
-                _("The model download is failed: %s"),
-                std::filesystem::path(payload->local_file).filename().string())
-                .utf8_string();
+        auto payload        = e.GetPayload<CivitAi::DownloadItem*>();
+        auto title   = _("Model download failed");
+        auto message = wxString::Format(_("The model download is failed: %s"), std::filesystem::path(payload->local_file).filename().string());
         this->ShowNotification(title, message);
         return;
     }
