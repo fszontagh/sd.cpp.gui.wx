@@ -62,7 +62,7 @@ inline bool isNvidiaGPU() {
 #include <regex>
 #include <string>
 
-bool isNvidiaGPU() {
+inline bool isNvidiaGPU() {
     HKEY hKey;
     DWORD dataType, dataSize;
     char data[1024];
@@ -80,7 +80,7 @@ bool isNvidiaGPU() {
     return false;
 }
 
-bool isAmdGPU() {
+inline bool isAmdGPU() {
     bool isAmd          = false;
     IWbemLocator* pLoc  = nullptr;
     IWbemServices* pSvc = nullptr;
