@@ -1,23 +1,6 @@
 #ifndef __SD_GUI_QUEUE_MANAGER
 #define __SD_GUI_QUEUE_MANAGER
 
-#include <fstream>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "utils.hpp"
-
-#include <wx/event.h>
-#include <wx/window.h>
-
-#include <wx/intl.h>
-#include "ver.hpp"
-#include "wx/string.h"
-
 namespace QM {
     enum QueueStatus {
         PENDING,

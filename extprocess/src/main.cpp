@@ -16,6 +16,11 @@
 
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
+#include "ver.hpp"
+#include "wx/translation.h"
+#include "wx/event.h"
+#include "wx/string.h"
+#include "../../src/ui/utils.hpp"
 #include "ui/QueueManager.h"
 
 #include "ApplicationLogic.h"

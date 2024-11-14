@@ -3,7 +3,12 @@
 
 #include <memory>
 #include <string>
+#include "wx/translation.h"
+#include "wx/event.h"
+#include "ver.hpp"
+#include "../../src/ui/utils.hpp"
 #include "helpers/sd.hpp"
+
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
