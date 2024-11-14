@@ -137,8 +137,9 @@ public:
             // wxUILocale::GetCurrent().FromTag(best);
             // wxTranslations::Get()->SetLanguage(best);
 
-            if (m_Locale) {
-                wxDELETE(m_Locale);
+            if (this->m_Locale != nullptr) {
+                delete this->m_Locale;
+                this->m_Locale = nullptr;
             }
             this->m_Locale = new wxLocale;
             this->m_Locale->Init(linfo->GetLocaleName(), newLangName);
@@ -176,6 +177,6 @@ private:
     wxString backend;
     bool disableExternalProcessHandling = false;
     wxString iniPath;
-    wxLocale* m_Locale;
+    wxLocale* m_Locale = nullptr;
 };
 #endif
