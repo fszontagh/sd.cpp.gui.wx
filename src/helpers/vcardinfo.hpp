@@ -1,28 +1,23 @@
 #ifndef __DETECT_VCARD__
 #define __DETECT_VCARD__
 
-#ifndef WIN32
-#include <iostream>
-#include <fstream>
-#include <string>
+#if !defined(WIN32) && !defined(_WIN32) && !defined(__WIN32__) && !defined(WIN64) && !defined(_WIN64) && !defined(__WIN64__)
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 namespace fs = std::filesystem;
 
-inline bool isAmdGPU()
-{
-    for (const auto &entry : fs::directory_iterator("/sys/class/drm"))
-    {
-        if (fs::is_directory(entry.path()))
-        {
+inline bool isAmdGPU() {
+    for (const auto& entry : fs::directory_iterator("/sys/class/drm")) {
+        if (fs::is_directory(entry.path())) {
             std::string path = entry.path().string();
             std::ifstream file(path + "/device/vendor");
-            if (file.is_open())
-            {
+            if (file.is_open()) {
                 std::string vendor;
                 std::getline(file, vendor);
-                if (vendor.find("AMD") != std::string::npos)
-                {
+                if (vendor.find("AMD") != std::string::npos) {
                     return true;
                 }
                 file.close();
@@ -32,28 +27,22 @@ inline bool isAmdGPU()
     return false;
 }
 
-inline bool isNvidiaGPU()
-{
+inline bool isNvidiaGPU() {
     // Check if NVIDIA driver directory exists
     if (!std::filesystem::exists("/proc/driver/nvidia")) {
         return false;
     }
 
     // Iterate over all directories in /proc/driver/nvidia/gpus/
-    for (const auto& entry : fs::directory_iterator("/proc/driver/nvidia/gpus"))
-    {
-        if (fs::is_directory(entry))
-        {
+    for (const auto& entry : fs::directory_iterator("/proc/driver/nvidia/gpus")) {
+        if (fs::is_directory(entry)) {
             std::string gpuInfoPath = entry.path().string() + "/information";
             std::ifstream file(gpuInfoPath);
 
-            if (file.is_open())
-            {
+            if (file.is_open()) {
                 std::string line;
-                while (std::getline(file, line))
-                {
-                    if (line.find("NVIDIA") != std::string::npos)
-                    {
+                while (std::getline(file, line)) {
+                    if (line.find("NVIDIA") != std::string::npos) {
                         return true;
                     }
                 }
@@ -66,26 +55,22 @@ inline bool isNvidiaGPU()
 }
 
 #else
-#include <iostream>
 #include <Windows.h>
-#include <string>
-#include <regex>
-#include <wbemidl.h>
 #include <comutil.h>
+#include <wbemidl.h>
+#include <iostream>
+#include <regex>
+#include <string>
 
-bool isNvidiaGPU()
-{
+bool isNvidiaGPU() {
     HKEY hKey;
     DWORD dataType, dataSize;
     char data[1024];
-    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\nvlddmkm", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
-    {
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services\\nvlddmkm", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         dataSize = sizeof(data);
-        if (RegQueryValueExA(hKey, "ImagePath", 0, &dataType, (LPBYTE)data, &dataSize) == ERROR_SUCCESS)
-        {
+        if (RegQueryValueExA(hKey, "ImagePath", 0, &dataType, (LPBYTE)data, &dataSize) == ERROR_SUCCESS) {
             std::string imagePath(data);
-            if (imagePath.find("nvlddmkm.sys") != std::string::npos)
-            {
+            if (imagePath.find("nvlddmkm.sys") != std::string::npos) {
                 RegCloseKey(hKey);
                 return true;
             }
@@ -95,11 +80,10 @@ bool isNvidiaGPU()
     return false;
 }
 
-bool isAmdGPU()
-{
-    bool isAmd = false;
-    IWbemLocator *pLoc = nullptr;
-    IWbemServices *pSvc = nullptr;
+bool isAmdGPU() {
+    bool isAmd          = false;
+    IWbemLocator* pLoc  = nullptr;
+    IWbemServices* pSvc = nullptr;
 
     CoInitialize(NULL);
     HRESULT hr = CoInitializeSecurity(
@@ -113,36 +97,29 @@ bool isAmdGPU()
         EOAC_NONE,
         NULL);
 
-    if (SUCCEEDED(hr))
-    {
-        hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID *)&pLoc);
-        if (SUCCEEDED(hr))
-        {
+    if (SUCCEEDED(hr)) {
+        hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID*)&pLoc);
+        if (SUCCEEDED(hr)) {
             hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
-            if (SUCCEEDED(hr))
-            {
+            if (SUCCEEDED(hr)) {
                 hr = CoSetProxyBlanket(pSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
-                if (SUCCEEDED(hr))
-                {
-                    IEnumWbemClassObject *pEnumerator = NULL;
-                    hr = pSvc->ExecQuery(
+                if (SUCCEEDED(hr)) {
+                    IEnumWbemClassObject* pEnumerator = NULL;
+                    hr                                = pSvc->ExecQuery(
                         bstr_t("WQL"),
                         bstr_t("SELECT * FROM Win32_PnPEntity"),
                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
                         NULL,
                         &pEnumerator);
 
-                    if (SUCCEEDED(hr))
-                    {
-                        IWbemClassObject *pclsObj = NULL;
-                        ULONG uReturn = 0;
+                    if (SUCCEEDED(hr)) {
+                        IWbemClassObject* pclsObj = NULL;
+                        ULONG uReturn             = 0;
 
-                        while (pEnumerator)
-                        {
+                        while (pEnumerator) {
                             HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
 
-                            if (0 == uReturn)
-                            {
+                            if (0 == uReturn) {
                                 break;
                             }
 
@@ -150,13 +127,10 @@ bool isAmdGPU()
 
                             hr = pclsObj->Get(L"Description", 0, &vtProp, 0, 0);
 
-                            if (SUCCEEDED(hr))
-                            {
-                                if (vtProp.vt == VT_BSTR && vtProp.bstrVal != nullptr)
-                                {
+                            if (SUCCEEDED(hr)) {
+                                if (vtProp.vt == VT_BSTR && vtProp.bstrVal != nullptr) {
                                     std::wstring description(vtProp.bstrVal);
-                                    if (description.find(L"AMD") != std::wstring::npos || description.find(L"Advanced Micro Devices") != std::wstring::npos)
-                                    {
+                                    if (description.find(L"AMD") != std::wstring::npos || description.find(L"Advanced Micro Devices") != std::wstring::npos) {
                                         isAmd = true;
                                         VariantClear(&vtProp);
                                         break;

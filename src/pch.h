@@ -15,11 +15,7 @@
 #endif
 #include "wx/artprov.h"
 #include "wx/taskbar.h"
-#include <wx/persist/toplevel.h>
-
-
-
-
+#include "wx/persist/toplevel.h"
 #include "ui/embedded_files/splash_image.h"
 #include "wx/snglinst.h"
 #include "wx/uilocale.h"
@@ -27,7 +23,11 @@
 #include "wx/secretstore.h"
 #include "wx/stdpaths.h"
 #include "wx/splash.h"
-#include <wx/notifmsg.h>
+#include "wx/notifmsg.h"
+#include "wx/apptrait.h"
+#include "wx/intl.h"
+#include "wx/translation.h"
+
 
 #include "exiv2/exiv2.hpp"
 

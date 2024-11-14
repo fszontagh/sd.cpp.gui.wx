@@ -1,11 +1,6 @@
 #ifndef MAINAPP_H
 #define MAINAPP_H
 
-#include "wx/apptrait.h"
-#include "wx/fileconf.h"
-#include "wx/intl.h"
-#include "wx/translation.h"
-#include "wx/uilocale.h"
 class MainApp : public wxApp {
 private:
     wxSingleInstanceChecker* m_checker;
@@ -148,6 +143,7 @@ public:
             this->m_Locale = new wxLocale;
             this->m_Locale->Init(linfo->GetLocaleName(), newLangName);
             this->m_Locale->AddCatalogLookupPathPrefix(".");
+            this->m_Locale->AddCatalogLookupPathPrefix("./locale");
             this->m_Locale->AddCatalogLookupPathPrefix("/usr/share/locale");
 #ifdef USE_COREUTILS_MO
             this->m_Locale->AddCatalog("coreutils");
