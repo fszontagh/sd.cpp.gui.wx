@@ -18,7 +18,6 @@
 #include "../libs/bitmask_operators.h"
 #include "../libs/json.hpp"
 
-
 namespace sd_gui_utils {
 
     /**
@@ -314,6 +313,7 @@ namespace sd_gui_utils {
         std::string datapath       = "";
         std::string tmppath        = "";
         std::string thumbs_path    = "";
+        std::string language       = "en_US";
         bool keep_model_in_memory  = true;
         bool save_all_image        = true;
         int n_threads              = 2;
@@ -708,7 +708,6 @@ namespace sd_gui_utils {
 
         return wxString::FromUTF8Unchecked(sd_gui_utils::normalizePath(cache_path.utf8_string() + "/" + filename.string()));
     }
-
 
     inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
         wxString cache_name;

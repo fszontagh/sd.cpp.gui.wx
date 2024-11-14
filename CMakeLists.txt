@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
 project(StableDiffusionGUI 
 LANGUAGES CXX C 
-VERSION 0.1.8 
+VERSION 0.1.9
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 
@@ -84,6 +84,7 @@ add_subdirectory(extprocess)
 
 # Set target for the application
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
+target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE src/pch.h)
 
 if (NOT WIN32)
 	set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)

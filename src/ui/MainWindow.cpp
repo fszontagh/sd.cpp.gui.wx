@@ -202,13 +202,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer85;
 	bSizer85 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText231 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("CFG:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText231 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("CFG:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText231->Wrap( 0 );
 	bSizer85->Add( m_staticText231, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_cfg = new wxSpinCtrlDouble( m_scrolledWindow1, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 15, 0, 0.1 );
 	m_cfg->SetDigits( 1 );
-	bSizer85->Add( m_cfg, 0, wxALL|wxEXPAND, 5 );
+	bSizer85->Add( m_cfg, 1, wxALL|wxEXPAND, 5 );
 
 
 	bSizer22->Add( bSizer85, 1, wxEXPAND, 5 );
@@ -216,7 +216,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer86;
 	bSizer86 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText234 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Clip skip:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText234 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Clip skip:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText234->Wrap( 0 );
 	m_staticText234->SetToolTip( _("ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)\n<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x") );
 
@@ -233,7 +233,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer88;
 	bSizer88 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText20 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("TAESD:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText20 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("TAESD:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText20->Wrap( -1 );
 	m_staticText20->SetToolTip( _("Using Tiny AutoEncoder for fast decoding (low quality)") );
 
@@ -259,7 +259,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer89;
 	bSizer89 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText15 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Batch:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText15 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Batch:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText15->Wrap( -1 );
 	m_staticText15->SetToolTip( _("number of images to generate.") );
 
@@ -271,12 +271,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer89->Add( m_batch_count, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer9->Add( bSizer89, 1, wxEXPAND, 5 );
+	bSizer9->Add( bSizer89, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer90;
 	bSizer90 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText163 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Sampler:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText163 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Sampler:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText163->Wrap( 0 );
 	m_staticText163->SetToolTip( _("sampling method (default: \"euler_a\")") );
 
@@ -290,12 +290,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer90->Add( m_sampler, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer9->Add( bSizer90, 1, wxEXPAND, 5 );
+	bSizer9->Add( bSizer90, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer1002;
 	bSizer1002 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_schedulertext = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Scheduler:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_schedulertext = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Scheduler:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_schedulertext->Wrap( -1 );
 	bSizer1002->Add( m_schedulertext, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -307,7 +307,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1002->Add( m_scheduler, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer9->Add( bSizer1002, 1, wxEXPAND, 5 );
+	bSizer9->Add( bSizer1002, 0, wxEXPAND, 5 );
 
 
 	bSizer83->Add( bSizer9, 0, wxEXPAND, 5 );
@@ -318,7 +318,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer92;
 	bSizer92 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText233 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Seed:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText233 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Seed:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText233->Wrap( 0 );
 	bSizer92->Add( m_staticText233, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -338,7 +338,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer93;
 	bSizer93 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText14 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Steps:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText14 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Steps:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText14->Wrap( -1 );
 	m_staticText14->SetToolTip( _("number of sample steps (default: 20)") );
 
@@ -361,7 +361,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer94;
 	bSizer94 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText237 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Width:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText237 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Width:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText237->Wrap( 0 );
 	bSizer94->Add( m_staticText237, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -374,7 +374,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer95;
 	bSizer95 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText239 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Height:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
+	m_staticText239 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Height:"), wxDefaultPosition, wxSize( 80,-1 ), 0 );
 	m_staticText239->Wrap( 0 );
 	bSizer95->Add( m_staticText239, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -400,15 +400,17 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticline4 = new wxStaticLine( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	bSizer74->Add( m_staticline4, 0, wxEXPAND | wxALL, 5 );
 
+	m_staticText17 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Presets"), wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_CENTER_HORIZONTAL );
+	m_staticText17->Wrap( -1 );
+	m_staticText17->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
+
+	bSizer74->Add( m_staticText17, 0, wxALL|wxEXPAND, 5 );
+
 
 	bSizer83->Add( bSizer74, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer91;
 	bSizer91 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_staticText17 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Presets:"), wxDefaultPosition, wxSize( 60,-1 ), 0 );
-	m_staticText17->Wrap( -1 );
-	bSizer91->Add( m_staticText17, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_save_preset = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -431,7 +433,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_preset_list->SetSelection( 0 );
 	m_preset_list->Enable( false );
 
-	bSizer91->Add( m_preset_list, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer91->Add( m_preset_list, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_delete_preset = new wxBitmapButton( m_scrolledWindow1, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -1543,7 +1545,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	sizer2018->Add( m_keep_model_in_memory, 0, wxALIGN_LEFT|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( sizer2018, 0, wxALL, 5 );
+	sizer2017->Add( sizer2018, 0, wxALL|wxEXPAND, 5 );
 
 	wxGridSizer* sizer2019;
 	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
@@ -1551,12 +1553,11 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, _("Save all images (intermediate images)"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
 	m_save_all_image->SetValue(true);
 	m_save_all_image->Enable( false );
-	m_save_all_image->SetMinSize( wxSize( 230,-1 ) );
 
 	sizer2019->Add( m_save_all_image, 0, wxALIGN_LEFT|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2017->Add( sizer2019, 0, wxALL, 5 );
+	sizer2017->Add( sizer2019, 0, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxHORIZONTAL );
@@ -1622,7 +1623,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_notebook1696->AddPage( m_settings, _("Diffusion"), false );
 	m_settings_ui = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer30;
-	bSizer30 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer30 = new wxBoxSizer( wxVERTICAL );
 
 	wxBoxSizer* bSizer31;
 	bSizer31 = new wxBoxSizer( wxHORIZONTAL );
@@ -1641,7 +1642,32 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer31->Add( m_notification_timeout, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer30->Add( bSizer31, 1, wxALL, 5 );
+	bSizer30->Add( bSizer31, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer100;
+	bSizer100 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText50 = new wxStaticText( m_settings_ui, wxID_ANY, _("Language:"), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT );
+	m_staticText50->Wrap( -1 );
+	m_staticText50->SetMinSize( wxSize( 160,-1 ) );
+
+	bSizer100->Add( m_staticText50, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_languageChoices;
+	m_language = new wxChoice( m_settings_ui, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_languageChoices, 0 );
+	m_language->SetSelection( 0 );
+	m_language->SetMinSize( wxSize( 160,-1 ) );
+
+	bSizer100->Add( m_language, 0, wxALL, 5 );
+
+	m_staticText51 = new wxStaticText( m_settings_ui, wxID_ANY, _("Restart required"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText51->Wrap( -1 );
+	m_staticText51->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+
+	bSizer100->Add( m_staticText51, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer30->Add( bSizer100, 0, wxEXPAND|wxALL, 5 );
 
 
 	m_settings_ui->SetSizer( bSizer30 );
@@ -1662,7 +1688,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer90->Add( m_enableCivitai, 0, wxALL|wxEXPAND, 5 );
 
 
-	bSizer89->Add( bSizer90, 0, wxEXPAND, 5 );
+	bSizer89->Add( bSizer90, 0, wxEXPAND|wxALL, 5 );
 
 	wxBoxSizer* bSizer91;
 	bSizer91 = new wxBoxSizer( wxHORIZONTAL );
@@ -1683,7 +1709,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer91->Add( m_bpButton15, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer89->Add( bSizer91, 0, wxEXPAND, 5 );
+	bSizer89->Add( bSizer91, 0, wxEXPAND|wxALL, 5 );
 
 
 	m_panel18->SetSizer( bSizer89 );

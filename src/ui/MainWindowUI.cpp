@@ -14,15 +14,16 @@
 #include "extprocess/config.hpp"
 #include "ver.hpp"
 #include "wx/colour.h"
+#include "wx/fileconf.h"
 #include "wx/filename.h"
 #include "wx/image.h"
 #include "wx/string.h"
 #include "wx/translation.h"
+#include "wx/uilocale.h"
+#include "wx/window.h"
 
-MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling)
-    : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling) {
-    this->ini_path = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
-
+MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
+    : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
     this->AppOrigPlaceHolderBitmap    = this->m_img2img_preview->GetBitmap();
 
@@ -140,6 +141,7 @@ void MainWindowUI::onSettings(wxCommandEvent& event) {
     wxIcon icon;
     icon.CopyFromBitmap(bitmap);
     this->settingsWindow = new MainWindowSettings(this);
+    wxPersistenceManager::Get().RegisterAndRestore(this->settingsWindow);
     this->settingsWindow->SetIcon(icon);
     this->Freeze();
     this->settingsWindow->Bind(wxEVT_CLOSE_WINDOW, &MainWindowUI::OnCloseSettings, this);
@@ -176,7 +178,7 @@ void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     about.Append(wxString::Format(_("<p>Loaded backend: %s</p>"), usingBackend.c_str()));
     about.append(wxString::Format(
         "<p>%s %s</p><p>%s %s</p><p>%s %s</p>", _("Configuration folder:"),
-        wxStandardPaths::Get().GetUserConfigDir(), _("Config file:"), this->ini_path, _("Data folder:"), this->cfg->datapath));
+        wxStandardPaths::Get().GetUserConfigDir(), _("Config file:"), this->mapp->getIniPath(), _("Data folder:"), this->cfg->datapath));
 
     wxString format_string = "<p>%s %s</p>";
     about.Append(wxString::Format(format_string, _("Model folder:"), this->cfg->model));
@@ -653,7 +655,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->m_generate2->Enable(false);
     this->m_generate_upscaler->Enable(false);
 
-    this->initConfig();
+    // this->initConfig();
     auto type  = QM::GenerationMode::TXT2IMG;
     int pageId = this->m_notebook1302->GetSelection();
     switch (pageId) {
@@ -698,7 +700,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         }
 
         if (this->cfg->save_all_image) {
-            item->images.emplace_back(new QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+            item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
         }
         this->qmanager->AddItem(item, false);
         return;
@@ -805,6 +807,12 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->m_generate1->Enable(generate1State);
     this->m_generate2->Enable(generate2State);
     this->m_generate_upscaler->Enable(generate3State);
+
+    this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
+    this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
+    this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
+    this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(QM::GenerationMode_str.at(type)));
+    this->mapp->config->Flush(true);
 }
 
 void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent& event) {
@@ -1997,10 +2005,10 @@ void MainWindowUI::loadLoraList() {
 }
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
+    this->mapp->initConfig();
     this->initConfig();
     this->settingsWindow->Destroy();
     if (this->cfg->enable_civitai == false && this->m_civitai->IsShown()) {
-        std::cout << "Hide civitai button" << std::endl;
         this->m_civitai->Hide();
         if (this->civitwindow != nullptr) {
             this->civitwindow->Destroy();
@@ -2008,11 +2016,14 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
         }
     }
     if (this->cfg->enable_civitai == true && this->m_civitai->IsShown() == false) {
-        std::cout << "Show civiati button" << std::endl;
         this->m_civitai->Show();
     }
-    this->Thaw();
-    this->Show();
+
+    std::cout << "restart window with lang: " << this->cfg->language << std::endl;
+    this->mapp->ReloadMainWindow(this->cfg->language);
+
+    //        this->Thaw();
+    //        this->Show();
 }
 void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
     this->civitwindow->Destroy();
@@ -2430,7 +2441,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 {
                     if (this->jobsCountSinceSegfault > 0) {
                         std::lock_guard<std::mutex> lock(this->taskBarMutex);
-                        this->m_statusBar166->SetStatusText(wxString::Format(_("%d job%s and %d step%s without a segfault"), this->jobsCountSinceSegfault.load(), this->jobsCountSinceSegfault.load() > 1 ? "s" : "", this->stepsCountSinceSegfault.load(), this->stepsCountSinceSegfault.load() > 1 ? "s" : ""), 1);
+                        wxString msg;
+                        if (this->jobsCountSinceSegfault.load() > 1) {
+                            msg = _("%d jobs and %d steps without a segfault");
+                        } else {
+                            msg = _("%d job and %d step without a segfault");
+                        }
+                        this->m_statusBar166->SetStatusText(wxString::Format(msg, this->jobsCountSinceSegfault.load(), this->stepsCountSinceSegfault.load()), 1);
                     }
                 }
             } break;
@@ -3152,12 +3169,10 @@ void MainWindowUI::ShowNotification(const wxString& title, const wxString& messa
     if (this->cfg->show_notifications) {
         wxNotificationMessage notification(title, message, this);
         notification.SetTitle(title);
-#ifdef _WIN64
+#if defined(_WIN64) || defined(_WIN32) || defined(WIN32)
         notification.UseTaskBarIcon(this->TaskBar);
 #endif
-#ifdef _WIN32
-        notification.UseTaskBarIcon(this->TaskBar);
-#endif
+
         notification.Show(this->cfg->notification_timeout);
     }
 
@@ -3239,14 +3254,10 @@ void MainWindowUI::loadModelList() {
 }
 
 void MainWindowUI::initConfig() {
-    if (this->fileConfig != nullptr) {
-        delete this->fileConfig;
+    if (this->mapp->config == nullptr) {
+        return;
     }
-    this->fileConfig = new wxFileConfig(PROJECT_NAME, SD_GUI_AUTHOR, this->ini_path, wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
-    this->fileConfig->SetVendorName(SD_GUI_AUTHOR);
-    this->fileConfig->SetAppName(PROJECT_NAME);
 
-    wxConfigBase::Set(fileConfig);
     wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
     wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
 
@@ -3285,28 +3296,29 @@ void MainWindowUI::initConfig() {
 
     this->cfg->datapath = datapath;
 
-    this->cfg->lora                 = this->fileConfig->Read("/paths/lora", lora_path).utf8_string();
-    this->cfg->model                = this->fileConfig->Read("/paths/model", model_path).utf8_string();
-    this->cfg->vae                  = this->fileConfig->Read("/paths/vae", vae_path).utf8_string();
-    this->cfg->embedding            = this->fileConfig->Read("/paths/embedding", embedding_path).utf8_string();
-    this->cfg->taesd                = this->fileConfig->Read("/paths/taesd", taesd_path).utf8_string();
-    this->cfg->esrgan               = this->fileConfig->Read("/paths/esrgan", esrgan_path).utf8_string();
-    this->cfg->controlnet           = this->fileConfig->Read("/paths/controlnet", controlnet_path).utf8_string();
-    this->cfg->presets              = this->fileConfig->Read("/paths/presets", presets_path).utf8_string();
-    this->cfg->jobs                 = this->fileConfig->Read("/paths/jobs", jobs_path).utf8_string();
+    this->cfg->lora                 = this->mapp->config->Read("/paths/lora", lora_path).utf8_string();
+    this->cfg->model                = this->mapp->config->Read("/paths/model", model_path).utf8_string();
+    this->cfg->vae                  = this->mapp->config->Read("/paths/vae", vae_path).utf8_string();
+    this->cfg->embedding            = this->mapp->config->Read("/paths/embedding", embedding_path).utf8_string();
+    this->cfg->taesd                = this->mapp->config->Read("/paths/taesd", taesd_path).utf8_string();
+    this->cfg->esrgan               = this->mapp->config->Read("/paths/esrgan", esrgan_path).utf8_string();
+    this->cfg->controlnet           = this->mapp->config->Read("/paths/controlnet", controlnet_path).utf8_string();
+    this->cfg->presets              = this->mapp->config->Read("/paths/presets", presets_path).utf8_string();
+    this->cfg->jobs                 = this->mapp->config->Read("/paths/jobs", jobs_path).utf8_string();
     this->cfg->thumbs_path          = thumbs_path.utf8_string();
     this->cfg->tmppath              = tmp_path.utf8_string();
-    this->cfg->output               = this->fileConfig->Read("/paths/output", imagespath).utf8_string();
-    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image       = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads            = this->fileConfig->Read("/n_threads", cores());
-    this->cfg->show_notifications   = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
-    this->cfg->notification_timeout = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
-    this->cfg->image_quality        = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
-    this->cfg->enable_civitai       = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+    this->cfg->output               = this->mapp->config->Read("/paths/output", imagespath).utf8_string();
+    this->cfg->keep_model_in_memory = this->mapp->config->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
+    this->cfg->save_all_image       = this->mapp->config->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads            = this->mapp->config->Read("/n_threads", cores());
+    this->cfg->show_notifications   = this->mapp->config->ReadBool("/show_notification", this->cfg->show_notifications);
+    this->cfg->notification_timeout = this->mapp->config->Read("/notification_timeout", this->cfg->notification_timeout);
+    this->cfg->image_quality        = this->mapp->config->Read("/image_quality", this->cfg->image_quality);
+    this->cfg->enable_civitai       = this->mapp->config->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+    this->cfg->language             = this->mapp->config->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
 
     int idx               = 0;
-    auto saved_image_type = this->fileConfig->Read("/image_type", "JPG");
+    auto saved_image_type = this->mapp->config->Read("/image_type", "JPG");
 
     for (auto type : sd_gui_utils::image_types_str) {
         if (saved_image_type == type) {
