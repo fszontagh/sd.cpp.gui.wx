@@ -160,6 +160,32 @@ private:
     void ProcessOutputThread();
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
+    inline void DisableControlNet() {
+        this->m_controlnetModels->Disable();
+        this->m_controlnetModels->Select(0);
+        this->m_controlnetImageDelete->Disable();
+        this->m_controlnetImageOpen->Disable();
+        this->m_controlnetStrength->Disable();
+        this->m_controlnetImageOpen->SetPath("");
+        auto origSize = this->m_controlnetImagePreview->GetSize();
+        this->m_controlnetImagePreview->SetBitmap(this->ControlnetOrigPreviewBitmap);
+        this->m_controlnetImagePreview->SetSize(origSize);
+        this->m_controlnetImagePreviewButton->Disable();
+    };
+
+    inline void EnableControlNet() {
+        this->m_controlnetModels->Enable();
+        this->m_controlnetImageDelete->Enable();
+        this->m_controlnetImageOpen->Enable();
+        this->m_controlnetStrength->Enable();
+    };
+
+    inline void DisableModelSelect() {
+        this->m_model->Select(0);
+        this->m_model->Disable();
+    }
+    inline void EnableModelSelect() { this->m_model->Enable(); }
+
     std::shared_ptr<std::thread> processCheckThread   = nullptr;
     std::shared_ptr<std::thread> processHandleOutput  = nullptr;
     std::atomic_bool extProcessRunning                = false;

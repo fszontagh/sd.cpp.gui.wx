@@ -22,6 +22,7 @@
 #include "wx/translation.h"
 #include "wx/uilocale.h"
 #include "wx/utils.h"
+#include "wx/variant.h"
 #include "wx/window.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
@@ -258,11 +259,7 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
-    wxChoice* c = (wxChoice*)event.GetEventObject();
-    if (c->GetStringSelection() == "Q4_2 - not supported" ||
-        c->GetStringSelection() == "Q4_5 - not supported") {
-        c->SetSelection(sizeof(sd_gui_utils::sd_type_names[0]) - 1);
-    }
+    // TODO: Implement onTypeSelect
 }
 
 void MainWindowUI::onVaeSelect(wxCommandEvent& event) {
@@ -757,7 +754,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             item->model = this->m_model->GetStringSelection().utf8_string();
         } else {
             item->params.diffusion_model_path = diffusionModel.utf8_string();
-            item->model = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
+            item->model                       = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
         }
 
         auto slgscale = this->slgScale->GetValue();
@@ -884,7 +881,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
     this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
-    this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath().utf8_string());
+    this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath());
     this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(QM::GenerationMode_str.at(type)));
     this->mapp->config->Flush(true);
 }
@@ -910,30 +907,17 @@ void MainWindowUI::OnControlnetImagePreviewButton(wxCommandEvent& event) {
 }
 
 void MainWindowUI::OnControlnetImageDelete(wxCommandEvent& event) {
-    this->m_controlnetImagePreviewButton->Disable();
-    this->m_controlnetImageDelete->Disable();
-    this->m_controlnetImageOpen->SetPath("");
-    auto origSize = this->m_controlnetImagePreview->GetSize();
-    this->m_controlnetImagePreview->SetBitmap(this->ControlnetOrigPreviewBitmap);
-    this->m_controlnetImagePreview->SetSize(origSize);
+    this->DisableControlNet();
+    this->EnableControlNet();
     this->m_width->Enable();
     this->m_height->Enable();
     this->m_button7->Enable();  // swap resolution
-    this->m_controlnetModels->Select(0);
 }
 
 void MainWindowUI::onFilePickerDiffusionModel(wxFileDirPickerEvent& event) {
-    this->m_model->Select(0);
-    this->m_model->Disable();
-    auto origSize = this->m_controlnetImagePreview->GetSize();
-    this->m_controlnetImagePreview->SetBitmap(this->ControlnetOrigPreviewBitmap);
-    this->m_controlnetImagePreview->SetSize(origSize);
-    this->m_controlnetModels->Disable();
-    this->m_controlnetModels->Select(0);
-    this->m_controlnetImageDelete->Disable();
-    this->m_controlnetImageOpen->Disable();
-    this->m_controlnetStrength->Disable();
-    this->m_controlnetImageOpen->SetPath("");
+    this->DisableModelSelect();
+    this->DisableControlNet();
+
     this->m_cfg->SetValue(1.0f);
     this->m_filePickerClipG->SetPath("");
     this->m_filePickerClipG->Disable();
@@ -967,31 +951,29 @@ void MainWindowUI::onFilePickerDiffusionModel(wxFileDirPickerEvent& event) {
     }
 
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();        
+        this->m_generate2->Enable();
     }
 }
 void MainWindowUI::onFilePickerClipL(wxFileDirPickerEvent& event) {
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();        
+        this->m_generate2->Enable();
+        this->DisableControlNet();
     }
 }
 void MainWindowUI::onFilePickerT5XXL(wxFileDirPickerEvent& event) {
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();        
+        this->m_generate2->Enable();
     }
 }
 void MainWindowUI::onCleanDiffusionModel(wxCommandEvent& event) {
-    if (this->m_model->IsEnabled() == false) {
-        this->m_model->Select(0);
-        this->m_model->Enable();
-    }
+    this->EnableModelSelect();
     this->m_filePickerDiffusionModel->SetPath("");
-    this->m_controlnetModels->Enable();
-    this->m_controlnetImageDelete->Enable();
-    this->m_controlnetImageOpen->Enable();
-    this->m_controlnetStrength->Enable();
     this->m_filePickerClipG->Enable();
     this->m_neg_prompt->Enable();
+    this->m_filePickerClipL->SetPath("");
+    this->m_filePickerT5XXL->SetPath("");
+
+    this->EnableControlNet();
 }
 
 void MainWindowUI::Onimg2imgDropFile(wxDropFilesEvent& event) {
@@ -1244,6 +1226,29 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         }
     }
 
+    if (item.params.clip_l_path.empty() == false && std::filesystem::exists(item.params.clip_l_path)) {
+        this->m_filePickerClipL->SetPath(wxString::FromUTF8Unchecked(item.params.clip_l_path));
+    }
+
+    if (item.params.t5xxl_path.empty() == false && std::filesystem::exists(item.params.t5xxl_path)) {
+        this->m_filePickerT5XXL->SetPath(wxString::FromUTF8Unchecked(item.params.t5xxl_path));
+    }
+
+    if (!item.params.diffusion_model_path.empty() && std::filesystem::exists(item.params.diffusion_model_path)) {
+        this->m_filePickerClipG->SetPath("");
+        this->m_filePickerClipG->Disable();
+        this->m_model->SetSelection(0);
+        this->m_model->Disable();
+        this->m_filePickerDiffusionModel->SetPath(wxString::FromUTF8Unchecked(item.params.diffusion_model_path));
+
+        this->DisableControlNet();
+        this->m_neg_prompt->Disable();
+
+        if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false) {
+            this->m_generate2->Enable();
+        }
+    }
+
     this->m_sampler->SetSelection(item.params.sample_method);
 
     if (!item.params.taesd_path.empty()) {
@@ -1408,8 +1413,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(
             this->bSizer891->Add(bitmap, 0, wxALL, 2);
             this->modelImagePreviews.emplace_back(bitmap);
             bitmap->Show();
-            bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, modelinfo, tooltip,
-                                          this](wxMouseEvent& event) {
+            bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, modelinfo, tooltip, this](wxMouseEvent& event) {
                 wxMenu* menu = new wxMenu();
                 menu->Append(99, tooltip);
                 menu->Enable(99, false);
@@ -1427,17 +1431,14 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(
                 if (!img.meta.hashes.model.empty()) {
                     auto imgsModel = this->ModelManager->getByHash(img.meta.hashes.model);
                     if (!imgsModel.civitaiPlainJson.empty()) {
-                        menu->Append(4,
-                                     wxString::Format("Select model %s", imgsModel.name));
+                        menu->Append(4, wxString::Format("Select model %s", imgsModel.name));
                     } else {
-                        menu->Append(4, wxString::Format("Image's model not found: %s",
-                                                         img.meta.hashes.model));
+                        menu->Append(4, wxString::Format("Image's model not found: %s", img.meta.hashes.model));
                         menu->Enable(4, false);
                     }
                 }
 
-                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, modelinfo](
-                                                            wxCommandEvent& evt) {
+                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, modelinfo](wxCommandEvent& evt) {
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {
@@ -1684,8 +1685,17 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->params.negative_prompt));
                 break;
             case 5: {
-                auto model = this->ModelManager->getInfo(qitem->params.model_path);
-                this->ChangeModelByInfo(model);
+                if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
+                    if (std::filesystem::exists(qitem->params.diffusion_model_path)) {
+                        this->m_filePickerDiffusionModel->SetPath(qitem->params.diffusion_model_path);
+                    } else {
+                        wxMessageDialog dialog(this, _("Diffusion model not found"), _("Error"), wxOK | wxICON_ERROR);
+                        dialog.ShowModal();
+                    }
+                } else {
+                    auto model = this->ModelManager->getInfo(qitem->params.model_path);
+                    this->ChangeModelByInfo(model);
+                }
             } break;
             case 6: {
                 this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
@@ -3083,6 +3093,26 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
+        if (item->params.clip_l_path.empty() == false) {
+            data.push_back(wxVariant(_("CLIP L")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.clip_l_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
+        if (item->params.clip_g_path.empty() == false) {
+            data.push_back(wxVariant(_("CLIP G")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.clip_g_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
+
+        if (item->params.t5xxl_path.empty() == false) {
+            data.push_back(wxVariant(_("T5xxl")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.t5xxl_path)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
+
         if (item->params.taesd_path.empty() == false) {
             data.push_back(wxVariant(_("TAESD")));
             data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.taesd_path)));
@@ -3118,11 +3148,37 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             data.clear();
 
             data.push_back(wxVariant(_("CN strength")));
-            data.push_back(
-                wxVariant(wxString::Format("%.2f", item->params.control_strength)));
+            data.push_back(wxVariant(wxString::Format("%.2f", item->params.control_strength)));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
+
+        // slg scale
+        data.push_back(wxVariant(_("SLG scale")));
+        data.push_back(wxVariant(wxString::Format("%.2f", item->params.slg_scale)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(_("Skip layers")));
+        wxString skipLayers = "[";
+        for (const auto i : item->params.skip_layers) {
+            skipLayers += wxString::Format(wxT("%d,"), (int)i);
+        }
+        skipLayers = skipLayers.SubString(0, skipLayers.Length() - 2);
+        skipLayers += "]";
+        data.push_back(wxVariant(skipLayers));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(_("Skip Layer Start")));
+        data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_start)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(_("Skip Layer End")));
+        data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_end)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
     }
     int index = 0;
     for (auto img : item->images) {

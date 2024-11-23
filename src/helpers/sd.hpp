@@ -80,6 +80,8 @@ enum sd_type_t {
     SD_TYPE_Q4_0_4_4 = 31,
     SD_TYPE_Q4_0_4_8 = 32,
     SD_TYPE_Q4_0_8_8 = 33,
+    SD_TYPE_TQ1_0    = 34,
+    SD_TYPE_TQ2_0    = 35,    
     SD_TYPE_COUNT,
 };
 enum sd_log_level_t { SD_LOG_DEBUG,

@@ -376,19 +376,17 @@ namespace sd_gui_utils {
 
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
     inline std::map<int, std::string> sd_type_gui_names = {
-        {32, "Count"},
-        {0, "F32"},
-        {1, "F16"},
-        {2, "Q4_0"},
-        {3, "Q4_1"},
-        {6, "Q5_0"},
-        {7, "Q5_1"},
-        {8, "Q8_0"},
-        {28, "F64"},
-        {30, "BF16"},
-        {31, "Q4_0_4_4"},
-        {32, "Q4_1_4_4"}
-
+        {SD_TYPE_COUNT, "Count"},
+        {SD_TYPE_F32, "F32"},
+        {SD_TYPE_F16, "F16"},
+        {SD_TYPE_Q4_0, "Q4_0"},
+        {SD_TYPE_Q4_1, "Q4_1"},
+        {SD_TYPE_Q5_0, "Q5_0"},
+        {SD_TYPE_Q5_1, "Q5_1"},
+        {SD_TYPE_Q8_0, "Q8_0"},
+        {SD_TYPE_Q2_K, "Q2_K"},
+        {SD_TYPE_Q3_K, "Q3_K"},
+        {SD_TYPE_Q4_K, "Q4_K"}
     };
 
     inline std::map<int, std::string> sd_scheduler_gui_names = {
@@ -401,42 +399,6 @@ namespace sd_gui_utils {
 
     };
 
-    // from sd_type_t
-    inline const char* sd_type_names[] = {"F32",
-                                          "F16",
-                                          "Q4_0",
-                                          "Q4_1",
-                                          "Q4_2 - not supported",  // Q4_2
-                                          "Q4_5 - not supported",  // Q4_5
-                                          "Q5_0",
-                                          "Q5_1",
-                                          "Q8_0",
-                                          "Q8_1",
-                                          "Q2_K",
-                                          "Q3_K",
-                                          "Q4_K",
-                                          "Q5_K",
-                                          "Q6_K",
-                                          "Q8_K",
-                                          "IQ2_XXS",
-                                          "IQ2_XS",
-                                          "IQ3_XXS",
-                                          "IQ1_S",
-                                          "IQ4_NL",
-                                          "IQ3_S",
-                                          "IQ2_S",
-                                          "IQ4_XS",
-                                          "I8",
-                                          "I16",
-                                          "I32",
-                                          "I64",
-                                          "F64",
-                                          "IQ1_M",
-                                          "BF16",
-                                          "Q4_0_4_4",
-                                          "Q4_0_4_8",
-                                          "Q4_0_8_8",
-                                          "Default"};
 
     /* JSONize SD Params*/
     enum ThreadEvents {
