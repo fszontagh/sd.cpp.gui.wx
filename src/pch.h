@@ -7,6 +7,7 @@
 #include <mutex>
 #include <ostream>
 
+
 #include "wx/wxprec.h"
 
 
@@ -27,6 +28,7 @@
 #include "wx/apptrait.h"
 #include "wx/intl.h"
 #include "wx/translation.h"
+#include "wx/image.h"
 
 
 #include "exiv2/exiv2.hpp"
@@ -38,6 +40,7 @@
 
 #include "libs/cores.h"
 #include "ui/utils.hpp"
+#include "ui/imageUtils.h"
 #include "ver.hpp"
 
 #include "ui/QueueManager.h"

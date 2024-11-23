@@ -140,7 +140,7 @@ namespace QM {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QueueItemImage, pathname, type, id)
     inline void to_json(nlohmann::json& j, const QueueItemImage* item) {
         if (item) {
-            j = nlohmann::json{{"pathname", sd_gui_utils::UnicodeToUTF8(item->pathname)}, {"type", item->type}};
+            j = nlohmann::json{{"pathname", wxString(item->pathname).utf8_string()}, {"type", item->type}};
         } else {
             j = nullptr;
         }

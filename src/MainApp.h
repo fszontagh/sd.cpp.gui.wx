@@ -144,8 +144,13 @@ public:
             this->m_Locale = new wxLocale;
             this->m_Locale->Init(linfo->GetLocaleName(), newLangName);
             this->m_Locale->AddCatalogLookupPathPrefix(".");
-            this->m_Locale->AddCatalogLookupPathPrefix("./locale");
-            this->m_Locale->AddCatalogLookupPathPrefix("/usr/share/locale");
+            if (std::filesystem::exists("./locale")) {
+                this->m_Locale->AddCatalogLookupPathPrefix("./locale");
+            }
+            if (std::filesystem::exists("/usr/share/locale")) {
+                this->m_Locale->AddCatalogLookupPathPrefix("/usr/share/locale");
+            }
+
 #ifdef USE_COREUTILS_MO
             this->m_Locale->AddCatalog("coreutils");
 #endif  // USE_COREUTILS_MO

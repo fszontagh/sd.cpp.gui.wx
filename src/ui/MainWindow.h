@@ -33,8 +33,8 @@
 #include <wx/splitter.h>
 #include <wx/statbmp.h>
 #include <wx/textctrl.h>
-#include <wx/notebook.h>
 #include <wx/filepicker.h>
+#include <wx/notebook.h>
 #include <wx/html/htmlwin.h>
 #include <wx/srchctrl.h>
 #include <wx/statusbr.h>
@@ -133,6 +133,26 @@ class mainUI : public wxFrame
 		wxPanel* m_text2img_panel;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
+		wxBitmapButton* m_bpButton25;
+		wxStaticText* m_staticText70;
+		wxStaticText* m_staticText522;
+		wxSpinCtrlDouble* slgScale;
+		wxStaticText* m_staticText5221;
+		wxTextCtrl* m_skipLayers;
+		wxStaticText* m_staticText52211;
+		wxSpinCtrlDouble* skipLayerStart;
+		wxStaticText* m_staticText522111;
+		wxSpinCtrlDouble* skipLayerEnd;
+		wxStaticLine* m_staticline41;
+		wxStaticText* m_staticText52111;
+		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxBitmapButton* m_cleanDiffusionModel;
+		wxStaticText* m_staticText52;
+		wxFilePickerCtrl* m_filePickerClipL;
+		wxStaticText* m_staticText521;
+		wxFilePickerCtrl* m_filePickerClipG;
+		wxStaticText* m_staticText5211;
+		wxFilePickerCtrl* m_filePickerT5XXL;
 		wxNotebook* m_notebook3;
 		wxPanel* m_diffusionPreviewTab;
 		wxStaticBitmap* m_txt2txtDeiffusionPreview;
@@ -231,6 +251,12 @@ class mainUI : public wxFrame
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }

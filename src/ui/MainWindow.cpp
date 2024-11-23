@@ -26,7 +26,6 @@
 #include "embedded_files/replace.png.h"
 #include "embedded_files/sd.cpp.gui_blankimage.png.h"
 #include "embedded_files/settings.png.h"
-#include "embedded_files/text_box_dots.png.h"
 #include "embedded_files/trash.png.h"
 
 // Using the construction of a static object to ensure that the help provider is set
@@ -386,7 +385,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_button7->SetBitmap( replace_png_to_wx_bitmap() );
 	m_button7->SetToolTip( _("Swap the resolution") );
 
-	bSizer95->Add( m_button7, 0, wxALL, 5 );
+	bSizer95->Add( m_button7, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer96->Add( bSizer95, 0, wxEXPAND, 5 );
@@ -451,14 +450,18 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer97999;
 	bSizer97999 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText46 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("SD1x Resolutions:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText46 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("Low res.:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText46->Wrap( -1 );
+	m_staticText46->SetToolTip( _("Lower resolutions for SD1.x") );
+
 	bSizer97999->Add( m_staticText46, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	wxString m_sd15ResChoices[] = { _("Select one"), _("640x384"), _("512x512"), _("512x768") };
 	int m_sd15ResNChoices = sizeof( m_sd15ResChoices ) / sizeof( wxString );
 	m_sd15Res = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_sd15ResNChoices, m_sd15ResChoices, 0 );
 	m_sd15Res->SetSelection( 0 );
+	m_sd15Res->SetToolTip( _("Lower resolutions for SD1.x") );
+
 	bSizer97999->Add( m_sd15Res, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -467,14 +470,18 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer971;
 	bSizer971 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText461 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("SDXL Resolutions:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText461 = new wxStaticText( m_scrolledWindow1, wxID_ANY, _("High Res.:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText461->Wrap( -1 );
+	m_staticText461->SetToolTip( _("Higher resolutions for FLUX/SDXL/SD3.5") );
+
 	bSizer971->Add( m_staticText461, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	wxString m_sdXlresChoices[] = { _("Select one"), _("1024x1024"), _("1152x896"), _("1216x832"), _("1344x768"), _("1536x640") };
 	int m_sdXlresNChoices = sizeof( m_sdXlresChoices ) / sizeof( wxString );
 	m_sdXlres = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_sdXlresNChoices, m_sdXlresChoices, 0 );
 	m_sdXlres->SetSelection( 0 );
+	m_sdXlres->SetToolTip( _("Higher resolutions for FLUX/SDXL/SD3.5") );
+
 	bSizer971->Add( m_sdXlres, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -626,10 +633,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_jobs_panel->Layout();
 	bSizer17->Fit( m_jobs_panel );
 	m_notebook1302->AddPage( m_jobs_panel, _("Jobs and Images"), false );
-	m_text2img_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("txt2txt") );
-	m_text2img_panel->DragAcceptFiles( true );
-	m_text2img_panel->SetMinSize( wxSize( 300,-1 ) );
-
+	m_text2img_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* sizer0004;
 	sizer0004 = new wxBoxSizer( wxVERTICAL );
 
@@ -652,6 +656,170 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 
 	bSizer82->Add( 0, 0, 1, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1011;
+	bSizer1011 = new wxBoxSizer( wxVERTICAL );
+
+	wxBoxSizer* bSizer122;
+	bSizer122 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_bpButton25 = new wxBitmapButton( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_bpButton25->SetBitmap( interrogation_png_to_wx_bitmap() );
+	m_bpButton25->SetToolTip( _("What is this?") );
+
+	bSizer122->Add( m_bpButton25, 0, wxALL, 5 );
+
+	m_staticText70 = new wxStaticText( m_text2img_panel, wxID_ANY, _("For more information, click the button with the question mark icon.\n\nTo use the FLUX model, select the \"Diffusion Model\" file picker and choose the FLUX model.\nFor SD3.5, use the dropdown menu at the top to select a model."), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText70->Wrap( -1 );
+	bSizer122->Add( m_staticText70, 0, wxALL|wxEXPAND, 5 );
+
+
+	bSizer1011->Add( bSizer122, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer10212;
+	bSizer10212 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText522 = new wxStaticText( m_text2img_panel, wxID_ANY, _("SLG scale:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText522->Wrap( -1 );
+	m_staticText522->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0)") );
+
+	bSizer10212->Add( m_staticText522, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	slgScale = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0, 0.5 );
+	slgScale->SetDigits( 1 );
+	slgScale->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0)") );
+
+	bSizer10212->Add( slgScale, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer10212, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer102121;
+	bSizer102121 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText5221 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Skip layers:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText5221->Wrap( -1 );
+	m_staticText5221->SetToolTip( _("Layers to skip for SLG steps: (default: [7,8,9])") );
+
+	bSizer102121->Add( m_staticText5221, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_skipLayers = new wxTextCtrl( m_text2img_panel, wxID_ANY, _("7,8,9"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_skipLayers->SetToolTip( _("Layers to skip for SLG steps: (default: [7,8,9])") );
+
+	bSizer102121->Add( m_skipLayers, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer102121, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1021211;
+	bSizer1021211 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText52211 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Skip Layer Start:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText52211->Wrap( -1 );
+	m_staticText52211->SetToolTip( _("SLG enabling point: (default: 0.01)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+
+	bSizer1021211->Add( m_staticText52211, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	skipLayerStart = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.01, 1, 0.01, 0.01 );
+	skipLayerStart->SetDigits( 2 );
+	skipLayerStart->SetToolTip( _("SLG enabling point: (default: 0.01)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+
+	bSizer1021211->Add( skipLayerStart, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer1021211, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer10212111;
+	bSizer10212111 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText522111 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Skip Layer End:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText522111->Wrap( -1 );
+	m_staticText522111->SetToolTip( _("SLG disabling point: (default: 0.2)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+
+	bSizer10212111->Add( m_staticText522111, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	skipLayerEnd = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.01, 1, 0.2, 0.01 );
+	skipLayerEnd->SetDigits( 2 );
+	skipLayerEnd->SetToolTip( _("SLG disabling point: (default: 0.2)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+
+	bSizer10212111->Add( skipLayerEnd, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer10212111, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer121;
+	bSizer121 = new wxBoxSizer( wxVERTICAL );
+
+	m_staticline41 = new wxStaticLine( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+	bSizer121->Add( m_staticline41, 0, wxEXPAND | wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer121, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1021111;
+	bSizer1021111 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText52111 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Diffusion Model:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText52111->Wrap( -1 );
+	m_staticText52111->SetToolTip( _("Diffusion models, for example FLUX") );
+
+	bSizer1021111->Add( m_staticText52111, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_filePickerDiffusionModel = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
+	bSizer1021111->Add( m_filePickerDiffusionModel, 1, wxALL, 5 );
+
+	m_cleanDiffusionModel = new wxBitmapButton( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_cleanDiffusionModel->SetBitmap( trash_png_to_wx_bitmap() );
+	m_cleanDiffusionModel->SetToolTip( _("Clean model") );
+
+	bSizer1021111->Add( m_cleanDiffusionModel, 0, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer1021111, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1021;
+	bSizer1021 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText52 = new wxStaticText( m_text2img_panel, wxID_ANY, _("ClipL:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText52->Wrap( -1 );
+	bSizer1021->Add( m_staticText52, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_filePickerClipL = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
+	bSizer1021->Add( m_filePickerClipL, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer1021, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer10211;
+	bSizer10211 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText521 = new wxStaticText( m_text2img_panel, wxID_ANY, _("ClipG:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText521->Wrap( -1 );
+	bSizer10211->Add( m_staticText521, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_filePickerClipG = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
+	bSizer10211->Add( m_filePickerClipG, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer10211, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer102111;
+	bSizer102111 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText5211 = new wxStaticText( m_text2img_panel, wxID_ANY, _("T5XXL:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
+	m_staticText5211->Wrap( -1 );
+	bSizer102111->Add( m_staticText5211, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_filePickerT5XXL = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
+	bSizer102111->Add( m_filePickerT5XXL, 1, wxALL, 5 );
+
+
+	bSizer1011->Add( bSizer102111, 0, wxEXPAND, 5 );
+
+
+	bSizer82->Add( bSizer1011, 1, wxEXPAND, 5 );
 
 
 	bSizer811->Add( bSizer82, 1, wxEXPAND, 5 );
@@ -749,7 +917,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_text2img_panel->SetSizer( sizer0004 );
 	m_text2img_panel->Layout();
 	sizer0004->Fit( m_text2img_panel );
-	m_notebook1302->AddPage( m_text2img_panel, _("Text2IMG"), true );
+	m_notebook1302->AddPage( m_text2img_panel, _("txt2img"), false );
 	m_image2image_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("img2img") );
 	m_image2image_panel->DragAcceptFiles( true );
 	m_image2image_panel->SetMinSize( wxSize( 300,-1 ) );
@@ -863,7 +1031,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_image2image_panel->SetSizer( bSizer24 );
 	m_image2image_panel->Layout();
 	bSizer24->Fit( m_image2image_panel );
-	m_notebook1302->AddPage( m_image2image_panel, _("Image2image"), false );
+	m_notebook1302->AddPage( m_image2image_panel, _("img2img"), false );
 	m_upscaler = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("upscaler") );
 	m_upscaler->DragAcceptFiles( true );
 	m_upscaler->SetMinSize( wxSize( 300,-1 ) );
@@ -1193,6 +1361,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_bpButton25->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
+	m_filePickerDiffusionModel->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
+	m_cleanDiffusionModel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
+	m_filePickerClipL->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipL ), NULL, this );
+	m_filePickerClipG->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipG ), NULL, this );
+	m_filePickerT5XXL->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerT5XXL ), NULL, this );
 	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
 	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );
@@ -1257,6 +1431,12 @@ mainUI::~mainUI()
 	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_bpButton25->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
+	m_filePickerDiffusionModel->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
+	m_cleanDiffusionModel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
+	m_filePickerClipL->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipL ), NULL, this );
+	m_filePickerClipG->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipG ), NULL, this );
+	m_filePickerT5XXL->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerT5XXL ), NULL, this );
 	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
 	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );

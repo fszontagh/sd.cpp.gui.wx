@@ -256,7 +256,11 @@ void ApplicationLogic::Txt2Img() {
             this->currentItem->params.strength,
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
-            this->currentItem->params.input_id_images_path.c_str());
+            this->currentItem->params.input_id_images_path.c_str(),
+            this->currentItem->params.skip_layers,
+            this->currentItem->params.slg_scale,
+            this->currentItem->params.skip_layer_start,
+            this->currentItem->params.skip_layer_end);
 
         // free up the control image
         control_image = NULL;
@@ -362,7 +366,11 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.control_strength,
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
-            this->currentItem->params.input_id_images_path.c_str());
+            this->currentItem->params.input_id_images_path.c_str(),
+            this->currentItem->params.skip_layers,
+            this->currentItem->params.slg_scale,
+            this->currentItem->params.skip_layer_start,
+            this->currentItem->params.skip_layer_end);
         std::cout << "done" << std::endl;
         // free up the control image
 
@@ -500,10 +508,30 @@ bool ApplicationLogic::loadSdModel() {
         return this->upscale_ctx != NULL;
     }
     if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
-        std::cout << "Loading sd model: " << this->currentItem->params.model_path << std::endl;
+        if (this->currentItem->params.model_path == "") {
+            std::cout << "Loading sd model: " << this->currentItem->params.diffusion_model_path << std::endl;
+        } else {
+            std::cout << "Loading sd model: " << this->currentItem->params.model_path << std::endl;
+        }
         bool loadModel = true;
         if (this->lastItem != nullptr) {
             std::cout << "Previous model is not null" << std::endl;
+            if (this->lastItem->params.model_path.empty() && this->currentItem->params.model_path.empty()) {
+                if (this->currentItem->params.diffusion_model_path == this->lastItem->params.diffusion_model_path) {
+                    loadModel = false;
+                }
+            }
+
+            if (this->lastItem->params.diffusion_model_path != this->currentItem->params.diffusion_model_path) {
+                loadModel = true;
+            }
+
+            // prev model was empty (eg flux) new model non empty, we need to reload
+            if (this->lastItem->params.model_path.empty() && !this->currentItem->params.model_path.empty()) {
+                loadModel = true;
+            }
+
+            // prev model and new model the same path, no need to reload
             if (this->lastItem->params.model_path == this->currentItem->params.model_path) {
                 loadModel = false;
             }
@@ -590,7 +618,11 @@ bool ApplicationLogic::loadSdModel() {
                 this->sd_ctx = nullptr;
             }
 
-            std::cout << "[EXTPROCESS] Loading model: " << this->currentItem->params.model_path << std::endl;
+            if (this->currentItem->params.model_path.empty()) {
+                std::cout << "[EXTPROCESS] Loading model: " << this->currentItem->params.diffusion_model_path << std::endl;
+            } else {
+                std::cout << "[EXTPROCESS] Loading model: " << this->currentItem->params.model_path << std::endl;
+            }
             bool vae_decode_only = true;
 
             switch (this->currentItem->mode) {

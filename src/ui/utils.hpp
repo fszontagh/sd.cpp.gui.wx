@@ -1,93 +1,40 @@
 #ifndef __MAINFRAME_HPP__UTILS
 #define __MAINFRAME_HPP__UTILS
-#include <algorithm>
-#include <filesystem>
-#include <iostream>
+
 #include <random>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-
-#include <wx/colour.h>
-#include <wx/image.h>
-#include <wx/string.h>
-
-#include "../helpers/sd.hpp"
 
 #include "../helpers/civitai.hpp"
+#include "../helpers/sd.hpp"
 #include "../libs/bitmask_operators.h"
-#include "../libs/json.hpp"
 
 namespace sd_gui_utils {
 
     /**
-     * \brief Converts a C-style string to a UTF-8 encoded std::string.
+     * \brief Splits a string into a vector of integers using a separator character.
      *
-     * This function takes a C-style string and converts it into a UTF-8 encoded
-     * std::string. On Windows, it uses wxString's utf8_string method for
-     * conversion to ensure proper encoding. On other platforms, it directly
-     * constructs a std::string from the input C-style string.
+     * This function takes a string and a separator character, and splits the string
+     * into a vector of integers using the separator character.
      *
-     * \param str The C-style string to be converted.
-     * \return A UTF-8 encoded std::string.
+     * \param str The string to be split.
+     * \param sep The separator character to use.
      */
-    inline std::string UnicodeToUTF8(const char* str) {
-#ifdef WIN32
-        return wxString(str).utf8_string();
-#endif
-        return std::string(str);
-    }
-    /**
-     * \brief Converts a wxString to a UTF-8 encoded std::string.
-     *
-     * This function takes a wxString and converts it into a UTF-8 encoded
-     * std::string. On Windows, it uses wxString's utf8_string method to
-     * ensure proper encoding. On other platforms, it uses ToStdString
-     * to return a standard string representation.
-     *
-     * \param str The wxString to be converted.
-     * \return A UTF-8 encoded std::string.
-     */
-    inline std::string UnicodeToUTF8(wxString str) {
-#ifdef WIN32
-        return str.utf8_string();
-#endif
-        return str.ToStdString();
-    }
-    /**
-     * \brief Converts a UTF-8 encoded wxString to a std::string.
-     *
-     * This function takes a UTF-8 encoded wxString and converts it into
-     * a standard std::string. On Windows, it uses wxString's FromUTF8 method
-     * to ensure proper conversion. On other platforms, it directly returns
-     * the standard string representation of the wxString.
-     *
-     * \param str The UTF-8 encoded wxString to be converted.
-     * \return A std::string representation of the input wxString.
-     */
-    inline std::string UTF8ToUnicode(wxString str) {
-#ifdef WIN32
-        return wxString::FromUTF8(str).ToStdString();
-#endif
-        return str.ToStdString();
-    }
-    /**
-     * \brief Converts a UTF-8 encoded C-string to a std::string.
-     *
-     * This function takes a UTF-8 encoded C-string and converts it into
-     * a standard std::string. On Windows, it uses wxString's FromUTF8 method
-     * to ensure proper conversion. On other platforms, it directly returns
-     * the standard string representation of the C-string.
-     *
-     * \param str The UTF-8 encoded C-string to be converted.
-     * \return A std::string representation of the input C-string.
-     */
-    inline std::string UTF8ToUnicode(const char* str) {
-#ifdef WIN32
-
-        return wxString::FromUTF8(str).ToStdString();
-#endif
-        return wxString(str).ToStdString();
+    inline std::vector<int> splitStr2int(const std::string& str, char sep) {
+        std::vector<int> tokens;
+        std::string token;
+        for (char c : str) {
+            if (c == sep) {
+                if (!token.empty()) {
+                    tokens.push_back(std::stoi(token));
+                    token.clear();
+                }
+            } else {
+                token += c;
+            }
+        }
+        if (!token.empty()) {
+            tokens.push_back(std::stoi(token));
+        }
+        return tokens;
     }
 
     typedef struct VoidHolder {
@@ -205,14 +152,14 @@ namespace sd_gui_utils {
     };
 
     inline void to_json(nlohmann::json& j, const sd_gui_utils::ModelFileInfo& p) {
-        j = nlohmann::json{{"name", sd_gui_utils::UnicodeToUTF8(p.name)},
-                           {"path", sd_gui_utils::UnicodeToUTF8(p.path)},
+        j = nlohmann::json{{"name", wxString(p.name.c_str()).utf8_string()},
+                           {"path", wxString(p.path.c_str()).utf8_string()},
                            {"url", p.url},
-                           {"poster", sd_gui_utils::UnicodeToUTF8(p.poster)},
+                           {"poster", wxString(p.poster.c_str()).utf8_string()},
                            {"sha256", p.sha256},
                            {"size", p.size},
                            {"size_f", p.size_f},
-                           {"meta_file", sd_gui_utils::UnicodeToUTF8(p.meta_file)},
+                           {"meta_file", wxString(p.meta_file.c_str()).utf8_string()},
                            {"model_type", (int)p.model_type},
                            {"civitaiPlainJson", p.civitaiPlainJson},
                            {"CivitAiInfo", p.CivitAiInfo},
@@ -224,11 +171,11 @@ namespace sd_gui_utils {
 
     inline void from_json(const nlohmann::json& j, ModelFileInfo& p) {
         if (j.contains("name")) {
-            p.name = sd_gui_utils::UTF8ToUnicode(j.at("name").get<std::string>());
+            p.name = wxString::FromUTF8(j.at("name").get<std::string>());
         }
 
         if (j.contains("path")) {
-            p.path = sd_gui_utils::UTF8ToUnicode(j.at("path").get<std::string>());
+            p.path = wxString::FromUTF8(j.at("path").get<std::string>());
         }
 
         if (j.contains("url")) {
@@ -236,7 +183,7 @@ namespace sd_gui_utils {
         }
 
         if (j.contains("poster")) {
-            p.poster = sd_gui_utils::UTF8ToUnicode(j.at("poster").get<std::string>());
+            p.poster = wxString::FromUTF8(j.at("poster").get<std::string>());
         }
 
         if (j.contains("sha256")) {
@@ -252,8 +199,7 @@ namespace sd_gui_utils {
         }
 
         if (j.contains("meta_file")) {
-            p.meta_file =
-                sd_gui_utils::UTF8ToUnicode(j.at("meta_file").get<std::string>());
+            p.meta_file = wxString::FromUTF8(j.at("meta_file").get<std::string>().c_str());
         }
 
         if (j.contains("model_type")) {
@@ -513,31 +459,8 @@ namespace sd_gui_utils {
         MODEL_INFO_DOWNLOAD_IMAGE_FAILED,
     };
     // sd c++
-    inline wxImage ResizeImageToMaxSize(const wxImage& image, int maxWidth, int maxHeight) {
-        int newWidth  = image.GetWidth();
-        int newHeight = image.GetHeight();
 
-        // Az új méreteket úgy határozzuk meg, hogy megtartsuk a képarányt
-        if (newWidth > maxWidth || newHeight > maxHeight) {
-            double aspectRatio =
-                static_cast<double>(newWidth) / static_cast<double>(newHeight);
-            if (aspectRatio > 1.0) {
-                // Szélesség korlátozó dimenzió, a magasságot arányosan beállítjuk
-                newWidth  = maxWidth;
-                newHeight = static_cast<int>(maxWidth / aspectRatio);
-            } else {
-                // Magasság korlátozó dimenzió, a szélességet arányosan beállítjuk
-                newHeight = maxHeight;
-                newWidth  = static_cast<int>(maxHeight * aspectRatio);
-            }
-        }
-
-        // Méretezés az új méretekre
-        return image.Scale(newWidth, newHeight);
-    };
-
-    inline const unsigned int generateRandomInt(unsigned int min,
-                                                unsigned int max) {
+    inline const unsigned int generateRandomInt(unsigned int min, unsigned int max) {
         std::random_device rd;
         std::mt19937 gen(rd());
 
@@ -661,111 +584,16 @@ namespace sd_gui_utils {
         return result;
     };
 
-    inline wxImage cropResizeImage(const wxImage& originalImage, int targetWidth, int targetHeight) {
-        int originalWidth  = originalImage.GetWidth();
-        int originalHeight = originalImage.GetHeight();
-
-        double aspectRatio =
-            static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
-        int newWidth  = targetWidth;
-        int newHeight = targetHeight;
-
-        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
-        if (originalWidth > targetWidth || originalHeight > targetHeight) {
-            if (aspectRatio > 1.0) {
-                // Szélesség alapján skálázzuk az új méretet
-                newWidth  = targetWidth;
-                newHeight = static_cast<int>(targetWidth / aspectRatio);
-            } else {
-                // Magasság alapján skálázzuk az új méretet
-                newHeight = targetHeight;
-                newWidth  = static_cast<int>(targetHeight * aspectRatio);
-            }
-        }
-
-        // Méretezzük az eredeti képet az új méretekre
-        wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
-
-        // Üres terület hozzáadása és transzparens töltése
-        if (newWidth < targetWidth || newHeight < targetHeight) {
-            wxImage finalImage(targetWidth, targetHeight);
-            finalImage.SetAlpha();
-
-            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2,
-                             (targetHeight - newHeight) / 2);
-            return finalImage;
-        }
-
-        return resizedImage;
-    }
-    inline wxString cropResizeCacheName(int targetWidth, int targetHeight, const wxString& orig_filename, const wxString& cache_path) {
-        auto cache_name_path     = std::filesystem::path(orig_filename.utf8_string());
-        std::string ext          = cache_name_path.extension().string();
-        auto filename            = cache_name_path.filename().replace_extension();
-        std::string new_filename = filename.string() + "_" + std::to_string(targetWidth) + "x" + std::to_string(targetHeight);
-        filename                 = filename.replace_filename(new_filename);
-        filename                 = filename.replace_extension(ext);
-
-        return wxString::FromUTF8Unchecked(sd_gui_utils::normalizePath(cache_path.utf8_string() + "/" + filename.string()));
-    }
-
-    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
-        wxString cache_name;
-        if (!cache_path.empty()) {
-            cache_name = sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight, image_path, cache_path);
-            if (std::filesystem::exists(cache_name.utf8_string())) {
-                wxImage cached_img;
-                cached_img.LoadFile(cache_name);
-                return cached_img;
-            }
-        }
-        auto originalImage = wxImage();
-
-        if (!originalImage.LoadFile(image_path)) {
-            return wxImage();
-        }
-
-        int originalWidth  = originalImage.GetWidth();
-        int originalHeight = originalImage.GetHeight();
-
-        double aspectRatio = static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
-        int newWidth       = targetWidth;
-        int newHeight      = targetHeight;
-
-        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
-        if (originalWidth > targetWidth || originalHeight > targetHeight) {
-            if (aspectRatio > 1.0) {
-                // Szélesség alapján skálázzuk az új méretet
-                newWidth  = targetWidth;
-                newHeight = static_cast<int>(targetWidth / aspectRatio);
-            } else {
-                // Magasság alapján skálázzuk az új méretet
-                newHeight = targetHeight;
-                newWidth  = static_cast<int>(targetHeight * aspectRatio);
-            }
-        }
-
-        // Méretezzük az eredeti képet az új méretekre
-        wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
-
-        // Üres terület hozzáadása és háttérszínnel való töltése
-        if (newWidth < targetWidth || newHeight < targetHeight) {
-            wxImage finalImage(targetWidth, targetHeight);
-            finalImage.SetRGB(wxRect(0, 0, targetWidth, targetHeight),
-                              backgroundColor.Red(), backgroundColor.Green(),
-                              backgroundColor.Blue());
-
-            finalImage.Paste(resizedImage, (targetWidth - newWidth) / 2,
-                             (targetHeight - newHeight) / 2);
-            if (!cache_name.empty()) {
-                finalImage.SaveFile(cache_name);
-            }
-            return finalImage;
-        }
-        if (!cache_name.empty()) {
-            resizedImage.SaveFile(cache_name);
-        }
-        return resizedImage;
-    }
+    /*
+     * Used at m_notebook1302OnNotebookPageChanged
+     * FYI: keep the order as the gui builder
+     */
+    enum GuiMainPanels {
+        PANEL_QUEUE,
+        PANEL_TEXT2IMG,
+        PANEL_IMG2IMG,
+        PANEL_UPSCALER,
+        PANEL_MODELS
+    };
 }  // namespace sd_gui_utils
 #endif

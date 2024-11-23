@@ -12,6 +12,7 @@
 #include "QueueManager.h"
 #include "embedded_files/app_icon.h"
 #include "extprocess/config.hpp"
+#include "utils.hpp"
 #include "ver.hpp"
 #include "wx/colour.h"
 #include "wx/fileconf.h"
@@ -20,6 +21,7 @@
 #include "wx/string.h"
 #include "wx/translation.h"
 #include "wx/uilocale.h"
+#include "wx/utils.h"
 #include "wx/window.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
@@ -323,19 +325,15 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     if (selected == wxNOT_FOUND) {
         return;
     }
-    // int prev_selected = event.GetOldSelection();
-    //  0 -> jobs and images
-    //  1 -> txt2img
-    //  2 -> img2img
-    //  3 -> upscaler
-    //  4 -> models
-    if (selected == 2)  // on img2img and img2vid the vade_decode_only is false, otherwise true
+
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG)  // on img2img and img2vid the vae_decode_only is false, otherwise true
     {
         this->m_vae_decode_only->SetValue(false);
     } else {
         this->m_vae_decode_only->SetValue(true);
     }
-    if (selected == 0 || selected == 1 || selected == 2 || selected == 4) {
+
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_QUEUE || selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG || selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG || selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS) {
         if (this->m_model->GetCount() > 1) {
             this->m_model->Enable();
         }
@@ -353,7 +351,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
             this->m_taesd->Enable();
         }
 
-        if (selected == 2)  // not working on img2img.. this is hardcoded in sd.cpp
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG)  // not working on img2img.. this is hardcoded in sd.cpp
         // to only 1 image...
         {
             this->m_batch_count->Disable();
@@ -371,7 +369,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         this->m_seed->Enable();
         this->m_steps->Enable();
 
-        if (selected == 1 && this->m_controlnetImageOpen->GetPath().length() > 0) {
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG && this->m_controlnetImageOpen->GetPath().length() > 0) {
             this->m_width->Disable();
             this->m_height->Disable();
             this->m_button7->Disable();  // swap button
@@ -381,14 +379,28 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
             this->m_button7->Enable();
         }
         // img2img
-        if (selected == 2 && !this->m_img2imgOpen->GetPath().empty()) {
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG && !this->m_img2imgOpen->GetPath().empty()) {
             this->m_width->Disable();
             this->m_height->Disable();
             this->m_button7->Disable();  // swap button
         }
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG) {
+            if (this->m_filePickerDiffusionModel->GetPath().empty() == false) {
+                this->m_model->Disable();
+                this->m_model->SetSelection(0);
+                this->m_controlnetModels->Select(0);
+                this->m_controlnetModels->Disable();
+                this->m_controlnetImageDelete->Disable();
+                this->m_controlnetImageOpen->Disable();
+                this->m_controlnetStrength->Disable();
+                auto origSize = this->m_controlnetImagePreview->GetSize();
+                this->m_controlnetImagePreview->SetBitmap(this->ControlnetOrigPreviewBitmap);
+                this->m_controlnetImagePreview->SetSize(origSize);
+            }
+        }
     }
     // upscaler
-    if (selected == 3) {
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER) {
         this->m_model->Disable();
         this->m_type->Enable();
         this->m_vae->Disable();
@@ -708,9 +720,15 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
 
-    auto mindex                            = this->m_model->GetCurrentSelection();
-    sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(mindex));
-    item->params.model_path                = modelinfo->path;
+    auto diffusionModel = this->m_filePickerDiffusionModel->GetPath().utf8_string();
+
+    if (diffusionModel.empty() == false) {
+        item->params.diffusion_model_path = diffusionModel;
+    } else {
+        auto mindex                            = this->m_model->GetCurrentSelection();
+        sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(mindex));
+        item->params.model_path                = modelinfo->path;
+    }
 
     if (this->m_taesd->GetCurrentSelection() > 0) {
         item->params.taesd_path = this->TaesdFiles.at(this->m_taesd->GetStringSelection().utf8_string());
@@ -732,6 +750,61 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (type == QM::GenerationMode::TXT2IMG) {
         item->params.prompt          = this->m_prompt->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt->GetValue().utf8_string();
+
+        auto diffusionModel = this->m_filePickerDiffusionModel->GetPath();
+
+        if (diffusionModel.IsEmpty()) {
+            item->model = this->m_model->GetStringSelection().utf8_string();
+        } else {
+            item->params.diffusion_model_path = diffusionModel.utf8_string();
+            item->model = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
+        }
+
+        auto slgscale = this->slgScale->GetValue();
+
+        if (slgscale > 0.f) {
+            item->params.slg_scale = slgscale;
+        }
+
+        auto gui_skip_layers = this->m_skipLayers->GetValue();
+
+        auto skip_layers = sd_gui_utils::splitStr2int(gui_skip_layers.utf8_string(), ',');
+
+        if (skip_layers != item->params.skip_layers) {
+            item->params.skip_layers = skip_layers;
+        }
+
+        auto skip_layer_start = this->skipLayerStart->GetValue();
+        auto skip_layer_end   = this->skipLayerEnd->GetValue();
+
+        // TODO: there is no better validation for now
+        // but we need to check if skip_layer_start is less than skip_layer_end and if skip_layer_end is greater than skip_layer_start etc...
+        if (skip_layer_start != item->params.skip_layer_start) {
+            item->params.skip_layer_start = skip_layer_start;
+        }
+
+        if (skip_layer_end != item->params.skip_layer_end) {
+            item->params.skip_layer_end = skip_layer_end;
+        }
+
+        // TODO: need more validation, but no model inspection for now so it's ok for now
+        auto clipLPath = this->m_filePickerClipL->GetPath();
+
+        if (clipLPath.length() > 0) {
+            item->params.clip_l_path = clipLPath.utf8_string();
+        }
+
+        auto clipGPath = this->m_filePickerClipG->GetPath();
+
+        if (clipGPath.length() > 0) {
+            item->params.clip_g_path = clipGPath.utf8_string();
+        }
+
+        auto t5xxlPath = this->m_filePickerT5XXL->GetPath();
+
+        if (t5xxlPath.length() > 0) {
+            item->params.t5xxl_path = t5xxlPath.utf8_string();
+        }
     }
     if (type == QM::GenerationMode::IMG2IMG) {
         item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
@@ -760,6 +833,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     } else {
         item->params.controlnet_path    = "";
         item->params.control_image_path = "";
+        item->params.control_strength   = 0;
     }
 
     item->params.sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
@@ -786,8 +860,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     item->params.vae_tiling = this->m_vae_tiling->GetValue();
 
-    item->model = this->m_model->GetStringSelection().utf8_string();
-    item->mode  = type;
+    item->mode = type;
 
     if (type == QM::GenerationMode::IMG2IMG) {
         item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
@@ -811,6 +884,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
     this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
+    this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath().utf8_string());
     this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(QM::GenerationMode_str.at(type)));
     this->mapp->config->Flush(true);
 }
@@ -846,6 +920,78 @@ void MainWindowUI::OnControlnetImageDelete(wxCommandEvent& event) {
     this->m_height->Enable();
     this->m_button7->Enable();  // swap resolution
     this->m_controlnetModels->Select(0);
+}
+
+void MainWindowUI::onFilePickerDiffusionModel(wxFileDirPickerEvent& event) {
+    this->m_model->Select(0);
+    this->m_model->Disable();
+    auto origSize = this->m_controlnetImagePreview->GetSize();
+    this->m_controlnetImagePreview->SetBitmap(this->ControlnetOrigPreviewBitmap);
+    this->m_controlnetImagePreview->SetSize(origSize);
+    this->m_controlnetModels->Disable();
+    this->m_controlnetModels->Select(0);
+    this->m_controlnetImageDelete->Disable();
+    this->m_controlnetImageOpen->Disable();
+    this->m_controlnetStrength->Disable();
+    this->m_controlnetImageOpen->SetPath("");
+    this->m_cfg->SetValue(1.0f);
+    this->m_filePickerClipG->SetPath("");
+    this->m_filePickerClipG->Disable();
+    this->m_neg_prompt->Disable();
+
+    // auto select the vae  for first mathcing
+    for (const auto vae : this->VaeFiles) {
+        if (vae.first.ends_with("/ae.safetensors") || vae.first == "ae.safetensors") {
+            this->m_vae->SetStringSelection(vae.first);
+            break;
+        }
+    }
+
+    // autoselect clipl for bestmatch
+    if (this->m_filePickerClipL->GetPath().empty()) {
+        for (const auto vae : this->VaeFiles) {
+            if (vae.first.ends_with("/clip_l.safetensors") || vae.first == "clip_l.safetensors" || vae.first.find("clip_l") != std::string::npos) {
+                this->m_filePickerClipL->SetPath(vae.second);
+                break;
+            }
+        }
+    }
+
+    if (this->m_filePickerT5XXL->GetPath().empty()) {
+        for (const auto vae : this->VaeFiles) {
+            if (vae.first.ends_with("/t5xxl.safetensors") || vae.first == "t5xxl.safetensors" || vae.first.find("t5xxl") != std::string::npos) {
+                this->m_filePickerT5XXL->SetPath(vae.second);
+                break;
+            }
+        }
+    }
+
+    if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
+        this->m_generate2->Enable();        
+    }
+}
+void MainWindowUI::onFilePickerClipL(wxFileDirPickerEvent& event) {
+    if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
+        this->m_generate2->Enable();        
+    }
+}
+void MainWindowUI::onFilePickerT5XXL(wxFileDirPickerEvent& event) {
+    if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
+        this->m_generate2->Enable();        
+    }
+}
+void MainWindowUI::onCleanDiffusionModel(wxCommandEvent& event) {
+    if (this->m_model->IsEnabled() == false) {
+        this->m_model->Select(0);
+        this->m_model->Enable();
+    }
+    this->m_filePickerDiffusionModel->SetPath("");
+    this->m_controlnetModels->Enable();
+    this->m_controlnetImageDelete->Enable();
+    this->m_controlnetImageOpen->Enable();
+    this->m_controlnetStrength->Enable();
+    this->m_filePickerClipG->Enable();
+    this->m_neg_prompt->Enable();
 }
 
 void MainWindowUI::Onimg2imgDropFile(wxDropFilesEvent& event) {
@@ -2454,15 +2600,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             } break;
             case QM::QueueEvents::ITEM_MODEL_LOADED:  // MODEL_LOAD_DONE
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
-                this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->model));
+                this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
                 break;
             case QM::QueueEvents::ITEM_MODEL_LOAD_START:  // MODEL_LOAD_START
-                this->writeLog(wxString::Format(_("Model load started: %s\n"), item->model));
+                this->writeLog(wxString::Format(_("Model load started: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
                 break;
             case QM::QueueEvents::ITEM_MODEL_FAILED:  // MODEL_LOAD_ERROR
-                this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->params.model_path));
+                this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
                 title   = _("Model load failed");
-                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model);
+                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path);
                 this->ShowNotification(title, message);
                 break;
             case QM::QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
@@ -2730,7 +2876,7 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (token == "DOWNLOAD_ERROR") {
-        auto payload        = e.GetPayload<CivitAi::DownloadItem*>();
+        auto payload = e.GetPayload<CivitAi::DownloadItem*>();
         auto title   = _("Model download failed");
         auto message = wxString::Format(_("The model download is failed: %s"), std::filesystem::path(payload->local_file).filename().string());
         this->ShowNotification(title, message);
@@ -3570,6 +3716,9 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
 
 void MainWindowUI::OnHtmlLinkClicked(wxHtmlLinkEvent& event) {
     wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+}
+void MainWindowUI::onWhatIsThis(wxCommandEvent& event) {
+    wxLaunchDefaultBrowser("https://github.com/fszontagh/sd.cpp.gui.wx/wiki/LCM-&-SD3.5-&-FLUX-howtos");
 }
 
 bool MainWindowUI::ProcessEventHandler(std::string message) {
