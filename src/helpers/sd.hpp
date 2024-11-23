@@ -311,6 +311,7 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const SDParams& nlohmann_j
     nlohmann_json_j["mode"]                       = nlohmann_json_t.mode;
     nlohmann_json_j["model_path"]                 = nlohmann_json_t.model_path;
     nlohmann_json_j["clip_l_path"]                = nlohmann_json_t.clip_l_path;
+    nlohmann_json_j["clip_g_path"]                = nlohmann_json_t.clip_g_path;
     nlohmann_json_j["t5xxl_path"]                 = nlohmann_json_t.t5xxl_path;
     nlohmann_json_j["diffusion_model_path"]       = nlohmann_json_t.diffusion_model_path;
     nlohmann_json_j["vae_path"]                   = nlohmann_json_t.vae_path;
@@ -384,6 +385,12 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, SDParams& nlohmann
         if (iter != nlohmann_json_j.end())
             if (!iter->is_null())
                 iter->get_to(nlohmann_json_t.clip_l_path);
+    }
+    {
+        auto iter = nlohmann_json_j.find("clip_g_path");
+        if (iter != nlohmann_json_j.end())
+            if (!iter->is_null())
+                iter->get_to(nlohmann_json_t.clip_g_path);
     }
     {
         auto iter = nlohmann_json_j.find("t5xxl_path");
