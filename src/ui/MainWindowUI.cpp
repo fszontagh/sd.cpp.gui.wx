@@ -1217,6 +1217,38 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
     this->m_cfg->SetValue(item.params.cfg_scale);
     this->m_batch_count->SetValue(item.params.batch_count);
 
+    if (item.mode == QM::GenerationMode::TXT2IMG) {
+        auto currentSkipLayers = sd_gui_utils::splitStr2int(this->m_skipLayers->GetValue().utf8_string(), ',');
+        if (currentSkipLayers.size() != item.params.skip_layers.size()) {
+            wxString newSkipLayers;
+            for (auto layer : item.params.skip_layers) {
+                newSkipLayers += wxString::Format("%d,", layer);
+            }
+            this->m_skipLayers->SetValue(newSkipLayers);
+        } else {
+            for (size_t i = 0; i < item.params.skip_layers.size(); i++) {
+                if (currentSkipLayers[i] != item.params.skip_layers[i]) {
+                    wxString newSkipLayers;
+                    for (auto layer : item.params.skip_layers) {
+                        newSkipLayers += wxString::Format("%d,", layer);
+                    }
+                    this->m_skipLayers->SetValue(newSkipLayers);
+                }
+            }
+        }
+
+        if (this->skipLayerStart->GetValue() != item.params.skip_layer_start) {
+            this->skipLayerStart->SetValue(item.params.skip_layer_start);
+        }
+
+        if (this->skipLayerEnd->GetValue() != item.params.skip_layer_end) {
+            this->skipLayerEnd->SetValue(item.params.skip_layer_end);
+        }
+        if (this->slgScale->GetValue() != item.params.slg_scale) {
+            this->slgScale->SetValue(item.params.slg_scale);
+        }
+    }
+
     if (!item.params.model_path.empty() && std::filesystem::exists(item.params.model_path)) {
         sd_gui_utils::ModelFileInfo model = this->ModelManager->getInfo(item.params.model_path);
         this->ChangeModelByInfo(model);
@@ -1224,6 +1256,10 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         if (!this->m_img2imgOpen->GetPath().empty()) {
             this->m_generate1->Enable();
         }
+    }
+
+    if (item.params.clip_g_path.empty() == false && std::filesystem::exists(item.params.clip_g_path)) {
+        this->m_filePickerClipG->SetPath(wxString::FromUTF8Unchecked(item.params.clip_g_path));
     }
 
     if (item.params.clip_l_path.empty() == false && std::filesystem::exists(item.params.clip_l_path)) {
@@ -1306,8 +1342,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
 
         for (auto cnmodel : this->ControlnetModels) {
             if (cnmodel.second == item.params.controlnet_path) {
-                for (unsigned int _u = 0; _u < this->m_controlnetModels->GetCount();
-                     ++_u) {
+                for (unsigned int _u = 0; _u < this->m_controlnetModels->GetCount(); ++_u) {
                     if (this->m_controlnetModels->GetString(_u) == cnmodel.first) {
                         this->m_controlnetModels->Select(_u);
                         break;
