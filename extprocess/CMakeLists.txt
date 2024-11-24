@@ -13,7 +13,7 @@ add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/S
 
 
 if (WIN32)
-    target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:2097152)
+    target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:6291456)
     target_compile_options(${EPROCESS_BINARY_NAME} PRIVATE /Zc:__cplusplus)
 endif()
 

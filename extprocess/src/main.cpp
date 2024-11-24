@@ -14,12 +14,14 @@
 #include <cstring>
 #endif
 
+#include "ver.hpp"
+
+#include <wx/string.h>
+#include <wx/translation.h>
+#include <wx/event.h>
+
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
-#include "ver.hpp"
-#include "wx/translation.h"
-#include "wx/event.h"
-#include "wx/string.h"
 #include "../../src/ui/utils.hpp"
 #include "ui/QueueManager.h"
 
@@ -33,7 +35,6 @@ int main(int argc, char* argv[]) {
         writeCriticalLog("wrong parameters: " + std::string(argv[0]), "stablediffusiongui_diffuser.log");
         return 1;
     }
-
     std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
 
     ApplicationLogic appLogic(argv[1], sharedMemory);
