@@ -81,7 +81,7 @@ enum sd_type_t {
     SD_TYPE_Q4_0_4_8 = 32,
     SD_TYPE_Q4_0_8_8 = 33,
     SD_TYPE_TQ1_0    = 34,
-    SD_TYPE_TQ2_0    = 35,    
+    SD_TYPE_TQ2_0    = 35,
     SD_TYPE_COUNT,
 };
 enum sd_log_level_t { SD_LOG_DEBUG,
@@ -126,7 +126,6 @@ typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,    // esrgan path
 typedef void (*FreeUpscalerCtxFunction)(upscaler_ctx_t*);
 // Function pointers
 typedef sd_ctx_t* (*NewSdCtxFunction)(
-
     const char*,      // model_path,
     const char*,      // clip_l_path,
     const char*,      // clip_g_path,
@@ -147,8 +146,8 @@ typedef sd_ctx_t* (*NewSdCtxFunction)(
     enum schedule_t,  // s,
     bool,             // keep_clip_on_cpu,
     bool,             // keep_control_net_cpu,
-    bool              // keep_vae_on_cpu
-
+    bool,             // keep_vae_on_cpu
+    bool              // bool diffusion_flash_attn
 );
 typedef void (*FreeSdCtxFunction)(sd_ctx_t*);
 typedef void (*SdSetLogCallbackFunction)(void (*)(enum sd_log_level_t, const char*, void*), void*);
@@ -205,26 +204,6 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        float                  // skip_layer_end)
 
 );
-
-// sd_ctx_t* sd_ctx,
-// sd_image_t init_image,
-// const char* prompt_c_str,
-// const char* negative_prompt_c_str,
-// int clip_skip,
-// float cfg_scale,
-// float guidance,
-// int width,
-// int height,
-// sample_method_t sample_method,
-// int sample_steps,
-// float strength,
-// int64_t seed,
-// int batch_count,
-// const sd_image_t* control_cond,
-// float control_strength,
-// float style_ratio,
-// bool normalize_input,
-// const char* input_id_images_path_c_str
 
 typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
                                        sd_image_t,       // inpu image
@@ -291,12 +270,11 @@ struct SDParams {
     bool vae_on_cpu               = false;
     bool canny_preprocess         = false;
     bool color                    = false;
-    int upscale_repeats           = 1;
-
-    std::vector<int> skip_layers = {7, 8, 9};
-    float skip_layer_start       = 0.01;
-    float skip_layer_end         = 0.2;
-    float slg_scale              = 0.f;
+    std::vector<int> skip_layers  = {7, 8, 9};
+    float skip_layer_start        = 0.01;
+    float skip_layer_end          = 0.2;
+    float slg_scale               = 0.f;
+    bool diffusion_flash_attn     = false;
 
     SDParams() = default;
 
@@ -355,7 +333,6 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const SDParams& nlohmann_j
     nlohmann_json_j["vae_on_cpu"]                 = nlohmann_json_t.vae_on_cpu;
     nlohmann_json_j["canny_preprocess"]           = nlohmann_json_t.canny_preprocess;
     nlohmann_json_j["color"]                      = nlohmann_json_t.color;
-    nlohmann_json_j["upscale_repeats"]            = nlohmann_json_t.upscale_repeats;
     nlohmann_json_j["skip_layers"]                = nlohmann_json_t.skip_layers;
     nlohmann_json_j["slg_scale"]                  = nlohmann_json_t.slg_scale;
     nlohmann_json_j["skip_layer_start"]           = nlohmann_json_t.skip_layer_start;
@@ -651,12 +628,6 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, SDParams& nlohmann
                 iter->get_to(nlohmann_json_t.color);
     }
     {
-        auto iter = nlohmann_json_j.find("upscale_repeats");
-        if (iter != nlohmann_json_j.end())
-            if (!iter->is_null())
-                iter->get_to(nlohmann_json_t.upscale_repeats);
-    }
-    {
         auto iter = nlohmann_json_j.find("skip_layers");
         if (iter != nlohmann_json_j.end())
             if (!iter->is_null())
@@ -679,6 +650,12 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, SDParams& nlohmann
         if (iter != nlohmann_json_j.end())
             if (!iter->is_null())
                 iter->get_to(nlohmann_json_t.skip_layer_end);
+    }
+    {
+        auto iter = nlohmann_json_j.find("diffusion_flash_attn");
+        if (iter != nlohmann_json_j.end())
+            if (!iter->is_null())
+                iter->get_to(nlohmann_json_t.diffusion_flash_attn);
     }
 }
 

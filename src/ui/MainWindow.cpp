@@ -166,11 +166,16 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer99->Add( m_staticText161, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	wxArrayString m_vaeChoices;
-	m_vae = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxSize( 200,-1 ), m_vaeChoices, 0 );
+	m_vae = new wxChoice( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxSize( 121,-1 ), m_vaeChoices, 0 );
 	m_vae->SetSelection( 0 );
 	m_vae->Enable( false );
 
 	bSizer99->Add( m_vae, 0, wxALL|wxEXPAND, 5 );
+
+	vaeOnCpu = new wxCheckBox( m_scrolledWindow1, wxID_ANY, _("CPU"), wxDefaultPosition, wxDefaultSize, 0 );
+	vaeOnCpu->SetToolTip( _("VAE on CPU") );
+
+	bSizer99->Add( vaeOnCpu, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer76->Add( bSizer99, 0, wxEXPAND, 5 );
@@ -221,10 +226,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer86->Add( m_staticText234, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_clip_skip = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 200,-1 ), wxSP_ARROW_KEYS, -1, 2, -1 );
+	m_clip_skip = new wxSpinCtrl( m_scrolledWindow1, wxID_ANY, wxT("0"), wxDefaultPosition, wxSize( 121,-1 ), wxSP_ARROW_KEYS, -1, 2, -1 );
 	m_clip_skip->SetToolTip( _("ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer (default: -1)\n<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x") );
 
-	bSizer86->Add( m_clip_skip, 0, wxALL|wxEXPAND, 5 );
+	bSizer86->Add( m_clip_skip, 1, wxALL|wxEXPAND, 5 );
+
+	clipOnCpu = new wxCheckBox( m_scrolledWindow1, wxID_ANY, _("CPU"), wxDefaultPosition, wxDefaultSize, 0 );
+	clipOnCpu->SetToolTip( _("CLIP on CPU") );
+
+	bSizer86->Add( clipOnCpu, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer22->Add( bSizer86, 1, wxEXPAND, 5 );
@@ -647,10 +657,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer82->SetMinSize( wxSize( 300,-1 ) );
 	m_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxTE_MULTILINE|wxTE_PROCESS_ENTER|wxTE_RICH|wxTE_RICH2|wxTE_WORDWRAP );
+	m_prompt->SetMinSize( wxSize( -1,100 ) );
+
 	bSizer82->Add( m_prompt, 1, wxALL|wxEXPAND, 1 );
 
 	m_neg_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxTE_MULTILINE|wxTE_PROCESS_ENTER|wxTE_RICH|wxTE_RICH2|wxTE_WORDWRAP );
 	m_neg_prompt->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+	m_neg_prompt->SetMinSize( wxSize( -1,100 ) );
 
 	bSizer82->Add( m_neg_prompt, 1, wxALL|wxEXPAND, 1 );
 
@@ -682,13 +695,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_staticText522 = new wxStaticText( m_text2img_panel, wxID_ANY, _("SLG scale:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText522->Wrap( -1 );
-	m_staticText522->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0)") );
+	m_staticText522->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0.0)") );
 
 	bSizer10212->Add( m_staticText522, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	slgScale = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 0, 0.5 );
 	slgScale->SetDigits( 1 );
-	slgScale->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0)") );
+	slgScale->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0.0)") );
 
 	bSizer10212->Add( slgScale, 1, wxALL, 5 );
 
@@ -717,13 +730,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_staticText52211 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Skip Layer Start:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText52211->Wrap( -1 );
-	m_staticText52211->SetToolTip( _("SLG enabling point: (default: 0.01)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+	m_staticText52211->SetToolTip( _("SLG enabling point: (default: 0.01)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
 	bSizer1021211->Add( m_staticText52211, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	skipLayerStart = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.01, 1, 0.01, 0.01 );
 	skipLayerStart->SetDigits( 2 );
-	skipLayerStart->SetToolTip( _("SLG enabling point: (default: 0.01)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+	skipLayerStart->SetToolTip( _("SLG enabling point: (default: 0.01)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
 	bSizer1021211->Add( skipLayerStart, 1, wxALL, 5 );
 
@@ -735,13 +748,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_staticText522111 = new wxStaticText( m_text2img_panel, wxID_ANY, _("Skip Layer End:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText522111->Wrap( -1 );
-	m_staticText522111->SetToolTip( _("SLG disabling point: (default: 0.2)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+	m_staticText522111->SetToolTip( _("SLG disabling point: (default: 0.2)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
 	bSizer10212111->Add( m_staticText522111, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	skipLayerEnd = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.01, 1, 0.2, 0.01 );
 	skipLayerEnd->SetDigits( 2 );
-	skipLayerEnd->SetToolTip( _("SLG disabling point: (default: 0.2)\\n\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
+	skipLayerEnd->SetToolTip( _("SLG disabling point: (default: 0.2)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
 	bSizer10212111->Add( skipLayerEnd, 1, wxALL, 5 );
 
@@ -768,6 +781,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_filePickerDiffusionModel = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_USE_TEXTCTRL );
 	bSizer1021111->Add( m_filePickerDiffusionModel, 1, wxALL, 5 );
+
+	diffusionFlashAttn = new wxCheckBox( m_text2img_panel, wxID_ANY, _("Flash attention"), wxDefaultPosition, wxDefaultSize, 0 );
+	diffusionFlashAttn->SetToolTip( _("Use flash attention in the diffusion model. This will reduce significantly the memory uage (for low vram).\nMight lower quality, since it implies converting k and v to f16.\nThis might crash if it is not supported by the backend.\n\n") );
+
+	bSizer1021111->Add( diffusionFlashAttn, 0, wxALL|wxEXPAND, 5 );
 
 	m_cleanDiffusionModel = new wxBitmapButton( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -884,6 +902,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_controlnetImageOpen->SetMinSize( wxSize( 260,-1 ) );
 
 	bSizer34->Add( m_controlnetImageOpen, 0, wxALL, 5 );
+
+	cnOnCpu = new wxCheckBox( m_text2img_panel, wxID_ANY, _("CN on CPU"), wxDefaultPosition, wxDefaultSize, 0 );
+	cnOnCpu->SetToolTip( _("Keep controlnet on CPU") );
+
+	bSizer34->Add( cnOnCpu, 0, wxALL|wxEXPAND, 5 );
 
 	wxArrayString m_controlnetModelsChoices;
 	m_controlnetModels = new wxChoice( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxSize( 210,-1 ), m_controlnetModelsChoices, 0 );
@@ -1337,6 +1360,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
+	vaeOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onVAEOnCpu ), NULL, this );
+	clipOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );
 	m_sampler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
 	m_scheduler->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
@@ -1363,12 +1388,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_bpButton25->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
 	m_filePickerDiffusionModel->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
+	diffusionFlashAttn->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onDiffusionFlashAttn ), NULL, this );
 	m_cleanDiffusionModel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
 	m_filePickerClipL->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipL ), NULL, this );
 	m_filePickerClipG->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipG ), NULL, this );
 	m_filePickerT5XXL->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerT5XXL ), NULL, this );
 	m_generate2->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
+	cnOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onCnOnCpu ), NULL, this );
 	m_controlnetImagePreviewButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImageDelete ), NULL, this );
 	m_image2image_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
@@ -1407,6 +1434,8 @@ mainUI::~mainUI()
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
+	vaeOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onVAEOnCpu ), NULL, this );
+	clipOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );
 	m_sampler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSamplerSelect ), NULL, this );
 	m_scheduler->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
 	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
@@ -1433,12 +1462,14 @@ mainUI::~mainUI()
 	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_bpButton25->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
 	m_filePickerDiffusionModel->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
+	diffusionFlashAttn->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onDiffusionFlashAttn ), NULL, this );
 	m_cleanDiffusionModel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
 	m_filePickerClipL->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipL ), NULL, this );
 	m_filePickerClipG->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerClipG ), NULL, this );
 	m_filePickerT5XXL->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerT5XXL ), NULL, this );
 	m_generate2->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_controlnetImageOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnControlnetImageOpen ), NULL, this );
+	cnOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onCnOnCpu ), NULL, this );
 	m_controlnetImagePreviewButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImagePreviewButton ), NULL, this );
 	m_controlnetImageDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnControlnetImageDelete ), NULL, this );
 	m_image2image_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );

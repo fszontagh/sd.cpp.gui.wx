@@ -68,12 +68,14 @@ class mainUI : public wxFrame
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
+		wxCheckBox* vaeOnCpu;
 		wxCheckBox* m_vae_tiling;
 		wxCheckBox* m_vae_decode_only;
 		wxStaticText* m_staticText231;
 		wxSpinCtrlDouble* m_cfg;
 		wxStaticText* m_staticText234;
 		wxSpinCtrl* m_clip_skip;
+		wxCheckBox* clipOnCpu;
 		wxStaticText* m_staticText20;
 		wxChoice* m_taesd;
 		wxStaticText* m_staticText15;
@@ -146,6 +148,7 @@ class mainUI : public wxFrame
 		wxStaticLine* m_staticline41;
 		wxStaticText* m_staticText52111;
 		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxCheckBox* diffusionFlashAttn;
 		wxBitmapButton* m_cleanDiffusionModel;
 		wxStaticText* m_staticText52;
 		wxFilePickerCtrl* m_filePickerClipL;
@@ -160,6 +163,7 @@ class mainUI : public wxFrame
 		wxStaticBitmap* m_controlnetImagePreview;
 		wxButton* m_generate2;
 		wxFilePickerCtrl* m_controlnetImageOpen;
+		wxCheckBox* cnOnCpu;
 		wxChoice* m_controlnetModels;
 		wxSpinCtrlDouble* m_controlnetStrength;
 		wxButton* m_controlnetImagePreviewButton;
@@ -230,6 +234,8 @@ class mainUI : public wxFrame
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
@@ -253,12 +259,14 @@ class mainUI : public wxFrame
 		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onCnOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }

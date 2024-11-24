@@ -63,6 +63,10 @@ protected:
     void OnModellistFilterKeyUp(wxKeyEvent& event) override;
     void OnDataModelActivated(wxDataViewEvent& event) override;
     void OnDataModelSelected(wxDataViewEvent& event) override;
+    void onCnOnCpu(wxCommandEvent& event) override;
+    void onClipOnCpu(wxCommandEvent& event) override;
+    void onVAEOnCpu(wxCommandEvent& event) override;
+    void onDiffusionFlashAttn(wxCommandEvent& event) override;
 
 public:
     /** Constructor */

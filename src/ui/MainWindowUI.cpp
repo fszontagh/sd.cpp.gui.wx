@@ -66,6 +66,16 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->loadEsrganList();
     this->loadEmbeddingList();
     this->refreshModelTable();
+    // reload config, set up checkboxes from it
+    const auto diffusion_flash_attn = this->mapp->config->ReadBool("/diffusion_flash_attn", this->diffusionFlashAttn->GetValue());
+    const auto clip_on_cpu          = this->mapp->config->ReadBool("/clip_on_cpu", this->clipOnCpu->GetValue());
+    const auto controlnet_on_cpu    = this->mapp->config->ReadBool("/controlnet_on_cpu", this->cnOnCpu->GetValue());
+    const auto vae_on_cpu           = this->mapp->config->ReadBool("/vae_on_cpu", this->vaeOnCpu->GetValue());
+
+    this->diffusionFlashAttn->SetValue(diffusion_flash_attn);
+    this->clipOnCpu->SetValue(clip_on_cpu);
+    this->cnOnCpu->SetValue(controlnet_on_cpu);
+    this->vaeOnCpu->SetValue(vae_on_cpu);
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
@@ -744,9 +754,17 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->keep_checkpoint_in_memory = this->m_keep_other_models_in_memory->GetValue();
     item->keep_upscaler_in_memory   = this->m_keep_upscaler_in_memory->GetValue();
 
+    item->params.vae_on_cpu           = this->vaeOnCpu->GetValue();
+    item->params.clip_on_cpu          = this->clipOnCpu->GetValue();
+    item->params.diffusion_flash_attn = this->diffusionFlashAttn->GetValue();
+
     if (type == QM::GenerationMode::TXT2IMG) {
         item->params.prompt          = this->m_prompt->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt->GetValue().utf8_string();
+
+        if (this->m_controlnetModels->GetSelection() > 0) {
+            item->params.control_net_cpu = this->cnOnCpu->GetValue();
+        }
 
         auto diffusionModel = this->m_filePickerDiffusionModel->GetPath();
 
@@ -1099,6 +1117,23 @@ void MainWindowUI::OnDataModelSelected(wxDataViewEvent& event) {
         this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
     }
     this->UpdateModelInfoDetailsFromModelList(modelinfo);
+}
+
+void MainWindowUI::onCnOnCpu(wxCommandEvent& event) {
+    this->mapp->config->Write("/controlnet_on_cpu", this->cnOnCpu->GetValue());
+    this->mapp->config->Flush(true);
+}
+void MainWindowUI::onClipOnCpu(wxCommandEvent& event) {
+    this->mapp->config->Write("/clip_on_cpu", this->clipOnCpu->GetValue());
+    this->mapp->config->Flush(true);
+}
+void MainWindowUI::onVAEOnCpu(wxCommandEvent& event) {
+    this->mapp->config->Write("/vae_on_cpu", this->vaeOnCpu->GetValue());
+    this->mapp->config->Flush(true);
+}
+void MainWindowUI::onDiffusionFlashAttn(wxCommandEvent& event) {
+    this->mapp->config->Write("/diffusion_flash_attn", this->diffusionFlashAttn->GetValue());
+    this->mapp->config->Flush(true);
 }
 
 void MainWindowUI::onSamplerSelect(wxCommandEvent& event) {

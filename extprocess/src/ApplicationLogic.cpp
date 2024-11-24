@@ -664,7 +664,8 @@ bool ApplicationLogic::loadSdModel() {
                 this->currentItem->params.schedule,
                 this->currentItem->params.clip_on_cpu,
                 this->currentItem->params.control_net_cpu,
-                this->currentItem->params.vae_on_cpu);
+                this->currentItem->params.vae_on_cpu,
+                this->currentItem->params.diffusion_flash_attn);
 
             if (this->sd_ctx == NULL) {
                 return false;
