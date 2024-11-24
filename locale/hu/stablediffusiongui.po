@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: StableDiffusionGUI 0.1.9\n"
 "Report-Msgid-Bugs-To: sdgui@fsociety.hu\n"
-"POT-Creation-Date: 2024-11-14 11:27+0100\n"
-"PO-Revision-Date: 2024-11-14 11:33+0100\n"
+"POT-Creation-Date: 2024-11-24 11:20+0100\n"
+"PO-Revision-Date: 2024-11-24 11:21+0100\n"
 "Last-Translator: Ferenc Szontágh <szf@fsociety.hu>\n"
-"Language-Team: Hungarian\n"
+"Language-Team: Hungarian <>\n"
 "Language: hu_HU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.4.2\n"
+"X-Generator: Lokalize 23.08.5\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: extprocess/src/ApplicationLogic.cpp:209
@@ -23,34 +23,34 @@ msgstr ""
 msgid "Unknown mode: %s"
 msgstr "Ismeretlen mód %s"
 
-#: src/MainApp.h:55
+#: src/MainApp.h:50
 msgid "Another program instance is already running, aborting."
 msgstr "Az alkalmazás egy példánya már fut, kilépés."
 
-#: src/ui/MainWindow.cpp:78
+#: src/ui/MainWindow.cpp:77
 msgid "About the sd.cpp.gui.wx"
 msgstr "Az sd.cpp.gui.wx programról"
 
-#: src/ui/MainWindow.cpp:79
+#: src/ui/MainWindow.cpp:78
 msgid "About the program"
 msgstr "Az alkalmazásról"
 
-#: src/ui/MainWindow.cpp:86
+#: src/ui/MainWindow.cpp:85
 msgid "Open CivitAi.com model browser"
 msgstr "A CivitAi.com model letöltő megnyitása"
 
-#: src/ui/MainWindow.cpp:87
+#: src/ui/MainWindow.cpp:86
 msgid ""
 "With CivitAi.com model browser, you can search for models or download models"
 msgstr ""
 "A CivitAi.com model böngészővel lehetőséged van modellek keresésére és "
 "letöltésére"
 
-#: src/ui/MainWindow.cpp:96
+#: src/ui/MainWindow.cpp:95
 msgid "Stop and restart the background process"
 msgstr "A háttérfolyamat leállítása és elindítása"
 
-#: src/ui/MainWindow.cpp:97
+#: src/ui/MainWindow.cpp:96
 msgid ""
 "This will send a terminate to the background diffuser process. This will "
 "clear up all used memory (eg. freeing up all the loaded models)"
@@ -58,44 +58,52 @@ msgstr ""
 "Ez megszakítja a háttér diffúziós folyamatot. Felszabadítja az általa "
 "lefoglalt memóriát (az eddig betöltött modelleket kiüríti)"
 
-#: src/ui/MainWindow.cpp:110
+#: src/ui/MainWindow.cpp:109
 msgid "Model:"
 msgstr "Model:"
 
-#: src/ui/MainWindow.cpp:127
+#: src/ui/MainWindow.cpp:126
 msgid "Type:"
 msgstr "Típus:"
 
-#: src/ui/MainWindow.cpp:134 src/ui/MainWindow.cpp:305
+#: src/ui/MainWindow.cpp:133 src/ui/MainWindow.cpp:314
 msgid ""
 "Weight type. If not specified, the default is the type of the weight file."
 msgstr "Súlyozás típus. Ha nincs megadva, a fájl típusa lesz használva."
 
-#: src/ui/MainWindow.cpp:165
+#: src/ui/MainWindow.cpp:164
 msgid "Vae:"
 msgstr "Vae:"
 
-#: src/ui/MainWindow.cpp:182 src/ui/MainWindowUI.cpp:2944
+#: src/ui/MainWindow.cpp:175 src/ui/MainWindow.cpp:234
+msgid "CPU"
+msgstr "CPU"
+
+#: src/ui/MainWindow.cpp:176 src/ui/MainWindowUI.cpp:3166
+msgid "VAE on CPU"
+msgstr "VAE CPU-n"
+
+#: src/ui/MainWindow.cpp:186 src/ui/MainWindowUI.cpp:3171
 msgid "VAE tiling"
 msgstr "VAE darabolása"
 
-#: src/ui/MainWindow.cpp:183
+#: src/ui/MainWindow.cpp:187
 msgid "Process vae in tiles to reduce memory usage"
 msgstr "VAE-k feldolgozása csempékre bontva memória spóroláshoz"
 
-#: src/ui/MainWindow.cpp:187
+#: src/ui/MainWindow.cpp:191
 msgid "VAE decode only"
 msgstr "VAE csak dekódoljon"
 
-#: src/ui/MainWindow.cpp:205
+#: src/ui/MainWindow.cpp:209
 msgid "CFG:"
 msgstr "CFG:"
 
-#: src/ui/MainWindow.cpp:219
+#: src/ui/MainWindow.cpp:223
 msgid "Clip skip:"
-msgstr "Clip kihagyás:"
+msgstr "Clip kihagy.:"
 
-#: src/ui/MainWindow.cpp:221 src/ui/MainWindow.cpp:226
+#: src/ui/MainWindow.cpp:225 src/ui/MainWindow.cpp:230
 msgid ""
 "ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer "
 "(default: -1)\n"
@@ -105,84 +113,88 @@ msgstr ""
 "kihagyása (alapért.: -1)\n"
 "<= meghatározatlan esetén, 1 lesz SD1.x-nél, 2 SD2.x esetén"
 
-#: src/ui/MainWindow.cpp:236
+#: src/ui/MainWindow.cpp:235
+msgid "CLIP on CPU"
+msgstr "CLIP CPU-n"
+
+#: src/ui/MainWindow.cpp:245
 msgid "TAESD:"
 msgstr "TAESD:"
 
-#: src/ui/MainWindow.cpp:238
+#: src/ui/MainWindow.cpp:247
 msgid "Using Tiny AutoEncoder for fast decoding (low quality)"
 msgstr ""
 "Használjon Tiny AutoEncoder-t a gyorsabb dekódoláshoz (rosszabb képminőség)"
 
-#: src/ui/MainWindow.cpp:262
+#: src/ui/MainWindow.cpp:271
 msgid "Batch:"
 msgstr "Mennyiség:"
 
-#: src/ui/MainWindow.cpp:264 src/ui/MainWindow.cpp:269
+#: src/ui/MainWindow.cpp:273 src/ui/MainWindow.cpp:278
 msgid "number of images to generate."
 msgstr "a generált képek száma."
 
-#: src/ui/MainWindow.cpp:279
+#: src/ui/MainWindow.cpp:288
 msgid "Sampler:"
 msgstr "Mintavevő:"
 
-#: src/ui/MainWindow.cpp:281 src/ui/MainWindow.cpp:288
+#: src/ui/MainWindow.cpp:290 src/ui/MainWindow.cpp:297
 msgid "sampling method (default: \"euler_a\")"
 msgstr "mintavételezés típusa (alapért.: \"euler_a\")"
 
-#: src/ui/MainWindow.cpp:298
+#: src/ui/MainWindow.cpp:307
 msgid "Scheduler:"
 msgstr "Ütemező:"
 
-#: src/ui/MainWindow.cpp:321
+#: src/ui/MainWindow.cpp:330
 msgid "Seed:"
 msgstr "Seed:"
 
-#: src/ui/MainWindow.cpp:331
+#: src/ui/MainWindow.cpp:340
 msgid "Generate a random seed"
 msgstr "Véletlen seed generálása"
 
-#: src/ui/MainWindow.cpp:341
+#: src/ui/MainWindow.cpp:350
 msgid "Steps:"
 msgstr "Lépések:"
 
-#: src/ui/MainWindow.cpp:343 src/ui/MainWindow.cpp:348
+#: src/ui/MainWindow.cpp:352 src/ui/MainWindow.cpp:357
 msgid "number of sample steps (default: 20)"
 msgstr "mintavételezés száma (alapért.: 20)"
 
-#: src/ui/MainWindow.cpp:364 src/ui/MainWindow.cpp:917
-#: src/ui/MainWindow.cpp:939
+#: src/ui/MainWindow.cpp:373 src/ui/MainWindow.cpp:1108
+#: src/ui/MainWindow.cpp:1130
 msgid "Width:"
 msgstr "Szélesség:"
 
-#: src/ui/MainWindow.cpp:377 src/ui/MainWindow.cpp:925
-#: src/ui/MainWindow.cpp:947
+#: src/ui/MainWindow.cpp:386 src/ui/MainWindow.cpp:1116
+#: src/ui/MainWindow.cpp:1138
 msgid "Height:"
 msgstr "Magasság:"
 
-#: src/ui/MainWindow.cpp:387
+#: src/ui/MainWindow.cpp:396
 msgid "Swap the resolution"
 msgstr "Felbontás megcserélése"
 
-#: src/ui/MainWindow.cpp:403
+#: src/ui/MainWindow.cpp:412
 msgid "Presets"
 msgstr "Sablonok"
 
-#: src/ui/MainWindow.cpp:418
+#: src/ui/MainWindow.cpp:427
 msgid "Save the current settings into preset"
 msgstr "Jelenlegi paraméterek mentése új Előbeállításba"
 
-#: src/ui/MainWindow.cpp:419
+#: src/ui/MainWindow.cpp:428
 msgid "Save the current settings into a new preset, or overwrite an exists one"
 msgstr ""
 "Jelenlegi paraméterek mentése új Előbeállításba, vagy egy már meglévő "
 "felülírása"
 
-#: src/ui/MainWindow.cpp:426
+#: src/ui/MainWindow.cpp:435
 msgid "Load the selected preset"
 msgstr "A kiválasztott előbeállítás betöltése"
 
-#: src/ui/MainWindow.cpp:427
+#: src/ui/MainWindow.cpp:436
 msgid ""
 "Load a selected preset. The preset settings will over write the current "
 "generation settings"
@@ -190,135 +202,258 @@ msgstr ""
 "A kiválasztott Beállítás betöltése. A Beállítás paraméterei felülírják a "
 "jelenlegi paramétereket"
 
-#: src/ui/MainWindow.cpp:454
-msgid "SD1x Resolutions:"
-msgstr "SD1x Felbontások:"
+#: src/ui/MainWindow.cpp:463
+msgid "Low res.:"
+msgstr "Kis felb.:"
 
-#: src/ui/MainWindow.cpp:458 src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:465 src/ui/MainWindow.cpp:473
+msgid "Lower resolutions for SD1.x"
+msgstr "Alacsonyabb felbontások SD1.x-hez"
+
+#: src/ui/MainWindow.cpp:469 src/ui/MainWindow.cpp:489
 msgid "Select one"
 msgstr "Válassz egyet"
 
-#: src/ui/MainWindow.cpp:458
+#: src/ui/MainWindow.cpp:469
 msgid "640x384"
 msgstr "640x384"
 
-#: src/ui/MainWindow.cpp:458
+#: src/ui/MainWindow.cpp:469
 msgid "512x512"
 msgstr "512x512"
 
-#: src/ui/MainWindow.cpp:458
+#: src/ui/MainWindow.cpp:469
 msgid "512x768"
 msgstr "512x768"
 
-#: src/ui/MainWindow.cpp:470
-msgid "SDXL Resolutions:"
-msgstr "SDXL Felbontások:"
+#: src/ui/MainWindow.cpp:483
+msgid "High Res.:"
+msgstr "Mag. felb.:"
 
-#: src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:485 src/ui/MainWindow.cpp:493
+msgid "Higher resolutions for FLUX/SDXL/SD3.5"
+msgstr "Magsabb felbontások FLUX/SDXL/SD3.5 modellekhez"
+
+#: src/ui/MainWindow.cpp:489
 msgid "1024x1024"
 msgstr "1024x1024"
 
-#: src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:489
 msgid "1152x896"
 msgstr "1152x896"
 
-#: src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:489
 msgid "1216x832"
 msgstr "1216x832"
 
-#: src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:489
 msgid "1344x768"
 msgstr "1344x768"
 
-#: src/ui/MainWindow.cpp:474
+#: src/ui/MainWindow.cpp:489
 msgid "1536x640"
 msgstr "1536x640"
 
-#: src/ui/MainWindow.cpp:486
+#: src/ui/MainWindow.cpp:503
 msgid "Prompt presets"
 msgstr "Prompt sablonok"
 
-#: src/ui/MainWindow.cpp:527
+#: src/ui/MainWindow.cpp:544
 msgid "Resume all"
 msgstr "Összes folytatása"
 
-#: src/ui/MainWindow.cpp:532
+#: src/ui/MainWindow.cpp:549
 msgid "Pause all"
 msgstr "Mindet szüneteltet"
 
-#: src/ui/MainWindow.cpp:537
+#: src/ui/MainWindow.cpp:554
 msgid "Delete all"
 msgstr "Összes törlése"
 
-#: src/ui/MainWindow.cpp:544
+#: src/ui/MainWindow.cpp:561
 msgid "Number of jobs: 0"
 msgstr "Feladatok száma: 0"
 
-#: src/ui/MainWindow.cpp:568
+#: src/ui/MainWindow.cpp:585
 msgid "Id"
 msgstr "Id"
 
-#: src/ui/MainWindow.cpp:569
+#: src/ui/MainWindow.cpp:586
 msgid "Crated at"
 msgstr "Létrehozva"
 
-#: src/ui/MainWindow.cpp:570 src/ui/MainWindow.cpp:1080
-#: src/ui/MainWindow.cpp:1898 src/ui/MainWindow.cpp:1946
-#: src/ui/MainWindowUI.cpp:1212 src/ui/MainWindowUI.cpp:2854
+#: src/ui/MainWindow.cpp:587 src/ui/MainWindow.cpp:1271
+#: src/ui/MainWindow.cpp:2109 src/ui/MainWindow.cpp:2157
+#: src/ui/MainWindowUI.cpp:1433 src/ui/MainWindowUI.cpp:3071
 msgid "Type"
 msgstr "Típus"
 
-#: src/ui/MainWindow.cpp:571 src/ui/MainWindowUI.cpp:2826
-#: src/ui/MainWindowUI.cpp:2832
+#: src/ui/MainWindow.cpp:588 src/ui/MainWindowUI.cpp:3043
+#: src/ui/MainWindowUI.cpp:3049
 msgid "Model"
 msgstr "Model"
 
-#: src/ui/MainWindow.cpp:572 src/ui/MainWindowUI.cpp:2905
+#: src/ui/MainWindow.cpp:589 src/ui/MainWindowUI.cpp:3127
 msgid "Sampler"
 msgstr "Mintavevő"
 
-#: src/ui/MainWindow.cpp:573 src/ui/MainWindowUI.cpp:2890
+#: src/ui/MainWindow.cpp:590 src/ui/MainWindowUI.cpp:3107
 msgid "Seed"
 msgstr "Seed"
 
-#: src/ui/MainWindow.cpp:574
+#: src/ui/MainWindow.cpp:591
 msgid "Progress"
 msgstr "Folyamat"
 
-#: src/ui/MainWindow.cpp:575
+#: src/ui/MainWindow.cpp:592
 msgid "Speed"
 msgstr "Sebesség"
 
-#: src/ui/MainWindow.cpp:576 src/ui/MainWindow.cpp:1873
-#: src/ui/MainWindow.cpp:1903 src/ui/MainWindow.cpp:1945
-#: src/ui/MainWindow.cpp:1959
+#: src/ui/MainWindow.cpp:593 src/ui/MainWindow.cpp:2084
+#: src/ui/MainWindow.cpp:2114 src/ui/MainWindow.cpp:2156
+#: src/ui/MainWindow.cpp:2170
 msgid "Status"
 msgstr "Állapot"
 
-#: src/ui/MainWindow.cpp:628
+#: src/ui/MainWindow.cpp:645
 msgid "Jobs and Images"
 msgstr "Feladatok és képek"
 
-#: src/ui/MainWindow.cpp:680 src/ui/MainWindow.cpp:800
-#: src/ui/MainWindow.cpp:1623
-msgid "Diffusion"
-msgstr "Diffúzió"
+#: src/ui/MainWindow.cpp:682
+msgid "What is this?"
+msgstr "Mi is ez?"
 
-#: src/ui/MainWindow.cpp:695
-msgid "Controlnet"
-msgstr "Controlnet"
+#: src/ui/MainWindow.cpp:686
+msgid ""
+"For more information, click the button with the question mark icon.\n"
+"\n"
+"To use the FLUX model, select the \"Diffusion Model\" file picker and choose "
+"the FLUX model.\n"
+"For SD3.5, use the dropdown menu at the top to select a model."
+msgstr ""
+"További információkért, kattints a kérdőjeles gombra.\n"
+"\n"
+"FLUX model használatához, válassz egy modelt a 'Diffúziós Model' "
+"fájlválasztóval.\n"
+"SD3.5 model esetén, a fenti Model választóból válaszd ki a modelt."
 
-#: src/ui/MainWindow.cpp:708 src/ui/MainWindow.cpp:829
-#: src/ui/MainWindow.cpp:1005
-msgid "Queue"
-msgstr "Indítás"
+#: src/ui/MainWindow.cpp:696
+msgid "SLG scale:"
+msgstr "Cfg skála:"
 
-#: src/ui/MainWindow.cpp:715
+#: src/ui/MainWindow.cpp:698 src/ui/MainWindow.cpp:704
+msgid "skip layer guidance (SLG) scale, only for DiT models: (default: 0.0)"
+msgstr ""
+"Skip Layer Guidance (SLG) skála, csak DiT modellekhez: (alapértelmezett: 0,0)"
+
+#: src/ui/MainWindow.cpp:714
+msgid "Skip layers:"
+msgstr "Réteg kihagyás:"
+
+#: src/ui/MainWindow.cpp:716 src/ui/MainWindow.cpp:721
+msgid "Layers to skip for SLG steps: (default: [7,8,9])"
+msgstr "Kihagyandó rétegek az SLG lépéseknél: (alapértelmezett: [7,8,9])"
+
+#: src/ui/MainWindow.cpp:720
+msgid "7,8,9"
+msgstr "7,8,9"
+
+#: src/ui/MainWindow.cpp:731
+msgid "Skip Layer Start:"
+msgstr "Kihagyás kezdete:"
+
+#: src/ui/MainWindow.cpp:733 src/ui/MainWindow.cpp:739
+msgid ""
+"SLG enabling point: (default: 0.01)\n"
+"SLG will be enabled at step int([STEPS]*[START]) and disabled at "
+"int([STEPS]*[END])"
+msgstr ""
+"SLG engedélyezési pont: (alapért.: 0.01)\n"
+"A következő lépésnél lesz az SLG bekapcsolva: int([STEPS]*[START]) és "
+"kikapcsolva int([STEPS]*[END])"
+
+#: src/ui/MainWindow.cpp:749
+msgid "Skip Layer End:"
+msgstr "Kihagyás vége:"
+
+#: src/ui/MainWindow.cpp:751 src/ui/MainWindow.cpp:757
+msgid ""
+"SLG disabling point: (default: 0.2)\n"
+"SLG will be enabled at step int([STEPS]*[START]) and disabled at "
+"int([STEPS]*[END])"
+msgstr ""
+"SLG kikapcsolási pont: (alapért.: 0.01)\n"
+"A következő lépésnél lesz az SLG bekapcsolva: int([STEPS]*[START]) és "
+"kikapcsolva int([STEPS]*[END])"
+
+#: src/ui/MainWindow.cpp:776
+msgid "Diffusion Model:"
+msgstr "Diffúziós Model:"
+
+#: src/ui/MainWindow.cpp:778
+msgid "Diffusion models, for example FLUX"
+msgstr "Diffúziós modellek, például FLUX"
+
+#: src/ui/MainWindow.cpp:782 src/ui/MainWindow.cpp:807
+#: src/ui/MainWindow.cpp:820 src/ui/MainWindow.cpp:833
+#: src/ui/MainWindow.cpp:901
 msgid "Select a file"
 msgstr "Válassz egy fájlt"
 
-#: src/ui/MainWindow.cpp:715 src/ui/MainWindow.cpp:836
-#: src/ui/MainWindow.cpp:888
+#: src/ui/MainWindow.cpp:782 src/ui/MainWindow.cpp:807
+#: src/ui/MainWindow.cpp:820 src/ui/MainWindow.cpp:833
+msgid "Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"
+msgstr "Model fájlok (*.safetensors;*.gguf)|*.safetensors;*.gguf"
+
+#: src/ui/MainWindow.cpp:785
+msgid "Flash attention"
+msgstr "Flash attention"
+
+#: src/ui/MainWindow.cpp:786
+msgid ""
+"Use flash attention in the diffusion model. This will reduce significantly "
+"the memory uage (for low vram).\n"
+"Might lower quality, since it implies converting k and v to f16.\n"
+"This might crash if it is not supported by the backend.\n"
+"\n"
+msgstr ""
+"Flash Attention bekapcsolása a diffúziós modellben. Ez jelentősen csökkenti "
+"a memóriahasználatot (alacsony VRAM esetén).\n"
+" Csökkentheti a minőséget, mivel k és v f16-ra konvertálását jelenti.\n"
+" Ez összeomláshoz vezethet, ha a háttérrendszer nem támogatja.\n"
+
+#: src/ui/MainWindow.cpp:793
+msgid "Clean model"
+msgstr "Model eltávolítása"
+
+#: src/ui/MainWindow.cpp:803
+msgid "ClipL:"
+msgstr "ClipL:"
+
+#: src/ui/MainWindow.cpp:816
+msgid "ClipG:"
+msgstr "ClipG:"
+
+#: src/ui/MainWindow.cpp:829
+msgid "T5XXL:"
+msgstr "T5XXL:"
+
+#: src/ui/MainWindow.cpp:866 src/ui/MainWindow.cpp:991
+#: src/ui/MainWindow.cpp:1834
+msgid "Diffusion"
+msgstr "Diffúzió"
+
+#: src/ui/MainWindow.cpp:881
+msgid "Controlnet"
+msgstr "Controlnet"
+
+#: src/ui/MainWindow.cpp:894 src/ui/MainWindow.cpp:1020
+#: src/ui/MainWindow.cpp:1196
+msgid "Queue"
+msgstr "Indítás"
+
+#: src/ui/MainWindow.cpp:901 src/ui/MainWindow.cpp:1027
+#: src/ui/MainWindow.cpp:1079
 msgid ""
 "Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;"
 "*.JPEG;*.PNG"
@@ -326,55 +461,63 @@ msgstr ""
 "Képek (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*."
 "JPEG;*.PNG"
 
-#: src/ui/MainWindow.cpp:731 src/ui/MainWindow.cpp:849
+#: src/ui/MainWindow.cpp:906 src/ui/MainWindowUI.cpp:3235
+msgid "CN on CPU"
+msgstr "CN CPU-ban"
+
+#: src/ui/MainWindow.cpp:907
+msgid "Keep controlnet on CPU"
+msgstr "Controlnet CPU-ban hagyása"
+
+#: src/ui/MainWindow.cpp:922 src/ui/MainWindow.cpp:1040
 msgid "Show full"
 msgstr "Teljes mutatása"
 
-#: src/ui/MainWindow.cpp:733
+#: src/ui/MainWindow.cpp:924
 msgid "Show the original controlnet image"
 msgstr "Eredeti controlnet kép mutatása"
 
-#: src/ui/MainWindow.cpp:741
+#: src/ui/MainWindow.cpp:932
 msgid "Remove control image"
 msgstr "Irányító kép eltávolítása"
 
-#: src/ui/MainWindow.cpp:752
-msgid "Text2IMG"
-msgstr "Text2IMG"
+#: src/ui/MainWindow.cpp:943
+msgid "txt2img"
+msgstr "txt2img"
 
-#: src/ui/MainWindow.cpp:816
+#: src/ui/MainWindow.cpp:1007
 msgid "Input image"
 msgstr "Bemeneti kép"
 
-#: src/ui/MainWindow.cpp:836 src/ui/MainWindow.cpp:888
+#: src/ui/MainWindow.cpp:1027 src/ui/MainWindow.cpp:1079
 msgid "Select an image"
 msgstr "Válassz egy képet"
 
-#: src/ui/MainWindow.cpp:841
+#: src/ui/MainWindow.cpp:1032
 msgid "Strength:"
 msgstr "Erő:"
 
-#: src/ui/MainWindow.cpp:866
-msgid "Image2image"
-msgstr "Image2image"
+#: src/ui/MainWindow.cpp:1057
+msgid "img2img"
+msgstr "img2img"
 
-#: src/ui/MainWindow.cpp:884
+#: src/ui/MainWindow.cpp:1075
 msgid "Source Image"
 msgstr "Forrás kép"
 
-#: src/ui/MainWindow.cpp:902
+#: src/ui/MainWindow.cpp:1093
 msgid "Upscaler model"
 msgstr "Nagyítás model"
 
-#: src/ui/MainWindow.cpp:961
+#: src/ui/MainWindow.cpp:1152
 msgid "Upscale factor"
 msgstr "Nagyítási tényező"
 
-#: src/ui/MainWindow.cpp:1012
+#: src/ui/MainWindow.cpp:1203
 msgid "Keep upscale model in memory"
 msgstr "Upscale model memóriában tartása"
 
-#: src/ui/MainWindow.cpp:1013
+#: src/ui/MainWindow.cpp:1204
 msgid ""
 "WARNING: If you check this box, the upscaler model will remain in memory for "
 "the next job, which could lead to a memory overflow or program crash "
@@ -384,11 +527,11 @@ msgstr ""
 "következő feladat futásakor, amely potenciálisan túl sok memóriát foglalhat "
 "le és a program hirtelen leállásához vezethet (segfault)."
 
-#: src/ui/MainWindow.cpp:1017
+#: src/ui/MainWindow.cpp:1208
 msgid "Keep checkpoints in memory"
 msgstr "Model memóriában tartása"
 
-#: src/ui/MainWindow.cpp:1018
+#: src/ui/MainWindow.cpp:1209
 msgid ""
 "WARNING: If you check this box, the SD model from the previous job will "
 "remain in RAM/VRAM, which could potentially lead to a program crash "
@@ -398,78 +541,78 @@ msgstr ""
 "marad (RAM/VRAM), amely potenciálisan túl sok memóriát foglalhat le és a "
 "program hirtelen leállásához vezethet (segfault)."
 
-#: src/ui/MainWindow.cpp:1029
+#: src/ui/MainWindow.cpp:1220
 msgid "Upscaler"
 msgstr "Nagyítás"
 
-#: src/ui/MainWindow.cpp:1039
+#: src/ui/MainWindow.cpp:1230
 msgid "Lora"
 msgstr "Lora"
 
-#: src/ui/MainWindow.cpp:1043 src/ui/MainWindow.cpp:1918
+#: src/ui/MainWindow.cpp:1234 src/ui/MainWindow.cpp:2129
 msgid "Checkpoints"
 msgstr "Checkpoints"
 
-#: src/ui/MainWindow.cpp:1047 src/ui/MainWindow.cpp:1918
+#: src/ui/MainWindow.cpp:1238 src/ui/MainWindow.cpp:2129
 msgid "Embeddings"
 msgstr "Embeddings"
 
-#: src/ui/MainWindow.cpp:1078 src/ui/MainWindow.cpp:1867
-#: src/ui/MainWindow.cpp:1897 src/ui/MainWindow.cpp:1944
-#: src/ui/MainWindowUI.cpp:1197
+#: src/ui/MainWindow.cpp:1269 src/ui/MainWindow.cpp:2078
+#: src/ui/MainWindow.cpp:2108 src/ui/MainWindow.cpp:2155
+#: src/ui/MainWindowUI.cpp:1418
 msgid "Name"
 msgstr "Név"
 
-#: src/ui/MainWindow.cpp:1079 src/ui/MainWindow.cpp:1901
-#: src/ui/MainWindow.cpp:1904 src/ui/MainWindow.cpp:1958
+#: src/ui/MainWindow.cpp:1270 src/ui/MainWindow.cpp:2112
+#: src/ui/MainWindow.cpp:2115 src/ui/MainWindow.cpp:2169
 msgid "Size"
 msgstr "Méret"
 
-#: src/ui/MainWindow.cpp:1081 src/ui/MainWindowUI.cpp:1207
+#: src/ui/MainWindow.cpp:1272 src/ui/MainWindowUI.cpp:1428
 msgid "Hash"
 msgstr "Hash"
 
-#: src/ui/MainWindow.cpp:1135 src/ui/MainWindow.cpp:1937
+#: src/ui/MainWindow.cpp:1326 src/ui/MainWindow.cpp:2148
 msgid "Models"
 msgstr "Modellek"
 
-#: src/ui/MainWindow.cpp:1305
+#: src/ui/MainWindow.cpp:1516
 msgid "Models path"
 msgstr "Model mappa"
 
-#: src/ui/MainWindow.cpp:1311 src/ui/MainWindow.cpp:1335
-#: src/ui/MainWindow.cpp:1359 src/ui/MainWindow.cpp:1383
-#: src/ui/MainWindow.cpp:1407 src/ui/MainWindow.cpp:1438
-#: src/ui/MainWindow.cpp:1460 src/ui/MainWindow.cpp:1487
-#: src/ui/MainWindow.cpp:1511
+#: src/ui/MainWindow.cpp:1522 src/ui/MainWindow.cpp:1546
+#: src/ui/MainWindow.cpp:1570 src/ui/MainWindow.cpp:1594
+#: src/ui/MainWindow.cpp:1618 src/ui/MainWindow.cpp:1649
+#: src/ui/MainWindow.cpp:1671 src/ui/MainWindow.cpp:1698
+#: src/ui/MainWindow.cpp:1722
 msgid "Select a folder"
 msgstr "Válassz egy mappát"
 
-#: src/ui/MainWindow.cpp:1319 src/ui/MainWindow.cpp:1343
-#: src/ui/MainWindow.cpp:1367 src/ui/MainWindow.cpp:1391
-#: src/ui/MainWindow.cpp:1415 src/ui/MainWindow.cpp:1446
-#: src/ui/MainWindow.cpp:1468 src/ui/MainWindow.cpp:1495
-#: src/ui/MainWindow.cpp:1519
+#: src/ui/MainWindow.cpp:1530 src/ui/MainWindow.cpp:1554
+#: src/ui/MainWindow.cpp:1578 src/ui/MainWindow.cpp:1602
+#: src/ui/MainWindow.cpp:1626 src/ui/MainWindow.cpp:1657
+#: src/ui/MainWindow.cpp:1679 src/ui/MainWindow.cpp:1706
+#: src/ui/MainWindow.cpp:1730
 msgid "Open folder"
 msgstr "Mappa megnyitása"
 
-#: src/ui/MainWindow.cpp:1329
+#: src/ui/MainWindow.cpp:1540
 msgid "Lora path"
 msgstr "Lora mappa"
 
-#: src/ui/MainWindow.cpp:1353
+#: src/ui/MainWindow.cpp:1564
 msgid "Vae path"
 msgstr "Vae mappa"
 
-#: src/ui/MainWindow.cpp:1377
+#: src/ui/MainWindow.cpp:1588
 msgid "Embedding path"
 msgstr "Embedding mappa"
 
-#: src/ui/MainWindow.cpp:1401
+#: src/ui/MainWindow.cpp:1612
 msgid "TAESD path"
 msgstr "TAESD mappa"
 
-#: src/ui/MainWindow.cpp:1422
+#: src/ui/MainWindow.cpp:1633
 msgid ""
 "TAESD models you can download from here: https://github.com/madebyollin/"
 "taesd/tree/main"
@@ -477,35 +620,35 @@ msgstr ""
 "TAESD model-t innen tölthetsz le: https://github.com/madebyollin/taesd/tree/"
 "main"
 
-#: src/ui/MainWindow.cpp:1432
+#: src/ui/MainWindow.cpp:1643
 msgid "Controlnet path"
 msgstr "Controlnet mappa"
 
-#: src/ui/MainWindow.cpp:1456
+#: src/ui/MainWindow.cpp:1667
 msgid "ESRGAN path"
 msgstr "ESRGAN mappa"
 
-#: src/ui/MainWindow.cpp:1481
+#: src/ui/MainWindow.cpp:1692
 msgid "Presets path"
 msgstr "Előbeállítások mappa"
 
-#: src/ui/MainWindow.cpp:1505
+#: src/ui/MainWindow.cpp:1716
 msgid "Images output"
 msgstr "Képek kimenete"
 
-#: src/ui/MainWindow.cpp:1530
+#: src/ui/MainWindow.cpp:1741
 msgid "Paths"
 msgstr "Útvonalak"
 
-#: src/ui/MainWindow.cpp:1538
+#: src/ui/MainWindow.cpp:1749
 msgid "Keep model in memory"
 msgstr "Model memóriában tartása"
 
-#: src/ui/MainWindow.cpp:1541
+#: src/ui/MainWindow.cpp:1752
 msgid "Keep model in (v)RAM after diffusions"
 msgstr "Diffúzió után tartsa a modelt a memóriában"
 
-#: src/ui/MainWindow.cpp:1542
+#: src/ui/MainWindow.cpp:1753
 msgid ""
 "Keep the model in memory (vRAM or RAM, depends on diffusion type) when it is "
 "possible. \n"
@@ -529,156 +672,156 @@ msgstr ""
 "If you disable this option, the model allways unloaded from memory after the "
 "job is finished. "
 
-#: src/ui/MainWindow.cpp:1553
+#: src/ui/MainWindow.cpp:1764
 msgid "Save all images (intermediate images)"
 msgstr "Minden kép mentése (közbülső képek)"
 
-#: src/ui/MainWindow.cpp:1565
+#: src/ui/MainWindow.cpp:1776
 msgid "Output images format"
 msgstr "Kimeneti kép formátuma"
 
-#: src/ui/MainWindow.cpp:1571
+#: src/ui/MainWindow.cpp:1782
 msgid "JPG"
 msgstr "JPG"
 
-#: src/ui/MainWindow.cpp:1571
+#: src/ui/MainWindow.cpp:1782
 msgid "PNG"
 msgstr "PNG"
 
-#: src/ui/MainWindow.cpp:1578
+#: src/ui/MainWindow.cpp:1789
 msgid "Image output quality, default: 90%"
 msgstr "Kép mentési minősége, alapért.: 90%"
 
-#: src/ui/MainWindow.cpp:1591
+#: src/ui/MainWindow.cpp:1802
 msgid "PNG meta data not supported yet"
 msgstr "PNG meta adat nem támogatott jelenleg"
 
-#: src/ui/MainWindow.cpp:1603
+#: src/ui/MainWindow.cpp:1814
 msgid "Number of CPU cores"
 msgstr "CPU magok száma"
 
-#: src/ui/MainWindow.cpp:1631
+#: src/ui/MainWindow.cpp:1842
 msgid "Show notifications"
 msgstr "Értesítések mutatása"
 
-#: src/ui/MainWindow.cpp:1635
+#: src/ui/MainWindow.cpp:1846
 msgid "Notification timeout:"
 msgstr "Értesítés lejárati ideje:"
 
-#: src/ui/MainWindow.cpp:1640
+#: src/ui/MainWindow.cpp:1851
 msgid "The timeout is depends on the OS and notification type"
 msgstr "Az időtúllépés függ az OS-től és az értesítés típusától"
 
-#: src/ui/MainWindow.cpp:1650
+#: src/ui/MainWindow.cpp:1861
 msgid "Language:"
 msgstr "Nyelv:"
 
-#: src/ui/MainWindow.cpp:1663
+#: src/ui/MainWindow.cpp:1874
 msgid "Restart required"
 msgstr "Újraindítás szükséges"
 
-#: src/ui/MainWindow.cpp:1676
+#: src/ui/MainWindow.cpp:1887
 msgid "GUI"
 msgstr "GUI"
 
-#: src/ui/MainWindow.cpp:1684
+#: src/ui/MainWindow.cpp:1895
 msgid "Enable CivitAi features"
 msgstr "CivitAi funkciók bekapcsolása"
 
-#: src/ui/MainWindow.cpp:1686
+#: src/ui/MainWindow.cpp:1897
 msgid "Enable or disable all CivitAi features"
 msgstr "CivitAi funkciók ki vagy bekapcsolása"
 
-#: src/ui/MainWindow.cpp:1696
+#: src/ui/MainWindow.cpp:1907
 msgid "CivitAi.com API key"
 msgstr "CivitAi.com API kulcs"
 
-#: src/ui/MainWindow.cpp:1706
+#: src/ui/MainWindow.cpp:1917
 msgid "How to generate API key on CivitAi.com"
 msgstr "Hogyan generáljunk API kulcsot CivitAi.com-on"
 
-#: src/ui/MainWindow.cpp:1707
+#: src/ui/MainWindow.cpp:1918
 msgid "Click to the question mark button to get help"
 msgstr "Kattints a kérdőjeles gombra további információkért"
 
-#: src/ui/MainWindow.cpp:1718
+#: src/ui/MainWindow.cpp:1929
 msgid "CivitAi"
 msgstr "CivitAi"
 
-#: src/ui/MainWindow.cpp:1722
+#: src/ui/MainWindow.cpp:1933
 msgid "Save"
 msgstr "Mentés"
 
-#: src/ui/MainWindow.cpp:1860
+#: src/ui/MainWindow.cpp:2071
 msgid "Versions"
 msgstr "Verziók"
 
-#: src/ui/MainWindow.cpp:1868
+#: src/ui/MainWindow.cpp:2079
 msgid "baseModel"
 msgstr "alapModel"
 
-#: src/ui/MainWindow.cpp:1869
+#: src/ui/MainWindow.cpp:2080
 msgid "baseModelType"
 msgstr "alapModelTípus"
 
-#: src/ui/MainWindow.cpp:1871
+#: src/ui/MainWindow.cpp:2082
 msgid "Published"
 msgstr "Publikálva"
 
-#: src/ui/MainWindow.cpp:1872 src/ui/MainWindow.cpp:1947
-#: src/ui/MainWindow.cpp:1950
+#: src/ui/MainWindow.cpp:2083 src/ui/MainWindow.cpp:2158
+#: src/ui/MainWindow.cpp:2161
 msgid "Downloads"
 msgstr "Letöltések"
 
-#: src/ui/MainWindow.cpp:1882
+#: src/ui/MainWindow.cpp:2093
 msgid "Files"
 msgstr "Fájlok"
 
-#: src/ui/MainWindow.cpp:1888
+#: src/ui/MainWindow.cpp:2099
 msgid "Download"
 msgstr "Letöltés"
 
-#: src/ui/MainWindow.cpp:1900
+#: src/ui/MainWindow.cpp:2111
 msgid "Format"
 msgstr "Formátum"
 
-#: src/ui/MainWindow.cpp:1902
+#: src/ui/MainWindow.cpp:2113
 msgid "Fp"
 msgstr "Fp"
 
-#: src/ui/MainWindow.cpp:1918
+#: src/ui/MainWindow.cpp:2129
 msgid "LORA"
 msgstr "LORA"
 
-#: src/ui/MainWindow.cpp:1922
+#: src/ui/MainWindow.cpp:2133
 msgid "Select the model type to filter"
 msgstr "Válassz egy model típust a szűréshez"
 
-#: src/ui/MainWindow.cpp:1927
+#: src/ui/MainWindow.cpp:2138
 msgid "Search for model names"
 msgstr "Model nevére keresés"
 
-#: src/ui/MainWindow.cpp:1931
+#: src/ui/MainWindow.cpp:2142
 msgid "Search"
 msgstr "Keresés"
 
-#: src/ui/MainWindow.cpp:1957
+#: src/ui/MainWindow.cpp:2168
 msgid "File"
 msgstr "Fájl"
 
-#: src/ui/MainWindow.h:261
+#: src/ui/MainWindow.h:295
 msgid "sd.cpp.gui"
 msgstr "sd.cpp.gui"
 
-#: src/ui/MainWindow.h:355
+#: src/ui/MainWindow.h:389
 msgid "Settings"
 msgstr "Beállítások"
 
-#: src/ui/MainWindow.h:395
+#: src/ui/MainWindow.h:429
 msgid "About"
 msgstr "Az alkalmazásról"
 
-#: src/ui/MainWindow.h:464
+#: src/ui/MainWindow.h:498
 msgid "CivitAI model downloader"
 msgstr "CivitAi.com model letöltő"
 
@@ -747,7 +890,7 @@ msgstr "Elemek feldolgozása"
 #: src/ui/MainWindowCivitAiWindow.cpp:654
 #: src/ui/MainWindowCivitAiWindow.cpp:815
 #: src/ui/MainWindowCivitAiWindow.cpp:830
-#: src/ui/MainWindowCivitAiWindow.cpp:835 src/ui/MainWindowUI.cpp:196
+#: src/ui/MainWindowCivitAiWindow.cpp:835 src/ui/MainWindowUI.cpp:209
 msgid "N/A"
 msgstr "N/A"
 
@@ -759,7 +902,7 @@ msgstr "Hiba a válasz feldolgozásakor: "
 msgid "Loading, please wait..."
 msgstr "Töltés, kérlek várj..."
 
-#: src/ui/MainWindowUI.cpp:69
+#: src/ui/MainWindowUI.cpp:82
 #, c-format
 msgid ""
 "Officially from sd.cpp, the following upscaler model is supported: <br/><a "
@@ -770,7 +913,7 @@ msgstr ""
 "href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>Az alábbi szintén működik "
 "néhány esetben: <a href=\"%s\">RealESRGAN_x4Plus</a>"
 
-#: src/ui/MainWindowUI.cpp:90 src/ui/MainWindowUI.cpp:91
+#: src/ui/MainWindowUI.cpp:103 src/ui/MainWindowUI.cpp:104
 #, c-format
 msgid ""
 "An error occurred when trying to start external process: %s.\n"
@@ -779,12 +922,12 @@ msgstr ""
 "Hiba történt a háttérfolyamat elindításakor: %s.\n"
 " Kérlek próbáld újra."
 
-#: src/ui/MainWindowUI.cpp:90 src/ui/MainWindowUI.cpp:102
-#: src/ui/MainWindowUI.cpp:122
+#: src/ui/MainWindowUI.cpp:103 src/ui/MainWindowUI.cpp:115
+#: src/ui/MainWindowUI.cpp:135 src/ui/MainWindowUI.cpp:1762
 msgid "Error"
 msgstr "Hiba"
 
-#: src/ui/MainWindowUI.cpp:102 src/ui/MainWindowUI.cpp:103
+#: src/ui/MainWindowUI.cpp:115 src/ui/MainWindowUI.cpp:116
 #, c-format
 msgid ""
 "An error occurred when trying to start external process. Shared lib not "
@@ -795,16 +938,16 @@ msgstr ""
 "található: %s\n"
 "Kérlek próbáld meg újra."
 
-#: src/ui/MainWindowUI.cpp:122
+#: src/ui/MainWindowUI.cpp:135
 msgid ""
 "An error occurred when trying to start external process. Please try again."
 msgstr "Hiba történt a háttér folyamat indításakor. Kérlek próbáld újra."
 
-#: src/ui/MainWindowUI.cpp:137
+#: src/ui/MainWindowUI.cpp:150
 msgid "Please wait to finish the currently running jobs!"
 msgstr "Kérlek várd meg, míg a jelenleg futó feladatok be nem fejeződnek!"
 
-#: src/ui/MainWindowUI.cpp:167
+#: src/ui/MainWindowUI.cpp:180
 msgid ""
 "<p><strong>Disclaimer</strong></p><p>Use of this application is at your own "
 "risk. The developer assumes no responsibility or liability for any potential "
@@ -817,324 +960,328 @@ msgstr ""
 "alkalmazás használatával Ön tudomásul veszi és elfogadja ezeket a "
 "feltételeket.</p>"
 
-#: src/ui/MainWindowUI.cpp:174
+#: src/ui/MainWindowUI.cpp:187
 #, c-format
 msgid "<p>Version: %s</p>"
 msgstr "<p>Verzió: %s</p>"
 
-#: src/ui/MainWindowUI.cpp:175
+#: src/ui/MainWindowUI.cpp:188
 #, c-format
 msgid "<p>Git version: %s</p>"
 msgstr "<p>Git verzió: %s</p>"
 
-#: src/ui/MainWindowUI.cpp:176
+#: src/ui/MainWindowUI.cpp:189
 #, c-format
 msgid "<p>Website: <a target='_blank' href='%s'>%s</a></p>"
 msgstr "<p>Weboldal: <a target='_blank' href='%s'>%s</a></p>"
 
-#: src/ui/MainWindowUI.cpp:178
+#: src/ui/MainWindowUI.cpp:191
 #, c-format
 msgid "<p>Loaded backend: %s</p>"
 msgstr "<p>Betöltött backend: %s</p>"
 
-#: src/ui/MainWindowUI.cpp:180
+#: src/ui/MainWindowUI.cpp:193
 msgid "Configuration folder:"
 msgstr "Beállítások mappája:"
 
-#: src/ui/MainWindowUI.cpp:181
+#: src/ui/MainWindowUI.cpp:194
 msgid "Config file:"
 msgstr "Beállító fájl:"
 
-#: src/ui/MainWindowUI.cpp:181
+#: src/ui/MainWindowUI.cpp:194
 msgid "Data folder:"
 msgstr "Adat mappa:"
 
-#: src/ui/MainWindowUI.cpp:184
+#: src/ui/MainWindowUI.cpp:197
 msgid "Model folder:"
 msgstr "Model mappa:"
 
-#: src/ui/MainWindowUI.cpp:185
+#: src/ui/MainWindowUI.cpp:198
 msgid "Embedding folder:"
 msgstr "Embeddings mappa:"
 
-#: src/ui/MainWindowUI.cpp:186
+#: src/ui/MainWindowUI.cpp:199
 msgid "Lora folder:"
 msgstr "Lora mappa:"
 
-#: src/ui/MainWindowUI.cpp:187
+#: src/ui/MainWindowUI.cpp:200
 msgid "Vae folder:"
 msgstr "Vae mappa:"
 
-#: src/ui/MainWindowUI.cpp:188
+#: src/ui/MainWindowUI.cpp:201
 msgid "Controlnet folder:"
 msgstr "Controlnet mappa:"
 
-#: src/ui/MainWindowUI.cpp:189
+#: src/ui/MainWindowUI.cpp:202
 msgid "ESRGAN folder:"
 msgstr "ESRGAN mappa:"
 
-#: src/ui/MainWindowUI.cpp:190
+#: src/ui/MainWindowUI.cpp:203
 msgid "TAESD folder:"
 msgstr "TAESD mappa:"
 
-#: src/ui/MainWindowUI.cpp:191
+#: src/ui/MainWindowUI.cpp:204
 msgid "Output folder:"
 msgstr "Kimeneti mappa:"
 
-#: src/ui/MainWindowUI.cpp:192
+#: src/ui/MainWindowUI.cpp:205
 msgid "Jobs folder:"
 msgstr "Feladatok mappája:"
 
-#: src/ui/MainWindowUI.cpp:193
+#: src/ui/MainWindowUI.cpp:206
 msgid "Presets folder:"
 msgstr "Előbeállítások mappája:"
 
-#: src/ui/MainWindowUI.cpp:216
+#: src/ui/MainWindowUI.cpp:229
 msgid "CivitAi.com model downloader"
 msgstr "CivitAi.com model letöltő"
 
-#: src/ui/MainWindowUI.cpp:242
+#: src/ui/MainWindowUI.cpp:255
 msgid "No model selected"
 msgstr "Nincs model kiválasztva"
 
-#: src/ui/MainWindowUI.cpp:254
+#: src/ui/MainWindowUI.cpp:267
 #, c-format
 msgid "Model: %s"
 msgstr "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:464
+#: src/ui/MainWindowUI.cpp:483
 msgid "Requeue"
 msgstr "Újra sorbaállítás"
 
-#: src/ui/MainWindowUI.cpp:481
+#: src/ui/MainWindowUI.cpp:500
 msgid "Load parameters"
 msgstr "Paraméterek betöltése"
 
-#: src/ui/MainWindowUI.cpp:482 src/ui/MainWindowUI.cpp:3013
+#: src/ui/MainWindowUI.cpp:501 src/ui/MainWindowUI.cpp:3298
 msgid "Copy prompts to text2img"
 msgstr "Promptok másolása a text2img -be"
 
-#: src/ui/MainWindowUI.cpp:483 src/ui/MainWindowUI.cpp:3014
+#: src/ui/MainWindowUI.cpp:502 src/ui/MainWindowUI.cpp:3299
 msgid "Copy prompts to img2img"
 msgstr "Promptok másolása az img2img-be"
 
-#: src/ui/MainWindowUI.cpp:484
+#: src/ui/MainWindowUI.cpp:503
 #, c-format
 msgid "Select model %s"
 msgstr "Model választása %s"
 
-#: src/ui/MainWindowUI.cpp:487
+#: src/ui/MainWindowUI.cpp:506
 msgid "Send the last image to the Upscale tab"
 msgstr "Az utolsó kép küldése a Kép nagyításhoz"
 
-#: src/ui/MainWindowUI.cpp:488
+#: src/ui/MainWindowUI.cpp:507
 msgid "Send the last image to the img2img tab"
 msgstr "Utolsó kép küldése az img2img-be"
 
-#: src/ui/MainWindowUI.cpp:493
+#: src/ui/MainWindowUI.cpp:512
 msgid "Upscale again"
 msgstr "Felnagyítás újra"
 
-#: src/ui/MainWindowUI.cpp:500
+#: src/ui/MainWindowUI.cpp:519
 msgid "Pause"
 msgstr "Szünet"
 
-#: src/ui/MainWindowUI.cpp:500
+#: src/ui/MainWindowUI.cpp:519
 msgid "Resume"
 msgstr "Folytatás"
 
-#: src/ui/MainWindowUI.cpp:504
+#: src/ui/MainWindowUI.cpp:523
 msgid "Delete"
 msgstr "Törlés"
 
-#: src/ui/MainWindowUI.cpp:534
+#: src/ui/MainWindowUI.cpp:553
 msgid "RE-Calculate Hash"
 msgstr "Hash újraszámítása"
 
-#: src/ui/MainWindowUI.cpp:536
+#: src/ui/MainWindowUI.cpp:555
 msgid "Calculate Hash"
 msgstr "Hash számítása"
 
-#: src/ui/MainWindowUI.cpp:539
+#: src/ui/MainWindowUI.cpp:558
 msgid "Force update info from CivitAi"
 msgstr "Frissítés CivitAi-ról"
 
-#: src/ui/MainWindowUI.cpp:543
+#: src/ui/MainWindowUI.cpp:562
 #, c-format
 msgid "Select model %s to the next job"
 msgstr "A következő feladathoz model: %s"
 
-#: src/ui/MainWindowUI.cpp:545
+#: src/ui/MainWindowUI.cpp:564
 msgid "Open model on CivitAi.com in default browser"
 msgstr "Model megnyitása böngészőben a CivitAi.com-on"
 
-#: src/ui/MainWindowUI.cpp:549
+#: src/ui/MainWindowUI.cpp:568
 #, c-format
 msgid "Convert model to %s gguf format"
 msgstr "Model átalakítása %s gguf formátumá"
 
-#: src/ui/MainWindowUI.cpp:554
+#: src/ui/MainWindowUI.cpp:573
 #, c-format
 msgid "Append to text2img prompt <lora:%s:0.5>"
 msgstr "Hozzáfűzés a text2img prompthoz <lora:%s:0.5>"
 
-#: src/ui/MainWindowUI.cpp:555
+#: src/ui/MainWindowUI.cpp:574
 #, c-format
 msgid "Append to text2img neg. prompt <lora:%s:0.5>"
 msgstr "Hozzáfűzés a text2img neg. prompthoz <lora:%s:0.5>"
 
-#: src/ui/MainWindowUI.cpp:556
+#: src/ui/MainWindowUI.cpp:575
 #, c-format
 msgid "Append to img2img prompt <lora:%s:0.5>"
 msgstr "Hozzáfűzés az img2img prompthoz <lora:%s:0.5>"
 
-#: src/ui/MainWindowUI.cpp:557
+#: src/ui/MainWindowUI.cpp:576
 #, c-format
 msgid "Append to img2img neg. prompt <lora:%s:0.5>"
 msgstr "Hozzáfűzés az img2img neg. prompthoz <lora:%s:0.5>"
 
-#: src/ui/MainWindowUI.cpp:561
+#: src/ui/MainWindowUI.cpp:580
 #, c-format
 msgid "Append to text2img prompt %s"
 msgstr "Hozzáfűzés a text2img prompthoz %s"
 
-#: src/ui/MainWindowUI.cpp:562
+#: src/ui/MainWindowUI.cpp:581
 #, c-format
 msgid "Append to text2img neg. prompt %s"
 msgstr "Hozzáfűzés a text2img neg. prompthoz %s"
 
-#: src/ui/MainWindowUI.cpp:563
+#: src/ui/MainWindowUI.cpp:582
 #, c-format
 msgid "Append to img2img prompt %s"
 msgstr "Hozzűáfűzés az img2img prompthoz %s"
 
-#: src/ui/MainWindowUI.cpp:564
+#: src/ui/MainWindowUI.cpp:583
 #, c-format
 msgid "Append to img2img neg. prompt %s"
 msgstr "Hozzáfűzés az img2img neg. prompthoz %s"
 
-#: src/ui/MainWindowUI.cpp:593 src/ui/MainWindowUI.cpp:599
+#: src/ui/MainWindowUI.cpp:612 src/ui/MainWindowUI.cpp:618
 #, c-format
 msgid "Image type not supported: %s"
 msgstr "A képtípus nem támogatott: %s"
 
-#: src/ui/MainWindowUI.cpp:606
+#: src/ui/MainWindowUI.cpp:625
 #, c-format
 msgid "Only jpeg supported: %s"
 msgstr "Csak jpeg támogatott: %s"
 
-#: src/ui/MainWindowUI.cpp:830
+#: src/ui/MainWindowUI.cpp:919
 #, c-format
 msgid "Controlnet Image %dx%dpx"
 msgstr "Controlnet Kép %dx%dpx"
 
-#: src/ui/MainWindowUI.cpp:872
+#: src/ui/MainWindowUI.cpp:1018
 msgid "IMG2IMG - original image"
 msgstr "IMG2IMG - eredeti kép"
 
-#: src/ui/MainWindowUI.cpp:931 src/ui/MainWindowUI.cpp:932
-#: src/ui/MainWindowUI.cpp:937 src/ui/MainWindowUI.cpp:938
+#: src/ui/MainWindowUI.cpp:1077 src/ui/MainWindowUI.cpp:1078
+#: src/ui/MainWindowUI.cpp:1083 src/ui/MainWindowUI.cpp:1084
 #, c-format
 msgid "%dpx"
 msgstr "%dpx"
 
-#: src/ui/MainWindowUI.cpp:981
+#: src/ui/MainWindowUI.cpp:1144
 msgid "Please specify a name (only alphanumeric)"
 msgstr "Kérlek adj meg egy nevet (csak alfanumerikus)"
 
-#: src/ui/MainWindowUI.cpp:1202
+#: src/ui/MainWindowUI.cpp:1423
 msgid "File name"
 msgstr "Fájlnév"
 
-#: src/ui/MainWindowUI.cpp:1229
+#: src/ui/MainWindowUI.cpp:1450
 #, c-format
 msgid "#%d id"
 msgstr "#%d id"
 
-#: src/ui/MainWindowUI.cpp:1234
+#: src/ui/MainWindowUI.cpp:1455
 #, c-format
 msgid "#%d name"
 msgstr "#%d név"
 
-#: src/ui/MainWindowUI.cpp:1239
+#: src/ui/MainWindowUI.cpp:1460
 #, c-format
 msgid "#%d format"
 msgstr "#%d formátum"
 
-#: src/ui/MainWindowUI.cpp:1244
+#: src/ui/MainWindowUI.cpp:1465
 #, c-format
 msgid "#%d type"
 msgstr "#%d típus"
 
-#: src/ui/MainWindowUI.cpp:1261
+#: src/ui/MainWindowUI.cpp:1482
 #, c-format
 msgid "Resolution: %s Seed: %<PRId64> Steps: %d"
 msgstr "Felbontás: %s Seed: %<PRId64> Lépések: %d"
 
-#: src/ui/MainWindowUI.cpp:1278
+#: src/ui/MainWindowUI.cpp:1498
 msgid "Open Image on CivitAi.com"
 msgstr "Kép megnyitása CivitAi.com -on"
 
-#: src/ui/MainWindowUI.cpp:1392 src/ui/MainWindowUI.cpp:1567
+#: src/ui/MainWindowUI.cpp:1609 src/ui/MainWindowUI.cpp:1793
 #, c-format
 msgid "Number of jobs: %d"
 msgstr "Feladatok száma: %d"
 
-#: src/ui/MainWindowUI.cpp:1790 src/ui/MainWindowUI.cpp:1801
-#: src/ui/MainWindowUI.cpp:1808 src/ui/MainWindowUI.cpp:1814
-#: src/ui/MainWindowUI.cpp:1823 src/ui/MainWindowUI.cpp:1829
+#: src/ui/MainWindowUI.cpp:1762
+msgid "Diffusion model not found"
+msgstr "A diffúziós modell nem található"
+
+#: src/ui/MainWindowUI.cpp:2016 src/ui/MainWindowUI.cpp:2027
+#: src/ui/MainWindowUI.cpp:2034 src/ui/MainWindowUI.cpp:2040
+#: src/ui/MainWindowUI.cpp:2049 src/ui/MainWindowUI.cpp:2055
 msgid "-none-"
 msgstr "-nincs-"
 
-#: src/ui/MainWindowUI.cpp:1949
+#: src/ui/MainWindowUI.cpp:2175
 #, c-format
 msgid "Loaded checkpoints: %<PRIuMAX>\n"
 msgstr "Betöltött modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1957
+#: src/ui/MainWindowUI.cpp:2183
 #, c-format
 msgid "Loaded Loras: %<PRIuMAX>\n"
 msgstr "Betöltött Lora-k: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1960
+#: src/ui/MainWindowUI.cpp:2186
 #, c-format
 msgid "Loaded embeddings: %<PRIuMAX>\n"
 msgstr "Betöltött embedding modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1963
+#: src/ui/MainWindowUI.cpp:2189
 #, c-format
 msgid "Loaded vaes: %<PRIuMAX>\n"
 msgstr "Betöltött vae modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1971
+#: src/ui/MainWindowUI.cpp:2197
 #, c-format
 msgid "Loaded presets: %<PRIuMAX>\n"
 msgstr "Betöltött sablonok: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1979
+#: src/ui/MainWindowUI.cpp:2205
 #, c-format
 msgid "Loaded taesd: %<PRIuMAX>\n"
 msgstr "Betöltött taesd modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1987
+#: src/ui/MainWindowUI.cpp:2213
 #, c-format
 msgid "Loaded esrgan: %<PRIuMAX>\n"
 msgstr "Betöltött esrgan modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:1995
+#: src/ui/MainWindowUI.cpp:2221
 #, c-format
 msgid "Loaded controlnet: %<PRIuMAX>\n"
 msgstr "Betöltött controlnet modellek: %<PRIuMAX>\n"
 
-#: src/ui/MainWindowUI.cpp:2199
+#: src/ui/MainWindowUI.cpp:2425
 msgid "Can not open image!"
 msgstr "Nem lehet a képet megnyitni!"
 
-#: src/ui/MainWindowUI.cpp:2242
+#: src/ui/MainWindowUI.cpp:2468
 msgid "Error accessing to the background process. Please try again."
 msgstr "Hiba történt a háttérfolyamat elérésekor. Kérlek próbáld újra."
 
-#: src/ui/MainWindowUI.cpp:2398
+#: src/ui/MainWindowUI.cpp:2624
 #, c-format
 msgid ""
 "%s is just stared to generate %d images\n"
@@ -1143,11 +1290,11 @@ msgstr ""
 "%s elkezdte %d kép generálását\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2401
+#: src/ui/MainWindowUI.cpp:2627
 msgid "Upscaling started"
 msgstr "Nagyítás elkezdve"
 
-#: src/ui/MainWindowUI.cpp:2402
+#: src/ui/MainWindowUI.cpp:2628
 #, c-format
 msgid ""
 "Upscaling the image is started: %s\n"
@@ -1156,11 +1303,11 @@ msgstr ""
 "A kép felnagyítása elkezdve: %s\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2404
+#: src/ui/MainWindowUI.cpp:2630
 msgid "Conversion started"
 msgstr "Átalakítás elkezdve"
 
-#: src/ui/MainWindowUI.cpp:2405
+#: src/ui/MainWindowUI.cpp:2631
 #, c-format
 msgid ""
 "Conversion the model is started: %s\n"
@@ -1169,16 +1316,16 @@ msgstr ""
 "A model átalakítás elkezdődött: %s\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2408
+#: src/ui/MainWindowUI.cpp:2634
 #, c-format
 msgid "%d images generation started"
 msgstr "%d kép generálása elkezdve"
 
-#: src/ui/MainWindowUI.cpp:2410
+#: src/ui/MainWindowUI.cpp:2636
 msgid "One image generation started!"
 msgstr "Egy kép generálása elkezdve!"
 
-#: src/ui/MainWindowUI.cpp:2411
+#: src/ui/MainWindowUI.cpp:2637
 #, c-format
 msgid ""
 "%s is just started to generate the image\n"
@@ -1187,7 +1334,7 @@ msgstr ""
 "%s elkezdte a kép geneálását\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2424
+#: src/ui/MainWindowUI.cpp:2650
 #, c-format
 msgid ""
 "%s is just finished to generate %d images\n"
@@ -1196,11 +1343,11 @@ msgstr ""
 "%s kész %d kép geneálással\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2426
+#: src/ui/MainWindowUI.cpp:2652
 msgid "Upscaling done"
 msgstr "Nagyítás kész"
 
-#: src/ui/MainWindowUI.cpp:2427
+#: src/ui/MainWindowUI.cpp:2653
 #, c-format
 msgid ""
 "Upscaling the image is done: %s\n"
@@ -1209,11 +1356,11 @@ msgstr ""
 "A kép felnagyítása kész: %s\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2429
+#: src/ui/MainWindowUI.cpp:2655
 msgid "Conversion done"
 msgstr "Az átalakítás  kész"
 
-#: src/ui/MainWindowUI.cpp:2430
+#: src/ui/MainWindowUI.cpp:2656
 #, c-format
 msgid ""
 "Conversion the model is done: %s\n"
@@ -1222,99 +1369,99 @@ msgstr ""
 "A model átalakítása kész: %s\n"
 "Model: %s"
 
-#: src/ui/MainWindowUI.cpp:2433
+#: src/ui/MainWindowUI.cpp:2660
 #, c-format
 msgid "%d images generation done"
 msgstr "%d kép generálása kész"
 
-#: src/ui/MainWindowUI.cpp:2435
+#: src/ui/MainWindowUI.cpp:2662
 msgid "Image generation done!"
 msgstr "Képgenerálás kész!"
 
-#: src/ui/MainWindowUI.cpp:2436
+#: src/ui/MainWindowUI.cpp:2663
 #, c-format
 msgid "%s is just finished to generate the image with model: %s"
 msgstr "%s befejezte a képgenerálást %s modellel"
 
-#: src/ui/MainWindowUI.cpp:2446
+#: src/ui/MainWindowUI.cpp:2673
 #, c-format
 msgid "%d jobs and %d steps without a segfault"
 msgstr "%d feladat és %d lépés segfault nélkül"
 
-#: src/ui/MainWindowUI.cpp:2448
+#: src/ui/MainWindowUI.cpp:2675
 #, c-format
 msgid "%d job and %d step without a segfault"
 msgstr "%d feladat és %d lépés segfault nélkül"
 
-#: src/ui/MainWindowUI.cpp:2456
+#: src/ui/MainWindowUI.cpp:2683
 #, c-format
 msgid "Model loaded: %s\n"
 msgstr "Model betöltve: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2459
+#: src/ui/MainWindowUI.cpp:2686
 #, c-format
 msgid "Model load started: %s\n"
 msgstr "A model betöltése elkezdve: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2462
+#: src/ui/MainWindowUI.cpp:2689
 #, c-format
 msgid "Model load failed: %s\n"
 msgstr "A model betöltése nem sikerült: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2463
+#: src/ui/MainWindowUI.cpp:2690
 msgid "Model load failed"
 msgstr "A model betöltése nem sikerült"
 
-#: src/ui/MainWindowUI.cpp:2464
+#: src/ui/MainWindowUI.cpp:2691
 #, c-format
 msgid "The '%s' just failed to load... for more details please see the logs!"
 msgstr ""
 "A(z) '%s'-t nem sikerült betölteni... a részletekért kérlek nézd meg "
 "alogokat!"
 
-#: src/ui/MainWindowUI.cpp:2477
+#: src/ui/MainWindowUI.cpp:2704
 #, c-format
 msgid "Upscale start, factor: %d image: %s\n"
 msgstr "Nagyítás elkezdve, tényező: %d kép %s\n"
 
-#: src/ui/MainWindowUI.cpp:2481
+#: src/ui/MainWindowUI.cpp:2708
 #, c-format
 msgid "Generation error: %s\n"
 msgstr "Generálási hiba: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2491
+#: src/ui/MainWindowUI.cpp:2718
 #, c-format
 msgid "Model civitai image downloaded for model: %s\n"
 msgstr "Civitai kép letöltve a modelhez: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2505
+#: src/ui/MainWindowUI.cpp:2732
 #, c-format
 msgid "Model civitai %<PRIuMAX> image(s) download started for model: %s\n"
 msgstr ""
 "%<PRIuMAX> db model kép letöltése megkezdve a modelhez: %s\n"
 "\n"
 
-#: src/ui/MainWindowUI.cpp:2511
+#: src/ui/MainWindowUI.cpp:2738
 #, c-format
 msgid "Model civitai info download error: %s\n"
 msgstr "Civitai kép letöltése közben hiba lépett fel: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2517
+#: src/ui/MainWindowUI.cpp:2744
 #, c-format
 msgid "Model civitai info download start: %s\n"
 msgstr "Civitai adatok letöltése elkezdve a modelhez: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2529
+#: src/ui/MainWindowUI.cpp:2753
 #, c-format
 msgid "Model civitai info download finished: %s\n"
 msgstr "Civitai adatok letöltve a modelhez: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2533
+#: src/ui/MainWindowUI.cpp:2757
 #, c-format
 msgid "Model civitai info not found: %s Hash: %s\n"
 msgstr "Civitai adatok nem találhatóak a modelhez: %s Hash: %s\n"
 
-#: src/ui/MainWindowUI.cpp:2536
+#: src/ui/MainWindowUI.cpp:2760
 #, c-format
 msgid "Model civitai info unkown parsing error happened: %s Hash: %s\n"
 msgstr ""
@@ -1322,181 +1469,221 @@ msgstr ""
 "%s Hash: %s\n"
 "\n"
 
-#: src/ui/MainWindowUI.cpp:2729
+#: src/ui/MainWindowUI.cpp:2952
 msgid "Model download finished"
 msgstr "Model letöltés kész"
 
-#: src/ui/MainWindowUI.cpp:2731
+#: src/ui/MainWindowUI.cpp:2953
 #, c-format
 msgid "The model download is finished: %s"
 msgstr "A model letöltve: %s"
 
-#: src/ui/MainWindowUI.cpp:2739
+#: src/ui/MainWindowUI.cpp:2960
 msgid "Model download failed"
 msgstr "A model letöltése nem sikerült"
 
-#: src/ui/MainWindowUI.cpp:2742
+#: src/ui/MainWindowUI.cpp:2961
 #, c-format
 msgid "The model download is failed: %s"
 msgstr "A model letöltése sikertelen: %s"
 
-#: src/ui/MainWindowUI.cpp:2784
+#: src/ui/MainWindowUI.cpp:3001
 msgid "ID"
 msgstr "ID"
 
-#: src/ui/MainWindowUI.cpp:2789
+#: src/ui/MainWindowUI.cpp:3006
 msgid "Created at"
 msgstr "Létrehozva"
 
-#: src/ui/MainWindowUI.cpp:2794
+#: src/ui/MainWindowUI.cpp:3011
 msgid "Started at"
 msgstr "Elindítva"
 
-#: src/ui/MainWindowUI.cpp:2803
+#: src/ui/MainWindowUI.cpp:3020
 msgid "Finished at"
 msgstr "Elkészült"
 
-#: src/ui/MainWindowUI.cpp:2812
+#: src/ui/MainWindowUI.cpp:3029
 msgid "Udated at"
 msgstr "Frissítve"
 
 # There is a mispelling Mode -> Model
-#: src/ui/MainWindowUI.cpp:2821
+#: src/ui/MainWindowUI.cpp:3038
 msgid "Mode"
 msgstr "Mód"
 
-#: src/ui/MainWindowUI.cpp:2838
+#: src/ui/MainWindowUI.cpp:3055
 msgid "Threads"
 msgstr "Szálak"
 
-#: src/ui/MainWindowUI.cpp:2844
+#: src/ui/MainWindowUI.cpp:3061
 msgid "Factor"
 msgstr "Faktor"
 
-#: src/ui/MainWindowUI.cpp:2859
+#: src/ui/MainWindowUI.cpp:3076
 msgid "Scheduler"
 msgstr "Ütemező"
 
-#: src/ui/MainWindowUI.cpp:2867
+#: src/ui/MainWindowUI.cpp:3084
 msgid "Init image"
 msgstr "Kezdő kép"
 
-#: src/ui/MainWindowUI.cpp:2872
+#: src/ui/MainWindowUI.cpp:3089
 msgid "Strength"
 msgstr "Erő"
 
-#: src/ui/MainWindowUI.cpp:2880
+#: src/ui/MainWindowUI.cpp:3097
 msgid "Prompt"
 msgstr "Prompt"
 
-#: src/ui/MainWindowUI.cpp:2885
+#: src/ui/MainWindowUI.cpp:3102
 msgid "Neg. prompt"
 msgstr "Neg. prompt"
 
-#: src/ui/MainWindowUI.cpp:2895
+#: src/ui/MainWindowUI.cpp:3112
 msgid "Clip skip"
 msgstr "Clip kihagyás"
 
-#: src/ui/MainWindowUI.cpp:2900
-msgid "Cfg scale"
-msgstr "Cfg skála"
+#: src/ui/MainWindowUI.cpp:3117
+msgid "Clip on CPU"
+msgstr "Clip a CPU-n"
 
-#: src/ui/MainWindowUI.cpp:2910
-msgid "Steps"
-msgstr "Lépések"
-
-#: src/ui/MainWindowUI.cpp:2916
-msgid "Time min."
-msgstr "Idő min."
-
-#: src/ui/MainWindowUI.cpp:2921
-msgid "Time max."
-msgstr "Idő max."
-
-#: src/ui/MainWindowUI.cpp:2926
-msgid "Time avg."
-msgstr "Idő átl."
-
-#: src/ui/MainWindowUI.cpp:2931
-msgid "Time total"
-msgstr "Teljes idő"
-
-#: src/ui/MainWindowUI.cpp:2938
-msgid "VAE"
-msgstr "VAE"
-
-#: src/ui/MainWindowUI.cpp:2945
+#: src/ui/MainWindowUI.cpp:3118 src/ui/MainWindowUI.cpp:3167
+#: src/ui/MainWindowUI.cpp:3172 src/ui/MainWindowUI.cpp:3236
+#: src/ui/MainWindowUI.cpp:3244
 msgid "yes"
 msgstr "igen"
 
-#: src/ui/MainWindowUI.cpp:2945
+#: src/ui/MainWindowUI.cpp:3118 src/ui/MainWindowUI.cpp:3167
+#: src/ui/MainWindowUI.cpp:3172 src/ui/MainWindowUI.cpp:3236
+#: src/ui/MainWindowUI.cpp:3244
 msgid "no"
 msgstr "nem"
 
-#: src/ui/MainWindowUI.cpp:2950
+#: src/ui/MainWindowUI.cpp:3122
+msgid "Cfg scale"
+msgstr "Cfg skála"
+
+#: src/ui/MainWindowUI.cpp:3132
+msgid "Steps"
+msgstr "Lépések"
+
+#: src/ui/MainWindowUI.cpp:3138
+msgid "Time min."
+msgstr "Idő min."
+
+#: src/ui/MainWindowUI.cpp:3143
+msgid "Time max."
+msgstr "Idő max."
+
+#: src/ui/MainWindowUI.cpp:3148
+msgid "Time avg."
+msgstr "Idő átl."
+
+#: src/ui/MainWindowUI.cpp:3153
+msgid "Time total"
+msgstr "Teljes idő"
+
+#: src/ui/MainWindowUI.cpp:3160
+msgid "VAE"
+msgstr "VAE"
+
+#: src/ui/MainWindowUI.cpp:3177
+msgid "CLIP L"
+msgstr "CLIP L"
+
+#: src/ui/MainWindowUI.cpp:3183
+msgid "CLIP G"
+msgstr "CLIP G"
+
+#: src/ui/MainWindowUI.cpp:3190
+msgid "T5xxl"
+msgstr "T5xxl"
+
+#: src/ui/MainWindowUI.cpp:3197
 msgid "TAESD"
 msgstr "TAESD"
 
-#: src/ui/MainWindowUI.cpp:2957
+#: src/ui/MainWindowUI.cpp:3204
 msgid "Width"
 msgstr "Szélesség"
 
-#: src/ui/MainWindowUI.cpp:2962
+#: src/ui/MainWindowUI.cpp:3209
 msgid "Height"
 msgstr "Magasság"
 
-#: src/ui/MainWindowUI.cpp:2967
+#: src/ui/MainWindowUI.cpp:3214
 msgid "Batch count"
 msgstr "Tételek száma"
 
-#: src/ui/MainWindowUI.cpp:2973
+#: src/ui/MainWindowUI.cpp:3220
 msgid "CN model"
 msgstr "CN model"
 
-#: src/ui/MainWindowUI.cpp:2978
+#: src/ui/MainWindowUI.cpp:3225
 msgid "CN img"
 msgstr "CN kép"
 
-#: src/ui/MainWindowUI.cpp:2983
+#: src/ui/MainWindowUI.cpp:3230
 msgid "CN strength"
 msgstr "CN ereje"
 
-#: src/ui/MainWindowUI.cpp:3009
+#: src/ui/MainWindowUI.cpp:3243
+msgid "Flash Attention"
+msgstr "Flash attention"
+
+#: src/ui/MainWindowUI.cpp:3248
+msgid "SLG scale"
+msgstr "SLG skála"
+
+#: src/ui/MainWindowUI.cpp:3253
+msgid "Skip layers"
+msgstr "Rétegkihagyás"
+
+#: src/ui/MainWindowUI.cpp:3264
+msgid "Skip Layer Start"
+msgstr "Rétegkihagyás start"
+
+#: src/ui/MainWindowUI.cpp:3269
+msgid "Skip Layer End"
+msgstr "Rétegkihagyás vége"
+
+#: src/ui/MainWindowUI.cpp:3294
 msgid "Open image"
 msgstr "Kép megnyitása"
 
-#: src/ui/MainWindowUI.cpp:3010
+#: src/ui/MainWindowUI.cpp:3295
 msgid "Open parent folder"
 msgstr "Szülő mappa megnyitása"
 
-#: src/ui/MainWindowUI.cpp:3012
+#: src/ui/MainWindowUI.cpp:3297
 #, c-format
 msgid "Copy seed %<PRId64>"
 msgstr "Seed másolása %<PRId64>"
 
-#: src/ui/MainWindowUI.cpp:3015
+#: src/ui/MainWindowUI.cpp:3300
 msgid "Send the image to img2img"
 msgstr "Utolsó kép küldése az img2img-be"
 
-#: src/ui/MainWindowUI.cpp:3016
+#: src/ui/MainWindowUI.cpp:3301
 msgid "Upscale"
 msgstr "Felnagyítás"
 
-#: src/ui/MainWindowUI.cpp:3065
+#: src/ui/MainWindowUI.cpp:3350
 msgid "Invalid image from diffusion..."
 msgstr "Hibás kép a diffúzióból..."
 
-#: src/ui/MainWindowUI.cpp:3104
+#: src/ui/MainWindowUI.cpp:3389
 #, c-format
 msgid "Failed to save image into %s"
 msgstr "Nem sikerült a kép mentése ide %s"
 
-#: src/ui/MainWindowUI.cpp:3561
+#: src/ui/MainWindowUI.cpp:3846
 #, c-format
 msgid "Do you want to convert model %s with quantation %s to gguf format?"
 msgstr "Szeretnéd átalakítani a modelt %s %s  kvantitációra gguf formátumra?"
 
-#: src/ui/MainWindowUI.cpp:3564
+#: src/ui/MainWindowUI.cpp:3849
 #, c-format
 msgid ""
 "Do you want to convert model %s with quantation %s and vae %s to gguf format?"
@@ -1504,68 +1691,79 @@ msgstr ""
 "Szeretnéd átalakítani a modelt %s %s  kvantitációra gguf formátumra %s vae -"
 "val?"
 
-#: src/ui/MainWindowUI.cpp:3567
+#: src/ui/MainWindowUI.cpp:3852
 #, c-format
 msgid "Convert model %s?"
 msgstr "Model átalakítása %s?"
 
-#: src/ui/MainWindowUI.cpp:3570
+#: src/ui/MainWindowUI.cpp:3855
 #, c-format
 msgid "The file %s already exists. Do you want to overwrite it?"
 msgstr "A fájl %s már létezik. Szeretnéd felülírni?"
 
-#: src/ui/MainWindowUI.cpp:3571
+#: src/ui/MainWindowUI.cpp:3856
 msgid "Overwrite File?"
 msgstr "Fájl felülírása?"
 
-#: src/ui/MainWindowUI.cpp:3725
+#: src/ui/MainWindowUI.cpp:4013
 msgid "Stopping..."
 msgstr "Leállítás..."
 
-#: src/ui/MainWindowUI.cpp:3741
+#: src/ui/MainWindowUI.cpp:4029
 msgid "Process is ready"
 msgstr "A folyamat fut"
 
-#: src/ui/MainWindowUI.cpp:3755
-#, fuzzy
+#: src/ui/MainWindowUI.cpp:4043
 msgid "External process stopped"
-msgstr "A folyamat leállt"
+msgstr "A külső folyamat leállt"
 
-#: src/ui/MainWindowUI.cpp:3758
+#: src/ui/MainWindowUI.cpp:4046
 msgid "Process is stopped"
 msgstr "A folyamat leállt"
 
-#: src/ui/MainWindowUI.cpp:3769
+#: src/ui/MainWindowUI.cpp:4057
 msgid "Failed to restart the background process..."
 msgstr "Nem sikerült újraindítani a háttérfolyamatot..."
 
-#: src/ui/QueueManager.h:55
+#: src/ui/QueueManager.h:38
 msgid "pending"
 msgstr "függőben"
 
-#: src/ui/QueueManager.h:56
+#: src/ui/QueueManager.h:39
 msgid "running"
 msgstr "fut"
 
-#: src/ui/QueueManager.h:57
+#: src/ui/QueueManager.h:40
 msgid "paused"
 msgstr "szünet"
 
-#: src/ui/QueueManager.h:58
+#: src/ui/QueueManager.h:41
 msgid "failed"
 msgstr "sikertelen"
 
-#: src/ui/QueueManager.h:59
+#: src/ui/QueueManager.h:42
 msgid "model loading..."
 msgstr "model betöltése..."
 
-#: src/ui/QueueManager.h:60
+#: src/ui/QueueManager.h:43
 msgid "finished"
 msgstr "kész"
 
-#: src/ui/QueueManager.h:61
+#: src/ui/QueueManager.h:44
 msgid "model hashing..."
 msgstr "model hash-elés..."
+
+#~ msgid "SD1x Resolutions:"
+#~ msgstr "SD1x Felbontások:"
+
+#~ msgid "SDXL Resolutions:"
+#~ msgstr "SDXL Felbontások:"
+
+#~ msgid "Text2IMG"
+#~ msgstr "Text2IMG"
+
+#~ msgid "Image2image"
+#~ msgstr "Image2image"
 
 #, c-format
 #~ msgid ""
@@ -1608,3 +1806,4 @@ msgstr "model hash-elés..."
 
 #~ msgid "Swap width and height"
 #~ msgstr "Szélesség és magasság felcserélése"
+

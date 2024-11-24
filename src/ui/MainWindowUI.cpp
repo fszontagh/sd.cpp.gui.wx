@@ -3114,6 +3114,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
+        data.push_back(wxVariant(_("Clip on CPU")));
+        data.push_back(wxVariant(wxString::Format("%s", item->params.clip_on_cpu == true ? _("yes") : _("no"))));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
         data.push_back(wxVariant(_("Cfg scale")));
         data.push_back(wxVariant(wxString::Format("%.1f", item->params.cfg_scale)));
         this->m_joblist_item_details->AppendItem(data);
@@ -3157,6 +3162,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
+
+        data.push_back(wxVariant(_("VAE on CPU")));
+        data.push_back(wxVariant(wxString(item->params.vae_on_cpu == true ? _("yes") : _("no"))));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
 
         data.push_back(wxVariant(_("VAE tiling")));
         data.push_back(wxVariant(wxString(item->params.vae_tiling == true ? _("yes") : _("no"))));
@@ -3221,34 +3231,46 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             data.push_back(wxVariant(wxString::Format("%.2f", item->params.control_strength)));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
+
+            data.push_back(wxVariant(_("CN on CPU")));
+            data.push_back(wxVariant(wxString::Format("%s", item->params.control_net_cpu ? _("yes") : _("no"))));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();            
         }
 
-        // slg scale
-        data.push_back(wxVariant(_("SLG scale")));
-        data.push_back(wxVariant(wxString::Format("%.2f", item->params.slg_scale)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
+        if (item->params.diffusion_model_path.empty() == false) {
 
-        data.push_back(wxVariant(_("Skip layers")));
-        wxString skipLayers = "[";
-        for (const auto i : item->params.skip_layers) {
-            skipLayers += wxString::Format(wxT("%d,"), (int)i);
+            data.push_back(wxVariant(_("Flash Attention")));
+            data.push_back(wxVariant(wxString::Format("%s", item->params.diffusion_flash_attn ? _("yes") : _("no"))));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();      
+
+            data.push_back(wxVariant(_("SLG scale")));
+            data.push_back(wxVariant(wxString::Format("%.2f", item->params.slg_scale)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Skip layers")));
+            wxString skipLayers = "[";
+            for (const auto i : item->params.skip_layers) {
+                skipLayers += wxString::Format(wxT("%d,"), (int)i);
+            }
+            skipLayers = skipLayers.SubString(0, skipLayers.Length() - 2);
+            skipLayers += "]";
+            data.push_back(wxVariant(skipLayers));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Skip Layer Start")));
+            data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_start)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
+            data.push_back(wxVariant(_("Skip Layer End")));
+            data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_end)));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
         }
-        skipLayers = skipLayers.SubString(0, skipLayers.Length() - 2);
-        skipLayers += "]";
-        data.push_back(wxVariant(skipLayers));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
-
-        data.push_back(wxVariant(_("Skip Layer Start")));
-        data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_start)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
-
-        data.push_back(wxVariant(_("Skip Layer End")));
-        data.push_back(wxVariant(wxString::Format("%.2f", item->params.skip_layer_end)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
     }
     int index = 0;
     for (auto img : item->images) {
