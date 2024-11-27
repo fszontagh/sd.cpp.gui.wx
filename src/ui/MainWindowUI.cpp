@@ -748,6 +748,14 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.vae_path = "";
     }
 
+    item->model = this->m_model->GetStringSelection().utf8_string();
+
+    if (type == QM::GenerationMode::TXT2IMG) {
+        if (diffusionModel.empty() == false) {
+            item->model = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
+        }
+    }
+
     item->params.lora_model_dir     = this->cfg->lora;
     item->params.embeddings_path    = this->cfg->embedding;
     item->params.n_threads          = this->cfg->n_threads;
@@ -764,15 +772,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
         if (this->m_controlnetModels->GetSelection() > 0) {
             item->params.control_net_cpu = this->cnOnCpu->GetValue();
-        }
-
-        auto diffusionModel = this->m_filePickerDiffusionModel->GetPath();
-
-        if (diffusionModel.IsEmpty()) {
-            item->model = this->m_model->GetStringSelection().utf8_string();
-        } else {
-            item->params.diffusion_model_path = diffusionModel.utf8_string();
-            item->model                       = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
         }
 
         auto slgscale = this->slgScale->GetValue();
@@ -3235,15 +3234,14 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             data.push_back(wxVariant(_("CN on CPU")));
             data.push_back(wxVariant(wxString::Format("%s", item->params.control_net_cpu ? _("yes") : _("no"))));
             this->m_joblist_item_details->AppendItem(data);
-            data.clear();            
+            data.clear();
         }
 
         if (item->params.diffusion_model_path.empty() == false) {
-
             data.push_back(wxVariant(_("Flash Attention")));
             data.push_back(wxVariant(wxString::Format("%s", item->params.diffusion_flash_attn ? _("yes") : _("no"))));
             this->m_joblist_item_details->AppendItem(data);
-            data.clear();      
+            data.clear();
 
             data.push_back(wxVariant(_("SLG scale")));
             data.push_back(wxVariant(wxString::Format("%.2f", item->params.slg_scale)));
