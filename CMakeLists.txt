@@ -24,17 +24,21 @@ include(CMakePackageConfigHelpers)
 set(BUILD_SHARED_LIBS OFF)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
-if (WIN32)
-    find_package(OpenSSL CONFIG REQUIRED)
-    find_package(CURL CONFIG REQUIRED)
-    find_package(exiv2 REQUIRED)
-else()
-    # on ubuntu, there is no CONFIG
-    find_package(OpenSSL REQUIRED)
-    find_package(CURL REQUIRED)
-    find_package(exiv2 REQUIRED)
-endif(WIN32)
 
+find_package(OpenSSL CONFIG QUIET)
+if (NOT OpenSSL_FOUND)
+    find_package(OpenSSL REQUIRED)
+endif()
+
+find_package(CURL CONFIG QUIET)
+if (NOT CURL_FOUND)
+    find_package(CURL REQUIRED)
+endif()
+
+find_package(exiv2 CONFIG QUIET)
+if (NOT exiv2_FOUND)
+    find_package(exiv2 REQUIRED)    
+endif()
 
 
 include(cmake/wxWidgets.cmake)

@@ -2,8 +2,12 @@ if (NOT WIN32)
 
     set(wxWidgets_USE_STATIC ON)
     set(wxBUILD_SHARED OFF)
-
-
+    
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    pkg_check_modules(PANGO REQUIRED pango)
+    
+    
     FetchContent_Declare(
         wxWidgets
         GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
