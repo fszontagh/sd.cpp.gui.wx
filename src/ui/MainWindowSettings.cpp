@@ -80,7 +80,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     if (!this->m_civitai_api_key->GetValue().empty()) {
         wxSecretValue password(this->m_civitai_api_key->GetValue());
         wxSecretStore store = wxSecretStore::GetDefault();
-        store.Save(SD_GUI_HOMEPAGE, username, password);
+        store.Save(PROJECT_NAME, username, password);
     }
 
     this->fileConfig->Write("/paths/lora", this->m_lora_dir->GetPath());
@@ -160,7 +160,7 @@ void MainWindowSettings::InitConfig() {
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
+    if (store.Load(PROJECT_NAME, username, password)) {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 

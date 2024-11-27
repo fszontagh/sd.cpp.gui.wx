@@ -3685,7 +3685,7 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
+    if (store.Load(PROJECT_NAME, username, password)) {
         apikey = password.GetAsString();
     }
 
@@ -3747,7 +3747,7 @@ void MainWindowUI::threadedModelInfoImageDownload(
     wxString apikey;
 
     wxSecretStore store = wxSecretStore::GetDefault();
-    if (store.Load(SD_GUI_HOMEPAGE, username, password)) {
+    if (store.Load(PROJECT_NAME, username, password)) {
         apikey = password.GetAsString();
     }
 
