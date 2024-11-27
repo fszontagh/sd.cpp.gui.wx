@@ -22,7 +22,11 @@ include(ExternalProject)
 include(CMakePackageConfigHelpers)
 
 set(BUILD_SHARED_LIBS OFF)
-set(OPENSSL_USE_STATIC_LIBS TRUE)
+
+if (WIN32)
+    set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
+
 
 
 find_package(OpenSSL CONFIG QUIET)
