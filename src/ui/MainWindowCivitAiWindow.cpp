@@ -511,7 +511,10 @@ void MainWindowCivitAiWindow::imgDownloadThread(CivitAi::PreviewImage* previewIm
         std::string target_path = std::filesystem::path(previewImage->localpath).replace_extension("tmp").generic_string();
 
         curl.getFile(previewImage->url, headers, target_path);
-
+        if (curl.getLastResponseCode() != 200) {
+            std::cerr << "Error: " << curl.errorCodeToString() << std::endl;
+            return;
+        }
         // Process downloaded image
         wxImage _tmpImg;
         _tmpImg.SetLoadFlags(_tmpImg.GetLoadFlags() & ~wxImage::Load_Verbose);
@@ -573,6 +576,11 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
 
         // TODO: check response header, if it is json, then we got error (ef the author not allowing to download without login)
         // {"error":"Unauthorized","message":"The creator of this asset requires you to be logged in to download it"}
+        if (curl.getLastResponseCode() != 200) {
+            item->error = wxString::Format(_("Download failed: %s"), curl.errorCodeToString());
+            this->SendThreadEvent("DOWNLOAD_ERROR", item);
+            return;
+        }        
         if (item->targetSize != item->downloadedSize) {
             item->error = _("Download failed");
             this->SendThreadEvent("DOWNLOAD_ERROR", item);
@@ -783,6 +791,11 @@ void MainWindowCivitAiWindow::civitSearchThread(const std::string& query) {
         std::string response;
 
         curl.get(url, headers, response);
+
+        if (curl.getLastResponseCode() != 200) {
+            this->SendThreadEvent(wxString::Format("ERROR:HTTP request failed: %s", curl.errorCodeToString()));
+            return;
+        }
 
         // Process the JSON response
         std::string jsonResponse = "JSON:" + response;
