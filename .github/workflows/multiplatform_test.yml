@@ -1,0 +1,147 @@
+name: MATRIX build and package - windows & cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build on Windows with ${{ matrix.variant.name }}
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        variant:
+          - name: CPU
+            cmake_flags: "-DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON"
+            targets:
+              - stable_diffusion_cpp_avx
+              - stable_diffusion_cpp_avx2
+              - stable_diffusion_cpp_avx512
+            cache-key: windows-cpu
+            extra_steps: []
+          - name: CUDA
+            cmake_flags: "-DSD_CUBLAS=ON"
+            targets:
+              - stable_diffusion_cpp_cuda
+            cache-key: windows-cuda
+            extra_steps:
+              - name: Install CUDA Toolkit
+                uses: Jimver/cuda-toolkit@v0.2.11
+                with:
+                  cuda: "12.2.0"
+          - name: HIPBLAS
+            cmake_flags: "-DSD_HIPBLAS=ON"
+            targets:
+              - stable_diffusion_cpp_hipblas
+            cache-key: windows-hipblas
+            extra_steps:
+              - name: Install rocm-toolkit
+                id: rocm-toolkit
+                uses: Cyberhan123/rocm-toolkit@v0.1.0
+                with:
+                  rocm: "5.5.0"
+              - name: Install Ninja
+                id: install-ninja
+                uses: urkle/action-get-ninja@v1
+                with:
+                  version: 1.11.1
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Compute cache key
+        id: compute-cache-key
+        run: |
+          HASH=$(sha256sum cmake/sdcpp_version.cmake | awk '{ print $1 }')
+          echo "CACHE_KEY=${{ matrix.variant.cache-key }}-$HASH" >> $GITHUB_ENV
+
+      - name: Cache build outputs
+        id: cache-build
+        uses: actions/cache@v3
+        with:
+          path: build/Release/*.dll
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: ${{ matrix.variant.cache-key }}-
+
+      - name: Install Conan
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+
+      - name: Run extra steps
+        if: steps.cache-build.outputs.cache-hit != 'true' && ${{ matrix.variant.extra_steps != '' }}
+        run: ${{ toJson(matrix.variant.extra_steps) }}
+
+      - name: Set up Conan
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          mkdir build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=never
+
+      - name: Configure CMake
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release ${{ matrix.variant.cmake_flags }} --preset conan-default
+
+      - name: Build Targets
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          cd build
+          {% for target in matrix.variant.targets %}
+          cmake --build . --config Release --target {{ target }}
+          {% endfor %}
+
+  package-installer:
+    name: Create Windows Installer
+    runs-on: windows-2019
+    needs: [build-windows]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3        
+
+      - name: Restore CPU Build Cache
+        uses: actions/cache@v3
+        with:
+          path: build-cpu/
+          key: windows-cpu-${{ env.CACHE_KEY }}
+          restore-keys: windows-cpu-
+
+      - name: Restore CUDA Build Cache
+        uses: actions/cache@v3
+        with:
+          path: build-cuda/
+          key: windows-cuda-${{ env.CACHE_KEY }}
+          restore-keys: windows-cuda-
+
+      - name: Restore HIPBLAS Build Cache
+        uses: actions/cache@v3
+        with:
+          path: build-hipblas/
+          key: windows-hipblas-${{ env.CACHE_KEY }}
+          restore-keys: windows-hipblas-
+
+      - name: Merge Build Outputs
+        run: |
+          mkdir build
+          copy build-cpu/* build/ /y
+          copy build-cuda/* build/ /y
+          copy build-hipblas/* build/ /y
+
+      - name: Generate NSIS Installer
+        run: |
+          cd build
+          cmake --configure .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --target package
+
+      - name: Release NSIS Installer
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ""
+          draft: true
+          prerelease: true
+          files: |
+            build/*.exe
+            build/*.sha256

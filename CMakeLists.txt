@@ -11,7 +11,7 @@ HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(SDCPP_VERSION "b5f4932")
+include(cmake/sdcpp_version.cmake)
 
 set(PROJECT_BINARY_NAME "stablediffusiongui")
 set(PROJECT_DISPLAY_NAME "Stable Diffusion GUI")
