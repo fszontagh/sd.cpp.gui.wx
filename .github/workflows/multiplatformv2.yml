@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-cpu
-          path: build/
+          path: build/Release/*.dll
           compression-level: 0
           overwrite: true
 
@@ -139,7 +139,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
            name: build-hipblas
-           path: build/
+           path: build/Release/*.dll
            compression-level: 0
            overwrite: true
 
@@ -181,21 +181,21 @@ jobs:
             conan profile detect
             conan install .. -s compiler.cppstd=17 --build=never
   
-      - name: Configure CMake for HIPBLAS
+      - name: Configure CMake for VULKAN
         run: |
             cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON --preset conan-default
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON --preset conan-default
   
-      - name: Build HIPBLAS
+      - name: Build VULKAN
         run: |
             cd build
-            cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
   
-      - name: Upload HIPBLAS build directory
+      - name: Upload VULKAN build directory
         uses: actions/upload-artifact@v4
         with:
-           name: build-hipblas
-           path: build/
+           name: build-vulkan
+           path: build/Release/*.dll
            compression-level: 0
            overwrite: true
 
@@ -223,14 +223,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-hipblas
-          path: build-hipblas/          
+          path: build-hipblas/
+
+      - name: Download VULKAN build directory
+        uses: actions/download-artifact@v4
+        with:
+          name: build-vulkan
+          path: build-vulkan/                 
 
       - name: Merge build outputs
         run: |
           mkdir build
           copy build-cpu/* build/ /y
           copy build-cuda/* build/ /y
-          copy build-hipblas/* build/ /y          
+          copy build-hipblas/* build/ /y
+          copy build-vulkan/* build/ /y          
 
       - name: Generate NSIS installer
         run: |
