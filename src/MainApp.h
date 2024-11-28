@@ -37,6 +37,10 @@ public:
                 forceType     = "hipblas";
                 this->backend = "hipblas";
             }
+            if (wxApp::argv[i] == "-vulkan") {
+                forceType     = "vulkan";
+                this->backend = "vulkan";
+            }
             if (wxApp::argv[i] == "-allow-multiple") {
                 allow_multiple_instance = true;
             }

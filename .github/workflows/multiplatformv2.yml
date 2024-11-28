@@ -1,0 +1,159 @@
+name: Build and Package and Release
+
+on:
+    workflow_dispatch:
+
+jobs:
+  build-windows-cpu:
+    runs-on: windows-2019
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Conan
+        run: |
+          mkdir build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=missing
+
+      - name: Configure CMake for CPU
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON --preset conan-default
+
+      - name: Build for CPU
+        run: |
+          cd build
+          cmake --build . --config Release --target stable_diffusion_cpp_avx
+          cmake --build . --config Release --target stable_diffusion_cpp_avx2
+          cmake --build . --config Release --target stable_diffusion_cpp_avx512
+
+      - name: Upload AVX build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-avx
+          path: build/
+          compression-level: 0
+          overwrite: true
+
+  build-windows-cuda:
+    runs-on: windows-2019
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: "12.2.0"
+
+      - name: Set up Conan
+        run: |
+          mkdir build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=missing
+
+      - name: Configure CMake for CUDA
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUBLAS=ON --preset conan-default
+
+      - name: Build CUDA
+        run: |
+          cd build
+          cmake --build . --config Release --target stable_diffusion_cpp_cuda
+
+      - name: Upload CUDA build directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-cuda
+          path: build/
+          compression-level: 0
+          overwrite: true
+
+  build-windows-hipblas:
+    runs-on: windows-2019
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install rocm-toolkit
+        id: rocm-toolkit
+        uses: Cyberhan123/rocm-toolkit@v0.1.0
+        with:
+          rocm: "5.5.0"
+      
+      - name: Install Ninja
+        id: install-ninja
+        uses: urkle/action-get-ninja@v1
+        with:
+          version: 1.11.1
+
+      - name: Set up Conan
+        run: |
+            mkdir build
+            cd build
+            conan profile detect
+            conan install .. -s compiler.cppstd=17 --build=missing
+  
+      - name: Configure CMake for HIPBLAS
+        run: |
+            cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON --preset conan-default
+  
+      - name: Build HIPBLAS
+        run: |
+            cd build
+            cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+  
+      - name: Upload HIPBLAS build directory
+        uses: actions/upload-artifact@v4
+        with:
+           name: build-hipblas
+           path: build/
+           compression-level: 0
+           overwrite: true
+
+  package-installer:
+    runs-on: windows-2019
+    needs: [build-windows-cpu, build-windows-cuda, build-windows-hipblas]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3        
+      
+      - name: Download CPU build directory
+        uses: actions/download-artifact@v3
+        with:
+          name: build-cpu
+          path: build-cpu/
+
+      - name: Download CUDA build directory
+        uses: actions/download-artifact@v3
+        with:
+          name: build-cuda
+          path: build-cuda/
+
+      - name: Download HIPBLAS build directory
+        uses: actions/download-artifact@v3
+        with:
+          name: build-hipblas
+          path: build-hipblas/          
+
+      - name: Merge build outputs
+        run: |
+          mkdir build
+          copy build-cpu/* build/ /y
+          copy build-cuda/* build/ /y
+          copy build-hipblas/* build/ /y          
+
+      - name: Generate NSIS installer
+        run: |
+          cd merged-build
+          cmake --build . --config Release --target package
+
+      - name: Release NSIS Installer
+        uses: softprops/action-gh-release@v2
+        with:
+          files: merged-build/*.exe
