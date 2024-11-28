@@ -10,6 +10,14 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Install Conan
+        id: conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            $conan_version=conan --version
+            echo "conan_version=$conan_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+
       - name: Set up Conan
         run: |
           mkdir build
@@ -48,6 +56,14 @@ jobs:
         with:
           cuda: "12.2.0"
 
+      - name: Install Conan
+        id: conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            $conan_version=conan --version
+            echo "conan_version=$conan_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8          
+
       - name: Set up Conan
         run: |
           mkdir build
@@ -79,6 +95,14 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      - name: Install Conan
+        id: conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            $conan_version=conan --version
+            echo "conan_version=$conan_version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
+                   
       - name: Install rocm-toolkit
         id: rocm-toolkit
         uses: Cyberhan123/rocm-toolkit@v0.1.0
