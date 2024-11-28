@@ -37,10 +37,10 @@ jobs:
           cmake --build . --config Release --target stable_diffusion_cpp_avx2
           cmake --build . --config Release --target stable_diffusion_cpp_avx512
 
-      - name: Upload AVX build directory
+      - name: Upload CPU build directory
         uses: actions/upload-artifact@v4
         with:
-          name: build-avx
+          name: build-cpu
           path: build/
           compression-level: 0
           overwrite: true
@@ -174,10 +174,16 @@ jobs:
 
       - name: Generate NSIS installer
         run: |
-          cd merged-build
+          cd build
           cmake --build . --config Release --target package
 
       - name: Release NSIS Installer
         uses: softprops/action-gh-release@v2
         with:
-          files: merged-build/*.exe
+          body: ""
+          draft: true
+          prerelease: true
+
+          files: |
+            build/*.exe
+            build/*.sha256
