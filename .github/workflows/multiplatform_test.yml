@@ -10,28 +10,29 @@ jobs:
     strategy:
       matrix:
         variant:
-          - name: CPU
-            cmake_flags: "-DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON"
-            targets:
-              - stable_diffusion_cpp_avx
-              - stable_diffusion_cpp_avx2
-              - stable_diffusion_cpp_avx512
-            cache-key: windows-cpu
-            extra_steps: []
+          - name: CPU avx
+            cmake_flags: "-DSD_AVX=ON"
+            targets: "stable_diffusion_cpp_avx"
+            cache-key: windows-avx
+
+          - name: CPU avx2
+            cmake_flags: "-DSD_AVX2=ON"
+            targets: "stable_diffusion_cpp_avx2"
+            cache-key: windows-avx2
+
+          - name: CPU avx512
+            cmake_flags: "-DSD_AVX512=ON"
+            targets: "stable_diffusion_cpp_avx512"
+            cache-key: windows-avx512
+
           - name: CUDA
             cmake_flags: "-DSD_CUBLAS=ON"
-            targets:
-              - stable_diffusion_cpp_cuda
+            targets: "stable_diffusion_cpp_cuda"
             cache-key: windows-cuda
-            extra_steps:
-              - name: Install CUDA Toolkit
-                uses: Jimver/cuda-toolkit@v0.2.11
-                with:
-                  cuda: "12.2.0"
+
           - name: HIPBLAS
             cmake_flags: "-DSD_HIPBLAS=ON"
-            targets:
-              - stable_diffusion_cpp_hipblas
+            targets: "stable_diffusion_cpp_hipblas"
             cache-key: windows-hipblas
     steps:
       - name: Check out code
@@ -87,10 +88,8 @@ jobs:
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
           cd build
-          $targets = @${{ toJson(matrix.variant.targets) }}
-          foreach ($target in $targets) {
-              cmake --build . --config Release --target $target
-          }
+          cmake --build . --config Release --target ${{ matrix.variant.targets }}
+          
 
   package-installer:
     name: Create Windows Installer
