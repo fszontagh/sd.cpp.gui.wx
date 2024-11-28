@@ -23,7 +23,7 @@ jobs:
           mkdir build
           cd build
           conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=missing
+          conan install .. -s compiler.cppstd=17 --build=never
 
       - name: Configure CMake for CPU
         run: |
@@ -69,7 +69,7 @@ jobs:
           mkdir build
           cd build
           conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=missing
+          conan install .. -s compiler.cppstd=17 --build=never
 
       - name: Configure CMake for CUDA
         run: |
@@ -120,7 +120,7 @@ jobs:
             mkdir build
             cd build
             conan profile detect
-            conan install .. -s compiler.cppstd=17 --build=missing
+            conan install .. -s compiler.cppstd=17 --build=never
   
       - name: Configure CMake for HIPBLAS
         run: |
