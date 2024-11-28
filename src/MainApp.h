@@ -108,6 +108,10 @@ public:
         // load locale
 
         auto configLang = this->config->Read("language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
+        // if empty, use system (empty while edited with manually the ini file)
+        if (configLang.empty()) {
+            configLang = wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string();
+        }
 
         // trans->SetLanguage(configLang);
         this->ReloadMainWindow(configLang);

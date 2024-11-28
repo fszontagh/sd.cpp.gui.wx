@@ -21,6 +21,7 @@
 #include "wx/snglinst.h"
 #include "wx/uilocale.h"
 #include "wx/fileconf.h"
+#include "wx/filename.h"
 #include "wx/secretstore.h"
 #include "wx/stdpaths.h"
 #include "wx/splash.h"

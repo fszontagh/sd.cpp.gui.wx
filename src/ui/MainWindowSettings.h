@@ -13,7 +13,7 @@ class MainWindowSettings : public Settings {
 protected:
     // Handlers for Settings events.
     void OnImgQualityScroll(wxScrollEvent& event) override;
-    void OnImgQualitySpin(wxSpinEvent& event) override;
+    void OnPngCompressionScroll(wxScrollEvent& event) override;
     void onShowNotificationCheck(wxCommandEvent& event) override;
     void OnCivitaiHelpButton(wxCommandEvent& event) override;
     void onSave(wxCommandEvent& event) override;

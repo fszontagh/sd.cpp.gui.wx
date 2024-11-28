@@ -15,14 +15,13 @@ MainWindowSettings::MainWindowSettings(wxWindow* parent)
 
 void MainWindowSettings::OnImgQualityScroll(wxScrollEvent& event) {
     // TODO: Implement OnImgQualityScroll
-    this->m_image_quality_spin->SetValue(this->m_image_quality->GetValue());
+    // this->m_image_quality_spin->SetValue(this->m_image_quality->GetValue());
+    this->cfg->image_quality = this->m_image_quality->GetValue();
 }
 
-void MainWindowSettings::OnImgQualitySpin(wxSpinEvent& event) {
-    // TODO: Implement OnImgQualitySpin
-    this->m_image_quality->SetValue(this->m_image_quality_spin->GetValue());
+void MainWindowSettings::OnPngCompressionScroll(wxScrollEvent& event) {
+    // TODO: Implement OnPngCompressionScroll
 }
-
 void MainWindowSettings::onShowNotificationCheck(wxCommandEvent& event) {
     // TODO: Implement onShowNotificationCheck
     if (!this->m_show_notifications->IsChecked()) {
@@ -80,7 +79,9 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     if (!this->m_civitai_api_key->GetValue().empty()) {
         wxSecretValue password(this->m_civitai_api_key->GetValue());
         wxSecretStore store = wxSecretStore::GetDefault();
-        store.Save(PROJECT_NAME, username, password);
+        if (store.IsOk()) {
+            store.Save(PROJECT_NAME, username, password);
+        }
     }
 
     this->fileConfig->Write("/paths/lora", this->m_lora_dir->GetPath());
@@ -96,11 +97,12 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->fileConfig->Write("/n_threads", this->m_threads->GetValue());
     this->fileConfig->Write("/paths/output", this->m_images_output->GetPath());
     this->fileConfig->Write("/image_quality", this->m_image_quality->GetValue());
+    this->fileConfig->Write("/png_compression_level", this->m_png_compression->GetValue());
     this->fileConfig->Write("/image_type", sd_gui_utils::image_types_str[this->m_image_type->GetSelection()]);
     this->fileConfig->Write("/show_notification", this->m_show_notifications->GetValue());
     this->fileConfig->Write("/notification_timeout", this->m_notification_timeout->GetValue());
     this->fileConfig->Write("/enable_civitai", this->m_enableCivitai->GetValue());
-    
+
     auto language = this->locales[this->m_language->GetSelection()];
     this->fileConfig->Write("/language", wxString::FromUTF8Unchecked(language));
     this->fileConfig->Flush();
@@ -160,7 +162,7 @@ void MainWindowSettings::InitConfig() {
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.IsOk() && store.Load(PROJECT_NAME, username, password)) {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 
@@ -189,7 +191,7 @@ void MainWindowSettings::InitConfig() {
     this->m_save_all_image->SetValue(this->cfg->save_all_image);
     this->m_threads->SetValue(this->cfg->n_threads);
     this->m_image_quality->SetValue(this->cfg->image_quality);
-    this->m_image_quality_spin->SetValue(this->cfg->image_quality);
+    this->m_png_compression->SetValue(this->cfg->png_compression_level);
     this->m_image_type->Select((int)this->cfg->image_type);
     this->m_show_notifications->SetValue(this->cfg->show_notifications);
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);
@@ -219,26 +221,29 @@ void MainWindowSettings::InitConfig() {
 
     auto langs = tr->GetAvailableTranslations("stablediffusiongui");
 
+    auto required_locale = this->cfg->language != systemLocale.utf8_string() && this->cfg->language.empty() == false ? this->cfg->language : systemLocale.utf8_string();
+
     int selected = 0;
     int counter  = 0;
-    std::cout << " system locale: " << systemLocale.utf8_string() << std::endl;
+    std::cout << " system locale: " << systemLocale.utf8_string() << " cfg locale: "<< this->cfg->language << " required locale: "<< required_locale << std::endl;
+    std::map<wxString, wxString> _locales; // to avoid duplicates
 
     for (const auto lang : langs) {
         auto langInfo = wxUILocale::FindLanguageInfo(lang);
-        wxString info = "";
-        if (langInfo != nullptr) {
-            info.Append(langInfo->DescriptionNative);
-            
-
-            std::cout << "LOCALE: " << langInfo->CanonicalRef.utf8_string() << " == " << systemLocale.utf8_string() << std::endl;
-
-            if (langInfo->CanonicalName.utf8_string() == this->cfg->language) {
-                selected = counter;
-            }
-            this->locales[counter] = langInfo->CanonicalName.utf8_string();
-            this->m_language->Append(info);
-            counter++;
+        std::cout << "Found locale: " << langInfo->CanonicalName.utf8_string() << std::endl;
+        if (langInfo != nullptr && langInfo->DescriptionNative.empty() == false && langInfo->CanonicalName.empty() == false) {
+            _locales[langInfo->CanonicalName.utf8_string()] = langInfo->DescriptionNative.utf8_string();
         }
+    }
+
+    
+    for (const auto _locale : _locales) {
+        this->m_language->Append(_locale.second);
+        if (_locale.first == required_locale) {
+            selected = counter;
+        }
+        this->locales[counter] = _locale.first.utf8_string();
+        counter++;
     }
     this->m_language->SetSelection(selected);
 }

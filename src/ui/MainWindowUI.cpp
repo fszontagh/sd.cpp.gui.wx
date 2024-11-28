@@ -2,6 +2,8 @@
 #include <chrono>
 #include <cinttypes>
 #include <cstring>
+#include <exiv2/iptc.hpp>
+#include <exiv2/xmp_exiv2.hpp>
 #include <filesystem>
 #include <memory>
 #include <thread>
@@ -18,6 +20,7 @@
 #include "wx/fileconf.h"
 #include "wx/filename.h"
 #include "wx/image.h"
+#include "wx/imagtiff.h"
 #include "wx/string.h"
 #include "wx/translation.h"
 #include "wx/uilocale.h"
@@ -186,6 +189,7 @@ void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
     about.Append(wxString::Format("<h2>%s</h2>", PROJECT_NAME));
     about.Append(wxString::Format(_("<p>Version: %s</p>"), SD_GUI_VERSION));
     about.Append(wxString::Format(_("<p>Git version: %s</p>"), GIT_HASH));
+    about.Append(wxString::Format(_("<p>Stable Diffusion CPP version: %s</p>"), SD_CPP_VERSION));
     about.Append(wxString::Format(_("<p>Website: <a target='_blank' href='%s'>%s</a></p>"), SD_GUI_HOMEPAGE, SD_GUI_HOMEPAGE));
 
     about.Append(wxString::Format(_("<p>Loaded backend: %s</p>"), usingBackend.c_str()));
@@ -620,30 +624,42 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
         return;
     }
 
-    // only jpeg supported now
-    if (img.GetType() != wxBITMAP_TYPE_JPEG) {
-        wxMessageBox(wxString::Format(_("Only jpeg supported: %s"), path.GetExt()));
-        return;
-    }
-
-    /// get meta
+    this->readMetaDataFromImage(file, SDMode::TXT2IMG);
+}
+void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mode) {
     try {
-        auto image = Exiv2::ImageFactory::open(file.utf8_string());
+        auto image = Exiv2::ImageFactory::open(file.GetAbsolutePath().utf8_string());
         if (!image->good()) {
             return;
         }
         image->readMetadata();
+        Exiv2::IptcData& iptcData = image->iptcData();
+        if (!iptcData.empty()) {
+            for (auto it = iptcData.begin(); it != iptcData.end(); ++it) {
+                std::cout << "Found iptc key: " << it->key() << " val: " << it->value() << std::endl;
+            }
+        }
+
+        Exiv2::XmpData& xmpData = image->xmpData();
+        if (!xmpData.empty()) {
+            for (auto it = xmpData.begin(); it != xmpData.end(); ++it) {
+                std::cout << "Found xmp key: " << it->key() << " val: "<< it->value() << std::endl;
+            }
+        }
         Exiv2::ExifData& exifData = image->exifData();
         if (!exifData.empty()) {
             std::string ex;
             Exiv2::ExifData::iterator it;
             std::string usercomment;
             for (it = exifData.begin(); it != exifData.end(); ++it) {
-                if (it->key() == "Exif.Photo.UserComment") {
+                if (BUILD_TYPE == "Debug") {
+                    std::cout << "Found key: " << it->key() << " val: " << std::endl;
+                }
+                if (it->key() == "Exif.Photo.UserComment" || it->key() == "Exif.Image.UserComment" || it->key() == "Exif.Photo.Parameters") {
                     usercomment = it->getValue()->toString();
                     if (!usercomment.empty()) {
                         std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
-                        this->imageCommentToGuiParams(getParams, SDMode::TXT2IMG);
+                        this->imageCommentToGuiParams(getParams, SDMode::IMG2IMG);
                         break;
                     }
                 }
@@ -653,7 +669,6 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
         std::cerr << "Err: " << e.what() << std::endl;
     }
 }
-
 /// TODO: store embeddings like checkpoints and loras, the finetune this
 void MainWindowUI::OnPromptText(wxCommandEvent& event) {
     event.Skip();  // disabled while really slow
@@ -1962,33 +1977,109 @@ void MainWindowUI::loadTaesdList() {
 }
 
 std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
+
+    // we can't write png chunks. SDWEBUI Forge uses png idata "Postprocessing" to store upscale infos... we don't do that yet, so empty exifs
+    // TODO: copy original image's exif...
+    if (myItem.mode == QM::GenerationMode::UPSCALE)  {
+        return "";
+    }
     auto modelPath = std::filesystem::path(modelInfo.path);
 
-    std::string comment = "charset=Unicode " + myItem.params.prompt;
+    std::string sha256;
+    if (!modelInfo.sha256.empty()) {
+        modelInfo.sha256.substr(0, 10);
+    }
+
+    if (myItem.params.model_path.empty()) {
+        modelPath = std::filesystem::path(myItem.params.diffusion_model_path);
+    }
+
+    std::string comment = myItem.params.prompt;
 
     if (!myItem.params.negative_prompt.empty()) {
-        comment = comment + wxString::Format("\nNegative prompt: %s", myItem.params.negative_prompt).utf8_string();
+        comment.append(wxString::Format("\nNegative prompt: %s", myItem.params.negative_prompt).utf8_string());
     }
-    comment =
-        comment +
-        wxString::Format(
-            "\nSteps: %d, Seed: %" PRId64
-            ", Sampler: %s, CFG scale: %.1f, Size: %dx%d, Parser: sd.cpp, Model: "
-            "%s, Model hash: %s, Backend: sd.cpp, App: %s, Operations: %s",
-            myItem.params.sample_steps, myItem.params.seed,
-            sd_gui_utils::sample_method_str[(int)myItem.params.sample_method],
-            myItem.params.cfg_scale, myItem.params.width, myItem.params.height,
-            modelPath.filename().replace_extension().string(),
-            modelInfo.sha256.substr(
-                0, 10),  // autov2 hash (the first 10 char from sha256 :) )
-            PROJECT_NAME, modes_str[(int)myItem.mode]);
 
+    wxString cfgScale = wxString::Format("%.2f", myItem.params.cfg_scale);
+    cfgScale.Replace(wxT(","), wxT("."));
+
+    comment.append(wxString::Format("\nSteps: %d", myItem.params.sample_steps).utf8_string());
+
+    comment.append(wxString::Format(", Seed: %" PRId64, myItem.params.seed).utf8_string());
+    comment.append(wxString::Format(", Sampler: %s", sd_gui_utils::samplerSdWebuiNames.at(myItem.params.sample_method)));
+    comment.append(wxString::Format(", Schedule type: %s", sd_gui_utils::schedulerSdWebuiNames.at(myItem.params.schedule)));
+    comment.append(wxString::Format(", CFG scale: %s", cfgScale).utf8_string());
+    comment.append(wxString::Format(", Size: %dx%d", myItem.params.width, myItem.params.height).utf8_string());
+    comment.append(", Parser: stable-diffusion.cpp");
+    comment.append(wxString::Format(", Model: %s", modelPath.filename().replace_extension().string()).utf8_string());
+
+    if (!sha256.empty()) {
+        comment.append(wxString::Format(", Model hash: %s", sha256).utf8_string());
+    }
+
+    comment.append(wxString::Format(", Backend: stable-diffusion.cpp (ver.: %s using %s)", SD_CPP_VERSION, this->usingBackend).utf8_string());
+    comment.append(wxString::Format(", App: %s", EXIF_SOFTWARE).utf8_string());
+    comment.append(wxString::Format(", Operations: %s", modes_str[(int)myItem.mode]).utf8_string());
+
+    int module_counter = 1;
     if (!myItem.params.vae_path.empty()) {
         auto vae_path = std::filesystem::path(myItem.params.vae_path);
-        comment       = comment + wxString::Format(" VAE: %s", vae_path.filename().replace_extension().string());
+        // set VAE for compatibility
+        comment.append(wxString::Format(", VAE: %s", vae_path.filename().replace_extension().string()));
+        comment.append(wxString::Format(", Module %d: %s", module_counter, vae_path.filename().replace_extension().string()));
+        module_counter++;
+    }
+    if (!myItem.params.t5xxl_path.empty()) {
+        auto t5xxl_path = std::filesystem::path(myItem.params.t5xxl_path);
+        comment.append(wxString::Format(", Module %d: %s", module_counter, t5xxl_path.filename().replace_extension().string()));
+        module_counter++;
+    }
+
+    if (!myItem.params.clip_g_path.empty()) {
+        auto clip_g_path = std::filesystem::path(myItem.params.clip_g_path);
+        comment.append(wxString::Format(", Module %d: %s", module_counter, clip_g_path.filename().replace_extension().string()));
+        module_counter++;
+    }
+
+    if (!myItem.params.clip_l_path.empty()) {
+        auto clip_l_path = std::filesystem::path(myItem.params.clip_l_path);
+        comment.append(wxString::Format(", Module %d: %s", module_counter, clip_l_path.filename().replace_extension().string()));
+        module_counter++;
     }
 
     return comment;
+}
+std::string MainWindowUI::paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
+    auto modelPath = std::filesystem::path(modelInfo.path);
+    auto modelName = modelPath.filename().replace_extension().string();
+    auto sha256    = modelInfo.sha256.substr(0, 10);
+
+    nlohmann::json comment;
+    comment["prompt"] = myItem.params.prompt;
+
+    if (!myItem.params.negative_prompt.empty()) {
+        comment["negative_prompt"] = myItem.params.negative_prompt;
+    }
+    comment["steps"]      = myItem.params.sample_steps;
+    comment["seed"]       = myItem.params.seed;
+    comment["sampler"]    = sd_gui_utils::sample_method_str[(int)myItem.params.sample_method];
+    comment["cfg_scale"]  = myItem.params.cfg_scale;
+    comment["width"]      = myItem.params.width;
+    comment["height"]     = myItem.params.height;
+    comment["parser"]     = "sd.cpp";
+    comment["model"]      = modelName;
+    comment["model_hash"] = sha256;
+    comment["backend"]    = "stable-diffusion.cpp (" + this->usingBackend + ")";
+    comment["app"]        = EXIF_SOFTWARE;
+    comment["operations"] = modes_str[(int)myItem.mode];
+
+    if (myItem.params.vae_path.empty() == false) {
+        auto vaePath   = std::filesystem::path(myItem.params.vae_path);
+        auto vaeName   = vaePath.filename().replace_extension().string();
+        comment["vae"] = vaeName;
+    }
+
+    return comment.dump();
 }
 
 template <typename T>
@@ -2390,36 +2481,7 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
         this->m_height->Disable();
         this->m_img2imgOpen->SetPath(file);
 
-        // png not working... yet...
-        if (img.GetType() == wxBITMAP_TYPE_PNG) {
-            return;
-        }
-
-        try {
-            auto image = Exiv2::ImageFactory::open(file.utf8_string());
-            if (!image->good()) {
-                return;
-            }
-            image->readMetadata();
-            Exiv2::ExifData& exifData = image->exifData();
-            if (!exifData.empty()) {
-                std::string ex;
-                Exiv2::ExifData::iterator it;
-                std::string usercomment;
-                for (it = exifData.begin(); it != exifData.end(); ++it) {
-                    if (it->key() == "Exif.Photo.UserComment") {
-                        usercomment = it->getValue()->toString();
-                        if (!usercomment.empty()) {
-                            std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
-                            this->imageCommentToGuiParams(getParams, SDMode::IMG2IMG);
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch (Exiv2::Error& e) {
-            std::cerr << "Err: " << e.what() << std::endl;
-        }
+        this->readMetaDataFromImage(wxFileName(file), SDMode::IMG2IMG);
     } else {
         wxMessageBox(_("Can not open image!"));
     }
@@ -3350,18 +3412,21 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
         delete img;
         return itemPtr;
     }
+
     wxString filename     = wxString::FromUTF8Unchecked(this->cfg->output);
     std::string extension = ".jpg";
     auto imgHandler       = wxBITMAP_TYPE_JPEG;
+    // image quality only works with jpg, png ignores it
+    img->SetOption(wxIMAGE_OPTION_QUALITY, this->cfg->image_quality);
 
     if (this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
         extension  = ".png";
         imgHandler = wxBITMAP_TYPE_PNG;
+        img->SetOption(wxIMAGE_OPTION_COMPRESSION, this->cfg->png_compression_level); // set the compression from the settings
     }
     if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
-        img->SetOption("quality", this->cfg->image_quality);
     }
     wxString filename_without_extension;
     filename = filename + wxString(wxFileName::GetPathSeparator()).utf8_string();
@@ -3383,15 +3448,23 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
         _c++;
     }
 
+    img->SetOption(wxIMAGE_OPTION_FILENAME, filename);
+    img->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
+
     if (!img->SaveFile(filename, imgHandler)) {
         itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename);
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         delete img;
-        std::cerr << __FILE__ << " " << __LINE__ << " " << itemPtr->status_message.c_str() << std::endl;
-        std::filesystem::remove(tmpImagePath);
+        if (BUILD_TYPE == "Debug") {
+            std::cerr << __FILE__ << " " << __LINE__ << " " << itemPtr->status_message.c_str() << std::endl;
+        } else {
+            std::filesystem::remove(tmpImagePath);
+        }
         return itemPtr;
     } else {
-        std::filesystem::remove(tmpImagePath);
+        if (BUILD_TYPE != "Debug") {
+            std::filesystem::remove(tmpImagePath);
+        }
 
         itemPtr->images.emplace_back(QM::QueueItemImage(filename, QM::QueueItemImageType::GENERATED));
 
@@ -3403,15 +3476,14 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
             itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
         }
         // add generation parameters into the image meta
-        if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
-            std::string comment = this->paramsToImageComment(*itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path));
+        if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
+            std::string comment = wxString::FromUTF8Unchecked(this->paramsToImageComment(*itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path))).utf8_string();
 
             try {
                 auto image = Exiv2::ImageFactory::open(filename.utf8_string());
                 image->readMetadata();
                 Exiv2::ExifData& exifData          = image->exifData();
-                exifData["Exif.Photo.UserComment"] = comment;
-                exifData["Exif.Image.XPComment"]   = comment;
+                exifData["Exif.Photo.UserComment"] = comment.c_str();
                 exifData["Exif.Image.Software"]    = EXIF_SOFTWARE;
                 exifData["Exif.Image.ImageWidth"]  = img->GetWidth();
                 exifData["Exif.Image.ImageLength"] = img->GetHeight();
@@ -3423,8 +3495,11 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
                     std::strftime(dtimeBuffer, sizeof(dtimeBuffer), "%Y:%m:%d %H:%M:%S", timeinfo);
                     exifData["Exif.Image.DateTime"] = dtimeBuffer;
                 }
+                Exiv2::XmpData& xmpData       = image->xmpData();
+                xmpData["Xmp.dc.description"] = comment.c_str();
 
                 image->setExifData(exifData);
+                image->setXmpData(xmpData);
                 image->writeMetadata();
             } catch (Exiv2::Error& e) {
                 std::cerr << "Err: " << e.what() << std::endl;

@@ -11,6 +11,7 @@ HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(SDCPP_VERSION "b5f4932")
 
 set(PROJECT_BINARY_NAME "stablediffusiongui")
 set(PROJECT_DISPLAY_NAME "Stable Diffusion GUI")
@@ -63,9 +64,8 @@ execute_process(
     OUTPUT_VARIABLE GIT_HASH
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-message("Git hash: ${GIT_HASH}")
-message("CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR}")
-message("CMAKE_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM}")
+message(STATUS "GIT HASH: ${GIT_HASH}")
+message(STATUS "SD.CPP VERSION: ${SDCPP_VERSION}")
 
 configure_file(src/ver.hpp.in ver.hpp)
 

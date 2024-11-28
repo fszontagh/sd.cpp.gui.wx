@@ -2,7 +2,9 @@
 #define __MAINFRAME_HPP__UTILS
 
 #include <random>
+#include <unordered_map>
 
+#include <png.h>
 #include "../helpers/civitai.hpp"
 #include "../helpers/sd.hpp"
 #include "../libs/bitmask_operators.h"
@@ -243,31 +245,33 @@ namespace sd_gui_utils {
         std::streambuf* old;
     };
     enum imageTypes { JPG,
-                      PNG };
-    inline const char* image_types_str[] = {"JPG", "PNG"};
+                      PNG,
+                      WEBP };
+    inline const char* image_types_str[] = {"JPG", "PNG", "WEBP"};
     struct config {
-        std::string model          = "";
-        std::string vae            = "";
-        std::string lora           = "";
-        std::string embedding      = "";
-        std::string taesd          = "";
-        std::string esrgan         = "";
-        std::string presets        = "";
-        std::string output         = "";
-        std::string jobs           = "";
-        std::string controlnet     = "";
-        std::string datapath       = "";
-        std::string tmppath        = "";
-        std::string thumbs_path    = "";
-        std::string language       = "en_US";
-        bool keep_model_in_memory  = true;
-        bool save_all_image        = true;
-        int n_threads              = 2;
-        imageTypes image_type      = imageTypes::JPG;
-        unsigned int image_quality = 90;
-        bool show_notifications    = true;
-        int notification_timeout   = 60;
-        bool enable_civitai        = true;
+        std::string model                  = "";
+        std::string vae                    = "";
+        std::string lora                   = "";
+        std::string embedding              = "";
+        std::string taesd                  = "";
+        std::string esrgan                 = "";
+        std::string presets                = "";
+        std::string output                 = "";
+        std::string jobs                   = "";
+        std::string controlnet             = "";
+        std::string datapath               = "";
+        std::string tmppath                = "";
+        std::string thumbs_path            = "";
+        std::string language               = "en";
+        bool keep_model_in_memory          = true;
+        bool save_all_image                = true;
+        int n_threads                      = 2;
+        imageTypes image_type              = imageTypes::JPG;
+        unsigned int image_quality         = 90;
+        unsigned int png_compression_level = 0;
+        bool show_notifications            = true;
+        int notification_timeout           = 60;
+        bool enable_civitai                = true;
     };
     inline std::string formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);
@@ -374,6 +378,30 @@ namespace sd_gui_utils {
         "ays",
         "gits"};
 
+    inline const std::unordered_map<sample_method_t, std::string> samplerSdWebuiNames = {
+        {sample_method_t::N_SAMPLE_METHODS, "Automatic"},
+        {sample_method_t::EULER, "Euler"},
+        {sample_method_t::EULER_A, "Euler a"},
+        {sample_method_t::DPM2, "DPM2"},
+        {sample_method_t::DPMPP2M, "DPM++ 2M"},
+        {sample_method_t::DPMPP2Mv2, "Automatic"},
+        {sample_method_t::DPMPP2S_A, "DPM++ 2S a"},
+        {sample_method_t::HEUN, "Heun"},
+        {sample_method_t::LCM, "LCM"},
+        {sample_method_t::IPNDM, "IPNDM"},
+        {sample_method_t::IPNDM_V, "IPNDM_V"},
+    };
+
+    inline const std::unordered_map<schedule_t, std::string> schedulerSdWebuiNames = {
+        {schedule_t::DEFAULT, "Automatic"},
+        {schedule_t::N_SCHEDULES, "Automatic"},
+        {schedule_t::DISCRETE, "Automatic"},  // there is not discrete in sdwebui forge
+        {schedule_t::KARRAS, "Karras"},
+        {schedule_t::EXPONENTIAL, "Exponential"},
+        {schedule_t::AYS, "Align Your Steps 11"},  // maybe this better
+        {schedule_t::GITS, "Align Your Steps GITS"},
+    };
+
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
     inline std::map<int, std::string> sd_type_gui_names = {
         {SD_TYPE_COUNT, "Count"},
@@ -386,8 +414,7 @@ namespace sd_gui_utils {
         {SD_TYPE_Q8_0, "Q8_0"},
         {SD_TYPE_Q2_K, "Q2_K"},
         {SD_TYPE_Q3_K, "Q3_K"},
-        {SD_TYPE_Q4_K, "Q4_K"}
-    };
+        {SD_TYPE_Q4_K, "Q4_K"}};
 
     inline std::map<int, std::string> sd_scheduler_gui_names = {
         {0, "Default"},
@@ -398,7 +425,6 @@ namespace sd_gui_utils {
         {5, "Gits"}
 
     };
-
 
     /* JSONize SD Params*/
     enum ThreadEvents {

@@ -657,12 +657,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer82->SetMinSize( wxSize( 300,-1 ) );
 	m_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxTE_MULTILINE|wxTE_PROCESS_ENTER|wxTE_RICH|wxTE_RICH2|wxTE_WORDWRAP );
+	m_prompt->DragAcceptFiles( true );
 	m_prompt->SetMinSize( wxSize( -1,100 ) );
 
 	bSizer82->Add( m_prompt, 1, wxALL|wxEXPAND, 1 );
 
 	m_neg_prompt = new wxTextCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxTE_MULTILINE|wxTE_PROCESS_ENTER|wxTE_RICH|wxTE_RICH2|wxTE_WORDWRAP );
 	m_neg_prompt->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+	m_neg_prompt->DragAcceptFiles( true );
 	m_neg_prompt->SetMinSize( wxSize( -1,100 ) );
 
 	bSizer82->Add( m_neg_prompt, 1, wxALL|wxEXPAND, 1 );
@@ -1384,9 +1386,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
 	m_joblist->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnJobListItemSelection ), NULL, this );
 	m_text2img_panel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
+	m_prompt->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_bpButton25->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
+	m_staticText70->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_filePickerDiffusionModel->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
 	diffusionFlashAttn->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onDiffusionFlashAttn ), NULL, this );
 	m_cleanDiffusionModel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
@@ -1458,9 +1463,12 @@ mainUI::~mainUI()
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler( mainUI::onContextMenu ), NULL, this );
 	m_joblist->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( mainUI::OnJobListItemSelection ), NULL, this );
 	m_text2img_panel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
+	m_prompt->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_neg_prompt->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_bpButton25->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
+	m_staticText70->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_filePickerDiffusionModel->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
 	diffusionFlashAttn->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onDiffusionFlashAttn ), NULL, this );
 	m_cleanDiffusionModel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
@@ -1738,7 +1746,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_path_panel->SetSizer( sizer2011 );
 	m_path_panel->Layout();
 	sizer2011->Fit( m_path_panel );
-	m_notebook1696->AddPage( m_path_panel, _("Paths"), true );
+	m_notebook1696->AddPage( m_path_panel, _("Paths"), false );
 	m_settings = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* sizer2017;
 	sizer2017 = new wxBoxSizer( wxVERTICAL );
@@ -1775,7 +1783,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	m_staticText16 = new wxStaticText( m_settings, wxID_ANY, _("Output images format"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText16->Wrap( -1 );
-	m_staticText16->SetMinSize( wxSize( 230,-1 ) );
+	m_staticText16->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer10->Add( m_staticText16, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -1785,25 +1793,53 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_image_type->SetSelection( 0 );
 	bSizer10->Add( m_image_type, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_image_quality = new wxSlider( m_settings, wxID_ANY, 95, 0, 100, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL );
-	m_image_quality->SetToolTip( _("Image output quality, default: 90%") );
-
-	bSizer10->Add( m_image_quality, 0, wxALL, 5 );
-
-	m_image_quality_spin = new wxSpinCtrl( m_settings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100, 95 );
-	bSizer10->Add( m_image_quality_spin, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
-
-
-	sizer2017->Add( bSizer10, 0, wxALL, 5 );
-
-	wxBoxSizer* bSizer72;
-	bSizer72 = new wxBoxSizer( wxVERTICAL );
-
 	m_staticText38 = new wxStaticText( m_settings, wxID_ANY, _("PNG meta data not supported yet"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
 	m_staticText38->Wrap( -1 );
 	m_staticText38->SetFont( wxFont( 8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_LIGHT, false, wxEmptyString ) );
 
-	bSizer72->Add( m_staticText38, 0, wxALL|wxEXPAND, 5 );
+	bSizer10->Add( m_staticText38, 0, wxALIGN_CENTER_HORIZONTAL|wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2017->Add( bSizer10, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer112;
+	bSizer112 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText61 = new wxStaticText( m_settings, wxID_ANY, _("JPEG quality"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText61->Wrap( -1 );
+	m_staticText61->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer112->Add( m_staticText61, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_image_quality = new wxSlider( m_settings, wxID_ANY, 95, 0, 100, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_LABELS );
+	m_image_quality->SetToolTip( _("Image output quality, default: 90%") );
+	m_image_quality->SetMinSize( wxSize( 250,-1 ) );
+
+	bSizer112->Add( m_image_quality, 0, wxALL, 5 );
+
+
+	sizer2017->Add( bSizer112, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer113;
+	bSizer113 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText62 = new wxStaticText( m_settings, wxID_ANY, _("PNG compression level"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText62->Wrap( -1 );
+	m_staticText62->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer113->Add( m_staticText62, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_png_compression = new wxSlider( m_settings, wxID_ANY, 0, 0, 9, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_LABELS );
+	m_png_compression->SetToolTip( _("Image output quality, default: 90%") );
+	m_png_compression->SetMinSize( wxSize( 250,-1 ) );
+
+	bSizer113->Add( m_png_compression, 0, wxALL, 5 );
+
+
+	sizer2017->Add( bSizer113, 0, wxEXPAND|wxALL, 5 );
+
+	wxBoxSizer* bSizer72;
+	bSizer72 = new wxBoxSizer( wxVERTICAL );
 
 
 	sizer2017->Add( bSizer72, 0, wxEXPAND, 5 );
@@ -1813,7 +1849,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	m_staticText191 = new wxStaticText( m_settings, wxID_ANY, _("Number of CPU cores"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText191->Wrap( -1 );
-	m_staticText191->SetMinSize( wxSize( 230,-1 ) );
+	m_staticText191->SetMinSize( wxSize( 200,-1 ) );
 
 	bSizer22->Add( m_staticText191, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -1831,7 +1867,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_settings->SetSizer( sizer2017 );
 	m_settings->Layout();
 	sizer2017->Fit( m_settings );
-	m_notebook1696->AddPage( m_settings, _("Diffusion"), false );
+	m_notebook1696->AddPage( m_settings, _("Diffusion"), true );
 	m_settings_ui = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer30;
 	bSizer30 = new wxBoxSizer( wxVERTICAL );
@@ -1870,12 +1906,6 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_language->SetMinSize( wxSize( 160,-1 ) );
 
 	bSizer100->Add( m_language, 0, wxALL, 5 );
-
-	m_staticText51 = new wxStaticText( m_settings_ui, wxID_ANY, _("Restart required"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_staticText51->Wrap( -1 );
-	m_staticText51->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-
-	bSizer100->Add( m_staticText51, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer30->Add( bSizer100, 0, wxEXPAND|wxALL, 5 );
@@ -1962,7 +1992,15 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_image_quality->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
-	m_image_quality_spin->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( Settings::OnImgQualitySpin ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_show_notifications->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
 	m_save->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
@@ -1990,7 +2028,15 @@ Settings::~Settings()
 	m_image_quality->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
 	m_image_quality->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnImgQualityScroll ), NULL, this );
-	m_image_quality_spin->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( Settings::OnImgQualitySpin ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_png_compression->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_show_notifications->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
 	m_save->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );

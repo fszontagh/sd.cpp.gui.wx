@@ -354,9 +354,11 @@ class Settings : public wxFrame
 		wxCheckBox* m_save_all_image;
 		wxStaticText* m_staticText16;
 		wxChoice* m_image_type;
-		wxSlider* m_image_quality;
-		wxSpinCtrl* m_image_quality_spin;
 		wxStaticText* m_staticText38;
+		wxStaticText* m_staticText61;
+		wxSlider* m_image_quality;
+		wxStaticText* m_staticText62;
+		wxSlider* m_png_compression;
 		wxStaticText* m_staticText191;
 		wxSpinCtrl* m_threads;
 		wxPanel* m_settings_ui;
@@ -365,7 +367,6 @@ class Settings : public wxFrame
 		wxSpinCtrl* m_notification_timeout;
 		wxStaticText* m_staticText50;
 		wxChoice* m_language;
-		wxStaticText* m_staticText51;
 		wxPanel* m_panel18;
 		wxCheckBox* m_enableCivitai;
 		wxStaticText* m_staticText42;
@@ -377,7 +378,7 @@ class Settings : public wxFrame
 		virtual void OnOpenFolder( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnTAESDHelpClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImgQualityScroll( wxScrollEvent& event ) { event.Skip(); }
-		virtual void OnImgQualitySpin( wxSpinEvent& event ) { event.Skip(); }
+		virtual void OnPngCompressionScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }

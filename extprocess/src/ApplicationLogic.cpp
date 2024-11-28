@@ -409,10 +409,18 @@ void ApplicationLogic::Img2img() {
 }
 
 void ApplicationLogic::Upscale() {
+    uint8_t* input_image_buffer   = NULL;
     sd_image_t results;
     int c = 0;
     int w, h;
-    stbi_uc* input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &w, &h, &c, 3);
+    input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &w, &h, &c, 3);
+
+    if (input_image_buffer == NULL) {
+        std::cerr << "Failed to load image: " << this->currentItem->initial_image << std::endl;
+        this->currentItem->status_message = "Failed to load image: " + this->currentItem->initial_image;
+        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        return;
+    }
     sd_image_t control_image    = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
     stbi_image_free(input_image_buffer);
 
@@ -423,6 +431,7 @@ void ApplicationLogic::Upscale() {
 
     if (results.data == NULL) {
         this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        free(input_image_buffer);
         return;
     }
 
@@ -436,6 +445,7 @@ void ApplicationLogic::Upscale() {
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
     this->currentItem->finished_at = finished_at;
     this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+    free(input_image_buffer);
 }
 
 std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
@@ -449,10 +459,12 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         return "";
     }
 
-    std::string filename = this->tempPath + "/" + generateRandomFilename(".jpg");
+    std::string filename = this->tempPath + "/" + generateRandomFilename(".png");
 
-    if (stbi_write_jpg(filename.c_str(), image.width, image.height, 3, image.data, 100) == 0) {
-        std::cerr << __FILE__ << ":" << __LINE__ << ": stbi_write_jpg failed: " << filename.c_str() << std::endl;
+    stbi_write_png_compression_level = 0;
+
+    if (stbi_write_png(filename.c_str(), image.width, image.height, 3, image.data, 0) == 0) {
+        std::cerr << __FILE__ << ":" << __LINE__ << ": stbi_write_png failed: " << filename.c_str() << std::endl;
         return "";
     }
     std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;
