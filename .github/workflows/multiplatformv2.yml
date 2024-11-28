@@ -202,7 +202,7 @@ jobs:
   package-installer:
     name: Create Windows Installer
     runs-on: windows-2019
-    needs: [build-windows-cpu, build-windows-cuda, build-windows-hipblas]
+    needs: [build-windows-cpu, build-windows-cuda, build-windows-hipblas, build-windows-vulkan]
     steps:
       - name: Check out code
         uses: actions/checkout@v3        
