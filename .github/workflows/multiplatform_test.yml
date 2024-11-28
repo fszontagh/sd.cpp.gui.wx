@@ -33,17 +33,6 @@ jobs:
             targets:
               - stable_diffusion_cpp_hipblas
             cache-key: windows-hipblas
-            extra_steps:
-              - name: Install rocm-toolkit
-                id: rocm-toolkit
-                uses: Cyberhan123/rocm-toolkit@v0.1.0
-                with:
-                  rocm: "5.5.0"
-              - name: Install Ninja
-                id: install-ninja
-                uses: urkle/action-get-ninja@v1
-                with:
-                  version: 1.11.1
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -54,6 +43,7 @@ jobs:
         with:
           path: build/Release/*.dll
           key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: ${{ matrix.variant.cache-key }}-
 
       - name: Install Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -61,9 +51,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install conan
 
-      - name: Run extra steps
-        if: steps.cache-build.outputs.cache-hit != 'true' && ${{ matrix.variant.extra_steps && matrix.variant.extra_steps != '' }}
-        run: ${{ toJson(matrix.variant.extra_steps) }}
+      - name: Install CUDA Toolkit
+        if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: "12.2.0"
+
+      - name: Install ROCm Toolkit
+        if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
+        uses: Cyberhan123/rocm-toolkit@v0.1.0
+        with:
+          rocm: "5.5.0"
+
+      - name: Install Ninja
+        if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
+        uses: urkle/action-get-ninja@v1
+        with:
+          version: 1.11.1
 
       - name: Set up Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -83,9 +87,10 @@ jobs:
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
           cd build
-          {% for target in matrix.variant.targets %}
-          cmake --build . --config Release --target {{ target }}
-          {% endfor %}
+          $targets = @${{ toJson(matrix.variant.targets) }}
+          foreach ($target in $targets) {
+              cmake --build . --config Release --target $target
+          }
 
   package-installer:
     name: Create Windows Installer
