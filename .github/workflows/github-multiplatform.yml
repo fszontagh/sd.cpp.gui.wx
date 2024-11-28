@@ -1,4 +1,4 @@
-name: Build and Package and Relase
+name: Build and Package and Relase - multi OS
 
 on:
     workflow_dispatch:
