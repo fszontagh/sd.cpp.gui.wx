@@ -48,19 +48,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Compute cache key
-        id: compute-cache-key
-        run: |
-          HASH=$(sha256sum cmake/sdcpp_version.cmake | awk '{ print $1 }')
-          echo "CACHE_KEY=${{ matrix.variant.cache-key }}-$HASH" >> $GITHUB_ENV
-
       - name: Cache build outputs
         id: cache-build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/Release/*.dll
-          key: ${{ env.CACHE_KEY }}
-          restore-keys: ${{ matrix.variant.cache-key }}-
+          key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
 
       - name: Install Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -69,7 +62,7 @@ jobs:
           pip install conan
 
       - name: Run extra steps
-        if: steps.cache-build.outputs.cache-hit != 'true' && ${{ matrix.variant.extra_steps != '' }}
+        if: steps.cache-build.outputs.cache-hit != 'true' && ${{ matrix.variant.extra_steps && matrix.variant.extra_steps != '' }}
         run: ${{ toJson(matrix.variant.extra_steps) }}
 
       - name: Set up Conan
@@ -103,32 +96,33 @@ jobs:
         uses: actions/checkout@v3        
 
       - name: Restore CPU Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build-cpu/
-          key: windows-cpu-${{ env.CACHE_KEY }}
+          key: windows-cpu-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: windows-cpu-
 
       - name: Restore CUDA Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build-cuda/
-          key: windows-cuda-${{ env.CACHE_KEY }}
+          key: windows-cuda-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: windows-cuda-
 
       - name: Restore HIPBLAS Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build-hipblas/
-          key: windows-hipblas-${{ env.CACHE_KEY }}
+          key: windows-hipblas-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: windows-hipblas-
 
       - name: Merge Build Outputs
         run: |
           mkdir build
-          copy build-cpu/* build/ /y
-          copy build-cuda/* build/ /y
-          copy build-hipblas/* build/ /y
+          mkdir build/Release
+          copy build-cpu/* build/Release/ /y
+          copy build-cuda/* build/Release/ /y
+          copy build-hipblas/* build/Release/ /y
 
       - name: Generate NSIS Installer
         run: |
