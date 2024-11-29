@@ -99,7 +99,15 @@ jobs:
         run: |
           cd build
           cmake --build . --config Release --target ${{ matrix.variant.targets }}
-          
+
+      - name: Upload Build Outputs
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.variant.cache-key }}
+          path: build/Release/*.dll
+          compression-level: 0
+          overwrite: true          
 
   package-installer:
     name: Create Windows Installer
@@ -107,42 +115,38 @@ jobs:
     needs: [build-windows]
     steps:
       - name: Check out code
-        uses: actions/checkout@v3        
+        uses: actions/checkout@v3
 
-      - name: Restore CPU AVX Build Cache
-        uses: actions/cache@v4
+      - name: Restore CPU AVX Build
+        uses: actions/download-artifact@v4
         with:
-          path: build-avx/
-          key: windows-avx-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-avx-
+          name: windows-avx
+          path: build-avx/        
 
-      - name: Restore CPU AVX2 Build Cache
-        uses: actions/cache@v4
+
+      - name: Restore CPU AVX2 Build
+        uses: actions/download-artifact@v4
         with:
+          name: windows-avx2
           path: build-avx2/
-          key: windows-avx2-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-avx2-
 
-      - name: Restore CPU AVX512 Build Cache
-        uses: actions/cache@v4
+      - name: Restore CPU AVX512 Build
+        uses: actions/download-artifact@v4
         with:
+          name: windows-avx512
           path: build-avx512/
-          key: windows-avx512-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-avx-
 
-      - name: Restore CUDA Build Cache
-        uses: actions/cache@v4
+      - name: Restore CUDA Build
+        uses: actions/download-artifact@v4
         with:
+          name: windows-cuda
           path: build-cuda/
-          key: windows-cuda-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-cuda-
 
-      - name: Restore HIPBLAS Build Cache
-        uses: actions/cache@v4
+      - name: Restore HIPBLAS Build
+        uses: actions/download-artifact@v4
         with:
+          name: windows-hipblas
           path: build-hipblas/
-          key: windows-hipblas-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-hipblas-
 
       - name: Merge Build Outputs
         run: |
@@ -157,7 +161,7 @@ jobs:
       - name: Generate NSIS Installer
         run: |
           cd build
-          cmake --configure .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release --target package
 
       - name: Release NSIS Installer
