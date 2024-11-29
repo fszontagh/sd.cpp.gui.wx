@@ -38,7 +38,7 @@ jobs:
           conan install .. -s compiler.cppstd=17 --build=never          
 
   build-windows:
-    name: Build on Windows with ${{ matrix.variant.name }}
+    name: Build on Windows
     needs: [prepare-conan-cache]
     runs-on: windows-2019
     strategy:
@@ -185,7 +185,6 @@ jobs:
 
       - name: Set up Conan
         run: |
-          mkdir build
           cd build
           conan profile detect
           conan install .. -s compiler.cppstd=17 --build=never          
@@ -207,6 +206,7 @@ jobs:
             build/*.sha256
 
   build-ubuntu:
+    name: Build Ubuntu Releases
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
@@ -269,8 +269,8 @@ jobs:
         run: |
           sudo apt update >/dev/null
           sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)" >/dev/null
-          sudo apt update >/dev/null
           sudo dpkg -i /tmp/amdgpu-install.deb
+          sudo apt update >/dev/null          
           sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
           sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
           /opt/rocm/lib
