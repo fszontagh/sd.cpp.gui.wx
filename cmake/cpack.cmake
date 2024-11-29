@@ -139,6 +139,7 @@ if(WIN32)
 
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
+
     
 elseif(UNIX AND NOT APPLE)
 
@@ -184,14 +185,31 @@ elseif(APPLE)
     #set(CPACK_DMG_DS_STORE_FILE ${CMAKE_SOURCE_DIR}/platform/mac/ds_store)
 endif()
 
+    # set components details
+    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_NAME "${CMAKE_PROJECT_NAME}")
+    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION}")
+    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_GROUP "Stable Diffusion GUI")
+
+    set(CPACK_COMPONENT_libsdcpp_avx_NAME "SD C++ CPU - AVX")
+    set(CPACK_COMPONENT_libsdcpp_avx_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX support")
+
+    set(CPACK_COMPONENT_libsdcpp_avx2_NAME "SD C++ CPU - AVX2")
+    set(CPACK_COMPONENT_libsdcpp_avx2_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX2 support")
+
+    set(CPACK_COMPONENT_libsdcpp_avx512_NAME "SD C++ CPU - AVX512")
+    set(CPACK_COMPONENT_libsdcpp_avx512_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX512 support")
+
+    set(CPACK_COMPONENT_libsdcpp_cuda_NAME "SD C++ GPU - CUDA")
+    set(CPACK_COMPONENT_libsdcpp_cuda_DESCRIPTION "Stable Diffusion C++ GPU backend with CUDA support")
+
+    set(CPACK_COMPONENT_libsdcpp_hipblas_NAME "SD C++ GPU - HIPBLAS")
+    set(CPACK_COMPONENT_libsdcpp_hipblas_DESCRIPTION "Stable Diffusion C++ GPU backend with HIPBLAS support")
+
+    set(CPACK_COMPONENT_libsdcpp_vulkan_NAME "SD C++ GPU - Vulkan")
+    set(CPACK_COMPONENT_libsdcpp_vulkan_DESCRIPTION "Stable Diffusion C++ GPU backend with Vulkan support")
 
 include(CPack)
 
-
-cpack_add_component_group(backends
-	DISPLAY_NAME "SD.cpp backends"
-	DESCRIPTION "The Stable Diffusion C++ backends"
-)
 
 cpack_add_component("${CMAKE_PROJECT_NAME}"
 	DISPLAY_NAME "SD C++ GUI"
@@ -205,49 +223,5 @@ if (WIN32)
 	set(EPREFIX "${CMAKE_BUILD_TYPE}/")
 endif()
 
-
-
-
-if (SDGUI_AVX OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_avx
-        DISPLAY_NAME "SD C++ -AVX"
-        DESCRIPTION "SD CPU backend with AVX CPU feature"
-    )
-endif()
-
-if (SDGUI_AVX2 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx2${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_avx2
-        DISPLAY_NAME "SD C++ -AVX2"
-        DESCRIPTION "SD CPU backend with AVX2 CPU feature"
-    )
-endif()
-
-if (SDGUI_AVX512 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx512${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_avx512
-        DISPLAY_NAME "SD C++ -AVX512"
-        DESCRIPTION "SD CPU backend with AVX512 CPU feature"
-    )
-endif()
-
-if (SDGUI_CUBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_cuda${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_cuda
-        DISPLAY_NAME "SD C++ -CUDA"
-        DESCRIPTION "SD GPU backend with CUDA GPU feature"
-    )
-endif()
-
-if (SDGUI_HIPBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_hipblas${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_hipblas
-        DISPLAY_NAME "SD C++ -HIPBLAS"
-        DESCRIPTION "SD GPU backend with AMD GPU feature"
-    )
-endif()
-
-if (SDGUI_VULKAN OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_vulkan${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    cpack_add_component(libsdcpp_vulkan
-        DISPLAY_NAME "SD C++ -VULKAN"
-        DESCRIPTION "SD GPU backend with VULKAN feature"
-    )
-endif()
 
 message(STATUS "CPACK_COMPONENTS_ALL: ${CPACK_COMPONENTS_ALL}")
