@@ -1,19 +1,25 @@
 set(EPROCESS_BINARY_NAME "${PROJECT_BINARY_NAME}_diffuser")
 
+math(EXPR SHARED_MEMORY_SIZE "1024*1024*24")
+message(STATUS "SHARED_MEMORY_SIZE: ${SHARED_MEMORY_SIZE}")
+
+
 configure_file(src/config.hpp.in config.hpp)
 
 
 set(SOURCES "src/main.cpp")
 
-if (WIN32)
+if (MSVC)
     list(APPEND SOURCES ${CMAKE_SOURCE_DIR}/minimal.rc)
 endif()
 
 add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp)
 
 
-if (WIN32)
-    target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:6291456)
+if (MSVC)
+    math(EXPR STACK_SIZE "${SHARED_MEMORY_SIZE} + ((1024*1024)*4)")
+    message(STATUS "STACK_SIZE: ${STACK_SIZE}")
+    target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:${STACK_SIZE})
     target_compile_options(${EPROCESS_BINARY_NAME} PRIVATE /Zc:__cplusplus)
 endif()
 

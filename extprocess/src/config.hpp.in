@@ -10,7 +10,7 @@ inline const char* EPROCESS_BINARY_NAME = "@EPROCESS_BINARY_NAME@.exe";
 inline const char* EPROCESS_BINARY_NAME = "@EPROCESS_BINARY_NAME@";
 #endif
 inline const char* SHARED_MEMORY_PATH         = "/@PROJECT_NAME@";
-inline const unsigned int SHARED_MEMORY_SIZE  = (1024 * 1024) * 6;
+inline const unsigned int SHARED_MEMORY_SIZE  = @SHARED_MEMORY_SIZE@;
 inline const unsigned int EPROCESS_SLEEP_TIME = 500;
 inline const unsigned int EPROCESS_STD_BUFFER = 10240;
 

@@ -193,6 +193,7 @@ jobs:
         run: |
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default
+          cmake --build . --config Release --target po-compile
           cmake --build . --config Release --target package
 
       - name: Release NSIS Installer
@@ -338,6 +339,8 @@ jobs:
       - name: Build and Package DEB and AppImage
         run: |
           cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --target po-compile
           cmake --build . --config Release --target package
           cmake --build . --config Release --target AppImage      
       - name: Release Linux packages
