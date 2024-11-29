@@ -4,8 +4,42 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  prepare-conan-cache: 
+    name: Prepare Conan cache
+    runs-on: windows-2019
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.conan2
+            build\generators
+            CMakeUserPresets.json
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-conan
+      
+      - name: Install Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'      
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+
+      - name: Set up Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          mkdir build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=never          
+
   build-windows:
     name: Build on Windows with ${{ matrix.variant.name }}
+    needs: [prepare-conan-cache]
     runs-on: windows-2019
     strategy:
       matrix:
@@ -64,9 +98,15 @@ jobs:
 
       - name: Install CUDA Toolkit
         if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
+        id: cuda-toolkit
         uses: Jimver/cuda-toolkit@v0.2.11
         with:
           cuda: "12.2.0"
+          sub-packages: '["nvcc", "visual_studio_integration"]'
+          method: "network"
+      - name: Print cuda version
+        run: |
+          echo "Installed cuda version is: ${{steps.cuda-toolkit.outputs.cuda}}"
 
       - name: Install ROCm Toolkit
         if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
@@ -152,9 +192,9 @@ jobs:
         run: |
           mkdir build
           mkdir build/Release
-          if (Test-Path build-avx) { Copy-Item build-cpu/* build/Release/ -Force }
-          if (Test-Path build-avx2) { Copy-Item build-cpu/* build/Release/ -Force }          
-          if (Test-Path build-avx512) { Copy-Item build-cpu/* build/Release/ -Force }          
+          if (Test-Path build-avx) { Copy-Item build-avx/* build/Release/ -Force }
+          if (Test-Path build-avx2) { Copy-Item build-avx2/* build/Release/ -Force }          
+          if (Test-Path build-avx512) { Copy-Item build-avx512/* build/Release/ -Force }          
           if (Test-Path build-cuda) { Copy-Item build-cuda/* build/Release/ -Force }
           if (Test-Path build-hipblas) { Copy-Item build-hipblas/* build/Release/ -Force }
 
