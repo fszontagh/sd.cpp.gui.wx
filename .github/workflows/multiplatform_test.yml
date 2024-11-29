@@ -45,6 +45,16 @@ jobs:
           path: build/Release/*.dll
           key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: ${{ matrix.variant.cache-key }}-
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: |
+           ~/.conan
+           build\generators
+           CMakeUserPresets.json
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-conan
 
       - name: Install Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -71,7 +81,7 @@ jobs:
           version: 1.11.1
 
       - name: Set up Conan
-        if: steps.cache-build.outputs.cache-hit != 'true'
+        if: steps.cache-build.outputs.cache-hit != 'true' && steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           mkdir build
           cd build
@@ -99,12 +109,26 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3        
 
-      - name: Restore CPU Build Cache
+      - name: Restore CPU AVX Build Cache
         uses: actions/cache@v4
         with:
-          path: build-cpu/
-          key: windows-cpu-${{ hashFiles('cmake/sdcpp_version.cmake') }}
-          restore-keys: windows-cpu-
+          path: build-avx/
+          key: windows-avx-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: windows-avx-
+
+      - name: Restore CPU AVX2 Build Cache
+        uses: actions/cache@v4
+        with:
+          path: build-avx2/
+          key: windows-avx2-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: windows-avx2-
+
+      - name: Restore CPU AVX512 Build Cache
+        uses: actions/cache@v4
+        with:
+          path: build-avx512/
+          key: windows-avx512-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: windows-avx-
 
       - name: Restore CUDA Build Cache
         uses: actions/cache@v4
@@ -124,9 +148,11 @@ jobs:
         run: |
           mkdir build
           mkdir build/Release
-          copy build-cpu/* build/Release/ /y
-          copy build-cuda/* build/Release/ /y
-          copy build-hipblas/* build/Release/ /y
+          if (Test-Path build-avx) { Copy-Item build-cpu/* build/Release/ -Force }
+          if (Test-Path build-avx2) { Copy-Item build-cpu/* build/Release/ -Force }          
+          if (Test-Path build-avx512) { Copy-Item build-cpu/* build/Release/ -Force }          
+          if (Test-Path build-cuda) { Copy-Item build-cuda/* build/Release/ -Force }
+          if (Test-Path build-hipblas) { Copy-Item build-hipblas/* build/Release/ -Force }
 
       - name: Generate NSIS Installer
         run: |
