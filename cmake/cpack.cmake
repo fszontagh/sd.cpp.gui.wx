@@ -185,36 +185,49 @@ elseif(APPLE)
     #set(CPACK_DMG_DS_STORE_FILE ${CMAKE_SOURCE_DIR}/platform/mac/ds_store)
 endif()
 
-    # set components details
-    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_NAME "${CMAKE_PROJECT_NAME}")
-    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION}")
-    set(CPACK_COMPONENT_${CMAKE_PROJECT_NAME}_GROUP "Stable Diffusion GUI")
-
-    set(CPACK_COMPONENT_libsdcpp_avx_NAME "SD C++ CPU - AVX")
-    set(CPACK_COMPONENT_libsdcpp_avx_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX support")
-
-    set(CPACK_COMPONENT_libsdcpp_avx2_NAME "SD C++ CPU - AVX2")
-    set(CPACK_COMPONENT_libsdcpp_avx2_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX2 support")
-
-    set(CPACK_COMPONENT_libsdcpp_avx512_NAME "SD C++ CPU - AVX512")
-    set(CPACK_COMPONENT_libsdcpp_avx512_DESCRIPTION "Stable Diffusion C++ CPU backend with AVX512 support")
-
-    set(CPACK_COMPONENT_libsdcpp_cuda_NAME "SD C++ GPU - CUDA")
-    set(CPACK_COMPONENT_libsdcpp_cuda_DESCRIPTION "Stable Diffusion C++ GPU backend with CUDA support")
-
-    set(CPACK_COMPONENT_libsdcpp_hipblas_NAME "SD C++ GPU - HIPBLAS")
-    set(CPACK_COMPONENT_libsdcpp_hipblas_DESCRIPTION "Stable Diffusion C++ GPU backend with HIPBLAS support")
-
-    set(CPACK_COMPONENT_libsdcpp_vulkan_NAME "SD C++ GPU - Vulkan")
-    set(CPACK_COMPONENT_libsdcpp_vulkan_DESCRIPTION "Stable Diffusion C++ GPU backend with Vulkan support")
 
 include(CPack)
 
 
-cpack_add_component("${CMAKE_PROJECT_NAME}"
-	DISPLAY_NAME "SD C++ GUI"
-	DESCRIPTION "Stable Diffusion CPP Desktop Graphical User Interface"
-)
+    cpack_add_component("${CMAKE_PROJECT_NAME}"
+        DISPLAY_NAME "SD C++ GUI"
+        DESCRIPTION "Stable Diffusion CPP Desktop Graphical User Interface"
+    )
+
+    cpack_add_component(libsdcpp_avx
+        DISPLAY_NAME "SD C++ -AVX"
+        DESCRIPTION "SD CPU backend with AVX CPU feature"
+    )
+
+
+    cpack_add_component(libsdcpp_avx2
+        DISPLAY_NAME "SD C++ -AVX2"
+        DESCRIPTION "SD CPU backend with AVX2 CPU feature"
+    )
+
+    cpack_add_component(libsdcpp_avx512
+        DISPLAY_NAME "SD C++ -AVX512"
+        DESCRIPTION "SD CPU backend with AVX512 CPU feature"
+    )
+
+
+    cpack_add_component(libsdcpp_cuda
+        DISPLAY_NAME "SD C++ -CUDA"
+        DESCRIPTION "SD GPU backend with CUDA GPU feature"
+    )
+
+
+    cpack_add_component(libsdcpp_hipblas
+        DISPLAY_NAME "SD C++ -HIPBLAS"
+        DESCRIPTION "SD GPU backend with AMD GPU feature"
+    )
+
+
+
+    cpack_add_component(libsdcpp_vulkan
+        DISPLAY_NAME "SD C++ -VULKAN"
+        DESCRIPTION "SD GPU backend with VULKAN feature"
+    )
 
 
 set(EPREFIX "")
