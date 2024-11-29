@@ -208,42 +208,42 @@ endif()
 
 
 
-if (SDGUI_AVX)
+if (SDGUI_AVX OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_avx
         DISPLAY_NAME "SD C++ -AVX"
         DESCRIPTION "SD CPU backend with AVX CPU feature"
     )
 endif()
 
-if (SDGUI_AVX2)
+if (SDGUI_AVX2 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx2${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_avx2
         DISPLAY_NAME "SD C++ -AVX2"
         DESCRIPTION "SD CPU backend with AVX2 CPU feature"
     )
 endif()
 
-if (SDGUI_AVX512)
+if (SDGUI_AVX512 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx512${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_avx512
         DISPLAY_NAME "SD C++ -AVX512"
         DESCRIPTION "SD CPU backend with AVX512 CPU feature"
     )
 endif()
 
-if (SDGUI_CUBLAS)
+if (SDGUI_CUBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_cuda${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_cuda
         DISPLAY_NAME "SD C++ -CUDA"
         DESCRIPTION "SD GPU backend with CUDA GPU feature"
     )
 endif()
 
-if (SDGUI_HIPBLAS)
+if (SDGUI_HIPBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_hipblas${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_hipblas
         DISPLAY_NAME "SD C++ -HIPBLAS"
         DESCRIPTION "SD GPU backend with AMD GPU feature"
     )
 endif()
 
-if (SDGUI_VULKAN)
+if (SDGUI_VULKAN OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_vulkan${CMAKE_SHARED_LIBRARY_SUFFIX}")
     cpack_add_component(libsdcpp_vulkan
         DISPLAY_NAME "SD C++ -VULKAN"
         DESCRIPTION "SD GPU backend with VULKAN feature"
