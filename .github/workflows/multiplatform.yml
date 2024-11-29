@@ -1,4 +1,4 @@
-name: MATRIX build and package - windows & cache
+name: Release and Check build on multiple platforms
 
 on:
   workflow_dispatch:
@@ -349,8 +349,8 @@ jobs:
             build/_deps/wxwidgets-src
             build/_deps/wxwidgets-build
             build/_deps/wxwidgets-subbuild
-          key: ${{ runner.os }}-wxwidgets-${{ hashFiles('cmake/wxWidgets.cmake') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ matrix.os }}-wxwidgets-${{ hashFiles('cmake/wxWidgets.cmake') }}
+          restore-keys: ${{ matrix.os }}-wxwidgets
 
       - name: Restore builds
         uses: actions/download-artifact@v4
