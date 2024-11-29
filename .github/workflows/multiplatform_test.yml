@@ -104,7 +104,9 @@ jobs:
           cuda: "12.2.0"
           sub-packages: '["nvcc", "visual_studio_integration"]'
           method: "network"
+
       - name: Print cuda version
+        if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
         run: |
           echo "Installed cuda version is: ${{steps.cuda-toolkit.outputs.cuda}}"
 
@@ -157,46 +159,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Restore CPU AVX Build
+      - name: Resore builds
         uses: actions/download-artifact@v4
         with:
-          name: windows-avx
-          path: build-avx/        
-
-
-      - name: Restore CPU AVX2 Build
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-avx2
-          path: build-avx2/
-
-      - name: Restore CPU AVX512 Build
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-avx512
-          path: build-avx512/
-
-      - name: Restore CUDA Build
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-cuda
-          path: build-cuda/
-
-      - name: Restore HIPBLAS Build
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-hipblas
-          path: build-hipblas/
-
-      - name: Merge Build Outputs
-        run: |
-          mkdir build
-          mkdir build/Release
-          if (Test-Path build-avx) { Copy-Item build-avx/* build/Release/ -Force }
-          if (Test-Path build-avx2) { Copy-Item build-avx2/* build/Release/ -Force }          
-          if (Test-Path build-avx512) { Copy-Item build-avx512/* build/Release/ -Force }          
-          if (Test-Path build-cuda) { Copy-Item build-cuda/* build/Release/ -Force }
-          if (Test-Path build-hipblas) { Copy-Item build-hipblas/* build/Release/ -Force }
+          path: build
+          pattern: windows-*
+          merge-multiple: true
 
       - name: Generate NSIS Installer
         run: |
@@ -219,13 +187,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        variant: [CPU, ROCM, CUDA]
+        variant: [CPU, HIPBLAS, CUDA]
     steps:
       - name: Set up build environment
         run: |
           echo "Running on OS: ${{ matrix.os }}, Variant: ${{ matrix.variant }}"
         env:
           DEBIAN_FRONTEND: noninteractive
+
+      - name: Check out code
+        uses: actions/checkout@v3
 
       - name: Cache builds
         uses: actions/cache@v3
@@ -236,7 +207,7 @@ jobs:
           restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
           
       - name: Maximize build space
-        if: ${{ matrix.variant  != 'CPU' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant  == 'HIPBLAS' }} && ${{ matrix.variant == 'CUDA' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: AdityaGarg8/remove-unwanted-software@v4.1
         with:
           remove-android: 'true'
@@ -247,17 +218,15 @@ jobs:
           remove-large-packages: 'true'
           remove-swapfile: 'true'
 
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Install base dependencies
         if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt update
-          sudo apt install -y cmake build-essential ninja-build libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libsdl2-dev
+          sudo apt install -y fuse3 cmake gettext clang ninja-build git nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev >/dev/null
 
-      - name: ROCM installer
-        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+      - name: CACHE ROCM installer
+        if: ${{ matrix.variant == 'HIPBLAS' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache@v3
         id: ubuntu-rocm-installer
         with:
@@ -265,18 +234,18 @@ jobs:
           key: amdgpu-install-ubuntu-${{ matrix.os }}
 
       - name: Download ROCM installer
-        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'HIPBLAS' }} && ${{ steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo apt install -y wget
+          sudo apt install -y wget >/dev/null
           source /etc/lsb-release
           wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/${DISTRIB_CODENAME}/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install.deb          
 
       - name: Install ROCm toolkit
         if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
-          sudo apt update
-          sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
-          sudo apt update
+          sudo apt update >/dev/null
+          sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)" >/dev/null
+          sudo apt update >/dev/null
           sudo dpkg -i /tmp/amdgpu-install.deb
           sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
           sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
@@ -298,7 +267,7 @@ jobs:
           cd build
           if [ "${{ matrix.variant }}" = "CPU" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
-          elif [ "${{ matrix.variant }}" = "ROCM" ]; then
+          elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUBLAS=ON
