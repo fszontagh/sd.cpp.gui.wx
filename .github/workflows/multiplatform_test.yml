@@ -313,6 +313,7 @@ jobs:
 
   package-ubuntu:
     name: Release Linux packages
+    needs: [build-ubuntu]
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
