@@ -80,6 +80,7 @@ jobs:
           key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: ${{ matrix.variant.cache-key }}-
       - name: Cache Conan
+        if: steps.cache-build.outputs.cache-hit != 'true'
         id: cache-conan
         uses: actions/cache@v4
         with:
@@ -182,12 +183,12 @@ jobs:
             build/*.exe
             build/*.sha256
 
-  build:
-    runs-on: ubuntu-latest
+  build-ubuntu:
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
         variant: [CPU, HIPBLAS, CUDA]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Set up build environment
         run: |
@@ -207,7 +208,7 @@ jobs:
           restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
           
       - name: Maximize build space
-        if: ${{ matrix.variant  == 'HIPBLAS' }} && ${{ matrix.variant == 'CUDA' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA') && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: AdityaGarg8/remove-unwanted-software@v4.1
         with:
           remove-android: 'true'
@@ -226,7 +227,7 @@ jobs:
           sudo apt install -y fuse3 cmake gettext clang ninja-build git nvidia-cuda-toolkit build-essential libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev >/dev/null
 
       - name: CACHE ROCM installer
-        if: ${{ matrix.variant == 'HIPBLAS' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'HIPBLAS' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache@v3
         id: ubuntu-rocm-installer
         with:
@@ -234,14 +235,14 @@ jobs:
           key: amdgpu-install-ubuntu-${{ matrix.os }}
 
       - name: Download ROCM installer
-        if: ${{ matrix.variant == 'HIPBLAS' }} && ${{ steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'HIPBLAS' && steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt install -y wget >/dev/null
           source /etc/lsb-release
           wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/${DISTRIB_CODENAME}/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install.deb          
 
       - name: Install ROCm toolkit
-        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'ROCM' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt update >/dev/null
           sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)" >/dev/null
@@ -255,7 +256,7 @@ jobs:
           sudo ldconfig
 
       - name: Install CUDA toolkit
-        if: ${{ matrix.variant == 'CUDA' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'CUDA' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt update
           sudo apt install -y nvidia-cuda-toolkit
@@ -281,7 +282,7 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.variant }}
           path: build/*.so
           compression-level: 0
-          overwrite: true            
+          overwrite: true
 
       - name: Build and Package DEB and AppImage
         run: |
