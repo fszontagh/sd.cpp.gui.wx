@@ -79,6 +79,7 @@ jobs:
           path: build/Release/*.dll
           key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: ${{ matrix.variant.cache-key }}-
+
       - name: Cache Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
         id: cache-conan
@@ -144,7 +145,6 @@ jobs:
           cmake --build . --config Release --target ${{ matrix.variant.targets }}
 
       - name: Upload Build Outputs
-        if: steps.cache-build.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.variant.cache-key }}
