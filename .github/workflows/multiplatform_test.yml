@@ -213,3 +213,121 @@ jobs:
           files: |
             build/*.exe
             build/*.sha256
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        variant: [CPU, ROCM, CUDA]
+    steps:
+      - name: Set up build environment
+        run: |
+          echo "Running on OS: ${{ matrix.os }}, Variant: ${{ matrix.variant }}"
+        env:
+          DEBIAN_FRONTEND: noninteractive
+
+      - name: Cache builds
+        uses: actions/cache@v3
+        id: sd-cpp-cache
+        with:
+          path: build/*.so
+          key: ${{ matrix.os }}-build-${{ matrix.variant }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
+          
+      - name: Maximize build space
+        if: ${{ matrix.variant  != 'CPU' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        uses: AdityaGarg8/remove-unwanted-software@v4.1
+        with:
+          remove-android: 'true'
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          remove-large-packages: 'true'
+          remove-swapfile: 'true'
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install base dependencies
+        if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update
+          sudo apt install -y cmake build-essential ninja-build libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libsdl2-dev
+
+      - name: ROCM installer
+        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache@v3
+        id: ubuntu-rocm-installer
+        with:
+          path: /tmp/amdgpu-install.deb
+          key: amdgpu-install-ubuntu-${{ matrix.os }}
+
+      - name: Download ROCM installer
+        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt install -y wget
+          source /etc/lsb-release
+          wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/${DISTRIB_CODENAME}/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install.deb          
+
+      - name: Install ROCm toolkit
+        if: ${{ matrix.variant == 'ROCM' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update
+          sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)"
+          sudo apt update
+          sudo dpkg -i /tmp/amdgpu-install.deb
+          sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
+          sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
+          /opt/rocm/lib
+          /opt/rocm/lib64
+          EOF
+          sudo ldconfig
+
+      - name: Install CUDA toolkit
+        if: ${{ matrix.variant == 'CUDA' }} && ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update
+          sudo apt install -y nvidia-cuda-toolkit
+
+      - name: Configure & Build
+        if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir build
+          cd build
+          if [ "${{ matrix.variant }}" = "CPU" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
+          elif [ "${{ matrix.variant }}" = "ROCM" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
+          elif [ "${{ matrix.variant }}" = "CUDA" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUBLAS=ON
+          fi
+          cmake --build . --config Release
+
+      - name: Upload Build Outputs
+        if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.variant }}
+          path: build/*.so
+          compression-level: 0
+          overwrite: true            
+
+      - name: Build and Package DEB and AppImage
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+          cmake --build . --config Release --target AppImage
+
+      - name: Release Linux pacckages
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ""
+          draft: true
+          prerelease: true
+          files: |
+            build/*.deb
+            build/out/*.AppImage
+            build/*.tar.gz
+            build/*.sha256          
