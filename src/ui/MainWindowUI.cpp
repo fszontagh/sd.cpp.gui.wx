@@ -18,6 +18,7 @@
 #include "ver.hpp"
 #include "wx/colour.h"
 #include "wx/dir.h"
+#include "wx/file.h"
 #include "wx/fileconf.h"
 #include "wx/filefn.h"
 #include "wx/filename.h"
@@ -91,26 +92,32 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
-        if (BUILD_TYPE == "Release") {  // run it from PATH on unix & win
-            this->extprocessCommand = std::string(EPROCESS_BINARY_NAME);
-        } else {
-            this->extprocessCommand = "./extprocess/" + std::string(EPROCESS_BINARY_NAME);
-        }
 
-        wxFileName f(wxStandardPaths::Get().GetExecutablePath());
-        wxString appPath(f.GetPathWithSep());
+            // search the binary in the main app's path/extprocess
+            wxFileName f(wxStandardPaths::Get().GetExecutablePath());
+            f.AppendDir("extprocess");
+            f.SetName(EPROCESS_BINARY_NAME);
+            this->extprocessCommand = f.GetFullPath();
+            // if no binary in extprocess folder, search the binary in the main app's path
+            if (f.Exists() == false) {
+                f = wxFileName(wxStandardPaths::Get().GetExecutablePath());
+                f.SetName(EPROCESS_BINARY_NAME);
+                this->extprocessCommand = f.GetFullPath();
+            }
+            if (f.Exists() == false) {
+                this->disableExternalProcessHandling = true; // disable process handling
+                wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
+                this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));                
+                errorDialog.ShowModal();
+                this->TaskBar->Destroy();
+                delete this->cfg;
+                this->deInitLog();
+                this->Destroy();
+                return;
+            }
 
-        wxString commandFullPath = appPath + wxString::FromUTF8Unchecked(this->extprocessCommand.c_str());
 
-        this->extprocessCommand = commandFullPath.utf8_string();
 
-        if (std::filesystem::exists(this->extprocessCommand) == false) {
-            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
-            this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));
-            errorDialog.ShowModal();
-            this->Destroy();
-            return;
-        }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
         wxString dllFullPath  = appPath + wxString::FromUTF8Unchecked(dllName.c_str());
@@ -1720,10 +1727,7 @@ MainWindowUI::~MainWindowUI() {
     this->jobImagePreviews.clear();
     delete this->cfg;
     this->TaskBar->Destroy();
-
-    if (logfile.IsOpened()) {
-        logfile.Close();
-    }
+    this->deInitLog();
 }
 
 void MainWindowUI::loadControlnetList() {
@@ -2743,15 +2747,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             } break;
             case QM::QueueEvents::ITEM_MODEL_LOADED:  // MODEL_LOAD_DONE
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
-                this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
+                this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->model));
                 break;
             case QM::QueueEvents::ITEM_MODEL_LOAD_START:  // MODEL_LOAD_START
-                this->writeLog(wxString::Format(_("Model load started: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
+                this->writeLog(wxString::Format(_("Model load started: %s\n"), item->model));
                 break;
             case QM::QueueEvents::ITEM_MODEL_FAILED:  // MODEL_LOAD_ERROR
-                this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path));
+                this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->model));
                 title   = _("Model load failed");
-                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->params.model_path.empty() ? item->params.diffusion_model_path : item->params.model_path);
+                message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model);
                 this->ShowNotification(title, message);
                 break;
             case QM::QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
@@ -3940,7 +3944,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
         }
         if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
             std::cerr << "[GUI] Item " << item.id << " QM::QueueEvents::ITEM_FAILED" << std::endl;
-            //return true;
+            // return true;
         }
         if (itemPtr->status == QM::QueueStatus::FAILED) {
             std::cerr << "[GUI] Item " << item.id << " QM::QueueStatus::FAILED, skipping" << std::endl;

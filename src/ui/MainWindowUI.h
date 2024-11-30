@@ -129,9 +129,9 @@ private:
     struct subprocess_s* subprocess = nullptr;
 
     std::atomic<bool> extProcessNeedToRun = true;
-    std::string extprocessCommand;
-    std::string extProcessParam;
-    std::string extprocessLastError;
+    wxString extprocessCommand;
+    wxString extProcessParam;
+    wxString extprocessLastError;
     QM::QueueEvents extProcessLastEvent = QM::QueueEvents::ITEM_ADDED;
     // std::ofstream logfile;
     wxFile logfile;
@@ -241,9 +241,17 @@ private:
         if (logfile.IsOpened() == false) {
             if (logfile.Open(wxString::FromUTF8Unchecked(this->cfg->datapath + "/app.log"), wxFile::read_write)) {
                 logfile.SeekEnd();
+                this->writeLog(wxString::Format(_("%s started"), EXIF_SOFTWARE));
             } else {
                 std::cerr << "Can not open the logfile: " << this->cfg->datapath + "/app.log" << std::endl;
             }
+        }
+    }
+    inline void deInitLog() {
+        if (logfile.IsOpened()) {
+            this->writeLog(wxString::Format(_("%s exited"), EXIF_SOFTWARE));
+            logfile.Flush();
+            logfile.Close();
         }
     }
 
@@ -254,7 +262,9 @@ private:
         wxString message = msg;
         std::strftime(timestamp, sizeof(timestamp), "[%Y-%m-%d %H:%M:%S]", timeinfo);
 
-        message.Replace("\n", "", true);
+        message.Replace("\n", " ", true);
+        message.Replace("\r\n", " ", true);
+        message.Replace("  ", " ", true);
 
         if (!message.IsEmpty() && message.Last() != '\n') {
             message.Append("\n");
