@@ -573,6 +573,21 @@ namespace sd_gui_utils {
         return result;
     };
 
+    inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
+        // Ellenőrizzük, hogy a fájl létezik-e
+        if (!wxFileExists(filePath)) {
+            std::cerr << "File does not exist: " << filePath << std::endl;
+            return "";
+        }
+
+        wxFileName fileName(filePath);
+
+        wxString baseName = fileName.GetName();
+        fileName.SetName(baseName + "_" + suffix);
+
+        return fileName.GetFullPath();
+    }
+
     inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "") {
         // Normalize path separator for the current OS
         wxString normalizedFilename = folderPath + wxFileName::GetPathSeparator() + filename + extension;
@@ -601,28 +616,15 @@ namespace sd_gui_utils {
 
         while (wxFileExists(fullPath.GetFullPath())) {
             // Generate a new unique name: baseName_counter_suffix.extension
-            wxString newName = wxString::Format("%s_%d%s", baseName, counter, suffix.IsEmpty() ? "" : "_" + suffix);
+            wxString newName = wxString::Format("%s_%d%s", baseName, counter, suffix.IsEmpty());
             fullPath.Assign(path, newName, ext);
             ++counter;
         }
-
+        if (!suffix.IsEmpty()) {
+            return AppendSuffixToFileName(fullPath.GetFullPath(), suffix);
+        }
         // Return the unique full file path as a string
         return fullPath.GetFullPath();
-    }
-
-    inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
-        // Ellenőrizzük, hogy a fájl létezik-e
-        if (!wxFileExists(filePath)) {
-            std::cerr << "File does not exist: " << filePath << std::endl;
-            return "";
-        }
-
-        wxFileName fileName(filePath);
-
-        wxString baseName = fileName.GetName(); 
-        fileName.SetName(baseName + "_" + suffix);
-
-        return fileName.GetFullPath();
     }
 
     /*
