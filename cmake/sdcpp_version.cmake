@@ -1,1 +1,1 @@
-set(SDCPP_VERSION "9578fdc")
+set(SDCPP_VERSION "b5f4932")

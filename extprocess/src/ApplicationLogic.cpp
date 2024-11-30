@@ -258,7 +258,7 @@ void ApplicationLogic::Txt2Img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            vectorToPointer(this->currentItem->params.skip_layers),
+            this->currentItem->params.skip_layers,
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
@@ -368,7 +368,7 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            vectorToPointer(this->currentItem->params.skip_layers),
+            this->currentItem->params.skip_layers,
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
@@ -513,14 +513,14 @@ bool ApplicationLogic::loadSdModel() {
                     this->upscale_ctx = nullptr;
                 }
                 std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
-                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
+                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
                 return this->upscale_ctx != NULL;
             }
             std::cout << "upscaler model is already loaded" << std::endl;
             return true;  // already loaded the model
         }
         std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
-        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
+        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
         return this->upscale_ctx != NULL;
     }
     if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {

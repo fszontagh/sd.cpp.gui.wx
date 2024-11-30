@@ -120,10 +120,9 @@ typedef uint8_t* (*PreprocessCannyFunction)(
     bool       // inverse
 );
 
-typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,  // esrgan path
-                                                  int           // threads
-                                                                // enum sd_type_t  // wtype
-
+typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,    // esrgan path
+                                                  int,            // threads
+                                                  enum sd_type_t  // wtype
 );
 typedef void (*FreeUpscalerCtxFunction)(upscaler_ctx_t*);
 // Function pointers
@@ -174,7 +173,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_strength,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path
-                                       int*,                  // skip_layers,
+                                       std::vector<int>,      // skip_layers,
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end
@@ -200,7 +199,7 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_ratio,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path_c_str
-                                       int*,                  // skip_layers,
+                                       std::vector<int>,      // skip_layers,
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end)
