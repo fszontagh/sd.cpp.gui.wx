@@ -8,6 +8,7 @@
 #include "config.hpp"
 #include "helpers/sd.hpp"
 #include "ui/QueueManager.h"
+#include "ver.hpp"
 #include "wx/strvararg.h"
 #include "wx/translation.h"
 #ifndef STBI_NO_FAILURE_STRINGS
@@ -422,7 +423,6 @@ void ApplicationLogic::Upscale() {
         return;
     }
     sd_image_t control_image = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
-    stbi_image_free(input_image_buffer);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
     this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
@@ -431,12 +431,13 @@ void ApplicationLogic::Upscale() {
 
     if (results.data == NULL) {
         this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
-        free(input_image_buffer);
+        stbi_image_free(input_image_buffer);
         return;
     }
 
     std::string filepath = this->handleSdImage(results);
-    std::cout << "saved tmp image to: " << filepath;
+
+
     this->currentItem->rawImages.push_back(filepath);
     free(results.data);
     results.data = NULL;
@@ -445,7 +446,7 @@ void ApplicationLogic::Upscale() {
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
     this->currentItem->finished_at = finished_at;
     this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
-    free(input_image_buffer);
+    stbi_image_free(input_image_buffer);
 }
 
 std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
@@ -467,7 +468,10 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         std::cerr << __FILE__ << ":" << __LINE__ << ": stbi_write_png failed: " << filename.c_str() << std::endl;
         return "";
     }
-    std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;
+    if (BUILD_TYPE == "Debug") {
+        std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;        
+    }
+    
 
     return filename;
 }

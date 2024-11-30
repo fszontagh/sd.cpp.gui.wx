@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
 project(StableDiffusionGUI 
 LANGUAGES CXX C 
-VERSION 0.2.0
+VERSION 0.2.1
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 

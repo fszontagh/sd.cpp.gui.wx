@@ -2717,10 +2717,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 message = wxString::Format(_("%s is just finished to generate %d images\nModel: %s"), modes_str[item->mode], item->params.batch_count, item->model);
                 if (item->mode == QM::GenerationMode::UPSCALE) {
                     title   = _("Upscaling done");
-                    message = wxString::Format(_("Upscaling the image is done: %s\nModel: %s"), item->initial_image, item->model);
+                    message = wxString::Format(_("Upscaling the image is done: \n%s\nModel: %s"), item->initial_image, item->model);
                 } else if (item->mode == QM::GenerationMode::CONVERT) {
                     title   = _("Conversion done");
-                    message = wxString::Format(_("Conversion the model is done: %s\nModel: %s"), item->model, item->params.output_path);
+                    message = wxString::Format(_("Conversion the model is done: \n%s\nModel: %s"), item->model, item->params.output_path);
                     this->loadModelList();
                 } else {
                     if (item->params.batch_count > 1) {
