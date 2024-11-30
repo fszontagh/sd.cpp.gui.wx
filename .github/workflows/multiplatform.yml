@@ -119,7 +119,7 @@ jobs:
         if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
         uses: Cyberhan123/rocm-toolkit@v0.1.0
         with:
-          rocm: "5.7.1"
+          rocm: "5.5.0"
 
       - name: Install Ninja
         if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
