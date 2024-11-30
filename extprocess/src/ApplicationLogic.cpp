@@ -156,12 +156,12 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     if (this->loadSdModel() == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.model_path << std::endl;
-            this->currentItem->status_message = "Failed to load model: " + this->currentItem->params.model_path;
+            this->currentItem->status_message = _("Failed to load model: ") + this->currentItem->params.model_path;
         }
 
         if (this->currentItem->mode == QM::GenerationMode::UPSCALE) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.esrgan_path << std::endl;
-            this->currentItem->status_message = "Failed to load model: " + this->currentItem->params.esrgan_path;
+            this->currentItem->status_message = _("Failed to load model: ") + this->currentItem->params.esrgan_path;
         }
         this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_MODEL_FAILED);
         this->currentItem = nullptr;
@@ -257,7 +257,7 @@ void ApplicationLogic::Txt2Img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers,
+            vectorToPointer(this->currentItem->params.skip_layers),
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
@@ -367,7 +367,7 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers,
+            vectorToPointer(this->currentItem->params.skip_layers),
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
@@ -409,7 +409,7 @@ void ApplicationLogic::Img2img() {
 }
 
 void ApplicationLogic::Upscale() {
-    uint8_t* input_image_buffer   = NULL;
+    uint8_t* input_image_buffer = NULL;
     sd_image_t results;
     int c = 0;
     int w, h;
@@ -417,11 +417,11 @@ void ApplicationLogic::Upscale() {
 
     if (input_image_buffer == NULL) {
         std::cerr << "Failed to load image: " << this->currentItem->initial_image << std::endl;
-        this->currentItem->status_message = "Failed to load image: " + this->currentItem->initial_image;
+        this->currentItem->status_message = _("Failed to load image: ") + this->currentItem->initial_image;
         this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
         return;
     }
-    sd_image_t control_image    = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
+    sd_image_t control_image = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
     stbi_image_free(input_image_buffer);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
@@ -509,14 +509,14 @@ bool ApplicationLogic::loadSdModel() {
                     this->upscale_ctx = nullptr;
                 }
                 std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
-                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
+                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
                 return this->upscale_ctx != NULL;
             }
             std::cout << "upscaler model is already loaded" << std::endl;
             return true;  // already loaded the model
         }
         std::cout << "Loading model: " << this->currentItem->params.esrgan_path << std::endl;
-        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
+        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
         return this->upscale_ctx != NULL;
     }
     if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {

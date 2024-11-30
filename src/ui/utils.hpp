@@ -593,12 +593,10 @@ namespace sd_gui_utils {
         int counter       = 1;
 
         if (!wxDirExists(path)) {
-            
             // create directories recursively
             if (!wxFileName::Mkdir(path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
                 std::cerr << "Failed to create directory: " << path << std::endl;
             }
-
         }
 
         while (wxFileExists(fullPath.GetFullPath())) {
@@ -619,14 +617,11 @@ namespace sd_gui_utils {
             return "";
         }
 
-        // A wxFileName objektum a fájlnév és kiterjesztés kezelésére
         wxFileName fileName(filePath);
 
-        // Új fájlnév generálása a suffix-szel
-        wxString baseName = fileName.GetName();  // Fájlnév kiterjesztés nélkül
+        wxString baseName = fileName.GetName(); 
         fileName.SetName(baseName + "_" + suffix);
 
-        // Visszaadjuk az új fájl elérési útját
         return fileName.GetFullPath();
     }
 

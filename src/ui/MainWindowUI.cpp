@@ -415,7 +415,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     // upscaler
     if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER) {
         this->m_model->Disable();
-        this->m_type->Enable();
+        this->m_type->Disable();
         this->m_vae->Disable();
         this->m_vae_tiling->Disable();
         this->m_cfg->Disable();
@@ -1720,8 +1720,9 @@ MainWindowUI::~MainWindowUI() {
     this->jobImagePreviews.clear();
     delete this->cfg;
     this->TaskBar->Destroy();
-    if (logfile.is_open()) {
-        logfile.close();
+
+    if (logfile.IsOpened()) {
+        logfile.Close();
     }
 }
 
@@ -3408,7 +3409,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
     img->SetLoadFlags(img->GetLoadFlags() & ~wxImage::Load_Verbose);
 
     if (!img->LoadFile(wxString::FromUTF8Unchecked(tmpImagePath))) {
-        itemPtr->status_message = std::string(_("Invalid image from diffusion..."));
+        itemPtr->status_message = _("Invalid image from diffusion: ") + tmpImagePath;
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         delete img;
         return itemPtr;
@@ -3436,7 +3437,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
     img->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
 
     if (!img->SaveFile(filename, imgHandler)) {
-        itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename);
+        itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename).utf8_string();
         MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
         delete img;
         if (BUILD_TYPE == "Debug") {
@@ -3938,8 +3939,8 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             return false;
         }
         if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
-            std::cerr << "[GUI] Item " << item.id << " QM::QueueEvents::ITEM_FAILED, skipping" << std::endl;
-            return true;
+            std::cerr << "[GUI] Item " << item.id << " QM::QueueEvents::ITEM_FAILED" << std::endl;
+            //return true;
         }
         if (itemPtr->status == QM::QueueStatus::FAILED) {
             std::cerr << "[GUI] Item " << item.id << " QM::QueueStatus::FAILED, skipping" << std::endl;

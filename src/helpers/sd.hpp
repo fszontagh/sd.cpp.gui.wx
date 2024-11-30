@@ -4,10 +4,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 #include "../libs/json.hpp"
 
 inline static void writeCriticalLog(const std::string& log, std::string filename) {
@@ -118,9 +120,9 @@ typedef uint8_t* (*PreprocessCannyFunction)(
     bool       // inverse
 );
 
-typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,    // esrgan path
-                                                  int,            // threads
-                                                  enum sd_type_t  // wtype
+typedef upscaler_ctx_t* (*NewUpscalerCtxFunction)(const char*,  // esrgan path
+                                                  int           // threads
+                                                                // enum sd_type_t  // wtype
 
 );
 typedef void (*FreeUpscalerCtxFunction)(upscaler_ctx_t*);
@@ -172,7 +174,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_strength,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path
-                                       std::vector<int>,      // skip_layers,
+                                       int*,                  // skip_layers,
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end
@@ -198,7 +200,7 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_ratio,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path_c_str
-                                       std::vector<int>,      // skip_layers,
+                                       int*,                  // skip_layers,
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end)
@@ -206,7 +208,7 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
 );
 
 typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
-                                       sd_image_t,       // inpu image
+                                       sd_image_t,       // input image
                                        uint32_t          // upscale factor
 );
 
@@ -657,6 +659,25 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, SDParams& nlohmann
             if (!iter->is_null())
                 iter->get_to(nlohmann_json_t.diffusion_flash_attn);
     }
+}
+
+inline static std::vector<int> pointerToVector(int* ptr, size_t size) {
+    if (ptr == nullptr) {
+        return {};
+    }
+    return std::vector<int>(ptr, ptr + size);
+}
+inline static int* vectorToPointer(const std::vector<int>& vec) {
+    if (vec.empty()) {
+        return nullptr;
+    }
+
+    int* ptr = new int[vec.size()];
+    for (size_t i = 0; i < vec.size(); ++i) {
+        ptr[i] = vec[i];
+    }
+
+    return ptr;
 }
 
 #endif  // STABLE_DIFFUSION_WRAPPER_H
