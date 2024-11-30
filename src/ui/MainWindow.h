@@ -361,6 +361,9 @@ class Settings : public wxFrame
 		wxSlider* m_png_compression;
 		wxStaticText* m_staticText191;
 		wxSpinCtrl* m_threads;
+		wxStaticText* m_staticText621;
+		wxBitmapButton* m_bpButton27;
+		wxTextCtrl* m_output_filename_format;
 		wxPanel* m_settings_ui;
 		wxCheckBox* m_show_notifications;
 		wxStaticText* m_staticText60;
@@ -379,6 +382,8 @@ class Settings : public wxFrame
 		virtual void OnTAESDHelpClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImgQualityScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void OnPngCompressionScroll( wxScrollEvent& event ) { event.Skip(); }
+		virtual void OnOutputFileNameFormatHelpClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnOutputFilenameText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }

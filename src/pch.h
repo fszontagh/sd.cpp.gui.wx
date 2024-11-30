@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <ostream>
+#include <random>
 
 
 #include "wx/wxprec.h"
@@ -22,6 +23,7 @@
 #include "wx/uilocale.h"
 #include "wx/fileconf.h"
 #include "wx/filename.h"
+#include "wx/dir.h"
 #include "wx/secretstore.h"
 #include "wx/stdpaths.h"
 #include "wx/splash.h"

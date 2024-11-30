@@ -13,16 +13,19 @@
 #include <unistd.h>
 #include <cstring>
 #endif
+#include <random>
 
 #include "ver.hpp"
 
+#include <wx/event.h>
 #include <wx/string.h>
 #include <wx/translation.h>
-#include <wx/event.h>
+#include <wx/filename.h>
+#include "helpers/sd.hpp"
 
+//#include "../../src/ui/utils.hpp"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
-#include "../../src/ui/utils.hpp"
 #include "ui/QueueManager.h"
 
 #include "ApplicationLogic.h"
@@ -32,24 +35,36 @@
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <dynamiclib_name>" << std::endl;
-        writeCriticalLog("wrong parameters: " + std::string(argv[0]), "stablediffusiongui_diffuser.log");
         return 1;
     }
+
+    std::cout << "[EXTPROCESS] starting with shared memory size: " << SHARED_MEMORY_SIZE << std::endl;
+
     std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
 
+    if (!sharedMemory) {
+        std::cerr << "[EXTPROCESS] Failed to create SharedMemoryManager" << std::endl;
+        return 1;
+    }
+
     ApplicationLogic appLogic(argv[1], sharedMemory);
+
     if (!appLogic.loadLibrary()) {
         std::cerr << "[EXTPROCESS] Can not load shared library" << std::endl;
         writeCriticalLog("[EXTPROCESS] Can not load shared library: " + std::string(argv[1]), "stablediffusiongui_diffuser.log");
         return 1;
     }
+
     bool needToRun = true;
     int lastId     = 0;
     while (needToRun) {
-        char buffer[SHARED_MEMORY_SIZE];
-        if (sharedMemory->read(buffer, SHARED_MEMORY_SIZE)) {
-            if (std::strlen(buffer) > 0) {
-                std::string message = std::string(buffer, SHARED_MEMORY_SIZE);
+        
+        std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
+
+
+        if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE)) {
+            if (std::strlen(buffer.get()) > 0) {
+                std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE);
                 if (message.find("exit") != std::string::npos) {
                     std::cout << "Got exit command, exiting... " << std::endl;
                     needToRun = false;

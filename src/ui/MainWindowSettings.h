@@ -18,6 +18,7 @@ protected:
     void OnCivitaiHelpButton(wxCommandEvent& event) override;
     void onSave(wxCommandEvent& event) override;
 	void OnTAESDHelpClick(wxCommandEvent& event) override;
+    void OnOutputFileNameFormatHelpClick(wxCommandEvent& event) override;
 	void OnOpenFolder(wxCommandEvent& event) override;
 
 public:

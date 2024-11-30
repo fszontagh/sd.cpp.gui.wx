@@ -11,6 +11,13 @@ set(CPACK_PACKAGE_VENDOR "fszontagh")
 set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN TRUE)
 set(CPACK_COMPONENT_UNSPECIFIED_REQUIRED FALSE)
 
+set(CPACK_GENERATOR "NSIS")
+set(CPACK_PACKAGE_NAME "MyApp")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+
+
+set(CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}")
+
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "${CMAKE_PROJECT_NAME}")
 
@@ -185,9 +192,7 @@ elseif(APPLE)
     #set(CPACK_DMG_DS_STORE_FILE ${CMAKE_SOURCE_DIR}/platform/mac/ds_store)
 endif()
 
-
 include(CPack)
-
 
     cpack_add_component("${CMAKE_PROJECT_NAME}"
         DISPLAY_NAME "SD C++ GUI"
@@ -197,29 +202,34 @@ include(CPack)
     cpack_add_component(libsdcpp_avx
         DISPLAY_NAME "SD C++ -AVX"
         DESCRIPTION "SD CPU backend with AVX CPU feature"
+        GROUP backends
     )
 
 
     cpack_add_component(libsdcpp_avx2
         DISPLAY_NAME "SD C++ -AVX2"
         DESCRIPTION "SD CPU backend with AVX2 CPU feature"
+        GROUP backends
     )
 
     cpack_add_component(libsdcpp_avx512
         DISPLAY_NAME "SD C++ -AVX512"
         DESCRIPTION "SD CPU backend with AVX512 CPU feature"
+        GROUP backends
     )
 
 
     cpack_add_component(libsdcpp_cuda
         DISPLAY_NAME "SD C++ -CUDA"
         DESCRIPTION "SD GPU backend with CUDA GPU feature"
+        GROUP backends
     )
 
 
     cpack_add_component(libsdcpp_hipblas
         DISPLAY_NAME "SD C++ -HIPBLAS"
         DESCRIPTION "SD GPU backend with AMD GPU feature"
+        GROUP backends
     )
 
 
@@ -227,8 +237,13 @@ include(CPack)
     cpack_add_component(libsdcpp_vulkan
         DISPLAY_NAME "SD C++ -VULKAN"
         DESCRIPTION "SD GPU backend with VULKAN feature"
+        GROUP backends
     )
-
+    cpack_add_component_group(backends
+    DISPLAY_NAME "C++ Backends"
+    EXPANDED
+    DESCRIPTION
+   "Stable Diffusion C++ Backends")
 
 set(EPREFIX "")
 

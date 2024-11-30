@@ -1,13 +1,13 @@
 #ifndef __MAINFRAME_HPP__UTILS
 #define __MAINFRAME_HPP__UTILS
 
+#include <filesystem>
 #include <random>
-#include <unordered_map>
-
-#include <png.h>
 #include "../helpers/civitai.hpp"
 #include "../helpers/sd.hpp"
 #include "../libs/bitmask_operators.h"
+#include "wx/filefn.h"
+#include "wx/filename.h"
 
 namespace sd_gui_utils {
 
@@ -263,6 +263,7 @@ namespace sd_gui_utils {
         std::string tmppath                = "";
         std::string thumbs_path            = "";
         std::string language               = "en";
+        std::string output_filename_format = "[mode]_[jobid]_[seed]_[width]x[height]";
         bool keep_model_in_memory          = true;
         bool save_all_image                = true;
         int n_threads                      = 2;
@@ -571,6 +572,63 @@ namespace sd_gui_utils {
 
         return result;
     };
+
+    inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "") {
+        // Normalize path separator for the current OS
+        wxString normalizedFilename = folderPath + wxFileName::GetPathSeparator() + filename + extension;
+        normalizedFilename.Replace("\\", wxFileName::GetPathSeparator());
+        normalizedFilename.Replace("/", wxFileName::GetPathSeparator());
+
+        // Combine folder path and filename
+        // wxFileName fullPath(folderPath, normalizedFilename, extension);
+        wxFileName fullPath(normalizedFilename);
+
+        // Ensure the parent directory exists
+        wxString parentDir = fullPath.GetPath();
+
+        // Check if the file exists and generate a unique filename
+        wxString baseName = fullPath.GetName();  // Extract base name (e.g., "mi")
+        wxString ext      = fullPath.GetExt();   // Extract extension (e.g., "txt")
+        wxString path     = fullPath.GetPath();  // Extract path (e.g., "/home/valaki/kiement/vala")
+        int counter       = 1;
+
+        if (!wxDirExists(path)) {
+            
+            // create directories recursively
+            if (!wxFileName::Mkdir(path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
+                std::cerr << "Failed to create directory: " << path << std::endl;
+            }
+
+        }
+
+        while (wxFileExists(fullPath.GetFullPath())) {
+            // Generate a new unique name: baseName_counter_suffix.extension
+            wxString newName = wxString::Format("%s_%d%s", baseName, counter, suffix.IsEmpty() ? "" : "_" + suffix);
+            fullPath.Assign(path, newName, ext);
+            ++counter;
+        }
+
+        // Return the unique full file path as a string
+        return fullPath.GetFullPath();
+    }
+
+    inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
+        // Ellenőrizzük, hogy a fájl létezik-e
+        if (!wxFileExists(filePath)) {
+            std::cerr << "File does not exist: " << filePath << std::endl;
+            return "";
+        }
+
+        // A wxFileName objektum a fájlnév és kiterjesztés kezelésére
+        wxFileName fileName(filePath);
+
+        // Új fájlnév generálása a suffix-szel
+        wxString baseName = fileName.GetName();  // Fájlnév kiterjesztés nélkül
+        fileName.SetName(baseName + "_" + suffix);
+
+        // Visszaadjuk az új fájl elérési útját
+        return fileName.GetFullPath();
+    }
 
     /*
      * Used at m_notebook1302OnNotebookPageChanged

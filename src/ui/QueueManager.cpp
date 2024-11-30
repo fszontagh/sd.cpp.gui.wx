@@ -1,4 +1,5 @@
 #include "QueueManager.h"
+#include "ver.hpp"
 
 QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
     // need to send events into the mainwindow by the threads...
@@ -25,6 +26,7 @@ int QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
         item->created_at = this->GetCurrentUnixTimestamp();
     }
     if (item->id == this->lastExtId) {
+        std::cerr << "ID collision: "<< item->id << std::endl;
         return 0;
     }
 
@@ -37,12 +39,15 @@ int QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
     }
 
     this->SendEventToMainWindow(QM::QueueEvents::ITEM_ADDED, item);
+
     if (this->isRunning == false && item->status == QM::QueueStatus::PENDING) {
         this->currentItem = item;
         this->SendEventToMainWindow(QM::QueueEvents::ITEM_START, item);
         this->isRunning = true;
     }
-
+    if (BUILD_TYPE == "Debug" && fromFile == true) {
+        std::cout << "Item added from file: " << item->id << std::endl;
+    }
     return item->id;
 }
 void QM::QueueManager::UpdateItem(const QM::QueueItem& item) {
@@ -209,16 +214,17 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetSkipped() == false) {
         e.Skip();
     }
-    auto msg = e.GetString().ToStdString();
+    auto msg = e.GetString();
 
-    std::string token                      = msg.substr(0, msg.find(":"));
-    std::string content                    = msg.substr(msg.find(":") + 1);
-    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
-    // only numbers here...
+    wxString token                      = msg.substr(0, msg.find(":"));
+    wxString content                    = msg.substr(msg.find(":") + 1);
+    
+    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)wxAtoi(token);
+    
 
     // only handle the QUEUE messages, what this class generate
     if (threadEvent == sd_gui_utils::QUEUE) {
-        QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
+        QM::QueueEvents event = (QM::QueueEvents)wxAtoi(content);
         auto payload          = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
         if (event == QM::QueueEvents::ITEM_START) {
             this->SetStatus(QM::QueueStatus::RUNNING, payload);
@@ -301,10 +307,9 @@ void QM::QueueManager::SaveJobToFile(int id) {
 void QM::QueueManager::SaveJobToFile(const QM::QueueItem& item) {
     try {
         nlohmann::json jsonfile(item);
-        std::string filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
-        std::ofstream file(filename);
-        file << jsonfile;
-        file.close();
+        wxString filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
+        wxFile file(filename, wxFile::write);
+        file.Write(jsonfile.dump());
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
     }
@@ -319,9 +324,9 @@ bool QM::QueueManager::DeleteJob(int id) {
     if (item->id == 0) {
         return false;
     }
-    std::string filename = this->jobsDir + "/" + std::to_string(item->id) + ".json";
-    if (std::filesystem::exists(filename)) {
-        if (std::filesystem::remove(filename)) {
+    wxString filename = this->jobsDir + "/" + std::to_string(item->id) + ".json";
+    if (wxFileName::FileExists(filename)) {
+        if (wxRemoveFile(filename)) {
             this->QueueList[item->id] = nullptr;
             this->QueueList.erase(item->id);
             return true;
@@ -346,44 +351,51 @@ int QM::QueueManager::GetCurrentUnixTimestamp(bool milliseconds) {
 }
 
 void QM::QueueManager::LoadJobListFromDir() {
-    if (!std::filesystem::exists(this->jobsDir)) {
-        std::filesystem::create_directories(this->jobsDir);
+    if (!wxDirExists(this->jobsDir)) {
+        wxMkdir(this->jobsDir);
+        return;
     }
 
-    for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(this->jobsDir)) {
-        if (!dir_entry.exists() || !dir_entry.is_regular_file() || !dir_entry.path().has_extension()) {
-            continue;
+    wxDir dir(this->jobsDir);
+    if (!dir.IsOpened()) {
+        return;
+    }
+
+    std::vector<wxFileName> files;
+    wxString filename;
+    bool cont = dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
+    while (cont) {
+        wxFileName path(this->jobsDir, filename);
+
+        if (path.IsFileReadable() && path.HasExt() && path.GetExt() == "json") {
+            files.push_back(path);
         }
 
-        std::filesystem::path path = dir_entry.path();
+        cont = dir.GetNext(&filename);
+    }
 
-        std::string ext = path.extension().string();
+    // Sort files by modification time
+    std::sort(files.begin(), files.end(), [](const wxFileName& a, const wxFileName& b) {
+        return a.GetModificationTime() < b.GetModificationTime();
+    });
 
-        if (ext != ".json") {
-            continue;
-        }
-
-        std::string name = path.filename().replace_extension("").string();
-
-        std::ifstream f(path.string());
+    for (const auto& path : files) {
+        std::ifstream f(path.GetFullPath().ToStdString());
 
         try {
-            nlohmann::json data                 = nlohmann::json::parse(f);
+            nlohmann::json data = nlohmann::json::parse(f);
             std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(data.get<QM::QueueItem>());
-            if (item->status == QM::QueueStatus::RUNNING) {
+            if (item->status == QM::QueueStatus::RUNNING || item->status == QM::QueueStatus::MODEL_LOADING) {
                 item->status = QM::QueueStatus::PAUSED;
             }
-            if (item->status == QM::QueueStatus::MODEL_LOADING) {
-                item->status = QM::QueueStatus::PAUSED;
-            }
+
             this->AddItem(item, true);
         } catch (nlohmann::json::parse_error& ex) {
-            std::cerr << "parse error at byte " << ex.byte << " in file: " << path.string() << std::endl;
+            std::cerr << "parse error at byte " << ex.byte << " in file: " << path.GetFullPath().ToStdString() << std::endl;
         } catch (const nlohmann::json::out_of_range& e) {
-            // output exception information
             std::cerr << "message: " << e.what() << '\n'
                       << "exception id: " << e.id << '\n'
-                      << "in file: " << path.string() << std::endl;
+                      << "in file: " << path.GetFullPath().ToStdString() << std::endl;
         }
     }
 }

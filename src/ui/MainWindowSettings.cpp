@@ -1,4 +1,5 @@
 #include "MainWindowSettings.h"
+#include "wx/gtk/bmpbuttn.h"
 #include "wx/translation.h"
 #include "wx/uilocale.h"
 #include "wx/utils.h"
@@ -41,8 +42,12 @@ void MainWindowSettings::OnTAESDHelpClick(wxCommandEvent& event) {
     wxString taesdHelpLink = "https://github.com/leejet/stable-diffusion.cpp/blob/master/docs/taesd.md";
     wxLaunchDefaultBrowser(taesdHelpLink);
 }
+void MainWindowSettings::OnOutputFileNameFormatHelpClick(wxCommandEvent& event) {
+    wxString helpLink = "https://github.com/fszontagh/sd.cpp.gui.wx/wiki/GUI-howtos#image-output-filename-format";
+    wxLaunchDefaultBrowser(helpLink);
+}
 
-void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
+void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {    
     if (event.GetEventObject() == this->m_openModelsPath) {
         wxLaunchDefaultApplication(this->m_model_dir->GetPath());
     }
@@ -102,6 +107,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->fileConfig->Write("/show_notification", this->m_show_notifications->GetValue());
     this->fileConfig->Write("/notification_timeout", this->m_notification_timeout->GetValue());
     this->fileConfig->Write("/enable_civitai", this->m_enableCivitai->GetValue());
+    this->fileConfig->Write("/output_filename_format", this->m_output_filename_format->GetValue());
 
     auto language = this->locales[this->m_language->GetSelection()];
     this->fileConfig->Write("/language", wxString::FromUTF8Unchecked(language));
@@ -138,24 +144,24 @@ void MainWindowSettings::InitConfig() {
     wxString esrgan_path = datapath;
     esrgan_path.append("esrgan");
 
-    this->cfg->lora                 = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
-    this->cfg->model                = this->fileConfig->Read("/paths/model", model_path).ToStdString();
-    this->cfg->vae                  = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
-    this->cfg->embedding            = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
-    this->cfg->taesd                = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
-    this->cfg->esrgan               = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
-    this->cfg->controlnet           = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
-    this->cfg->presets              = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
-    this->cfg->output               = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
-    this->cfg->keep_model_in_memory = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image       = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads            = this->fileConfig->Read("/n_threads", cores());
-    this->cfg->image_quality        = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
-    this->cfg->show_notifications   = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
-    this->cfg->notification_timeout = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
-    this->cfg->enable_civitai       = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
-    this->cfg->language             = this->fileConfig->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
-    std::cout << "Lang: " << this->cfg->language << std::endl;
+    this->cfg->lora                   = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
+    this->cfg->model                  = this->fileConfig->Read("/paths/model", model_path).ToStdString();
+    this->cfg->vae                    = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
+    this->cfg->embedding              = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
+    this->cfg->taesd                  = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
+    this->cfg->esrgan                 = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
+    this->cfg->controlnet             = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
+    this->cfg->presets                = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
+    this->cfg->output                 = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
+    this->cfg->keep_model_in_memory   = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
+    this->cfg->save_all_image         = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads              = this->fileConfig->Read("/n_threads", cores());
+    this->cfg->image_quality          = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
+    this->cfg->show_notifications     = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
+    this->cfg->notification_timeout   = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
+    this->cfg->enable_civitai         = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+    this->cfg->language               = this->fileConfig->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
+    this->cfg->output_filename_format = this->fileConfig->Read("/output_filename_format", this->cfg->output_filename_format);
 
     wxString username = "civitai_api_key";
     wxSecretValue password;
@@ -196,6 +202,7 @@ void MainWindowSettings::InitConfig() {
     this->m_show_notifications->SetValue(this->cfg->show_notifications);
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);
     this->m_enableCivitai->SetValue(this->cfg->enable_civitai);
+    this->m_output_filename_format->SetValue(this->cfg->output_filename_format);
 
     //  populate available languages
     /*this->m_language->Append("English");
@@ -225,8 +232,8 @@ void MainWindowSettings::InitConfig() {
 
     int selected = 0;
     int counter  = 0;
-    std::cout << " system locale: " << systemLocale.utf8_string() << " cfg locale: "<< this->cfg->language << " required locale: "<< required_locale << std::endl;
-    std::map<wxString, wxString> _locales; // to avoid duplicates
+    std::cout << " system locale: " << systemLocale.utf8_string() << " cfg locale: " << this->cfg->language << " required locale: " << required_locale << std::endl;
+    std::map<wxString, wxString> _locales;  // to avoid duplicates
 
     for (const auto lang : langs) {
         auto langInfo = wxUILocale::FindLanguageInfo(lang);
@@ -236,7 +243,6 @@ void MainWindowSettings::InitConfig() {
         }
     }
 
-    
     for (const auto _locale : _locales) {
         this->m_language->Append(_locale.second);
         if (_locale.first == required_locale) {

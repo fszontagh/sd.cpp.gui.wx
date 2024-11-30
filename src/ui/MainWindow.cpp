@@ -1863,6 +1863,26 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	sizer2017->Add( bSizer22, 0, wxALL|wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer114;
+	bSizer114 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText621 = new wxStaticText( m_settings, wxID_ANY, _("Image name format"), wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE );
+	m_staticText621->Wrap( 140 );
+	m_staticText621->SetMinSize( wxSize( 140,-1 ) );
+
+	bSizer114->Add( m_staticText621, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_bpButton27 = new wxBitmapButton( m_settings, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_bpButton27->SetBitmap( interrogation_png_to_wx_bitmap() );
+	bSizer114->Add( m_bpButton27, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_output_filename_format = new wxTextCtrl( m_settings, wxID_ANY, _("[mode]_[jobid]_[seed]_[width]x[height]_[batch]"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer114->Add( m_output_filename_format, 1, wxALL, 5 );
+
+
+	sizer2017->Add( bSizer114, 0, wxEXPAND|wxALL, 5 );
+
 
 	m_settings->SetSizer( sizer2017 );
 	m_settings->Layout();
@@ -2001,6 +2021,8 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_png_compression->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_png_compression->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_png_compression->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_bpButton27->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOutputFileNameFormatHelpClick ), NULL, this );
+	m_output_filename_format->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( Settings::OnOutputFilenameText ), NULL, this );
 	m_show_notifications->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
 	m_save->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
@@ -2037,6 +2059,8 @@ Settings::~Settings()
 	m_png_compression->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_png_compression->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
 	m_png_compression->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( Settings::OnPngCompressionScroll ), NULL, this );
+	m_bpButton27->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOutputFileNameFormatHelpClick ), NULL, this );
+	m_output_filename_format->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( Settings::OnOutputFilenameText ), NULL, this );
 	m_show_notifications->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
 	m_save->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );

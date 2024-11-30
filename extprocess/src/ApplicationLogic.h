@@ -3,10 +3,10 @@
 
 #include <memory>
 #include <string>
+#include <random>
 #include "wx/translation.h"
 #include "wx/event.h"
 #include "ver.hpp"
-#include "../../src/ui/utils.hpp"
 #include "helpers/sd.hpp"
 
 #include "libs/SharedLibrary.h"
@@ -91,7 +91,6 @@ private:
     FreeUpscalerCtxFunction freeUpscalerCtxPtr                 = nullptr;
     SdSetProgressCallbackFunction sdSetProgressCallbackFuncPtr = nullptr;
     SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
-    sd_gui_utils::VoidHolder* voidHolder                       = nullptr;
     std::mutex itemMutex;
     std::string tempPath;
 

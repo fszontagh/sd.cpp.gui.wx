@@ -17,7 +17,9 @@
 #include "utils.hpp"
 #include "ver.hpp"
 #include "wx/colour.h"
+#include "wx/dir.h"
 #include "wx/fileconf.h"
+#include "wx/filefn.h"
 #include "wx/filename.h"
 #include "wx/image.h"
 #include "wx/imagtiff.h"
@@ -643,7 +645,7 @@ void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mo
         Exiv2::XmpData& xmpData = image->xmpData();
         if (!xmpData.empty()) {
             for (auto it = xmpData.begin(); it != xmpData.end(); ++it) {
-                std::cout << "Found xmp key: " << it->key() << " val: "<< it->value() << std::endl;
+                std::cout << "Found xmp key: " << it->key() << " val: " << it->value() << std::endl;
             }
         }
         Exiv2::ExifData& exifData = image->exifData();
@@ -736,7 +738,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (this->cfg->save_all_image) {
             item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
         }
-        this->qmanager->AddItem(item, false);
+        this->qmanager->AddItem(item);
         return;
     }
 
@@ -1977,10 +1979,9 @@ void MainWindowUI::loadTaesdList() {
 }
 
 std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
-
     // we can't write png chunks. SDWEBUI Forge uses png idata "Postprocessing" to store upscale infos... we don't do that yet, so empty exifs
     // TODO: copy original image's exif...
-    if (myItem.mode == QM::GenerationMode::UPSCALE)  {
+    if (myItem.mode == QM::GenerationMode::UPSCALE) {
         return "";
     }
     auto modelPath = std::filesystem::path(modelInfo.path);
@@ -3413,7 +3414,6 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
         return itemPtr;
     }
 
-    wxString filename     = wxString::FromUTF8Unchecked(this->cfg->output);
     std::string extension = ".jpg";
     auto imgHandler       = wxBITMAP_TYPE_JPEG;
     // image quality only works with jpg, png ignores it
@@ -3422,31 +3422,15 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
     if (this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
         extension  = ".png";
         imgHandler = wxBITMAP_TYPE_PNG;
-        img->SetOption(wxIMAGE_OPTION_COMPRESSION, this->cfg->png_compression_level); // set the compression from the settings
+        img->SetOption(wxIMAGE_OPTION_COMPRESSION, this->cfg->png_compression_level);  // set the compression from the settings
     }
     if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
-    wxString filename_without_extension;
-    filename = filename + wxString(wxFileName::GetPathSeparator()).utf8_string();
-    filename = filename + modes_str[itemPtr->mode];
-    filename = filename + "_";
-    filename = filename + std::to_string(itemPtr->id);
-    filename = filename + "_";
-    filename = filename + std::to_string(itemPtr->params.seed);
-    filename = filename + "_";
-    filename = filename + std::to_string(img->GetWidth()) + "x" + std::to_string(img->GetHeight());
-    filename = filename + "_";
 
-    filename_without_extension = filename;
-    filename                   = filename + extension;
-
-    int _c = 0;
-    while (std::filesystem::exists(filename.utf8_string())) {
-        filename = filename_without_extension + "_" + std::to_string(_c) + extension;
-        _c++;
-    }
+    const auto fname  = this->formatFileName(*itemPtr, this->cfg->output_filename_format);
+    wxString filename = sd_gui_utils::CreateFilePath(fname, extension, wxString::FromUTF8Unchecked(this->cfg->output));
 
     img->SetOption(wxIMAGE_OPTION_FILENAME, filename);
     img->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
@@ -3469,8 +3453,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
         itemPtr->images.emplace_back(QM::QueueItemImage(filename, QM::QueueItemImageType::GENERATED));
 
         if (itemPtr->params.control_image_path.length() > 0 && this->cfg->save_all_image) {
-            wxString ctrlFilename = this->cfg->output;
-            ctrlFilename          = filename_without_extension + "_ctrlimg_" + extension;
+            wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(filename, "control");
             wxImage _ctrlimg(itemPtr->params.control_image_path);
             _ctrlimg.SaveFile(ctrlFilename);
             itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
@@ -3654,26 +3637,27 @@ void MainWindowUI::initConfig() {
 
     this->cfg->datapath = datapath;
 
-    this->cfg->lora                 = this->mapp->config->Read("/paths/lora", lora_path).utf8_string();
-    this->cfg->model                = this->mapp->config->Read("/paths/model", model_path).utf8_string();
-    this->cfg->vae                  = this->mapp->config->Read("/paths/vae", vae_path).utf8_string();
-    this->cfg->embedding            = this->mapp->config->Read("/paths/embedding", embedding_path).utf8_string();
-    this->cfg->taesd                = this->mapp->config->Read("/paths/taesd", taesd_path).utf8_string();
-    this->cfg->esrgan               = this->mapp->config->Read("/paths/esrgan", esrgan_path).utf8_string();
-    this->cfg->controlnet           = this->mapp->config->Read("/paths/controlnet", controlnet_path).utf8_string();
-    this->cfg->presets              = this->mapp->config->Read("/paths/presets", presets_path).utf8_string();
-    this->cfg->jobs                 = this->mapp->config->Read("/paths/jobs", jobs_path).utf8_string();
-    this->cfg->thumbs_path          = thumbs_path.utf8_string();
-    this->cfg->tmppath              = tmp_path.utf8_string();
-    this->cfg->output               = this->mapp->config->Read("/paths/output", imagespath).utf8_string();
-    this->cfg->keep_model_in_memory = this->mapp->config->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image       = this->mapp->config->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads            = this->mapp->config->Read("/n_threads", cores());
-    this->cfg->show_notifications   = this->mapp->config->ReadBool("/show_notification", this->cfg->show_notifications);
-    this->cfg->notification_timeout = this->mapp->config->Read("/notification_timeout", this->cfg->notification_timeout);
-    this->cfg->image_quality        = this->mapp->config->Read("/image_quality", this->cfg->image_quality);
-    this->cfg->enable_civitai       = this->mapp->config->ReadBool("/enable_civitai", this->cfg->enable_civitai);
-    this->cfg->language             = this->mapp->config->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
+    this->cfg->lora                   = this->mapp->config->Read("/paths/lora", lora_path).utf8_string();
+    this->cfg->model                  = this->mapp->config->Read("/paths/model", model_path).utf8_string();
+    this->cfg->vae                    = this->mapp->config->Read("/paths/vae", vae_path).utf8_string();
+    this->cfg->embedding              = this->mapp->config->Read("/paths/embedding", embedding_path).utf8_string();
+    this->cfg->taesd                  = this->mapp->config->Read("/paths/taesd", taesd_path).utf8_string();
+    this->cfg->esrgan                 = this->mapp->config->Read("/paths/esrgan", esrgan_path).utf8_string();
+    this->cfg->controlnet             = this->mapp->config->Read("/paths/controlnet", controlnet_path).utf8_string();
+    this->cfg->presets                = this->mapp->config->Read("/paths/presets", presets_path).utf8_string();
+    this->cfg->jobs                   = this->mapp->config->Read("/paths/jobs", jobs_path).utf8_string();
+    this->cfg->thumbs_path            = thumbs_path.utf8_string();
+    this->cfg->tmppath                = tmp_path.utf8_string();
+    this->cfg->output                 = this->mapp->config->Read("/paths/output", imagespath).utf8_string();
+    this->cfg->keep_model_in_memory   = this->mapp->config->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
+    this->cfg->save_all_image         = this->mapp->config->Read("/save_all_image", this->cfg->save_all_image);
+    this->cfg->n_threads              = this->mapp->config->Read("/n_threads", cores());
+    this->cfg->show_notifications     = this->mapp->config->ReadBool("/show_notification", this->cfg->show_notifications);
+    this->cfg->notification_timeout   = this->mapp->config->Read("/notification_timeout", this->cfg->notification_timeout);
+    this->cfg->image_quality          = this->mapp->config->Read("/image_quality", this->cfg->image_quality);
+    this->cfg->enable_civitai         = this->mapp->config->ReadBool("/enable_civitai", this->cfg->enable_civitai);
+    this->cfg->language               = this->mapp->config->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
+    this->cfg->output_filename_format = this->mapp->config->Read("/output_filename_format", this->cfg->output_filename_format);
 
     int idx               = 0;
     auto saved_image_type = this->mapp->config->Read("/image_type", "JPG");
@@ -3931,7 +3915,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
                 return;
             }
         }
-        this->qmanager->AddItem(item, false);
+        this->qmanager->AddItem(item);
     }
 }
 

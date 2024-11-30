@@ -46,6 +46,7 @@ public:
             }
             if (wxApp::argv[i] == "-disable-external-process-handling") {
                 disableExternalProcessHandling = true;
+                std::cout << "External process handling disabled" << std::endl;
             }
         }
         if (!allow_multiple_instance) {
@@ -118,7 +119,7 @@ public:
         }
 
         // trans->SetLanguage(configLang);
-        this->ReloadMainWindow(configLang);
+        this->ReloadMainWindow(configLang, disableExternalProcessHandling);
         splash->Destroy();
         return true;
     }
@@ -126,7 +127,7 @@ public:
         delete m_checker;
         return 0;
     }
-    void ReloadMainWindow(wxString newLangName) {
+    void ReloadMainWindow(wxString newLangName, bool disableExternalProcessHandling = false) {
         if (this->mainFrame != nullptr) {
             SetTopWindow(NULL);
             this->mainFrame->Destroy();
@@ -135,16 +136,7 @@ public:
         wxLanguageInfo info;
         auto linfo = wxUILocale::FindLanguageInfo(newLangName);
 
-        // const auto best = wxTranslations::Get()->GetBestTranslation("stablediffusiongui", newLangName);
-        // std::cout << "Best translation: " << best.utf8_string() << std::endl;
-
         if (linfo != nullptr) {
-            std::cout << "Lang tag: " << linfo->GetCanonicalWithRegion() << ", " << linfo->CanonicalName.utf8_string() << std::endl;
-            // wxUILocale::GetCurrent().UseLocaleName("en_US.utf8");
-            // wxTranslations::Get()->SetLanguage("en_US.utf8");
-            // wxUILocale::GetCurrent().FromTag(best);
-            // wxTranslations::Get()->SetLanguage(best);
-
             if (this->m_Locale != nullptr) {
                 delete this->m_Locale;
                 this->m_Locale = nullptr;
@@ -165,7 +157,7 @@ public:
             this->m_Locale->AddCatalog("stablediffusiongui");
         }
 
-        this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), this->disableExternalProcessHandling, this);
+        this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
         SetTopWindow(this->mainFrame);
         this->mainFrame->Centre();
         this->mainFrame->Show();
@@ -188,7 +180,6 @@ private:
     MainWindowUI* mainFrame = nullptr;
     wxString dllName;
     wxString backend;
-    bool disableExternalProcessHandling = false;
     wxString iniPath;
     wxLocale* m_Locale = nullptr;
 };

@@ -55,8 +55,7 @@ namespace QM {
         ITEM_MODEL_LOADED       = 1 << 7,
         ITEM_MODEL_FAILED       = 1 << 8,
         ITEM_GENERATION_STARTED = 1 << 9,
-        ITEM_FAILED             = 1 << 10,
-        SD_MESSAGE              = 1 << 11
+        ITEM_FAILED             = 1 << 10
     };
 
     enum class QueueItemImageType : unsigned int {
@@ -69,20 +68,6 @@ namespace QM {
         UNKNOWN = 1 << 3
     };
 
-    inline const std::unordered_map<unsigned int, QueueEvents> QueueEvents_str_by_ui = {
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_DELETED), QueueEvents::ITEM_DELETED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_ADDED), QueueEvents::ITEM_ADDED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_STATUS_CHANGED), QueueEvents::ITEM_STATUS_CHANGED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_UPDATED), QueueEvents::ITEM_UPDATED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_START), QueueEvents::ITEM_START},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_FINISHED), QueueEvents::ITEM_FINISHED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_LOAD_START), QueueEvents::ITEM_MODEL_LOAD_START},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_LOADED), QueueEvents::ITEM_MODEL_LOADED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_MODEL_FAILED), QueueEvents::ITEM_MODEL_FAILED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_GENERATION_STARTED), QueueEvents::ITEM_GENERATION_STARTED},
-        {static_cast<unsigned int>(QM::QueueEvents::ITEM_FAILED), QueueEvents::ITEM_FAILED},
-        {static_cast<unsigned int>(QM::QueueEvents::SD_MESSAGE), QueueEvents::SD_MESSAGE}};
-
     inline const std::unordered_map<QM::QueueEvents, std::string> QueueEvents_str = {
         {QM::QueueEvents::ITEM_DELETED, "ITEM_DELETED"},
         {QM::QueueEvents::ITEM_ADDED, "ITEM_ADDED"},
@@ -94,14 +79,7 @@ namespace QM {
         {QM::QueueEvents::ITEM_MODEL_LOADED, "ITEM_MODEL_LOADED"},
         {QM::QueueEvents::ITEM_MODEL_FAILED, "ITEM_MODEL_FAILED"},
         {QM::QueueEvents::ITEM_GENERATION_STARTED, "ITEM_GENERATION_STARTED"},
-        {QM::QueueEvents::ITEM_FAILED, "ITEM_FAILED"},
-        {QM::QueueEvents::SD_MESSAGE, "SD_MESSAGE"}};
-
-    inline std::unordered_map<QM::QueueItemImageType, std::string> QueueItemImageType_str = {
-        {QM::QueueItemImageType::GENERATED, "Generated"},
-        {QM::QueueItemImageType::CONTROLNET, "Controlnet"},
-        {QM::QueueItemImageType::INITIAL, "Initial"},
-        {QM::QueueItemImageType::INITIAL, "Unknown"}};
+        {QM::QueueEvents::ITEM_FAILED, "ITEM_FAILED"}};
 
     /// @brief Store the images from the queue jobs
     struct QueueItemImage {
@@ -318,7 +296,7 @@ namespace QM {
                 }
                 this->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, this->QueueList[this->currentItem->id]);
             }
-        }        
+        }
         inline std::shared_ptr<QM::QueueItem> GetCurrentItem() { return this->currentItem; }
 
     private:
