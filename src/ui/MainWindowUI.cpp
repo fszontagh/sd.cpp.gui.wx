@@ -120,10 +120,13 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         wxString dllFullPath  = wxStandardPaths::Get().GetExecutablePath() + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
         this->extProcessParam = dllFullPath.utf8_string() + ".dll";
 
-        if (std::filesystem::exists(this->extProcessParam) == false) {
+        if (std::filesystem::exists(this->extProcessParam.utf8_string()) == false) {
             wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam), _("Error"), wxOK | wxICON_ERROR);
             this->writeLog(wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam));
             errorDialog.ShowModal();
+            this->TaskBar->Destroy();
+            delete this->cfg;
+            this->deInitLog();
             this->Destroy();
             return;
         }
