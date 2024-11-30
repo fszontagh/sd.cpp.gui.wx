@@ -1,42 +1,27 @@
 #include "MainWindowUI.h"
-#include <chrono>
-#include <cinttypes>
-#include <cstring>
-#include <exiv2/iptc.hpp>
-#include <exiv2/xmp_exiv2.hpp>
-#include <filesystem>
-#include <memory>
-#include <thread>
+
 #include "../helpers/simplecurl.h"
 #include "../helpers/sslUtils.hpp"
 #include "MainWindowAboutDialog.h"
 #include "MainWindowImageDialog.h"
-#include "QueueManager.h"
+
 #include "embedded_files/app_icon.h"
 #include "extprocess/config.hpp"
-#include "utils.hpp"
 #include "ver.hpp"
-#include "wx/colour.h"
-#include "wx/dir.h"
-#include "wx/file.h"
-#include "wx/fileconf.h"
-#include "wx/filefn.h"
 #include "wx/filename.h"
-#include "wx/image.h"
-#include "wx/imagtiff.h"
 #include "wx/string.h"
-#include "wx/translation.h"
-#include "wx/uilocale.h"
-#include "wx/utils.h"
-#include "wx/variant.h"
-#include "wx/window.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
     this->AppOrigPlaceHolderBitmap    = this->m_img2img_preview->GetBitmap();
 
-    this->SetTitle(wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
+    if (BUILD_TYPE != "Release") {
+        this->SetTitle(wxString::Format("%s - %s (%s) - %s", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH, BUILD_TYPE));
+    } else {
+        this->SetTitle(wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
+    }
+
     this->TaskBar = new wxTaskBarIcon();
 
     this->TaskBarIcon = app_png_to_wx_bitmap();
@@ -94,30 +79,31 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->m_stop_background_process->Show();
 
         // search the binary in the main app's path/extprocess
-        wxFileName f(wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath());
-        f.AppendDir("extprocess");
+        wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
+        wxFileName f(currentPath, "");
         f.SetName(EPROCESS_BINARY_NAME);
-        this->extprocessCommand = f.GetFullPath();
-        // if no binary in extprocess folder, search the binary in the main app's path
+
         if (f.Exists() == false) {
-            f = wxFileName(wxStandardPaths::Get().GetExecutablePath());
-            f.SetName(EPROCESS_BINARY_NAME);
-            this->extprocessCommand = f.GetFullPath();
+            f.AppendDir("extprocess");
         }
+        if (f.Exists() == false) {
+            f.AppendDir("Debug");
+        }
+
+        this->extprocessCommand = f.GetFullPath();
         if (f.Exists() == false) {
             this->disableExternalProcessHandling = true;  // disable process handling
             wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
             this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));
             errorDialog.ShowModal();
             this->TaskBar->Destroy();
-            delete this->cfg;
             this->deInitLog();
             this->Destroy();
             return;
         }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-        wxString dllFullPath  = wxStandardPaths::Get().GetExecutablePath() + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
+        wxString dllFullPath  = currentPath + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
         this->extProcessParam = dllFullPath.utf8_string() + ".dll";
 
         if (std::filesystem::exists(this->extProcessParam.utf8_string()) == false) {
@@ -125,7 +111,6 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             this->writeLog(wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), this->extProcessParam));
             errorDialog.ShowModal();
             this->TaskBar->Destroy();
-            delete this->cfg;
             this->deInitLog();
             this->Destroy();
             return;
@@ -138,7 +123,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
         // start process from the thread
 
-        this->writeLog("Starting external process: " + this->extprocessCommand + " " + this->extProcessParam + "\n");
+        this->writeLog(wxString::Format(_("Starting external process: %s %s"), this->extprocessCommand, this->extProcessParam));
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
@@ -341,10 +326,12 @@ void MainWindowUI::onResolutionSwap(wxCommandEvent& event) {
 
 void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     event.Skip();
-    int selected = event.GetSelection();
-    if (selected == wxNOT_FOUND) {
+
+    if (event.GetSelection() == wxNOT_FOUND) {
         return;
     }
+
+    sd_gui_utils::GuiMainPanels selected = static_cast<sd_gui_utils::GuiMainPanels>(event.GetSelection());
 
     if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG)  // on img2img and img2vid the vae_decode_only is false, otherwise true
     {
@@ -353,7 +340,10 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         this->m_vae_decode_only->SetValue(true);
     }
 
-    if (selected == sd_gui_utils::GuiMainPanels::PANEL_QUEUE || selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG || selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG || selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS) {
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_QUEUE ||
+        selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG ||
+        selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG ||
+        selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS) {
         if (this->m_model->GetCount() > 1) {
             this->m_model->Enable();
         }
@@ -636,25 +626,19 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
     this->readMetaDataFromImage(file, SDMode::TXT2IMG);
 }
 void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mode) {
+    auto getParams = this->getMetaDataFromImage(file);
+    this->imageCommentToGuiParams(getParams, mode);
+}
+std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const wxFileName& file) {
+    std::unordered_map<wxString, wxString> results;
+
     try {
         auto image = Exiv2::ImageFactory::open(file.GetAbsolutePath().utf8_string());
         if (!image->good()) {
-            return;
+            return std::unordered_map<wxString, wxString>{};
         }
         image->readMetadata();
-        Exiv2::IptcData& iptcData = image->iptcData();
-        if (!iptcData.empty()) {
-            for (auto it = iptcData.begin(); it != iptcData.end(); ++it) {
-                std::cout << "Found iptc key: " << it->key() << " val: " << it->value() << std::endl;
-            }
-        }
 
-        Exiv2::XmpData& xmpData = image->xmpData();
-        if (!xmpData.empty()) {
-            for (auto it = xmpData.begin(); it != xmpData.end(); ++it) {
-                std::cout << "Found xmp key: " << it->key() << " val: " << it->value() << std::endl;
-            }
-        }
         Exiv2::ExifData& exifData = image->exifData();
         if (!exifData.empty()) {
             std::string ex;
@@ -662,13 +646,12 @@ void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mo
             std::string usercomment;
             for (it = exifData.begin(); it != exifData.end(); ++it) {
                 if (BUILD_TYPE == "Debug") {
-                    std::cout << "Found key: " << it->key() << " val: " << std::endl;
+                    std::cout << "Found key: " << it->key() << " val: " << it->getValue()->toString() << std::endl;
                 }
                 if (it->key() == "Exif.Photo.UserComment" || it->key() == "Exif.Image.UserComment" || it->key() == "Exif.Photo.Parameters") {
                     usercomment = it->getValue()->toString();
                     if (!usercomment.empty()) {
-                        std::map<std::string, std::string> getParams = sd_gui_utils::parseExifPrompts(usercomment);
-                        this->imageCommentToGuiParams(getParams, SDMode::IMG2IMG);
+                        results = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(usercomment));
                         break;
                     }
                 }
@@ -677,6 +660,8 @@ void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mo
     } catch (Exiv2::Error& e) {
         std::cerr << "Err: " << e.what() << std::endl;
     }
+
+    return results;
 }
 /// TODO: store embeddings like checkpoints and loras, the finetune this
 void MainWindowUI::OnPromptText(wxCommandEvent& event) {
@@ -1159,8 +1144,38 @@ void MainWindowUI::onDiffusionFlashAttn(wxCommandEvent& event) {
     this->mapp->config->Flush(true);
 }
 
+void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
+    if (event.GetPath().empty()) {
+        return;
+    }
+
+    wxFileName imagePath(event.GetPath());
+
+    wxImage image(imagePath.GetFullPath());
+    auto origSize = this->m_imageinfo_preview->GetSize();
+    auto preview  = sd_gui_utils::ResizeImageToMaxSize(image, origSize.GetWidth(), origSize.GetHeight());
+
+    this->m_imageinfo_preview->SetBitmap(preview);
+
+    if (image.IsOk()) {
+        const std::unordered_map<wxString, wxString> metadata = this->getMetaDataFromImage(event.GetPath());
+        if (metadata.contains("prompt")) {
+            this->m_imageInfoPrompt->SetValue(metadata.at("prompt"));
+        }
+
+        if (metadata.contains("negative_prompt")) {
+            this->m_imageInfoNegPrompt->SetValue(metadata.at("negative_prompt"));
+        }
+        if (metadata.contains("seed")) {
+            this->m_imageInfoSeed->SetLabel(metadata.at("seed"));
+        }
+        for (auto& [key, value] : metadata) {
+            std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
+        }
+    }
+}
+
 void MainWindowUI::onSamplerSelect(wxCommandEvent& event) {
-    // this->sd_params->sample_method = (sample_method_t)this->m_sampler->GetSelection();
 }
 
 void MainWindowUI::onSavePreset(wxCommandEvent& event) {
@@ -2349,7 +2364,7 @@ void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
     this->civitwindow = nullptr;
 }
 
-void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> params, SDMode mode) {
+void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode) {
     bool modelFound = false;
     for (auto item : params) {
         // sampler
@@ -2402,8 +2417,7 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
             this->m_steps->SetValue(std::atoi(item.second.c_str()));
         }
         if (item.first == "cfgscale") {
-            this->m_cfg->SetValue(
-                static_cast<double>(std::atof(item.second.c_str())));
+            this->m_cfg->SetValue(static_cast<double>(std::atof(item.second.c_str())));
         }
         if (item.first == "negative_prompt") {
             if (mode == SDMode::IMG2IMG) {
@@ -2421,7 +2435,7 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
         }
         // first check by hash
         if (item.first == "modelhash" && !modelFound) {
-            auto check = this->ModelManager->getByHash(item.second);
+            auto check = this->ModelManager->getByHash(item.second.utf8_string());
             if (!check.path.empty()) {
                 this->m_model->Select(this->ModelFilesIndex[check.name]);
                 modelFound = true;
@@ -2430,14 +2444,14 @@ void MainWindowUI::imageCommentToGuiParams(std::map<std::string, std::string> pa
         }
         if (item.first == "model" && !modelFound) {
             // get by name
-            auto check = this->ModelManager->getInfoByName(item.second);
+            auto check = this->ModelManager->getInfoByName(item.second.utf8_string());
             if (!check.path.empty()) {
                 this->m_model->Select(this->ModelFilesIndex[check.name]);
                 modelFound = true;
                 continue;
             }
             // search by name
-            auto check2 = this->ModelManager->findInfoByName(item.second);
+            auto check2 = this->ModelManager->findInfoByName(item.second.utf8_string());
             if (!check.path.empty()) {
                 this->m_model->Select(this->ModelFilesIndex[check2.name]);
                 modelFound = true;
@@ -2499,8 +2513,7 @@ void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
     if (img.LoadFile(file)) {
         this->m_upscaler_filepicker->SetPath(file);
         auto origSize = this->m_upscaler_source_image->GetSize();
-        auto preview  = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(),
-                                                           origSize.GetHeight());
+        auto preview  = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
 
         this->m_generate_upscaler->Enable();
         this->m_upscaler_source_image->SetScaleMode(wxStaticBitmap::Scale_AspectFill);

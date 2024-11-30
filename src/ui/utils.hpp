@@ -6,8 +6,7 @@
 #include "../helpers/civitai.hpp"
 #include "../helpers/sd.hpp"
 #include "../libs/bitmask_operators.h"
-#include "wx/filefn.h"
-#include "wx/filename.h"
+
 
 namespace sd_gui_utils {
 
@@ -480,98 +479,86 @@ namespace sd_gui_utils {
                        [](unsigned char c) { return std::tolower(c); });
         return data;
     }
-    inline std::map<std::string, std::string> parseExifPrompts(std::string text) {
-        size_t pos = text.find("charset=Unicode ");
-        if (pos != std::string::npos) {
-            text.erase(pos, std::string("charset=Unicode ").length());
+    inline std::unordered_map<wxString, wxString> parseExifPrompts(wxString text) {
+        size_t pos = text.find("charset=Unicode");
+        if (pos != wxString::npos) {
+            text.erase(pos, wxStrlen("charset=Unicode"));
         }
 
-        size_t pos_ = text.find("charset=Unicode");
-        if (pos_ != std::string::npos) {
-            text.erase(pos_, std::string("charset=Unicode").length());
+        std::unordered_map<wxString, wxString> result;
+        result["prompt"] = "";
+
+        wxArrayString lines_in_reverse;
+        wxStringInputStream inputStream(text);
+        wxTextInputStream textStream(inputStream);
+        wxString line;
+
+        while (!inputStream.Eof()) {
+            line = textStream.ReadLine();
+            lines_in_reverse.Add(line);
         }
 
-        std::map<std::string, std::string> result;
-
-        result[std::string("prompt")] = "";
-
-        std::vector<std::string> lines_in_reverse;
-        std::istringstream f(text);
-        std::string line;
-        while (std::getline(f, line)) {
-            {
-                lines_in_reverse.push_back(line);
-            }
-        }
         std::reverse(lines_in_reverse.begin(), lines_in_reverse.end());
 
-        std::vector<std::string> seglist;
-
-        // first in vector the last in text
-
-        std::string firstline = lines_in_reverse.front();
-        std::istringstream p;
-        p.str(firstline);
-        std::string segment;
-        while (std::getline(p, segment, ',')) {
-            // seglist.push_back(segment);
-            size_t pos      = segment.find(':');
-            std::string key = removeWhitespace(segment.substr(0, pos));
-            key             = sd_gui_utils::tolower(key);
-            std::string val = removeWhitespace(segment.substr(pos + 1));
-
-            // result[segment.substr(0, pos)] = segment.substr(pos + 1);
-            result[key] = val;
+        if (lines_in_reverse.IsEmpty()) {
+            return result;  // Ha nincs adat, térjünk vissza üres map-pal
         }
-        // remve params, we already parsed it...
-        lines_in_reverse.erase(lines_in_reverse.begin());
 
-        bool _nfound = false;
-        int counter  = 0;
-        std::vector<std::string> _n_prompt_lines;
+        wxArrayString seglist;
+        wxString firstline = lines_in_reverse[0];
+        wxStringTokenizer tokenizer(firstline, ",");
 
-        std::string nn_p("Negative prompt: ");
+        while (tokenizer.HasMoreTokens()) {
+            wxString segment = tokenizer.GetNextToken();
+            size_t pos       = segment.find(':');
+            if (pos != wxString::npos) {
+                wxString key = segment.SubString(0, pos - 1).Trim().MakeLower();
+                wxString val = segment.SubString(pos + 1, segment.size() - 1).Trim();
+                result[key]  = val;
+            }
+        }
 
-        for (auto _l : lines_in_reverse) {
-            if (_l.substr(0, nn_p.length()) == nn_p) {
-                // prompt = prompt + _l.substr(17);
-                _n_prompt_lines.emplace_back(_l.substr(17));
-                _nfound = true;
+        lines_in_reverse.RemoveAt(0);
+
+        bool negativePromptFound = false;
+        int counter              = 0;
+        wxArrayString negativePromptLines;
+        wxString negativePromptMarker = "Negative prompt: ";
+
+        for (size_t i = 0; i < lines_in_reverse.size(); ++i) {
+            wxString line = lines_in_reverse[i];
+            if (line.StartsWith(negativePromptMarker)) {
+                negativePromptLines.Add(line.Mid(negativePromptMarker.size()));
+                negativePromptFound = true;
                 counter++;
                 break;
+            } else {
+                negativePromptLines.Add(line);
+                counter++;
             }
-            // prompt = prompt + _l;
-            _n_prompt_lines.emplace_back(_l);
-            counter++;
         }
 
-        for (int z = 0; z < counter; z++) {
-            lines_in_reverse.erase(lines_in_reverse.begin());
+        for (int i = 0; i < counter; ++i) {
+            lines_in_reverse.RemoveAt(0);
         }
 
-        std::string prompt;  // negative or plain prompt...
+        wxString prompt;
 
-        std::reverse(_n_prompt_lines.begin(), _n_prompt_lines.end());
-
-        for (auto _n : _n_prompt_lines) {
-            prompt = prompt + _n;
+        for (size_t i = 0; i < negativePromptLines.size(); ++i) {
+            prompt += negativePromptLines[negativePromptLines.size() - i - 1];
         }
 
-        if (_nfound) {
-            // result[std::string("negative_prompt")] = prompt;
-
-            result[std::string("negative_prompt")] = prompt;
-
-            std::reverse(lines_in_reverse.begin(), lines_in_reverse.end());
-            for (auto _u : lines_in_reverse) {
-                result[std::string("prompt")] = result[std::string("prompt")] + _u;
+        if (negativePromptFound) {
+            result["negative_prompt"] = prompt;
+            for (size_t i = 0; i < lines_in_reverse.size(); ++i) {
+                result["prompt"] += lines_in_reverse[i];
             }
         } else {
-            result[std::string("prompt")] = prompt;
+            result["prompt"] = prompt;
         }
 
         return result;
-    };
+    }
 
     inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
         // Ellenőrizzük, hogy a fájl létezik-e
@@ -616,7 +603,7 @@ namespace sd_gui_utils {
 
         while (wxFileExists(fullPath.GetFullPath())) {
             // Generate a new unique name: baseName_counter_suffix.extension
-            wxString newName = wxString::Format("%s_%d%s", baseName, counter, suffix.IsEmpty());
+            wxString newName = wxString::Format("%s_%d", baseName, counter);
             fullPath.Assign(path, newName, ext);
             ++counter;
         }
@@ -631,11 +618,12 @@ namespace sd_gui_utils {
      * Used at m_notebook1302OnNotebookPageChanged
      * FYI: keep the order as the gui builder
      */
-    enum GuiMainPanels {
+    enum class GuiMainPanels : int {
         PANEL_QUEUE,
         PANEL_TEXT2IMG,
         PANEL_IMG2IMG,
         PANEL_UPSCALER,
+        PANEL_IMAGEINFO,
         PANEL_MODELS
     };
 }  // namespace sd_gui_utils

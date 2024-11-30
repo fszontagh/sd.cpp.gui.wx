@@ -1,54 +1,62 @@
 #ifndef SRC_UI_IMAGEUTILS_H
 #define SRC_UI_IMAGEUTILS_H
 namespace sd_gui_utils {
+    /**
+     * Resizes the given image to fit within the specified maximum width and
+     * height while maintaining the image's aspect ratio.
+     *
+     * @param image The image to be resized.
+     * @param maxWidth The maximum width of the resized image.
+     * @param maxHeight The maximum height of the resized image.
+     * @return A resized version of the given image.
+     */
     inline wxImage ResizeImageToMaxSize(const wxImage& image, int maxWidth, int maxHeight) {
         int newWidth  = image.GetWidth();
         int newHeight = image.GetHeight();
 
-        // Az új méreteket úgy határozzuk meg, hogy megtartsuk a képarányt
         if (newWidth > maxWidth || newHeight > maxHeight) {
-            double aspectRatio =
-                static_cast<double>(newWidth) / static_cast<double>(newHeight);
+            double aspectRatio = static_cast<double>(newWidth) / static_cast<double>(newHeight);
             if (aspectRatio > 1.0) {
-                // Szélesség korlátozó dimenzió, a magasságot arányosan beállítjuk
                 newWidth  = maxWidth;
                 newHeight = static_cast<int>(maxWidth / aspectRatio);
             } else {
-                // Magasság korlátozó dimenzió, a szélességet arányosan beállítjuk
                 newHeight = maxHeight;
                 newWidth  = static_cast<int>(maxHeight * aspectRatio);
             }
         }
-
-        // Méretezés az új méretekre
         return image.Scale(newWidth, newHeight);
     };
+    /**
+     * Crops and resizes the given image to the specified target dimensions while
+     * maintaining the image's aspect ratio. If the resized image does not fill the
+     * target dimensions, it will be centered within a transparent background.
+     *
+     * @param originalImage The original image to be cropped and resized.
+     * @param targetWidth The desired width of the resulting image.
+     * @param targetHeight The desired height of the resulting image.
+     * @return A wxImage that is resized to fit within the target dimensions, maintaining
+     *         the aspect ratio, and centered with transparency if necessary.
+     */
     inline wxImage cropResizeImage(const wxImage& originalImage, int targetWidth, int targetHeight) {
         int originalWidth  = originalImage.GetWidth();
         int originalHeight = originalImage.GetHeight();
 
-        double aspectRatio =
-            static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
-        int newWidth  = targetWidth;
-        int newHeight = targetHeight;
+        double aspectRatio = static_cast<double>(originalWidth) / static_cast<double>(originalHeight);
+        int newWidth       = targetWidth;
+        int newHeight      = targetHeight;
 
-        // Kiszámítjuk az új méreteket, hogy megtartsuk a képarányt
         if (originalWidth > targetWidth || originalHeight > targetHeight) {
             if (aspectRatio > 1.0) {
-                // Szélesség alapján skálázzuk az új méretet
                 newWidth  = targetWidth;
                 newHeight = static_cast<int>(targetWidth / aspectRatio);
             } else {
-                // Magasság alapján skálázzuk az új méretet
                 newHeight = targetHeight;
                 newWidth  = static_cast<int>(targetHeight * aspectRatio);
             }
         }
 
-        // Méretezzük az eredeti képet az új méretekre
         wxImage resizedImage = originalImage.Scale(newWidth, newHeight);
 
-        // Üres terület hozzáadása és transzparens töltése
         if (newWidth < targetWidth || newHeight < targetHeight) {
             wxImage finalImage(targetWidth, targetHeight);
             finalImage.SetAlpha();

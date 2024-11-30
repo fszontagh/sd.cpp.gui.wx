@@ -7,6 +7,7 @@
 #include <mutex>
 #include <ostream>
 #include <random>
+#include <cinttypes>
 
 
 #include "wx/wxprec.h"
@@ -32,6 +33,10 @@
 #include "wx/intl.h"
 #include "wx/translation.h"
 #include "wx/image.h"
+#include "wx/wxcrtbase.h"
+#include "wx/tokenzr.h"
+#include "wx/sstream.h"
+#include "wx/txtstrm.h"
 
 
 #include "exiv2/exiv2.hpp"

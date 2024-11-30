@@ -202,6 +202,17 @@ class mainUI : public wxFrame
 		wxButton* m_generate_upscaler;
 		wxCheckBox* m_keep_upscaler_in_memory;
 		wxCheckBox* m_keep_other_models_in_memory;
+		wxPanel* m_imageinfo;
+		wxSplitterWindow* m_splitter4;
+		wxPanel* m_panel25;
+		wxStaticBitmap* m_imageinfo_preview;
+		wxPanel* m_panel26;
+		wxTextCtrl* m_imageInfoPrompt;
+		wxTextCtrl* m_imageInfoNegPrompt;
+		wxStaticText* m_staticText632;
+		wxStaticText* m_imageInfoSeed;
+		wxFilePickerCtrl* m_imageInfoOpen;
+		wxBitmapButton* m_bpButton28;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
@@ -279,6 +290,7 @@ class mainUI : public wxFrame
 		virtual void OnUpscalerModelSelection( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
@@ -300,6 +312,12 @@ class mainUI : public wxFrame
 		{
 			m_splitter2->SetSashPosition( -200 );
 			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
+		}
+
+		void m_splitter4OnIdle( wxIdleEvent& )
+		{
+			m_splitter4->SetSashPosition( 0 );
+			m_splitter4->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter4OnIdle ), NULL, this );
 		}
 
 		void m_splitter3OnIdle( wxIdleEvent& )

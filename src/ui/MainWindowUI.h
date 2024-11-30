@@ -69,6 +69,7 @@ protected:
     void onClipOnCpu(wxCommandEvent& event) override;
     void onVAEOnCpu(wxCommandEvent& event) override;
     void onDiffusionFlashAttn(wxCommandEvent& event) override;
+    void OnImageInfoOpen(wxFileDirPickerEvent& event) override;
 
 public:
     /** Constructor */
@@ -206,12 +207,13 @@ private:
 
     std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
-    void imageCommentToGuiParams(std::map<std::string, std::string> params, SDMode mode);
+    void imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode);
     void onimg2ImgImageOpen(const wxString& file);
     void onUpscaleImageOpen(const wxString& file);
     void onControlnetImageOpen(const wxString& file);
 
     void readMetaDataFromImage(const wxFileName& file, const SDMode mode);
+    std::unordered_map<wxString, wxString> getMetaDataFromImage(const wxFileName& file);
 
     void PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo);
 
