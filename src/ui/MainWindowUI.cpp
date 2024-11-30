@@ -94,7 +94,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->m_stop_background_process->Show();
 
         // search the binary in the main app's path/extprocess
-        wxFileName f(wxStandardPaths::Get().GetExecutablePath());
+        wxFileName f(wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath());
         f.AppendDir("extprocess");
         f.SetName(EPROCESS_BINARY_NAME);
         this->extprocessCommand = f.GetFullPath();
