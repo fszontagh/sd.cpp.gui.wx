@@ -1,8 +1,5 @@
 #include "MainWindowSettings.h"
 #include "wx/gtk/bmpbuttn.h"
-#include "wx/translation.h"
-#include "wx/uilocale.h"
-#include "wx/utils.h"
 
 MainWindowSettings::MainWindowSettings(wxWindow* parent)
     : Settings(parent) {
@@ -47,32 +44,34 @@ void MainWindowSettings::OnOutputFileNameFormatHelpClick(wxCommandEvent& event) 
     wxLaunchDefaultBrowser(helpLink);
 }
 
-void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {    
-    if (event.GetEventObject() == this->m_openModelsPath) {
+void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
+    auto object = reinterpret_cast<wxBitmapButton*>(event.GetEventObject());
+
+    if (object == this->m_openModelsPath) {
         wxLaunchDefaultApplication(this->m_model_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openLorasPath) {
+    if (object == this->m_openLorasPath) {
         wxLaunchDefaultApplication(this->m_lora_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openVaesPath) {
+    if (object == this->m_openVaesPath) {
         wxLaunchDefaultApplication(this->m_vae_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openEmbeddingsPath) {
+    if (object == this->m_openEmbeddingsPath) {
         wxLaunchDefaultApplication(this->m_embedding_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openTaesdPath) {
+    if (object == this->m_openTaesdPath) {
         wxLaunchDefaultApplication(this->m_taesd_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openEsrganPath) {
+    if (object == this->m_openEsrganPath) {
         wxLaunchDefaultApplication(this->m_esrgan_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openControlnetPath) {
+    if (object == this->m_openControlnetPath) {
         wxLaunchDefaultApplication(this->m_controlnet_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openPresetsPath) {
+    if (object == this->m_openPresetsPath) {
         wxLaunchDefaultApplication(this->m_presets_dir->GetPath());
     }
-    if (event.GetEventObject() == this->m_openOutputPath) {
+    if (object == this->m_openOutputPath) {
         wxLaunchDefaultApplication(this->m_images_output->GetPath());
     }
 }

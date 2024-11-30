@@ -93,34 +93,31 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
 
-            // search the binary in the main app's path/extprocess
-            wxFileName f(wxStandardPaths::Get().GetExecutablePath());
-            f.AppendDir("extprocess");
+        // search the binary in the main app's path/extprocess
+        wxFileName f(wxStandardPaths::Get().GetExecutablePath());
+        f.AppendDir("extprocess");
+        f.SetName(EPROCESS_BINARY_NAME);
+        this->extprocessCommand = f.GetFullPath();
+        // if no binary in extprocess folder, search the binary in the main app's path
+        if (f.Exists() == false) {
+            f = wxFileName(wxStandardPaths::Get().GetExecutablePath());
             f.SetName(EPROCESS_BINARY_NAME);
             this->extprocessCommand = f.GetFullPath();
-            // if no binary in extprocess folder, search the binary in the main app's path
-            if (f.Exists() == false) {
-                f = wxFileName(wxStandardPaths::Get().GetExecutablePath());
-                f.SetName(EPROCESS_BINARY_NAME);
-                this->extprocessCommand = f.GetFullPath();
-            }
-            if (f.Exists() == false) {
-                this->disableExternalProcessHandling = true; // disable process handling
-                wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
-                this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));                
-                errorDialog.ShowModal();
-                this->TaskBar->Destroy();
-                delete this->cfg;
-                this->deInitLog();
-                this->Destroy();
-                return;
-            }
-
-
-
+        }
+        if (f.Exists() == false) {
+            this->disableExternalProcessHandling = true;  // disable process handling
+            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
+            this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));
+            errorDialog.ShowModal();
+            this->TaskBar->Destroy();
+            delete this->cfg;
+            this->deInitLog();
+            this->Destroy();
+            return;
+        }
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-        wxString dllFullPath  = appPath + wxString::FromUTF8Unchecked(dllName.c_str());
+        wxString dllFullPath  = wxStandardPaths::Get().GetExecutablePath() + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
         this->extProcessParam = dllFullPath.utf8_string() + ".dll";
 
         if (std::filesystem::exists(this->extProcessParam) == false) {
@@ -1197,10 +1194,7 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
         }
 
         nlohmann::json j(preset);
-        std::string presetfile =
-            wxString::Format("%s%s%s.json", this->cfg->presets,
-                             wxString(wxFileName::GetPathSeparator()), preset.name)
-                .utf8_string();
+        std::string presetfile = wxString::Format("%s%s%s.json", this->cfg->presets, wxString(wxFileName::GetPathSeparator()), preset.name).utf8_string();
 
         std::ofstream file(presetfile);
         file << j;
