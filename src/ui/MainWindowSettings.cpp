@@ -1,27 +1,25 @@
 #include "MainWindowSettings.h"
-#include "wx/gtk/bmpbuttn.h"
 
 MainWindowSettings::MainWindowSettings(wxWindow* parent)
     : Settings(parent) {
     this->ini_path = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
 
-    this->cfg        = new sd_gui_utils::config;
+    this->cfg        = std::make_shared<sd_gui_utils::config>();
     this->fileConfig = new wxFileConfig("sd.cpp.ui", wxEmptyString, this->ini_path);
     wxConfigBase::Set(fileConfig);
     this->InitConfig();
 }
+MainWindowSettings::~MainWindowSettings() {
+}
 
 void MainWindowSettings::OnImgQualityScroll(wxScrollEvent& event) {
-    // TODO: Implement OnImgQualityScroll
-    // this->m_image_quality_spin->SetValue(this->m_image_quality->GetValue());
     this->cfg->image_quality = this->m_image_quality->GetValue();
 }
 
 void MainWindowSettings::OnPngCompressionScroll(wxScrollEvent& event) {
-    // TODO: Implement OnPngCompressionScroll
+    this->cfg->png_compression_level = this->m_png_compression->GetValue();
 }
 void MainWindowSettings::onShowNotificationCheck(wxCommandEvent& event) {
-    // TODO: Implement onShowNotificationCheck
     if (!this->m_show_notifications->IsChecked()) {
         this->m_notification_timeout->Disable();
         this->cfg->notification_timeout = 60;
