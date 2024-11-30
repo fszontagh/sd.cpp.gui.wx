@@ -11,9 +11,7 @@ set(CPACK_PACKAGE_VENDOR "fszontagh")
 set(CPACK_COMPONENT_UNSPECIFIED_HIDDEN TRUE)
 set(CPACK_COMPONENT_UNSPECIFIED_REQUIRED FALSE)
 
-set(CPACK_GENERATOR "NSIS")
-set(CPACK_PACKAGE_NAME "MyApp")
-set(CPACK_PACKAGE_VERSION "1.0.0")
+
 
 
 set(CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}")
@@ -186,10 +184,12 @@ elseif(UNIX AND NOT APPLE)
     install(FILES ${CMAKE_BINARY_DIR}/stablediffusiongui.desktop DESTINATION share/applications COMPONENT "${CMAKE_PROJECT_NAME}")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION share/icons/hicolor/256x256/apps COMPONENT "${CMAKE_PROJECT_NAME}")
     include(${CMAKE_SOURCE_DIR}/cmake/AppImage.cmake)
+    set(CPACK_COMPONENTS_GROUPING IGNORE)
 elseif(APPLE)
     #set(CPACK_GENERATOR "DragNDrop")
     #set(CPACK_DMG_VOLUME_NAME "StableDiffusionGUI ${PROJECT_VERSION}")
     #set(CPACK_DMG_DS_STORE_FILE ${CMAKE_SOURCE_DIR}/platform/mac/ds_store)
+    message(ERROR "macOS is not supported yet")
 endif()
 
 include(CPack)
