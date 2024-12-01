@@ -501,7 +501,7 @@ namespace sd_gui_utils {
         std::reverse(lines_in_reverse.begin(), lines_in_reverse.end());
 
         if (lines_in_reverse.IsEmpty()) {
-            return result;  // Ha nincs adat, térjünk vissza üres map-pal
+            return result;
         }
 
         wxArrayString seglist;
@@ -513,7 +513,9 @@ namespace sd_gui_utils {
             size_t pos       = segment.find(':');
             if (pos != wxString::npos) {
                 wxString key = segment.SubString(0, pos - 1).Trim().MakeLower();
+                key.Trim(false);
                 wxString val = segment.SubString(pos + 1, segment.size() - 1).Trim();
+                val.Trim(false);
                 result[key]  = val;
             }
         }

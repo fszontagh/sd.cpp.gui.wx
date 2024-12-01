@@ -6,10 +6,14 @@
 #include "MainWindowImageDialog.h"
 
 #include "embedded_files/app_icon.h"
+#include "embedded_files/blankimage.png.h"
 #include "extprocess/config.hpp"
+#include "imageUtils.h"
 #include "ver.hpp"
+#include "wx/file.h"
 #include "wx/filename.h"
 #include "wx/string.h"
+#include "wx/stringimpl.h"
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
@@ -1144,8 +1148,31 @@ void MainWindowUI::onDiffusionFlashAttn(wxCommandEvent& event) {
     this->mapp->config->Flush(true);
 }
 
+void MainWindowUI::OnCleanImageInfo(wxCommandEvent& event) {
+    this->cleanUpImageInformations();
+    this->m_imageInfoOpen->SetPath("");
+}
+void MainWindowUI::OnImageInfoLoadTxt2img(wxCommandEvent& event) {
+    imageCommentToGuiParams(this->lastImageInfoParams, SDMode::TXT2IMG);
+}
+void MainWindowUI::OnImageInfoLoadImg2img(wxCommandEvent& event) {
+    imageCommentToGuiParams(this->lastImageInfoParams, SDMode::IMG2IMG);
+}
+void MainWindowUI::cleanUpImageInformations() {
+    this->m_imageinfo_preview->SetBitmap(blankimage_png_to_wx_bitmap());
+    this->m_imageInfoList->SetValue(wxEmptyString);
+    this->m_imageInfoPrompt->SetValue(wxEmptyString);
+    this->m_imageInfoNegPrompt->SetValue(wxEmptyString);
+    this->m_imageInfoLoadTotxt->Disable();
+    this->m_imageInfoLoadToimg2img->Disable();
+}
+
 void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
     if (event.GetPath().empty()) {
+        return;
+    }
+
+    if (!wxFile::Exists(event.GetPath())) {
         return;
     }
 
@@ -1154,11 +1181,34 @@ void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
     wxImage image(imagePath.GetFullPath());
     auto origSize = this->m_imageinfo_preview->GetSize();
     auto preview  = sd_gui_utils::ResizeImageToMaxSize(image, origSize.GetWidth(), origSize.GetHeight());
-
     this->m_imageinfo_preview->SetBitmap(preview);
 
     if (image.IsOk()) {
-        const std::unordered_map<wxString, wxString> metadata = this->getMetaDataFromImage(event.GetPath());
+        std::unordered_map<wxString, wxString> metadata;
+
+        if (image.GetType() == wxBITMAP_TYPE_PNG) {
+            const auto meta = sd_gui_utils::ReadMetadata(event.GetPath().utf8_string());
+            if (BUILD_TYPE == "Debug") {
+                for (const auto& [key, value] : meta) {
+                    std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
+                }
+            }
+            if (meta.contains("Parameters")) {
+                metadata = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(meta.at("Parameters")));
+            }
+            if (meta.contains("parameters")) {
+                metadata = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(meta.at("parameters")));
+            }
+        }
+
+        if (metadata.empty()) {
+            metadata = this->getMetaDataFromImage(event.GetPath());
+        }
+
+        if (metadata.empty()) {
+            return;
+        }
+
         if (metadata.contains("prompt")) {
             this->m_imageInfoPrompt->SetValue(metadata.at("prompt"));
         }
@@ -1166,12 +1216,20 @@ void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
         if (metadata.contains("negative_prompt")) {
             this->m_imageInfoNegPrompt->SetValue(metadata.at("negative_prompt"));
         }
-        if (metadata.contains("seed")) {
-            this->m_imageInfoSeed->SetLabel(metadata.at("seed"));
+        wxString meta;
+        for (const auto& [key, value] : metadata) {
+            if (key == "prompt" || key == "negative_prompt") {
+                continue;
+            }
+            meta += key + ": " + value + "\n";
         }
-        for (auto& [key, value] : metadata) {
-            std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
+        if (meta.empty()) {
+            return;
         }
+        this->m_imageInfoList->SetValue(meta);
+        this->m_imageInfoLoadTotxt->Enable();
+        this->m_imageInfoLoadToimg2img->Enable();
+        this->lastImageInfoParams = metadata;
     }
 }
 
@@ -2367,11 +2425,11 @@ void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
 void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode) {
     bool modelFound = false;
     for (auto item : params) {
-        // sampler
-        if (item.first == "sampler" || item.first == "Sampler") {
+        // try to find a sampler
+        if (item.first.Lower().Contains("sampler")) {
             /// we default sampler is euler_a :)
             /// in automatic, the default is unipc, we dont have it
-            if (item.second == "Default") {
+            if (item.second.Lower() == "default" || item.second.Lower() == "automatic") {
                 this->m_sampler->Select(0);
                 continue;
             }
@@ -2383,10 +2441,19 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 }
                 index++;
             }
+            index = 0;
+            for (auto sampler : sd_gui_utils::samplerSdWebuiNames) {
+                if (sampler.second == item.second || wxString(sampler.second).Lower() == item.second.Lower()) {
+                    this->m_sampler->Select(index);
+                    break;
+                }
+                index++;
+            }
         }
 
-        if (item.first == "scheduler" || item.first == "Scheduler") {
-            if (item.second == "Default") {
+        // try to find a scheduler
+        if (item.first.Lower() == "scheduler" || item.first == "schedule type" || item.first.Lower().Contains("schedule")) {
+            if (item.second.Lower() == "default" || item.second.Lower() == "automatic") {
                 this->m_scheduler->Select(0);
                 continue;
             }
@@ -2398,14 +2465,25 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 }
                 index++;
             }
+            index = 0;
+            for (auto scheduler : sd_gui_utils::schedulerSdWebuiNames) {
+                if (scheduler.second == item.second || wxString(scheduler.second).Lower() == item.second.Lower()) {
+                    this->m_scheduler->Select(index);
+                    break;
+                }
+                index++;
+            }
         }
-        // the seed
-        if (item.first == "seed" || item.first == "Seed") {
+
+        // get the seed, but our seed maximum is smaller than sdgui
+        if (item.first.Lower().Contains("seed")) {
             if (this->m_seed->GetMax() >= std::atoi(item.second.c_str())) {
                 this->m_seed->SetValue(std::atoi(item.second.c_str()));
             }
         }
-        if (item.first == "size" || item.first == "Size") {
+
+        // get the image resolution
+        if (item.first.Lower().Contains("size")) {
             size_t pos = item.second.find("x");
             std::string w, h;
             w = item.second.substr(0, pos);
@@ -2413,12 +2491,15 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             this->m_width->SetValue(std::atoi(w.c_str()));
             this->m_height->SetValue(std::atoi(h.c_str()));
         }
+
         if (item.first == "steps") {
             this->m_steps->SetValue(std::atoi(item.second.c_str()));
         }
+
         if (item.first == "cfgscale") {
             this->m_cfg->SetValue(static_cast<double>(std::atof(item.second.c_str())));
         }
+
         if (item.first == "negative_prompt") {
             if (mode == SDMode::IMG2IMG) {
                 this->m_neg_prompt2->SetValue(item.second);
@@ -2426,6 +2507,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 this->m_neg_prompt->SetValue(item.second);
             }
         }
+
         if (item.first == "prompt") {
             if (mode == SDMode::IMG2IMG) {
                 this->m_prompt2->SetValue(item.second);
@@ -2433,8 +2515,9 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 this->m_prompt->SetValue(item.second);
             }
         }
-        // first check by hash
-        if (item.first == "modelhash" && !modelFound) {
+
+        // try to find by hash, if hash is not empty
+        if (item.first == "modelhash" || item.first == "model hash" && !modelFound) {
             auto check = this->ModelManager->getByHash(item.second.utf8_string());
             if (!check.path.empty()) {
                 this->m_model->Select(this->ModelFilesIndex[check.name]);
@@ -2450,6 +2533,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 modelFound = true;
                 continue;
             }
+
             // search by name
             auto check2 = this->ModelManager->findInfoByName(item.second.utf8_string());
             if (!check.path.empty()) {
@@ -2459,7 +2543,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             }
         }
 
-        if (item.first == "vae") {
+        if (item.first.Lower().Contains("vae")) {
             unsigned int index = 0;
             for (auto vae : this->VaeFiles) {
                 if (vae.second.find(item.second) != std::string::npos) {
@@ -2468,6 +2552,28 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 }
                 index++;
             }
+        }
+    }
+
+    // get the Module 1,Module 2 ...
+    unsigned int module_counter = 1;
+    std::string VaeToFind;
+    for (auto item : params) {
+        wxString searchName = wxString::Format("Module %d", module_counter);
+        if (item.first.Lower().Contains(searchName.Lower())) {
+            // sadly, only one vae loadable once
+            VaeToFind = item.second;
+        }
+    }
+    if (VaeToFind.empty() == false) {
+        int vaeIndex = 0;
+        for (const auto vae : this->VaeFiles) {
+            wxString vaeName = wxString::FromUTF8Unchecked(vae.first);
+            if (vaeName.Lower().Contains(VaeToFind)) {
+                this->m_vae->Select(vaeIndex);
+                break;
+            }
+            vaeIndex++;
         }
     }
 }
@@ -3473,10 +3579,18 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
             _ctrlimg.SaveFile(ctrlFilename);
             itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
         }
+
         // add generation parameters into the image meta
         if (this->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
             std::string comment = wxString::FromUTF8Unchecked(this->paramsToImageComment(*itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path))).utf8_string();
 
+            if (this->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
+                std::unordered_map<wxString, wxString> _pngData = {
+                    {"parameters", comment},
+                    {"Software", EXIF_SOFTWARE}};
+                sd_gui_utils::WriteMetadata(filename.utf8_string(), _pngData, true);
+                return itemPtr;
+            }
             try {
                 auto image = Exiv2::ImageFactory::open(filename.utf8_string());
                 image->readMetadata();

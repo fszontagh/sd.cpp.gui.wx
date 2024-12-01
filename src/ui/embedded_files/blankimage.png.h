@@ -1,11 +1,11 @@
-#ifndef SD_CPP_GUI_BLANKIMAGE_PNG_H
-#define SD_CPP_GUI_BLANKIMAGE_PNG_H
+#ifndef BLANKIMAGE_PNG_H
+#define BLANKIMAGE_PNG_H
 
 #include <wx/mstream.h>
 #include <wx/image.h>
 #include <wx/bitmap.h>
 
-inline static const unsigned char sd_cpp_gui_blankimage_png[] =
+inline static const unsigned char blankimage_png[] =
 {
 	0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 
 	0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x02, 0x00, 
@@ -1315,13 +1315,13 @@ inline static const unsigned char sd_cpp_gui_blankimage_png[] =
 	0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82, 
 };
 
-inline wxBitmap& sd_cpp_gui_blankimage_png_to_wx_bitmap()
+inline wxBitmap& blankimage_png_to_wx_bitmap()
 {
-	static wxMemoryInputStream memIStream( sd_cpp_gui_blankimage_png, sizeof( sd_cpp_gui_blankimage_png ) );
+	static wxMemoryInputStream memIStream( blankimage_png, sizeof( blankimage_png ) );
 	static wxImage image( memIStream, wxBITMAP_TYPE_PNG );
 	static wxBitmap bmp( image );
 	return bmp;
 }
 
 
-#endif //SD_CPP_GUI_BLANKIMAGE_PNG_H
+#endif //BLANKIMAGE_PNG_H

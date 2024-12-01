@@ -1224,74 +1224,88 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer115;
 	bSizer115 = new wxBoxSizer( wxVERTICAL );
 
-	m_splitter4 = new wxSplitterWindow( m_imageinfo, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+	m_splitter4 = new wxSplitterWindow( m_imageinfo, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_BORDER );
 	m_splitter4->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter4OnIdle ), NULL, this );
+	m_splitter4->SetMinimumPaneSize( 200 );
 
-	m_panel25 = new wxPanel( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_scrolledWindow5 = new wxScrolledWindow( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
+	m_scrolledWindow5->SetScrollRate( 5, 5 );
 	wxBoxSizer* bSizer117;
 	bSizer117 = new wxBoxSizer( wxVERTICAL );
 
-	m_imageinfo_preview = new wxStaticBitmap( m_panel25, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
+	m_imageinfo_preview = new wxStaticBitmap( m_scrolledWindow5, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, wxBORDER_DEFAULT|wxBORDER_STATIC );
+	m_imageinfo_preview->DragAcceptFiles( true );
 	m_imageinfo_preview->SetMinSize( wxSize( 384,384 ) );
-	m_imageinfo_preview->SetMaxSize( wxSize( 768,768 ) );
+	m_imageinfo_preview->SetMaxSize( wxSize( 1024,1024 ) );
 
-	bSizer117->Add( m_imageinfo_preview, 0, wxALL, 5 );
+	bSizer117->Add( m_imageinfo_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
 
 
-	m_panel25->SetSizer( bSizer117 );
-	m_panel25->Layout();
-	bSizer117->Fit( m_panel25 );
-	m_panel26 = new wxPanel( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* imageInfoSizer;
+	m_scrolledWindow5->SetSizer( bSizer117 );
+	m_scrolledWindow5->Layout();
+	bSizer117->Fit( m_scrolledWindow5 );
+	m_scrolledWindow7 = new wxScrolledWindow( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
+	m_scrolledWindow7->SetScrollRate( 5, 5 );
 	imageInfoSizer = new wxBoxSizer( wxVERTICAL );
 
-	m_imageInfoPrompt = new wxTextCtrl( m_panel26, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
-	imageInfoSizer->Add( m_imageInfoPrompt, 1, wxALL|wxEXPAND, 5 );
+	bSizer119 = new wxBoxSizer( wxVERTICAL );
 
-	m_imageInfoNegPrompt = new wxTextCtrl( m_panel26, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
-	imageInfoSizer->Add( m_imageInfoNegPrompt, 1, wxALL|wxEXPAND, 5 );
+	m_imageInfoPrompt = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_MULTILINE|wxTE_READONLY );
+	bSizer119->Add( m_imageInfoPrompt, 0, wxALL|wxEXPAND, 5 );
 
-	wxFlexGridSizer* fgSizer1;
+	m_imageInfoNegPrompt = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_MULTILINE|wxTE_READONLY );
+	bSizer119->Add( m_imageInfoNegPrompt, 0, wxALL|wxEXPAND, 5 );
+
+	m_imageInfoList = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_LEFT|wxTE_MULTILINE|wxTE_READONLY );
+	m_imageInfoList->SetMinSize( wxSize( -1,120 ) );
+
+	bSizer119->Add( m_imageInfoList, 1, wxALL|wxEXPAND, 5 );
+
+
+	imageInfoSizer->Add( bSizer119, 1, wxEXPAND, 5 );
+
 	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 2 );
 	fgSizer1->SetFlexibleDirection( wxBOTH );
 	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-
-	m_staticText632 = new wxStaticText( m_panel26, wxID_ANY, _("Seed:"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
-	m_staticText632->Wrap( -1 );
-	fgSizer1->Add( m_staticText632, 0, wxALL, 5 );
-
-	m_imageInfoSeed = new wxStaticText( m_panel26, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	m_imageInfoSeed->Wrap( -1 );
-	fgSizer1->Add( m_imageInfoSeed, 0, wxALL, 5 );
 
 
 	imageInfoSizer->Add( fgSizer1, 1, wxEXPAND, 5 );
 
 
-	m_panel26->SetSizer( imageInfoSizer );
-	m_panel26->Layout();
-	imageInfoSizer->Fit( m_panel26 );
-	m_splitter4->SplitVertically( m_panel25, m_panel26, 0 );
+	m_scrolledWindow7->SetSizer( imageInfoSizer );
+	m_scrolledWindow7->Layout();
+	imageInfoSizer->Fit( m_scrolledWindow7 );
+	m_splitter4->SplitVertically( m_scrolledWindow5, m_scrolledWindow7, 0 );
 	bSizer115->Add( m_splitter4, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer116;
 	bSizer116 = new wxBoxSizer( wxHORIZONTAL );
 
+	m_imageInfoLoadTotxt = new wxButton( m_imageinfo, wxID_ANY, _("Load all to txt2img"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_imageInfoLoadTotxt->Enable( false );
+
+	bSizer116->Add( m_imageInfoLoadTotxt, 0, wxALL, 5 );
+
+	m_imageInfoLoadToimg2img = new wxButton( m_imageinfo, wxID_ANY, _("Load all to img2img"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_imageInfoLoadToimg2img->Enable( false );
+
+	bSizer116->Add( m_imageInfoLoadToimg2img, 0, wxALL, 5 );
+
 	m_imageInfoOpen = new wxFilePickerCtrl( m_imageinfo, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
 	m_imageInfoOpen->SetMinSize( wxSize( 200,-1 ) );
 	m_imageInfoOpen->SetMaxSize( wxSize( 400,-1 ) );
 
-	bSizer116->Add( m_imageInfoOpen, 1, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer116->Add( m_imageInfoOpen, 1, wxALL, 5 );
 
-	m_bpButton28 = new wxBitmapButton( m_imageinfo, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_cleanImageInfo = new wxBitmapButton( m_imageinfo, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_bpButton28->SetBitmap( trash_png_to_wx_bitmap() );
-	m_bpButton28->SetToolTip( _("Clear") );
+	m_cleanImageInfo->SetBitmap( trash_png_to_wx_bitmap() );
+	m_cleanImageInfo->SetToolTip( _("Clear") );
 
-	bSizer116->Add( m_bpButton28, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer116->Add( m_cleanImageInfo, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer115->Add( bSizer116, 1, wxEXPAND, 5 );
+	bSizer115->Add( bSizer116, 0, wxEXPAND, 5 );
 
 
 	m_imageinfo->SetSizer( bSizer115 );
@@ -1497,7 +1511,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
 	m_upscalerHelp->Connect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_generate_upscaler->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_imageinfo_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnImageInfoDrop ), NULL, this );
+	m_imageInfoLoadTotxt->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadTxt2img ), NULL, this );
+	m_imageInfoLoadToimg2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
+	m_cleanImageInfo->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
 	m_checkbox_lora_filter->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
 	m_checkbox_filter_embeddings->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
@@ -1575,7 +1593,11 @@ mainUI::~mainUI()
 	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
 	m_upscalerHelp->Disconnect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_generate_upscaler->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_imageinfo_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnImageInfoDrop ), NULL, this );
+	m_imageInfoLoadTotxt->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadTxt2img ), NULL, this );
+	m_imageInfoLoadToimg2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
+	m_cleanImageInfo->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
 	m_checkbox_lora_filter->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxLoraFilter ), NULL, this );
 	m_checkbox_filter_checkpoints->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );
 	m_checkbox_filter_embeddings->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::OnCheckboxCheckpointFilter ), NULL, this );

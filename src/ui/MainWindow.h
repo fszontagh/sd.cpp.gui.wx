@@ -203,16 +203,16 @@ class mainUI : public wxFrame
 		wxCheckBox* m_keep_upscaler_in_memory;
 		wxCheckBox* m_keep_other_models_in_memory;
 		wxPanel* m_imageinfo;
-		wxSplitterWindow* m_splitter4;
-		wxPanel* m_panel25;
+		wxScrolledWindow* m_scrolledWindow5;
 		wxStaticBitmap* m_imageinfo_preview;
-		wxPanel* m_panel26;
+		wxScrolledWindow* m_scrolledWindow7;
 		wxTextCtrl* m_imageInfoPrompt;
 		wxTextCtrl* m_imageInfoNegPrompt;
-		wxStaticText* m_staticText632;
-		wxStaticText* m_imageInfoSeed;
+		wxTextCtrl* m_imageInfoList;
+		wxButton* m_imageInfoLoadTotxt;
+		wxButton* m_imageInfoLoadToimg2img;
 		wxFilePickerCtrl* m_imageInfoOpen;
-		wxBitmapButton* m_bpButton28;
+		wxBitmapButton* m_cleanImageInfo;
 		wxPanel* m_models_panel;
 		wxCheckBox* m_checkbox_lora_filter;
 		wxCheckBox* m_checkbox_filter_checkpoints;
@@ -290,7 +290,11 @@ class mainUI : public wxFrame
 		virtual void OnUpscalerModelSelection( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoDrop( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoLoadTxt2img( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void OnCleanImageInfo( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
@@ -301,6 +305,10 @@ class mainUI : public wxFrame
 	public:
 		wxBoxSizer* bSizer8911;
 		wxHtmlWindow* m_upscalerHelp;
+		wxSplitterWindow* m_splitter4;
+		wxBoxSizer* imageInfoSizer;
+		wxBoxSizer* bSizer119;
+		wxFlexGridSizer* fgSizer1;
 		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer891;
 
