@@ -1,22 +1,7 @@
 #include "MainWindowUI.h"
-
-#include "../helpers/simplecurl.h"
-#include "../helpers/sslUtils.hpp"
-#include "MainWindowAboutDialog.h"
-#include "MainWindowImageDialog.h"
-
-#include "QueueManager.h"
 #include "embedded_files/app_icon.h"
 #include "embedded_files/blankimage.png.h"
-#include "extprocess/config.hpp"
-#include "imageUtils.h"
-#include "utils.hpp"
-#include "ver.hpp"
-#include "wx/dir.h"
-#include "wx/file.h"
-#include "wx/filename.h"
-#include "wx/string.h"
-#include "wx/stringimpl.h"
+
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {

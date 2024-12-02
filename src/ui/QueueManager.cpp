@@ -1,5 +1,4 @@
 #include "QueueManager.h"
-#include "ver.hpp"
 
 QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
     // need to send events into the mainwindow by the threads...

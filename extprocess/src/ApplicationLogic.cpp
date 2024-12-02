@@ -1,17 +1,5 @@
 #include "ApplicationLogic.h"
-#include <chrono>
-#include <cstddef>
-#include <cstdlib>
-#include <iostream>
-#include <ostream>
-#include <thread>
-#include "config.hpp"
-#include "helpers/sd.hpp"
-#include "helpers/sslUtils.hpp"
-#include "ui/QueueManager.h"
-#include "ver.hpp"
-#include "wx/strvararg.h"
-#include "wx/translation.h"
+
 #ifndef STBI_NO_FAILURE_STRINGS
 #define STBI_NO_FAILURE_STRINGS
 #endif

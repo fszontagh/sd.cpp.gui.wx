@@ -38,7 +38,7 @@
 #include "wx/sstream.h"
 #include "wx/txtstrm.h"
 
-
+#include "extprocess/config.hpp"
 #include "exiv2/exiv2.hpp"
 
 #include "helpers/cpuinfo_x86.hpp"

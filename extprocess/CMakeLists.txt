@@ -8,6 +8,7 @@ message(STATUS "STACK_SIZE: ${STACK_SIZE}")
 configure_file(src/config.hpp.in config.hpp)
 
 
+
 set(SOURCES "src/main.cpp")
 
 if (MSVC)
@@ -16,6 +17,7 @@ endif()
 
 add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp)
 
+target_precompile_headers(${EPROCESS_BINARY_NAME} PRIVATE src/pch.h)
 
 if (MSVC)
     target_link_options(${EPROCESS_BINARY_NAME} PRIVATE /STACK:${STACK_SIZE})

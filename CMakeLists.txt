@@ -95,7 +95,9 @@ add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE src/pch.h)
 
 if (NOT WIN32)
-	set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
+
+set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
+
 else()
 	set(APPDEPENDS wxWidgets::wxWidgets)
     if (MSVC)
