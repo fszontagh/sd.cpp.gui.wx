@@ -105,6 +105,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->fileConfig->Write("/notification_timeout", this->m_notification_timeout->GetValue());
     this->fileConfig->Write("/enable_civitai", this->m_enableCivitai->GetValue());
     this->fileConfig->Write("/output_filename_format", this->m_output_filename_format->GetValue());
+    this->fileConfig->Write("/autogen_hash", this->m_autogen_hash->GetValue());
 
     auto language = this->locales[this->m_language->GetSelection()];
     this->fileConfig->Write("/language", wxString::FromUTF8Unchecked(language));
@@ -159,6 +160,7 @@ void MainWindowSettings::InitConfig() {
     this->cfg->enable_civitai         = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
     this->cfg->language               = this->fileConfig->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
     this->cfg->output_filename_format = this->fileConfig->Read("/output_filename_format", this->cfg->output_filename_format);
+    this->cfg->auto_gen_hash          = this->fileConfig->ReadBool("/autogen_hash", this->cfg->auto_gen_hash);
 
     wxString username = "civitai_api_key";
     wxSecretValue password;

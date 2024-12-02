@@ -5,11 +5,14 @@
 #include "MainWindowAboutDialog.h"
 #include "MainWindowImageDialog.h"
 
+#include "QueueManager.h"
 #include "embedded_files/app_icon.h"
 #include "embedded_files/blankimage.png.h"
 #include "extprocess/config.hpp"
 #include "imageUtils.h"
+#include "utils.hpp"
 #include "ver.hpp"
+#include "wx/dir.h"
 #include "wx/file.h"
 #include "wx/filename.h"
 #include "wx/string.h"
@@ -66,6 +69,10 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     const auto clip_on_cpu          = this->mapp->config->ReadBool("/clip_on_cpu", this->clipOnCpu->GetValue());
     const auto controlnet_on_cpu    = this->mapp->config->ReadBool("/controlnet_on_cpu", this->cnOnCpu->GetValue());
     const auto vae_on_cpu           = this->mapp->config->ReadBool("/vae_on_cpu", this->vaeOnCpu->GetValue());
+
+    this->m_imageInfoOpen->SetPath(this->cfg->lastImageInfoPath.empty() ? this->cfg->output : this->cfg->lastImageInfoPath);
+    this->m_img2imgOpen->SetPath(this->cfg->lastImg2ImgPath.empty() ? this->cfg->output : this->cfg->lastImg2ImgPath);
+    this->m_upscaler_filepicker->SetPath(this->cfg->lastUpscalerPath.empty() ? this->cfg->output : this->cfg->lastUpscalerPath);
 
     this->diffusionFlashAttn->SetValue(diffusion_flash_attn);
     this->clipOnCpu->SetValue(clip_on_cpu);
@@ -260,13 +267,14 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
     }
     auto name = this->m_model->GetStringSelection().utf8_string();
     // img2img has an image
-    if (!this->m_img2imgOpen->GetPath().empty()) {
+    if (!this->m_img2imgOpen->GetPath().empty() && !wxFileName(this->m_img2imgOpen->GetPath()).IsDir()) {
         this->m_generate1->Enable();
     }
     this->m_generate2->Enable();
     {
         std::lock_guard<std::mutex> lock(this->taskBarMutex);
         this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
+        this->m_model->SetToolTip(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
     }
 }
 
@@ -275,7 +283,7 @@ void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onVaeSelect(wxCommandEvent& event) {
-    // TODO: Implement onVaeSelect
+    this->m_vae->SetToolTip(this->m_vae->GetStringSelection().utf8_string());
 }
 
 void MainWindowUI::onRandomGenerateButton(wxCommandEvent& event) {
@@ -383,7 +391,9 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         this->m_seed->Enable();
         this->m_steps->Enable();
 
-        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG && this->m_controlnetImageOpen->GetPath().length() > 0) {
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG &&
+            !this->m_controlnetImageOpen->GetPath().empty() &&
+            !wxFileName(this->m_controlnetImageOpen->GetPath()).IsDir()) {
             this->m_width->Disable();
             this->m_height->Disable();
             this->m_button7->Disable();  // swap button
@@ -394,12 +404,14 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         }
         // img2img
         if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG && !this->m_img2imgOpen->GetPath().empty()) {
-            this->m_width->Disable();
-            this->m_height->Disable();
-            this->m_button7->Disable();  // swap button
+            if (!wxFileName(this->m_img2imgOpen->GetPath()).IsDir()) {
+                this->m_width->Disable();
+                this->m_height->Disable();
+                this->m_button7->Disable();  // swap button
+            }
         }
         if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG) {
-            if (this->m_filePickerDiffusionModel->GetPath().empty() == false) {
+            if (this->m_filePickerDiffusionModel->GetPath().empty() == false && wxFileName(this->m_filePickerDiffusionModel->GetPath()).IsDir() == false) {
                 this->m_model->Disable();
                 this->m_model->SetSelection(0);
                 this->m_controlnetModels->Select(0);
@@ -414,7 +426,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         }
     }
     // upscaler
-    if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER) {
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER || selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO) {
         this->m_model->Disable();
         this->m_type->Disable();
         this->m_vae->Disable();
@@ -627,10 +639,18 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
         return;
     }
 
-    this->readMetaDataFromImage(file, SDMode::TXT2IMG);
+    this->readMetaDataFromImage(file, SDMode::TXT2IMG, true);
 }
-void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mode) {
+void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mode, bool askForLoadParameters) {
     auto getParams = this->getMetaDataFromImage(file);
+    if (getParams.size() > 0 && askForLoadParameters == true) {
+        wxMessageDialog dialog(this, _("Load generation parameters from image?"), _("Load parameters?"), wxYES_NO | wxICON_QUESTION);
+        if (dialog.ShowModal() == wxID_YES) {
+            this->imageCommentToGuiParams(getParams, mode);
+            return;
+        }
+        return;
+    }
     this->imageCommentToGuiParams(getParams, mode);
 }
 std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const wxFileName& file) {
@@ -679,9 +699,10 @@ void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
-    bool generate1State = this->m_generate1->IsEnabled();
-    bool generate2State = this->m_generate2->IsEnabled();
-    bool generate3State = this->m_generate_upscaler->IsEnabled();
+    bool generate1State                    = this->m_generate1->IsEnabled();
+    bool generate2State                    = this->m_generate2->IsEnabled();
+    bool generate3State                    = this->m_generate_upscaler->IsEnabled();
+    sd_gui_utils::ModelFileInfo* modelinfo = nullptr;
 
     this->m_generate1->Enable(false);
     this->m_generate2->Enable(false);
@@ -745,9 +766,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (diffusionModel.empty() == false) {
         item->params.diffusion_model_path = diffusionModel;
     } else {
-        auto mindex                            = this->m_model->GetCurrentSelection();
-        sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(mindex));
-        item->params.model_path                = modelinfo->path;
+        auto mindex             = this->m_model->GetCurrentSelection();
+        modelinfo               = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(mindex));
+        item->params.model_path = modelinfo->path;
     }
 
     if (this->m_taesd->GetCurrentSelection() > 0) {
@@ -852,10 +873,14 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     }
 
     if (this->m_controlnetModels->GetCurrentSelection() > 0 && type == QM::GenerationMode::TXT2IMG) {
-        item->params.controlnet_path = this->ControlnetModels.at(this->m_controlnetModels->GetStringSelection().utf8_string());
-        // do not set the control image if we have no model
-        if (this->m_controlnetImageOpen->GetPath().length() > 0) {
-            item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
+        if (diffusionModel.empty() == false) {
+            this->writeLog(wxString::Format(_("Skipping controlnet with diffusion model: %s"), diffusionModel.c_str()));
+        } else {
+            item->params.controlnet_path = this->ControlnetModels.at(this->m_controlnetModels->GetStringSelection().utf8_string());
+            // do not set the control image if we have no model
+            if (this->m_controlnetImageOpen->GetPath().length() > 0) {
+                item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
+            }
         }
     } else {
         item->params.controlnet_path    = "";
@@ -890,9 +915,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->mode = type;
 
     if (type == QM::GenerationMode::IMG2IMG) {
-        item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
-        if (this->cfg->save_all_image) {
-            item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+        if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists()) {
+            item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
+            if (this->cfg->save_all_image) {
+                item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+            }
         }
     }
 
@@ -901,7 +928,19 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         this->m_seed->SetValue(item->params.seed);
     }
 
-    // add the queue item
+    if (modelinfo != nullptr && modelinfo->sha256.empty() && this->cfg->auto_gen_hash) {
+        item->hash_fullsize = modelinfo->size;
+        item->need_sha256   = true;
+        // sd_gui_utils::VoidHolder* holder = new sd_gui_utils::VoidHolder;
+        // holder->p1                       = (void*)this->GetEventHandler();
+        // holder->p2                       = (void*)item.get();
+        // holder->p3                       = (void*)modelinfo;
+        // this->voids.emplace_back(holder);
+        // item->status = QM::QueueStatus::PENDING;
+        // this->qmanager->AddItem(item);
+        // auto hash = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void*)holder, &MainWindowUI::ModelHashingCallback);
+        // this->ModelManager->setHash(modelinfo->path.c_str(), hash);
+    }
     this->qmanager->AddItem(item);
 
     this->m_generate1->Enable(generate1State);
@@ -1039,7 +1078,16 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     this->m_img2img_preview->SetSize(origSize);
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
-    this->m_img2imgOpen->SetPath("");
+    auto path = wxFileName(this->m_img2imgOpen->GetPath());
+    if (path.IsDir()) {
+        this->m_img2imgOpen->SetPath(path.GetAbsolutePath());
+    } else {
+        this->m_img2imgOpen->SetPath(path.GetPath());
+    }
+    this->cfg->lastImg2ImgPath = this->m_img2imgOpen->GetPath();
+    this->mapp->config->Write("lastImg2ImgPath", this->m_img2imgOpen->GetPath());
+    this->mapp->config->Flush(true);
+
     this->m_generate2->Disable();
 }
 
@@ -1150,7 +1198,7 @@ void MainWindowUI::onDiffusionFlashAttn(wxCommandEvent& event) {
 
 void MainWindowUI::OnCleanImageInfo(wxCommandEvent& event) {
     this->cleanUpImageInformations();
-    this->m_imageInfoOpen->SetPath("");
+    this->m_imageInfoOpen->SetPath(this->cfg->lastImageInfoPath.empty() ? this->cfg->output : this->cfg->lastImageInfoPath);
 }
 void MainWindowUI::OnImageInfoLoadTxt2img(wxCommandEvent& event) {
     imageCommentToGuiParams(this->lastImageInfoParams, SDMode::TXT2IMG);
@@ -1168,11 +1216,14 @@ void MainWindowUI::cleanUpImageInformations() {
 }
 
 void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
+    this->cleanUpImageInformations();
     if (event.GetPath().empty()) {
+        this->m_imageInfoOpen->SetPath(this->cfg->lastImageInfoPath);
         return;
     }
 
     if (!wxFile::Exists(event.GetPath())) {
+        this->m_imageInfoOpen->SetPath(this->cfg->lastImageInfoPath);
         return;
     }
 
@@ -1184,6 +1235,10 @@ void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
     this->m_imageinfo_preview->SetBitmap(preview);
 
     if (image.IsOk()) {
+        this->cfg->lastImageInfoPath = imagePath.GetPath().utf8_string();
+        this->mapp->config->Write("/lastImageInfoPath", imagePath.GetPath());
+        this->mapp->config->Flush(true);
+
         std::unordered_map<wxString, wxString> metadata;
 
         if (image.GetType() == wxBITMAP_TYPE_PNG) {
@@ -1901,14 +1956,11 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
         }
         auto currentItem = store->GetItem(currow);
 
-        sd_gui_utils::ModelFileInfo* modelinfo =
-            reinterpret_cast<sd_gui_utils::ModelFileInfo*>(store->GetItemData(currentItem));
-        auto shortname =
-            std::filesystem::path(modelinfo->name).replace_extension().string();
+        sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(store->GetItemData(currentItem));
+        auto shortname                         = std::filesystem::path(modelinfo->name).replace_extension().string();
         switch (tu) {
             case 100:
-                this->threads.emplace_back(
-                    new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo));
+                this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo));
                 break;
             case 101:
                 this->m_prompt->SetValue(wxString::Format(
@@ -1923,19 +1975,16 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                     "%s <lora:%s:0.5>", this->m_prompt2->GetValue(), shortname));
                 break;
             case 104:
-                this->m_neg_prompt2->SetValue(wxString::Format(
-                    "%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), shortname));
+                this->m_neg_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), shortname));
                 break;
             case 105:
                 this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
                 break;
             case 111:
-                this->m_prompt->SetValue(
-                    wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
+                this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
                 break;
             case 112:
-                this->m_neg_prompt->SetValue(
-                    wxString::Format("%s %s", this->m_neg_prompt->GetValue(), shortname));
+                this->m_neg_prompt->SetValue(wxString::Format("%s %s", this->m_neg_prompt->GetValue(), shortname));
                 break;
             case 113:
                 this->m_prompt2->SetValue(
@@ -2172,6 +2221,15 @@ void MainWindowUI::SendThreadEvent(wxEvtHandler* eventHandler, sd_gui_utils::Thr
     e->SetPayload(payload);
     wxQueueEvent(eventHandler, e);
 }
+
+template <typename T>
+void MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text) {
+    wxThreadEvent* e = new wxThreadEvent();
+    e->SetString(wxString::Format("%d:%s", (int)eventType, text));
+    e->SetPayload(payload);
+    wxQueueEvent(this->GetEventHandler(), e);
+}
+
 void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
     std::string basepath;
 
@@ -2604,19 +2662,32 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
         this->m_height->Disable();
         this->m_img2imgOpen->SetPath(file);
 
-        this->readMetaDataFromImage(wxFileName(file), SDMode::IMG2IMG);
+        this->readMetaDataFromImage(wxFileName(file), SDMode::IMG2IMG, true);
     } else {
         wxMessageBox(_("Can not open image!"));
     }
 }
 
 void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
-    if (file.length() < 1) {
-        std::cerr << __FILE__ << ":" << __LINE__ << " onUpscaleImageOpen: file is empty" << std::endl;
+    if (file.empty()) {
+        this->writeLog(_("Upscaler image open: file name is empty"), true);
+        return;
+    }
+
+    wxFileName fn(file);
+    if (fn.FileExists() == false) {
+        this->writeLog(wxString::Format(_("Upscaler image open: file not found: %s"), file), true);
+        return;
+    }
+
+    if (fn.IsDir()) {
         return;
     }
     wxImage img;
     if (img.LoadFile(file)) {
+        this->cfg->lastUpscalerPath = fn.GetPath();
+        this->mapp->config->Write("lastUpscalerPath", fn.GetPath());
+
         this->m_upscaler_filepicker->SetPath(file);
         auto origSize = this->m_upscaler_source_image->GetSize();
         auto preview  = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
@@ -2784,6 +2855,14 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         wxString message;
 
         switch (event) {
+            case QM::QueueEvents::ITEM_MODEL_HASH_START: {
+            } break;
+            case QM::QueueEvents::ITEM_MODEL_HASH_UPDATE: {
+                MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_PROGRESS, item);  // this will call the STANDALONE_HASHING_PROGRESS event too
+            } break;
+            case QM::QueueEvents::ITEM_MODEL_HASH_DONE: {
+                MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_DONE, item);  // this will call the STANDALONE_HASHING_DONE event too
+            } break;
                 // new item added
             case QM::QueueEvents::ITEM_ADDED:
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
@@ -2966,7 +3045,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
 
     /// status of hashing from modellist
-    if (threadEvent == sd_gui_utils::STANDALONE_HASHING_PROGRESS) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS) {
         // modelinfo
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         auto store                             = this->m_data_model_list->GetStore();
@@ -2985,11 +3064,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto _item      = store->GetItem(i);
             auto _item_data = store->GetItemData(_item);
-            auto* _qitem =
-                reinterpret_cast<sd_gui_utils::ModelFileInfo*>(_item_data);
+            auto* _qitem    = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(_item_data);
             if (_qitem->path == modelinfo->path) {
                 store->SetValueByRow(current_progress, i, progressCol);
                 store->SetValueByRow(modelinfo->sha256.substr(0, 10), i, hashCol);
+                store->RowValueChanged(i, progressCol);
                 store->RowValueChanged(i, hashCol);
                 this->m_data_model_list->Refresh();
                 this->m_data_model_list->Update();
@@ -2997,7 +3076,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             }
         }
     }
-    if (threadEvent == sd_gui_utils::STANDALONE_HASHING_DONE) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         if (modelinfo->civitaiPlainJson.empty() && this->cfg->enable_civitai) {
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
@@ -3009,8 +3088,16 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         modelinfo->hash_progress_size = 0;
         return;
     }
-    if (threadEvent == sd_gui_utils::HASHING_PROGRESS) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
         std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+
+        auto modelinfo = this->ModelManager->getIntoPtr(myjob->params.model_path);
+        if (modelinfo != nullptr) {
+            modelinfo->hash_progress_size = myjob->hash_progress_size;
+            modelinfo->hash_fullsize      = myjob->hash_fullsize;
+            this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
+            std::cout << "Hashing: " << modelinfo->hash_progress_size << "/" << modelinfo->hash_fullsize << std::endl;
+        }
 
         // update column
         auto store = this->m_joblist->GetStore();
@@ -3041,8 +3128,16 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         }
         return;
     }
-    if (threadEvent == sd_gui_utils::HASHING_DONE) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_DONE) {
         std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+
+        auto modelinfo = this->ModelManager->getIntoPtr(myjob->params.model_path);
+        if (modelinfo != nullptr) {
+            this->ModelManager->setHash(myjob->params.model_path, myjob->generated_sha256);
+            // resend a progress update, because the gui will not receive the event
+            this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
+            this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE, modelinfo);
+        }
 
         // update column
         auto store = this->m_joblist->GetStore();
@@ -3064,7 +3159,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->ModelManager->getIntoPtr(myjob->params.model_path)->hash_progress_size = 0;
         return;
     }
-    if (threadEvent == sd_gui_utils::GENERATION_PROGRESS) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::GENERATION_PROGRESS) {
         std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
 
         // update column
@@ -3092,14 +3187,14 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
 
         return;
     }
-    if (threadEvent == sd_gui_utils::SD_MESSAGE) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::SD_MESSAGE) {
         if (content.length() < 1) {
             return;
         }
         this->writeLog(wxString::Format("%s", content));
         return;
     }
-    if (threadEvent == sd_gui_utils::MESSAGE) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::MESSAGE) {
         this->writeLog(wxString::Format("%s\n", content));
         return;
     }
@@ -3787,6 +3882,10 @@ void MainWindowUI::initConfig() {
     this->cfg->enable_civitai         = this->mapp->config->ReadBool("/enable_civitai", this->cfg->enable_civitai);
     this->cfg->language               = this->mapp->config->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
     this->cfg->output_filename_format = this->mapp->config->Read("/output_filename_format", this->cfg->output_filename_format);
+    this->cfg->lastImageInfoPath      = this->mapp->config->Read("/lastImageInfoPath", this->cfg->lastImageInfoPath);
+    this->cfg->lastImg2ImgPath        = this->mapp->config->Read("/lastImg2ImgPath", this->cfg->lastImg2ImgPath);
+    this->cfg->lastUpscalerPath       = this->mapp->config->Read("/lastUpscalerPath", this->cfg->lastUpscalerPath);
+    this->cfg->auto_gen_hash          = this->mapp->config->ReadBool("/auto_gen_hash", this->cfg->auto_gen_hash);
 
     int idx               = 0;
     auto saved_image_type = this->mapp->config->Read("/image_type", "JPG");
@@ -3862,7 +3961,7 @@ void MainWindowUI::threadedModelHashCalc(wxEvtHandler* eventHandler, sd_gui_util
 }
 
 void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_utils::ModelFileInfo* modelinfo) {
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_START, modelinfo);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_START, modelinfo);
 
     // get apikey from store, if available
     wxString username = "civitai_api_key";
@@ -3892,29 +3991,29 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_
         request.get(url, headers, response);
 
         modelinfo->civitaiPlainJson = response;
-        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FINISHED, modelinfo);
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FINISHED, modelinfo);
         return;
     } catch (const std::exception& e) {
         std::cerr << __FILE__ << ":" << __LINE__ << " " << e.what() << std::endl;
         wxMessageDialog dialog(this, e.what());
         modelinfo->civitaiPlainJson = response;
-        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
         return;
     }
     modelinfo->civitaiPlainJson = response;
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FAILED, modelinfo);
 }
 
 void MainWindowUI::threadedModelInfoImageDownload(
     wxEvtHandler* eventHandler,
     sd_gui_utils::ModelFileInfo* modelinfo) {
     if (modelinfo->civitaiPlainJson.empty()) {
-        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, std::string("No model info found."));
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, std::string("No model info found."));
         return;
     }
 
     if (modelinfo->CivitAiInfo.images.empty()) {
-        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, "No images found.");
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, "No images found.");
         return;
     }
 
@@ -3925,7 +4024,7 @@ void MainWindowUI::threadedModelInfoImageDownload(
         }
     }
     modelinfo->preview_images.clear();
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_START, modelinfo);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_START, modelinfo);
 
     // Get API key from store, if available
     wxString username = "civitai_api_key";
@@ -3975,18 +4074,18 @@ void MainWindowUI::threadedModelInfoImageDownload(
                     modelinfo->preview_images.emplace_back(new_path);
                     img.local_path = new_path;
 
-                    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
+                    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
                     index++;
                 }
             }
             _tmpImg.Destroy();
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
-            MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
+            MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGE_FAILED, modelinfo, img.url);
         }
     }
 
-    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::MODEL_INFO_DOWNLOAD_IMAGES_DONE, modelinfo);
+    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_DONE, modelinfo);
 }
 
 void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {

@@ -219,7 +219,7 @@ private:
     void onUpscaleImageOpen(const wxString& file);
     void onControlnetImageOpen(const wxString& file);
 
-    void readMetaDataFromImage(const wxFileName& file, const SDMode mode);
+    void readMetaDataFromImage(const wxFileName& file, const SDMode mode, bool askForLoadParameters = false);
     std::unordered_map<wxString, wxString> getMetaDataFromImage(const wxFileName& file);
 
     // clean up image informations
@@ -240,6 +240,9 @@ private:
 
     template <typename T>
     static void SendThreadEvent(wxEvtHandler* eventHandler, sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "");
+
+    template <typename T>
+    void SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "");
 
     // generate the hash for a model, from the model table list
     void threadedModelHashCalc(wxEvtHandler* eventHandler, sd_gui_utils::ModelFileInfo* modelinfo);

@@ -2,13 +2,14 @@
 #define EXTPROCESS_APPLICATIONLOGIC_H
 
 #include <memory>
-#include <string>
 #include <random>
-#include "wx/translation.h"
-#include "wx/event.h"
-#include "ver.hpp"
+#include <string>
 #include "helpers/sd.hpp"
+#include "ver.hpp"
+#include "wx/event.h"
+#include "wx/translation.h"
 
+#include "helpers/sslUtils.hpp"
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/json.hpp"
@@ -25,6 +26,15 @@ public:
             std::cerr << text;
         } else {
             std::cout << text;
+        }
+    }
+    inline static void HandleHashCallback(size_t readed, std::string hash, void* data) {
+        ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
+        auto item = instance->currentItem;
+
+        if (item != nullptr) {
+            item->hash_progress_size = readed;
+            instance->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_UPDATE);
         }
     }
 

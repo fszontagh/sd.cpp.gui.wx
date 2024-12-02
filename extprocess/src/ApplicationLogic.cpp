@@ -7,6 +7,7 @@
 #include <thread>
 #include "config.hpp"
 #include "helpers/sd.hpp"
+#include "helpers/sslUtils.hpp"
 #include "ui/QueueManager.h"
 #include "ver.hpp"
 #include "wx/strvararg.h"
@@ -153,6 +154,19 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
 
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
+    if (this->currentItem->need_sha256 == true) {
+        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_START);
+        this->currentItem->hash_fullsize = std::filesystem::file_size(this->currentItem->params.model_path.c_str());
+        
+
+        this->currentItem->generated_sha256 = sd_gui_utils::sha256_file_openssl(
+            this->currentItem->params.model_path.c_str(),
+            (void*)this,
+            ApplicationLogic::HandleHashCallback);
+        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_DONE);
+    }
+
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START);
     // on mode convert always return true, because no model loading
     if (this->loadSdModel() == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
@@ -437,7 +451,6 @@ void ApplicationLogic::Upscale() {
 
     std::string filepath = this->handleSdImage(results);
 
-
     this->currentItem->rawImages.push_back(filepath);
     free(results.data);
     results.data = NULL;
@@ -469,9 +482,8 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         return "";
     }
     if (BUILD_TYPE == "Debug") {
-        std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;        
+        std::cout << __FILE__ << ":" << __LINE__ << ": saved image to: " << filename << " size: " << image.width << "x" << image.height << " filesize: " << std::filesystem::file_size(filename) << std::endl;
     }
-    
 
     return filename;
 }

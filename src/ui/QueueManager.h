@@ -9,7 +9,8 @@ namespace QM {
         FAILED,
         MODEL_LOADING,
         DONE,
-        HASHING
+        HASHING,
+        HASHING_DONE
     };
 
     enum GenerationMode {
@@ -55,7 +56,10 @@ namespace QM {
         ITEM_MODEL_LOADED       = 1 << 7,
         ITEM_MODEL_FAILED       = 1 << 8,
         ITEM_GENERATION_STARTED = 1 << 9,
-        ITEM_FAILED             = 1 << 10
+        ITEM_FAILED             = 1 << 10,
+        ITEM_MODEL_HASH_START   = 1 << 11,
+        ITEM_MODEL_HASH_UPDATE  = 1 << 12,
+        ITEM_MODEL_HASH_DONE    = 1 << 13
     };
 
     enum class QueueItemImageType : unsigned int {
@@ -166,6 +170,8 @@ namespace QM {
         std::string git_version            = GIT_HASH;
         bool keep_checkpoint_in_memory     = false;
         bool keep_upscaler_in_memory       = false;
+        bool need_sha256                   = false;
+        std::string generated_sha256       = "";
         int update_index                   = -1;
         QueueItem(const QueueItem& other)
             : id(other.id),
@@ -194,6 +200,8 @@ namespace QM {
               git_version(other.git_version),
               keep_checkpoint_in_memory(other.keep_checkpoint_in_memory),
               keep_upscaler_in_memory(other.keep_upscaler_in_memory),
+              need_sha256(other.need_sha256),
+              generated_sha256(other.generated_sha256),
               update_index(other.update_index) {}
         QueueItem() = default;
     };
@@ -226,6 +234,8 @@ namespace QM {
         git_version,
         keep_checkpoint_in_memory,
         keep_upscaler_in_memory,
+        need_sha256,
+        generated_sha256,
         update_index)
 
     class QueueManager {

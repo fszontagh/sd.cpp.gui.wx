@@ -376,6 +376,7 @@ class Settings : public wxFrame
 		wxDirPickerCtrl* m_images_output;
 		wxBitmapButton* m_openOutputPath;
 		wxPanel* m_settings;
+		wxCheckBox* m_autogen_hash;
 		wxCheckBox* m_keep_model_in_memory;
 		wxCheckBox* m_save_all_image;
 		wxStaticText* m_staticText16;

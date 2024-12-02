@@ -7,7 +7,6 @@
 #include "../helpers/sd.hpp"
 #include "../libs/bitmask_operators.h"
 
-
 namespace sd_gui_utils {
 
     /**
@@ -265,6 +264,7 @@ namespace sd_gui_utils {
         std::string output_filename_format = "[mode]_[jobid]_[seed]_[width]x[height]";
         bool keep_model_in_memory          = true;
         bool save_all_image                = true;
+        bool auto_gen_hash                 = true;
         int n_threads                      = 2;
         imageTypes image_type              = imageTypes::JPG;
         unsigned int image_quality         = 90;
@@ -272,6 +272,9 @@ namespace sd_gui_utils {
         bool show_notifications            = true;
         int notification_timeout           = 60;
         bool enable_civitai                = true;
+        std::string lastImageInfoPath      = "";
+        std::string lastImg2ImgPath        = "";
+        std::string lastUpscalerPath       = "";
     };
     inline std::string formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);
@@ -427,7 +430,7 @@ namespace sd_gui_utils {
     };
 
     /* JSONize SD Params*/
-    enum ThreadEvents {
+    enum class ThreadEvents {
         QUEUE,
         HASHING_PROGRESS,
         MODEL_LOAD_DONE,
@@ -516,7 +519,7 @@ namespace sd_gui_utils {
                 key.Trim(false);
                 wxString val = segment.SubString(pos + 1, segment.size() - 1).Trim();
                 val.Trim(false);
-                result[key]  = val;
+                result[key] = val;
             }
         }
 

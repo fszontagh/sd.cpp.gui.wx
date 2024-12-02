@@ -223,7 +223,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     
 
     // only handle the QUEUE messages, what this class generate
-    if (threadEvent == sd_gui_utils::QUEUE) {
+    if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
         QM::QueueEvents event = (QM::QueueEvents)wxAtoi(content);
         auto payload          = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
         if (event == QM::QueueEvents::ITEM_START) {

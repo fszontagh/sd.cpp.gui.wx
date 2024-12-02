@@ -1853,10 +1853,20 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* sizer2017;
 	sizer2017 = new wxBoxSizer( wxVERTICAL );
 
+	wxGridSizer* gSizer3;
+	gSizer3 = new wxGridSizer( 0, 2, 0, 0 );
+
+	m_autogen_hash = new wxCheckBox( m_settings, wxID_ANY, _("Generate missing base model hash before diffusion"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_autogen_hash->SetValue(true);
+	gSizer3->Add( m_autogen_hash, 0, wxALL, 5 );
+
+
+	sizer2017->Add( gSizer3, 0, wxALL|wxEXPAND, 5 );
+
 	wxGridSizer* sizer2018;
 	sizer2018 = new wxGridSizer( 0, 2, 0, 0 );
 
-	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, _("Keep model in memory"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+	m_keep_model_in_memory = new wxCheckBox( m_settings, wxID_ANY, _("Keep model in memory"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_keep_model_in_memory->SetValue(true);
 	m_keep_model_in_memory->Enable( false );
 	m_keep_model_in_memory->SetToolTip( _("Keep model in (v)RAM after diffusions") );
@@ -1871,7 +1881,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxGridSizer* sizer2019;
 	sizer2019 = new wxGridSizer( 0, 2, 0, 0 );
 
-	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, _("Save all images (intermediate images)"), wxDefaultPosition, wxDefaultSize, wxALIGN_RIGHT );
+	m_save_all_image = new wxCheckBox( m_settings, wxID_ANY, _("Save all images (intermediate images)"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_save_all_image->SetValue(true);
 	m_save_all_image->Enable( false );
 
