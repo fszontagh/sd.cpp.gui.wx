@@ -1,22 +1,6 @@
 #ifndef EXTPROCESS_APPLICATIONLOGIC_H
 #define EXTPROCESS_APPLICATIONLOGIC_H
 
-#include <memory>
-#include <random>
-#include <string>
-#include <thread>
-#include "helpers/sd.hpp"
-#include "ver.hpp"
-#include "wx/event.h"
-#include "wx/translation.h"
-
-#include "config.hpp"
-#include "helpers/sslUtils.hpp"
-#include "libs/SharedLibrary.h"
-#include "libs/SharedMemoryManager.h"
-#include "libs/json.hpp"
-#include "ui/QueueManager.h"
-
 class ApplicationLogic {
 public:
     ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager);
