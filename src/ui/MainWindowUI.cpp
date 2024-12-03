@@ -2,7 +2,6 @@
 #include "embedded_files/app_icon.h"
 #include "embedded_files/blankimage.png.h"
 
-
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
@@ -1732,7 +1731,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
 
     wxString speed = wxString::Format(item->stats.time_avg > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->stats.time_avg > 1.0f || item->stats.time_avg == 0 ? item->stats.time_avg : (1.0f / item->stats.time_avg), item->step, item->steps);
     data.push_back(wxString(speed));                               // speed
-    data.push_back(wxVariant(QM::QueueStatus_str[item->status]));  // status
+    data.push_back(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));  // status
     data.push_back(wxVariant(item->status_message));
 
     auto store = this->m_joblist->GetStore();
@@ -2803,7 +2802,7 @@ void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::Queue
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(wxVariant(QM::QueueStatus_str[item->status]), i, statusCol);
+            store->SetValueByRow(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))), i, statusCol);
             store->RowValueChanged(i, statusCol);
 
             store->SetValueByRow(wxVariant(item->status_message), i, statusTextCol);
@@ -2844,49 +2843,68 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             } break;
             case QM::QueueEvents::ITEM_MODEL_HASH_UPDATE: {
                 MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_PROGRESS, item);  // this will call the STANDALONE_HASHING_PROGRESS event too
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+                this->m_currentProgress->SetValue(item->hash_progress_size);
+                this->m_currentProgress->SetRange(item->hash_fullsize);
             } break;
             case QM::QueueEvents::ITEM_MODEL_HASH_DONE: {
                 MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_DONE, item);  // this will call the STANDALONE_HASHING_DONE event too
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+                unsigned int stepsSum = item->params.sample_steps * item->params.batch_count;
+                this->m_currentProgress->SetValue(item->stats.time_per_step.size());
+                this->m_currentProgress->SetRange(stepsSum);
             } break;
                 // new item added
-            case QM::QueueEvents::ITEM_ADDED:
+            case QM::QueueEvents::ITEM_ADDED: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemAdded(item);
-                break;
+                // this is triggered when items loaded from files...
+                // this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+            } break;
                 // item status changed
-            case QM::QueueEvents::ITEM_STATUS_CHANGED:
+            case QM::QueueEvents::ITEM_STATUS_CHANGED: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemStatusChanged(item);
-                break;
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+            } break;
                 // item updated... -> set the progress bar in the queue
-            case QM::QueueEvents::ITEM_UPDATED:
+            case QM::QueueEvents::ITEM_UPDATED: {
                 this->OnQueueItemManagerItemUpdated(item);
-                break;
-            case QM::QueueEvents::ITEM_START:  // this is just the item start, if no mode
-                // loaded, then wil trigger model load
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+                unsigned int stepsSum = item->params.sample_steps * item->params.batch_count;
+                this->m_currentProgress->SetValue(item->stats.time_per_step.size());
+                this->m_currentProgress->SetRange(stepsSum);
+            } break;
+                // this is just the item start, if no mode
+                // loaded, then will trigger model load
                 // event
-                {
-                    this->UpdateJobInfoDetailsFromJobQueueList(item);
-                    this->StartGeneration(item);
-                    message = wxString::Format(_("%s is just stared to generate %d images\nModel: %s"), modes_str[item->mode], item->params.batch_count, item->model);
+            case QM::QueueEvents::ITEM_START: {
+                this->UpdateJobInfoDetailsFromJobQueueList(item);
+                this->StartGeneration(item);
+                message = wxString::Format(_("%s is just stared to generate %d images\nModel: %s"), modes_str[item->mode], item->params.batch_count, item->model);
 
-                    if (item->mode == QM::GenerationMode::UPSCALE) {
-                        title   = _("Upscaling started");
-                        message = wxString::Format(_("Upscaling the image is started: %s\nModel: %s"), item->initial_image, item->model);
-                    } else if (item->mode == QM::GenerationMode::CONVERT) {
-                        title   = _("Conversion started");
-                        message = wxString::Format(_("Conversion the model is started: %s\nModel: %s"), item->initial_image, item->model);
+                if (item->mode == QM::GenerationMode::UPSCALE) {
+                    title   = _("Upscaling started");
+                    message = wxString::Format(_("Upscaling the image is started: %s\nModel: %s"), item->initial_image, item->model);
+                } else if (item->mode == QM::GenerationMode::CONVERT) {
+                    title   = _("Conversion started");
+                    message = wxString::Format(_("Conversion the model is started: %s\nModel: %s"), item->initial_image, item->model);
+                } else {
+                    if (item->params.batch_count > 1) {
+                        title = wxString::Format(_("%d images generation started"), item->params.batch_count);
                     } else {
-                        if (item->params.batch_count > 1) {
-                            title = wxString::Format(_("%d images generation started"), item->params.batch_count);
-                        } else {
-                            title   = _("One image generation started!");
-                            message = wxString::Format(_("%s is just started to generate the image\nModel: %s"), modes_str[item->mode], item->model);
-                        }
+                        title   = _("One image generation started!");
+                        message = wxString::Format(_("%s is just started to generate the image\nModel: %s"), modes_str[item->mode], item->model);
                     }
-                    this->ShowNotification(title, message);
                 }
-                break;
+                this->ShowNotification(title, message);
+
+                // update global status info
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+                unsigned int stepsSum = item->params.sample_steps * item->params.batch_count;
+                this->m_currentProgress->SetValue(item->stats.time_per_step.size());
+                this->m_currentProgress->SetRange(stepsSum);
+            } break;
             case QM::QueueEvents::ITEM_FINISHED: {
                 // update again
                 this->SendThreadEvent(this->GetEventHandler(), QM::QueueEvents::ITEM_UPDATED, item);
@@ -2924,25 +2942,33 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                         this->m_statusBar166->SetStatusText(wxString::Format(msg, this->jobsCountSinceSegfault.load(), this->stepsCountSinceSegfault.load()), 1);
                     }
                 }
+                // update global status info
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+                unsigned int stepsSum = item->params.sample_steps * item->params.batch_count;
+                this->m_currentProgress->SetValue(item->stats.time_per_step.size());
+                this->m_currentProgress->SetRange(stepsSum);
             } break;
-            case QM::QueueEvents::ITEM_MODEL_LOADED:  // MODEL_LOAD_DONE
+            case QM::QueueEvents::ITEM_MODEL_LOADED: {  // MODEL_LOAD_DONE
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->model));
-                break;
-            case QM::QueueEvents::ITEM_MODEL_LOAD_START:  // MODEL_LOAD_START
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+            } break;
+            case QM::QueueEvents::ITEM_MODEL_LOAD_START: {  // MODEL_LOAD_START
                 this->writeLog(wxString::Format(_("Model load started: %s\n"), item->model));
-                break;
-            case QM::QueueEvents::ITEM_MODEL_FAILED:  // MODEL_LOAD_ERROR
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+            } break;
+            case QM::QueueEvents::ITEM_MODEL_FAILED: {  // MODEL_LOAD_ERROR
                 this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->model));
                 title   = _("Model load failed");
                 message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model);
                 this->ShowNotification(title, message);
-                break;
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+            } break;
             case QM::QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
                 if (item->mode == QM::GenerationMode::IMG2IMG ||
                     item->mode == QM::GenerationMode::TXT2IMG) {
                     this->writeLog(wxString::Format(
-                        "Diffusion started. Seed: %" PRId64 " Batch: %d %dx%dpx Cfg: %.1f Steps: %d\n",
+                        _("Diffusion started. Seed: %" PRId64 " Batch: %d %dx%dpx Cfg: %.1f Steps: %d"),
                         item->params.seed, item->params.batch_count, item->params.width,
                         item->params.height, item->params.cfg_scale,
                         item->params.sample_steps));
@@ -2950,10 +2976,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 if (item->mode == QM::GenerationMode::UPSCALE) {
                     this->writeLog(wxString::Format(_("Upscale start, factor: %d image: %s\n"), item->upscale_factor, item->initial_image));
                 }
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
                 break;
             case QM::QueueEvents::ITEM_FAILED:  // GENERATION_ERROR
                 this->writeLog(wxString::Format(_("Generation error: %s\n"), item->status_message));
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
+                this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status)))));
                 break;
             default:
                 break;

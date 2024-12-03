@@ -137,6 +137,22 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	sizer0021->Add( bSizer100, 0, wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer120;
+	bSizer120 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_currentStatus = new wxStaticText( m_panel10, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_currentStatus->Wrap( -1 );
+	m_currentStatus->SetMinSize( wxSize( 300,-1 ) );
+
+	bSizer120->Add( m_currentStatus, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_currentProgress = new wxGauge( m_panel10, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL|wxGA_SMOOTH );
+	m_currentProgress->SetValue( 0 );
+	bSizer120->Add( m_currentProgress, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer0021->Add( bSizer120, 1, wxEXPAND, 5 );
+
 
 	m_panel10->SetSizer( sizer0021 );
 	m_panel10->Layout();
@@ -2405,5 +2421,43 @@ CivitAiWindow::~CivitAiWindow()
 	m_civitai_search->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( CivitAiWindow::m_civitai_searchOnTextEnter ), NULL, this );
 	m_search->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( CivitAiWindow::m_searchOnButtonClick ), NULL, this );
 	m_dataViewListCtrl5->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( CivitAiWindow::m_dataViewListCtrl5OnDataViewListCtrlSelectionChanged ), NULL, this );
+
+}
+
+DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxPanel( parent, id, pos, size, style, name )
+{
+	this->SetExtraStyle( wxWS_EX_PROCESS_UI_UPDATES|wxWS_EX_TRANSIENT );
+	this->SetForegroundColour( wxColour( 224, 224, 224 ) );
+	this->SetBackgroundColour( wxColour( 48, 48, 48 ) );
+
+	wxBoxSizer* bSizer122;
+	bSizer122 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText64 = new wxStaticText( this, wxID_ANY, _("Status:"), wxDefaultPosition, wxSize( 240,-1 ), 0 );
+	m_staticText64->Wrap( -1 );
+	bSizer122->Add( m_staticText64, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_statusProgress = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
+	m_statusProgress->SetValue( 0 );
+	bSizer122->Add( m_statusProgress, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	this->SetSizer( bSizer122 );
+	this->Layout();
+
+	// Connect Events
+	this->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
+	this->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
+	this->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );
+	this->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ) );
+}
+
+DesktopWidget::~DesktopWidget()
+{
+	// Disconnect Events
+	this->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
+	this->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
+	this->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );
+	this->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ) );
 
 }

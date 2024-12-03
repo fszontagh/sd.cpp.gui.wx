@@ -16,10 +16,11 @@ public:
     }
     inline static void HandleHashCallback(size_t readed, std::string hash, void* data) {
         ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
-        auto item = instance->currentItem;
+        auto item                  = instance->currentItem;
 
         if (item != nullptr) {
             item->hash_progress_size = readed;
+            item->generated_sha256 = hash;
             instance->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_UPDATE);
         }
     }
@@ -98,10 +99,29 @@ private:
 
     std::string handleSdImage(sd_image_t& image);
 
-    inline void sendStatus(QM::QueueStatus status, QM::QueueEvents event, const std::string& reason = "") {
+    /**
+     * @brief Send a status update to the parent process
+     *
+     * @param status The new status of the current item
+     * @param event The event that triggered the status update
+     * @param reason Optional reason string to be sent with the status message
+     * @param sleep Optional sleep time in milliseconds before sending the message
+     *
+     * This function will update the current item's status and event in the
+     * shared memory, and then send the updated item to the parent process.
+     * If a reason string is provided, it will be stored in the current item's
+     * status_message field. If a sleep time is provided, the function will
+     * sleep for that amount of time before sending the message.
+     */
+    inline void sendStatus(QM::QueueStatus status, QM::QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
         if (this->currentItem == nullptr) {
             return;
         }
+        // we need some time to wait to the main process
+        if (sleep > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep));
+        }
+
         std::lock_guard<std::mutex> lock(this->itemMutex);
         this->currentItem->status     = status;
         this->currentItem->event      = event;
@@ -115,6 +135,7 @@ private:
         nlohmann::json j       = *this->currentItem;
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+
     }
     std::string generateRandomFilename(const std::string& extension = ".tmp") {
         const char charset[] =

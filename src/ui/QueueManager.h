@@ -44,6 +44,15 @@ namespace QM {
         _("finished"),
         _("model hashing...")};
 
+    inline const std::unordered_map<QM::QueueStatus, wxString> QueueStatus_GUI_str = {
+        {QM::QueueStatus::PENDING, "pending"},
+        {QM::QueueStatus::RUNNING, "running"},
+        {QM::QueueStatus::PAUSED, "paused"},
+        {QM::QueueStatus::FAILED, "failed"},
+        {QM::QueueStatus::MODEL_LOADING, "model loading..."},
+        {QM::QueueStatus::DONE, "finished"},
+        {QM::QueueStatus::HASHING, "model hashing..."}};
+
     /// @brief Event commands to inter thread communication
     enum class QueueEvents : unsigned int {
         ITEM_DELETED            = 1 << 0,

@@ -138,23 +138,21 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     this->currentItem             = std::make_shared<QM::QueueItem>(item);
     this->currentItem->started_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START);
-
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
     if (this->currentItem->need_sha256 == true) {
         this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_START);
         this->currentItem->hash_fullsize = std::filesystem::file_size(this->currentItem->params.model_path.c_str());
-        
 
         this->currentItem->generated_sha256 = sd_gui_utils::sha256_file_openssl(
             this->currentItem->params.model_path.c_str(),
             (void*)this,
             ApplicationLogic::HandleHashCallback);
-        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_DONE);
+
+        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_DONE, "", EPROCESS_SLEEP_TIME);
     }
 
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START);
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
     // on mode convert always return true, because no model loading
     if (this->loadSdModel() == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
@@ -171,13 +169,12 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         this->lastItem    = nullptr;
         return;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED);
+
+    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
 
     // handle the convert differently
     if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED, "", EPROCESS_SLEEP_TIME);
         bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype);
         if (status == false) {
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
@@ -185,8 +182,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
             this->lastItem    = nullptr;
             return;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED, "", EPROCESS_SLEEP_TIME);
         this->currentItem = nullptr;
         this->lastItem    = nullptr;
         return;

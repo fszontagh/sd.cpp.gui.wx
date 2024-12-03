@@ -25,6 +25,7 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/choice.h>
+#include <wx/gauge.h>
 #include <wx/panel.h>
 #include <wx/checkbox.h>
 #include <wx/spinctrl.h>
@@ -64,6 +65,8 @@ class mainUI : public wxFrame
 		wxChoice* m_model;
 		wxStaticText* m_staticText72;
 		wxChoice* m_type;
+		wxStaticText* m_currentStatus;
+		wxGauge* m_currentProgress;
 		wxPanel* m_panel12;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
@@ -537,6 +540,32 @@ class CivitAiWindow : public wxFrame
 			m_splitter3->SetSashPosition( 0 );
 			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( CivitAiWindow::m_splitter3OnIdle ), NULL, this );
 		}
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Class DesktopWidget
+///////////////////////////////////////////////////////////////////////////////
+class DesktopWidget : public wxPanel
+{
+	private:
+
+	protected:
+		wxStaticText* m_staticText64;
+		wxGauge* m_statusProgress;
+
+		// Virtual event handlers, override them in your derived class
+		virtual void OnMouseEnter( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnMouseLeave( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnMouseLeftDown( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnMouseLeftUp( wxMouseEvent& event ) { event.Skip(); }
+
+
+	public:
+
+		DesktopWidget( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,40 ), long style = wxBORDER_NONE|wxCLIP_CHILDREN|wxNO_FULL_REPAINT_ON_RESIZE, const wxString& name = wxEmptyString );
+
+		~DesktopWidget();
 
 };
 
