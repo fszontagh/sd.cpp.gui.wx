@@ -19,52 +19,46 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
         QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
 
         std::shared_ptr<QM::QueueItem> item = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
-        
-        this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
-        
+
+        size_t stepsSum  = 0;  // item->params.sample_steps * item->params.batch_count;
+        size_t stepsDone = 0;  // item->stats.time_per_step.size();
+        wxString steps         = wxEmptyString;
+
         if (event == QM::QueueEvents::ITEM_MODEL_HASH_START || event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE) {
+            stepsSum  = item->hash_fullsize;
+            stepsDone = item->hash_progress_size;
 
-            this->m_currentProgress->SetRange(item->hash_fullsize);
-            this->m_currentProgress->SetValue(item->hash_progress_size > item->hash_fullsize ? item->hash_fullsize : item->hash_progress_size);
+            if (stepsDone > stepsSum) {
+                stepsDone = stepsSum;
+            }
+
+            this->m_currentProgress->SetRange(stepsSum);
+            this->m_currentProgress->SetValue(stepsDone);
+            steps = wxString::Format("%s/%s",
+                                     wxFileName::GetHumanReadableSize((wxULongLong)stepsDone),
+                                     wxFileName::GetHumanReadableSize((wxULongLong)stepsSum));
         }
-        if (event == QM::QueueEvents::ITEM_MODEL_HASH_DONE) {
-            unsigned int stepsSum  = item->params.sample_steps * item->params.batch_count;
-            unsigned int stepsDone = item->stats.time_per_step.size();
+        if (event == QM::QueueEvents::ITEM_MODEL_HASH_DONE || event == QM::QueueEvents::ITEM_UPDATED || event == QM::QueueEvents::ITEM_FINISHED) {
+            stepsSum  = (size_t)(item->params.sample_steps * item->params.batch_count);
+            stepsDone = item->stats.time_per_step.size();
 
-            // upscaler and the tieled vae will generate more steps after diffusion
             if (stepsSum < stepsDone) {
                 stepsSum  = item->steps;
-                stepsDone = item->step;
+                stepsDone = item->step > stepsSum ? stepsSum : item->step;
             }
+
+            steps = wxString::Format("%d/%d", stepsDone, stepsSum);
+
             this->m_currentProgress->SetRange(stepsSum);
-            this->m_currentProgress->SetValue(stepsDone > stepsSum ? stepsSum : stepsDone);
+            this->m_currentProgress->SetValue(stepsDone);
         }
 
-        if (event == QM::QueueEvents::ITEM_UPDATED) {
-            unsigned int stepsSum  = item->params.sample_steps * item->params.batch_count;
-            unsigned int stepsDone = item->stats.time_per_step.size();
+        // wxString step = wxString::Format("%d/%d", stepsDone, stepsSum);
 
-            // upscaler and the tieled vae will generate more steps after diffusion
-            if (stepsSum < stepsDone) {
-                stepsSum  = item->steps;
-                stepsDone = item->step;
-            }
-            this->m_currentProgress->SetRange(stepsSum);
-            this->m_currentProgress->SetValue(stepsDone > stepsSum ? stepsSum : stepsDone);
-        }
-
-        if (event == QM::QueueEvents::ITEM_FINISHED) {
-            unsigned int stepsSum  = item->params.sample_steps * item->params.batch_count;
-            unsigned int stepsDone = item->stats.time_per_step.size();
-
-            // upscaler and the tieled vae will generate more steps after diffusion
-            if (stepsSum < stepsDone) {
-                stepsSum  = item->steps;
-                stepsDone = item->step;
-            }
-            this->m_currentProgress->SetRange(stepsSum);
-            this->m_currentProgress->SetValue(stepsDone > stepsSum ? stepsSum : stepsDone);
-        }
+        this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s %s"),
+                                                         modes_str[item->mode],
+                                                         wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status)),
+                                                         steps));
     }
 }
 void MainWindowDesktopWidget::OnClose(wxCloseEvent& event) {
@@ -106,6 +100,6 @@ void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
 
 void MainWindowDesktopWidget::OnLeftMouseDClick(wxMouseEvent& event) {
     auto p = static_cast<MainWindowUI*>(this->m_parent);
-    //p->RequestUserAttention();
+    // p->RequestUserAttention();
     p->Raise();
 }
