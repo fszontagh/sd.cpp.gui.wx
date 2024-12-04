@@ -15,6 +15,7 @@
 #include <cstring>
 #endif
 
+#include "libs/json.hpp"
 
 #include "ver.hpp"
 #include "config.hpp"
@@ -27,7 +28,6 @@
 #include "helpers/sslUtils.hpp"
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
-#include "libs/json.hpp"
 #include "ui/QueueManager.h"
 
 

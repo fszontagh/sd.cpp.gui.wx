@@ -67,6 +67,7 @@ class mainUI : public wxFrame
 		wxChoice* m_type;
 		wxStaticText* m_currentStatus;
 		wxGauge* m_currentProgress;
+		wxButton* m_showWidget;
 		wxPanel* m_panel12;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
@@ -247,6 +248,7 @@ class mainUI : public wxFrame
 		virtual void OnStopBackgroundProcess( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnShowWidget( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
@@ -546,24 +548,28 @@ class CivitAiWindow : public wxFrame
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DesktopWidget
 ///////////////////////////////////////////////////////////////////////////////
-class DesktopWidget : public wxPanel
+class DesktopWidget : public wxFrame
 {
 	private:
 
 	protected:
-		wxStaticText* m_staticText64;
-		wxGauge* m_statusProgress;
+		wxStaticText* m_currentStatus;
+		wxGauge* m_currentProgress;
+		wxStaticBitmap* m_bitmap10;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnMouseEnter( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeave( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnMouseMotion( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnLeftMouseDClick( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeftDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeftUp( wxMouseEvent& event ) { event.Skip(); }
 
 
 	public:
 
-		DesktopWidget( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,40 ), long style = wxBORDER_NONE|wxCLIP_CHILDREN|wxNO_FULL_REPAINT_ON_RESIZE, const wxString& name = wxEmptyString );
+		DesktopWidget( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,-1 ), long style = wxFRAME_NO_TASKBAR|wxSTAY_ON_TOP|wxBORDER_NONE, const wxString& name = wxT("DesktopWidget") );
 
 		~DesktopWidget();
 

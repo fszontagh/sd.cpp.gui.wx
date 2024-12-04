@@ -6,13 +6,11 @@ private:
     wxSingleInstanceChecker* m_checker;
 
 public:
-    const wxString getIniPath() { return this->iniPath; }
     bool OnInit() override {
         wxString forceType                  = "";
         bool allow_multiple_instance        = false;
         this->backend                       = "cpu";
         bool disableExternalProcessHandling = false;
-        this->iniPath                       = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
 
         this->initConfig();
 
@@ -112,10 +110,10 @@ public:
 
         // load locale
 
-        auto configLang = this->config->Read("language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
+        auto configLang = this->config->Read("/language", wxUILocale::GetSystemLocaleId().GetLanguage());
         // if empty, use system (empty while edited with manually the ini file)
         if (configLang.empty()) {
-            configLang = wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string();
+            configLang = wxUILocale::GetSystemLocaleId().GetLanguage();
         }
 
         // trans->SetLanguage(configLang);
@@ -125,6 +123,9 @@ public:
     }
     int OnExit() override {
         delete m_checker;
+        if (this->cfg != nullptr) {
+            delete this->cfg;
+        }
         return 0;
     }
     void ReloadMainWindow(wxString newLangName, bool disableExternalProcessHandling = false) {
@@ -159,28 +160,30 @@ public:
 
         this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
         SetTopWindow(this->mainFrame);
-        this->mainFrame->Centre();
         this->mainFrame->Show();
     };
 
     void inline initConfig() {
-        if (this->config) {
-            wxDELETE(this->config);
+        if (this->config != nullptr) {
+            this->config->Flush();
+            delete this->config;
+            this->config = nullptr;
         }
-        this->config = new wxFileConfig(PROJECT_NAME, SD_GUI_AUTHOR, this->getIniPath(), wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
-        this->config->SetVendorName(SD_GUI_AUTHOR);
-        this->config->SetAppName(PROJECT_NAME);
-        this->config->DisableAutoSave();
+        if (this->cfg != nullptr) {
+            delete this->cfg;
+        }
+        this->config = new wxConfig(PROJECT_NAME, SD_GUI_AUTHOR, wxEmptyString, wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
+        this->cfg    = new sd_gui_utils::config(this->config);
         wxConfigBase::Set(this->config);
     }
 
-    wxFileConfig* config = nullptr;
+    wxConfigBase* config      = nullptr;
+    sd_gui_utils::config* cfg = nullptr;
 
 private:
     MainWindowUI* mainFrame = nullptr;
     wxString dllName;
     wxString backend;
-    wxString iniPath;
     wxLocale* m_Locale = nullptr;
 };
 #endif

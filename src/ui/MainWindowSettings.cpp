@@ -1,12 +1,7 @@
 #include "MainWindowSettings.h"
 
-MainWindowSettings::MainWindowSettings(wxWindow* parent)
-    : Settings(parent) {
-    this->ini_path = wxStandardPaths::Get().GetUserConfigDir() + wxFileName::GetPathSeparator() + "sd.ui.config.ini";
-
-    this->cfg        = std::make_shared<sd_gui_utils::config>();
-    this->fileConfig = new wxFileConfig("sd.cpp.ui", wxEmptyString, this->ini_path);
-    wxConfigBase::Set(fileConfig);
+MainWindowSettings::MainWindowSettings(wxWindow* parent, wxConfigBase* config, sd_gui_utils::config* cfg)
+    : Settings(parent), config(config), cfg(cfg) {
     this->InitConfig();
 }
 MainWindowSettings::~MainWindowSettings() {
@@ -86,81 +81,56 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         }
     }
 
-    this->fileConfig->Write("/paths/lora", this->m_lora_dir->GetPath());
-    this->fileConfig->Write("/paths/model", this->m_model_dir->GetPath());
-    this->fileConfig->Write("/paths/vae", this->m_vae_dir->GetPath());
-    this->fileConfig->Write("/paths/embedding", this->m_embedding_dir->GetPath());
-    this->fileConfig->Write("/paths/taesd", this->m_taesd_dir->GetPath());
-    this->fileConfig->Write("/paths/esrgan", this->m_esrgan_dir->GetPath());
-    this->fileConfig->Write("/paths/controlnet", this->m_controlnet_dir->GetPath());
-    this->fileConfig->Write("/paths/presets", this->m_presets_dir->GetPath());
-    this->fileConfig->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
-    this->fileConfig->Write("/save_all_image", this->m_save_all_image->GetValue());
-    this->fileConfig->Write("/n_threads", this->m_threads->GetValue());
-    this->fileConfig->Write("/paths/output", this->m_images_output->GetPath());
-    this->fileConfig->Write("/image_quality", this->m_image_quality->GetValue());
-    this->fileConfig->Write("/png_compression_level", this->m_png_compression->GetValue());
-    this->fileConfig->Write("/image_type", sd_gui_utils::image_types_str[this->m_image_type->GetSelection()]);
-    this->fileConfig->Write("/show_notification", this->m_show_notifications->GetValue());
-    this->fileConfig->Write("/notification_timeout", this->m_notification_timeout->GetValue());
-    this->fileConfig->Write("/enable_civitai", this->m_enableCivitai->GetValue());
-    this->fileConfig->Write("/output_filename_format", this->m_output_filename_format->GetValue());
-    this->fileConfig->Write("/autogen_hash", this->m_autogen_hash->GetValue());
+    this->config->Write("/paths/lora", this->m_lora_dir->GetPath());
+    this->config->Write("/paths/model", this->m_model_dir->GetPath());
+    this->config->Write("/paths/vae", this->m_vae_dir->GetPath());
+    this->config->Write("/paths/embedding", this->m_embedding_dir->GetPath());
+    this->config->Write("/paths/taesd", this->m_taesd_dir->GetPath());
+    this->config->Write("/paths/esrgan", this->m_esrgan_dir->GetPath());
+    this->config->Write("/paths/controlnet", this->m_controlnet_dir->GetPath());
+    this->config->Write("/paths/presets", this->m_presets_dir->GetPath());
+    this->config->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
+    this->config->Write("/save_all_image", this->m_save_all_image->GetValue());
+    this->config->Write("/n_threads", this->m_threads->GetValue());
+    this->config->Write("/paths/output", this->m_images_output->GetPath());
+    this->config->Write("/image_quality", this->m_image_quality->GetValue());
+    this->config->Write("/png_compression_level", this->m_png_compression->GetValue());
+    this->config->Write("/image_type", sd_gui_utils::image_types_str[this->m_image_type->GetSelection()]);
+    this->config->Write("/show_notification", this->m_show_notifications->GetValue());
+    this->config->Write("/notification_timeout", this->m_notification_timeout->GetValue());
+    this->config->Write("/enable_civitai", this->m_enableCivitai->GetValue());
+    this->config->Write("/output_filename_format", this->m_output_filename_format->GetValue());
+    this->config->Write("/autogen_hash", this->m_autogen_hash->GetValue());
+
+    this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
+    this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
+    this->cfg->vae                    = this->m_vae_dir->GetPath().utf8_string();
+    this->cfg->embedding              = this->m_embedding_dir->GetPath().utf8_string();
+    this->cfg->taesd                  = this->m_taesd_dir->GetPath().utf8_string();
+    this->cfg->esrgan                 = this->m_esrgan_dir->GetPath().utf8_string();
+    this->cfg->controlnet             = this->m_controlnet_dir->GetPath().utf8_string();
+    this->cfg->presets                = this->m_presets_dir->GetPath().utf8_string();
+    this->cfg->keep_model_in_memory   = this->m_keep_model_in_memory->GetValue();
+    this->cfg->save_all_image         = this->m_save_all_image->GetValue();
+    this->cfg->n_threads              = this->m_threads->GetValue();
+    this->cfg->output                 = this->m_images_output->GetPath().utf8_string();
+    this->cfg->image_quality          = this->m_image_quality->GetValue();
+    this->cfg->png_compression_level  = this->m_png_compression->GetValue();
+    this->cfg->image_type             = (sd_gui_utils::imageTypes)this->m_image_type->GetSelection();
+    this->cfg->show_notifications     = this->m_show_notifications->GetValue();
+    this->cfg->notification_timeout   = this->m_notification_timeout->GetValue();
+    this->cfg->enable_civitai         = this->m_enableCivitai->GetValue();
+    this->cfg->output_filename_format = this->m_output_filename_format->GetValue();
+    this->cfg->auto_gen_hash          = this->m_autogen_hash->GetValue();
 
     auto language = this->locales[this->m_language->GetSelection()];
-    this->fileConfig->Write("/language", wxString::FromUTF8Unchecked(language));
-    this->fileConfig->Flush();
+    this->config->Write("/language", wxString::FromUTF8Unchecked(language));
+    this->config->Flush();
     this->Close();
 }
 
 void MainWindowSettings::InitConfig() {
     this->m_staticNumberOfCores->SetLabel(wxString::Format("%d", cores()));
-    wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
-    wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
-
-    wxString model_path = datapath;
-    model_path.append("checkpoints");
-
-    wxString vae_path = datapath;
-    vae_path.append("vae");
-
-    wxString lora_path = datapath;
-    lora_path.append("lora");
-
-    wxString embedding_path = datapath;
-    embedding_path.append("embedding");
-
-    wxString taesd_path = datapath;
-    taesd_path.append("taesd");
-
-    wxString presets_path = datapath;
-    presets_path.append("presets");
-
-    wxString controlnet_path = datapath;
-    controlnet_path.append("controlnet");
-
-    wxString esrgan_path = datapath;
-    esrgan_path.append("esrgan");
-
-    this->cfg->lora                   = this->fileConfig->Read("/paths/lora", lora_path).ToStdString();
-    this->cfg->model                  = this->fileConfig->Read("/paths/model", model_path).ToStdString();
-    this->cfg->vae                    = this->fileConfig->Read("/paths/vae", vae_path).ToStdString();
-    this->cfg->embedding              = this->fileConfig->Read("/paths/embedding", embedding_path).ToStdString();
-    this->cfg->taesd                  = this->fileConfig->Read("/paths/taesd", taesd_path).ToStdString();
-    this->cfg->esrgan                 = this->fileConfig->Read("/paths/esrgan", esrgan_path).ToStdString();
-    this->cfg->controlnet             = this->fileConfig->Read("/paths/controlnet", controlnet_path).ToStdString();
-    this->cfg->presets                = this->fileConfig->Read("/paths/presets", presets_path).ToStdString();
-    this->cfg->output                 = this->fileConfig->Read("/paths/output", imagespath).ToStdString();
-    this->cfg->keep_model_in_memory   = this->fileConfig->Read("/keep_model_in_memory", this->cfg->keep_model_in_memory);
-    this->cfg->save_all_image         = this->fileConfig->Read("/save_all_image", this->cfg->save_all_image);
-    this->cfg->n_threads              = this->fileConfig->Read("/n_threads", cores());
-    this->cfg->image_quality          = this->fileConfig->Read("/image_quality", this->cfg->image_quality);
-    this->cfg->show_notifications     = this->fileConfig->ReadBool("/show_notification", this->cfg->show_notifications);
-    this->cfg->notification_timeout   = this->fileConfig->Read("/notification_timeout", this->cfg->notification_timeout);
-    this->cfg->enable_civitai         = this->fileConfig->ReadBool("/enable_civitai", this->cfg->enable_civitai);
-    this->cfg->language               = this->fileConfig->Read("/language", wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName.utf8_string());
-    this->cfg->output_filename_format = this->fileConfig->Read("/output_filename_format", this->cfg->output_filename_format);
-    this->cfg->auto_gen_hash          = this->fileConfig->ReadBool("/autogen_hash", this->cfg->auto_gen_hash);
 
     wxString username = "civitai_api_key";
     wxSecretValue password;
@@ -169,18 +139,6 @@ void MainWindowSettings::InitConfig() {
 
     if (store.IsOk() && store.Load(PROJECT_NAME, username, password)) {
         this->m_civitai_api_key->SetValue(password.GetAsString());
-    }
-
-    int idx               = 0;
-    auto saved_image_type = this->fileConfig->Read("/image_type", "JPG");
-
-    for (auto type : sd_gui_utils::image_types_str) {
-        if (saved_image_type == type) {
-            this->m_image_type->Select(idx);
-            this->cfg->image_type = (sd_gui_utils::imageTypes)idx;
-            break;
-        }
-        idx++;
     }
 
     this->m_lora_dir->SetPath(this->cfg->lora);
@@ -223,20 +181,20 @@ void MainWindowSettings::InitConfig() {
     auto tr     = wxTranslations::Get();
     auto locale = wxUILocale::GetCurrent();
 
-    auto systemLocale = wxUILocale::GetLanguageInfo(wxUILocale::GetSystemLocale())->CanonicalName;
+    auto systemLocale = wxUILocale::GetSystemLocaleId().GetLanguage();
+
 
     auto langs = tr->GetAvailableTranslations("stablediffusiongui");
 
-    auto required_locale = this->cfg->language != systemLocale.utf8_string() && this->cfg->language.empty() == false ? this->cfg->language : systemLocale.utf8_string();
+    auto required_locale = this->cfg->language != systemLocale.utf8_string() && this->cfg->language.empty() == false ? this->cfg->language : systemLocale;
 
     int selected = 0;
     int counter  = 0;
-    std::cout << " system locale: " << systemLocale.utf8_string() << " cfg locale: " << this->cfg->language << " required locale: " << required_locale << std::endl;
+
     std::map<wxString, wxString> _locales;  // to avoid duplicates
 
     for (const auto lang : langs) {
         auto langInfo = wxUILocale::FindLanguageInfo(lang);
-        std::cout << "Found locale: " << langInfo->CanonicalName.utf8_string() << std::endl;
         if (langInfo != nullptr && langInfo->DescriptionNative.empty() == false && langInfo->CanonicalName.empty() == false) {
             _locales[langInfo->CanonicalName.utf8_string()] = langInfo->DescriptionNative.utf8_string();
         }

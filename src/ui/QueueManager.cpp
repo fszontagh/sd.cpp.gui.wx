@@ -1,6 +1,6 @@
 #include "QueueManager.h"
 
-QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, std::string jobsdir) {
+QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, const wxString& jobsdir) {
     // need to send events into the mainwindow by the threads...
     this->eventHandler = eventHandler;
     this->eventHandler->Bind(wxEVT_THREAD, &QueueManager::OnThreadMessage, this);
@@ -25,7 +25,7 @@ int QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
         item->created_at = this->GetCurrentUnixTimestamp();
     }
     if (item->id == this->lastExtId) {
-        std::cerr << "ID collision: "<< item->id << std::endl;
+        std::cerr << "ID collision: " << item->id << std::endl;
         return 0;
     }
 
@@ -215,11 +215,10 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     }
     auto msg = e.GetString();
 
-    wxString token                      = msg.substr(0, msg.find(":"));
-    wxString content                    = msg.substr(msg.find(":") + 1);
-    
+    wxString token   = msg.substr(0, msg.find(":"));
+    wxString content = msg.substr(msg.find(":") + 1);
+
     sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)wxAtoi(token);
-    
 
     // only handle the QUEUE messages, what this class generate
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
@@ -306,7 +305,7 @@ void QM::QueueManager::SaveJobToFile(int id) {
 void QM::QueueManager::SaveJobToFile(const QM::QueueItem& item) {
     try {
         nlohmann::json jsonfile(item);
-        wxString filename = this->jobsDir + "/" + std::to_string(item.id) + ".json";
+        wxString filename = this->jobsDir + wxFileName::GetPathSeparators() + wxString::Format("%d", item.id) + ".json";
         wxFile file(filename, wxFile::write);
         file.Write(jsonfile.dump());
     } catch (const std::exception& e) {
@@ -323,7 +322,7 @@ bool QM::QueueManager::DeleteJob(int id) {
     if (item->id == 0) {
         return false;
     }
-    wxString filename = this->jobsDir + "/" + std::to_string(item->id) + ".json";
+    wxString filename = this->jobsDir + wxFileName::GetPathSeparators() + wxString::Format("%d", item->id) + ".json";
     if (wxFileName::FileExists(filename)) {
         if (wxRemoveFile(filename)) {
             this->QueueList[item->id] = nullptr;
@@ -382,7 +381,7 @@ void QM::QueueManager::LoadJobListFromDir() {
         std::ifstream f(path.GetFullPath().ToStdString());
 
         try {
-            nlohmann::json data = nlohmann::json::parse(f);
+            nlohmann::json data                 = nlohmann::json::parse(f);
             std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(data.get<QM::QueueItem>());
             if (item->status == QM::QueueStatus::RUNNING || item->status == QM::QueueStatus::MODEL_LOADING) {
                 item->status = QM::QueueStatus::PAUSED;

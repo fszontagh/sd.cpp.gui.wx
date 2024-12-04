@@ -38,6 +38,8 @@
 #include "wx/sstream.h"
 #include "wx/txtstrm.h"
 
+#include "libs/json.hpp"
+
 #include "extprocess/config.hpp"
 #include "exiv2/exiv2.hpp"
 

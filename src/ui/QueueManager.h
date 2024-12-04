@@ -249,7 +249,7 @@ namespace QM {
 
     class QueueManager {
     public:
-        QueueManager(wxEvtHandler* eventHandler, std::string jobsdir);
+        QueueManager(wxEvtHandler* eventHandler, const wxString &jobsdir);
         ~QueueManager();
         int AddItem(const QM::QueueItem& _item, bool fromFile = false);
         int AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);
@@ -322,7 +322,7 @@ namespace QM {
         std::mutex queueMutex;
         int GetCurrentUnixTimestamp(bool milliseconds = false);
         void LoadJobListFromDir();
-        std::string jobsDir;
+        wxString jobsDir;
         int lastId    = 0;
         int lastExtId = 0;
         int GetAnId();

@@ -11,18 +11,18 @@ namespace ModelInfo {
     class Manager {
     private:
         std::map<std::string, sd_gui_utils::ModelFileInfo*> ModelInfos;
-        sd_gui_utils::ModelFileInfo* GenerateMeta(std::string model_path, sd_gui_utils::DirTypes type, std::string name, sd_gui_utils::ModelFileInfo copyMeta = sd_gui_utils::ModelFileInfo());
+        sd_gui_utils::ModelFileInfo* GenerateMeta(const wxFileName& model_path, sd_gui_utils::DirTypes type, const wxString& name, sd_gui_utils::ModelFileInfo copyMeta = sd_gui_utils::ModelFileInfo());
         void WriteIntoMeta(const std::string& model_path);
         void WriteIntoMeta(const sd_gui_utils::ModelFileInfo& modelinfo);
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo* modelinfo);
         void ParseCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo);
-        std::string GetMetaPath(const std::string& model_path);
-        std::string MetaStorePath;
+        wxString GetMetaPath(const wxString& model_path);
+        wxString MetaStorePath;
 
     public:
-        Manager(std::string meta_base_path);
+        Manager(const wxString& meta_base_path);
         ~Manager();
-        void addModel(std::string model_path, sd_gui_utils::DirTypes type, std::string name);
+        void addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString name);
         bool exists(std::string model_path);
         std::vector<sd_gui_utils::ModelFileInfo> getList();
         std::string pathByName(std::string model_name);

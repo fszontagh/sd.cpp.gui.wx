@@ -103,19 +103,20 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
     auto parentItem              = this->m_dataViewListCtrl5->RowToItem(parentSelection);
     nlohmann::json* parent_jsptr = reinterpret_cast<nlohmann::json*>(this->m_dataViewListCtrl5->GetItemData(parentItem));
     nlohmann::json parent_js(*parent_jsptr);
-    auto path = sd_gui_utils::normalizePath(this->config->model + "/" + js["name"].get<std::string>());
+
+    wxFileName path = wxFileName(this->config->model + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
 
     if (parent_js.contains("type") && !parent_js["type"].is_null()) {
         std::string type = parent_js["type"].get<std::string>();
         if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::LORA]) {
             ditem->type = CivitAi::ModelTypes::LORA;
-            path        = sd_gui_utils::normalizePath(this->config->lora + "/" + js["name"].get<std::string>());
+            path        = wxFileName(this->config->lora + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::Checkpoint]) {
             ditem->type = CivitAi::ModelTypes::Checkpoint;
-            path        = sd_gui_utils::normalizePath(this->config->model + "/" + js["name"].get<std::string>());
+            path        = wxFileName(this->config->model + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::TextualInversion]) {
             ditem->type = CivitAi::ModelTypes::TextualInversion;
-            path        = sd_gui_utils::normalizePath(this->config->embedding + "/" + js["name"].get<std::string>());
+            path        = wxFileName(this->config->embedding + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else {
             // no type
             delete ditem;
@@ -130,10 +131,10 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
     // example: https://civitai.com/api/v1/models/1102
     if (js.contains("type")) {
         if (js["type"].get<std::string>() == "LORA") {
-            path = sd_gui_utils::normalizePath(this->config->lora + "/" + js["name"].get<std::string>());
+            path = wxFileName(this->config->lora + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         }
         if (js["type"].get<std::string>() == "VAE") {
-            path = sd_gui_utils::normalizePath(this->config->vae + "/" + js["name"].get<std::string>());
+            path = wxFileName(this->config->vae + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         }
     }
 
@@ -145,8 +146,8 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         return;
     }
 
-    ditem->local_file = path;
-    ditem->tmp_name   = std::filesystem::path(path).replace_extension(".download").string();
+    ditem->local_file = path.GetAbsolutePath().utf8_string();
+    ditem->tmp_name   = std::filesystem::path(ditem->local_file).replace_extension(".download").string();
     ditem->targetSize = js["sizeKB"].get<double>() * 1024;
     if (std::filesystem::exists(ditem->local_file) || std::filesystem::exists(ditem->tmp_name)) {
         wxMessageDialog dialog(this, wxString::Format(_("The file \n'%s'\n already exists.\nDo you want to overwrite it?"), ditem->local_file), _("Download Model"), wxYES_NO | wxICON_QUESTION);
@@ -390,7 +391,10 @@ void MainWindowCivitAiWindow::loadImages(nlohmann::json js) {
         for (auto img : js["images"]) {
             int img_id      = img["id"].get<int>();
             bool downloaded = false;
-            std::filesystem::path path(this->config->tmppath + "/" + std::to_string(img_id));
+
+            auto _p = this->config->tmppath; //+ wxFileName::GetPathSeparator().GetValue() << std::to_string(img_id);
+            _p.Append(wxFileName::GetPathSeparators() + std::to_string(img_id));
+            std::filesystem::path path(_p.utf8_string());
 
             auto png               = path.replace_extension("png").string();
             auto jpg               = path.replace_extension("jpg").string();
@@ -580,7 +584,7 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
             item->error = wxString::Format(_("Download failed: %s"), curl.errorCodeToString());
             this->SendThreadEvent("DOWNLOAD_ERROR", item);
             return;
-        }        
+        }
         if (item->targetSize != item->downloadedSize) {
             item->error = _("Download failed");
             this->SendThreadEvent("DOWNLOAD_ERROR", item);

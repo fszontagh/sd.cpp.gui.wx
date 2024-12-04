@@ -101,7 +101,7 @@ namespace sd_gui_utils {
         std::string url;
         std::string poster;
         std::string sha256;
-        uintmax_t size;
+        size_t size;
         std::string size_f;
         std::string meta_file;
         size_t hash_progress_size         = 0;
@@ -246,22 +246,26 @@ namespace sd_gui_utils {
                       PNG,
                       WEBP };
     inline const char* image_types_str[] = {"JPG", "PNG", "WEBP"};
-    struct config {
-        std::string model                  = "";
-        std::string vae                    = "";
-        std::string lora                   = "";
-        std::string embedding              = "";
-        std::string taesd                  = "";
-        std::string esrgan                 = "";
-        std::string presets                = "";
-        std::string output                 = "";
-        std::string jobs                   = "";
-        std::string controlnet             = "";
-        std::string datapath               = "";
-        std::string tmppath                = "";
-        std::string thumbs_path            = "";
-        std::string language               = "en";
-        std::string output_filename_format = "[mode]_[jobid]_[seed]_[width]x[height]";
+    class config {
+    private:
+        wxConfigBase* configBase = nullptr;
+
+    public:
+        wxString model                     = "";
+        wxString vae                       = "";
+        wxString lora                      = "";
+        wxString embedding                 = "";
+        wxString taesd                     = "";
+        wxString esrgan                    = "";
+        wxString presets                   = "";
+        wxString output                    = "";
+        wxString jobs                      = "";
+        wxString controlnet                = "";
+        wxString datapath                  = "";
+        wxString tmppath                   = "";
+        wxString thumbs_path               = "";
+        wxString language                  = "en";
+        wxString output_filename_format    = "[mode]_[jobid]_[seed]_[width]x[height]";
         bool keep_model_in_memory          = true;
         bool save_all_image                = true;
         bool auto_gen_hash                 = true;
@@ -272,11 +276,167 @@ namespace sd_gui_utils {
         bool show_notifications            = true;
         int notification_timeout           = 60;
         bool enable_civitai                = true;
-        std::string lastImageInfoPath      = "";
-        std::string lastImg2ImgPath        = "";
-        std::string lastUpscalerPath       = "";
+        wxString lastImageInfoPath         = "";
+        wxString lastImg2ImgPath           = "";
+        wxString lastUpscalerPath          = "";
+        bool widgetVisible                 = false;
+        config(wxConfigBase* config)
+            : configBase(config) {
+            wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
+            wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
+
+            wxString model_path = datapath;
+            model_path.append("checkpoints");
+
+            wxString vae_path = datapath;
+            vae_path.append("vae");
+
+            wxString lora_path = datapath;
+            lora_path.append("lora");
+
+            wxString embedding_path = datapath;
+            embedding_path.append("embedding");
+
+            wxString taesd_path = datapath;
+            taesd_path.append("taesd");
+
+            wxString presets_path = datapath;
+            presets_path.append("presets");
+
+            wxString jobs_path = datapath;
+            jobs_path.append("queue_jobs");
+
+            wxString thumbs_path = datapath;
+            thumbs_path.append("thumbs");
+
+            wxString tmp_path = datapath;
+            tmp_path.append("tmp");
+
+            wxString controlnet_path = datapath;
+            controlnet_path.append("controlnet");
+
+            wxString esrgan_path = datapath;
+            esrgan_path.append("esrgan");
+
+            this->datapath = datapath;
+
+            this->thumbs_path = thumbs_path;
+            this->tmppath     = tmp_path;
+
+            this->lora                   = config->Read("/paths/lora", lora_path);
+            this->model                  = config->Read("/paths/model", model_path);
+            this->vae                    = config->Read("/paths/vae", vae_path);
+            this->embedding              = config->Read("/paths/embedding", embedding_path);
+            this->taesd                  = config->Read("/paths/taesd", taesd_path);
+            this->esrgan                 = config->Read("/paths/esrgan", esrgan_path);
+            this->controlnet             = config->Read("/paths/controlnet", controlnet_path);
+            this->presets                = config->Read("/paths/presets", presets_path);
+            this->jobs                   = config->Read("/paths/jobs", jobs_path);
+            this->output                 = config->Read("/paths/output", imagespath);
+            this->keep_model_in_memory   = config->Read("/keep_model_in_memory", this->keep_model_in_memory);
+            this->save_all_image         = config->Read("/save_all_image", this->save_all_image);
+            this->n_threads              = config->Read("/n_threads", cores());
+            this->show_notifications     = config->ReadBool("/show_notification", this->show_notifications);
+            this->notification_timeout   = config->Read("/notification_timeout", this->notification_timeout);
+            this->image_quality          = config->Read("/image_quality", this->image_quality);
+            this->enable_civitai         = config->ReadBool("/enable_civitai", this->enable_civitai);
+            this->language               = config->Read("/language", wxUILocale::GetSystemLocaleId().GetLanguage());
+            this->output_filename_format = config->Read("/output_filename_format", this->output_filename_format);
+            this->lastImageInfoPath      = config->Read("/lastImageInfoPath", this->lastImageInfoPath);
+            this->lastImg2ImgPath        = config->Read("/lastImg2ImgPath", this->lastImg2ImgPath);
+            this->lastUpscalerPath       = config->Read("/lastUpscalerPath", this->lastUpscalerPath);
+            this->auto_gen_hash          = config->ReadBool("/auto_gen_hash", this->auto_gen_hash);
+            this->widgetVisible          = config->ReadBool("/widgetVisible", this->widgetVisible);
+            int idx                      = 0;
+            auto saved_image_type        = config->Read("/image_type", "JPG");
+
+            for (auto type : sd_gui_utils::image_types_str) {
+                if (saved_image_type == type) {
+                    this->image_type = (sd_gui_utils::imageTypes)idx;
+                    break;
+                }
+                idx++;
+            }
+            // check if directories exists
+            if (wxFileName::DirExists(datapath) == false) {
+                wxFileName(datapath).Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(model_path) == false) {
+                wxFileName::Mkdir(model_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(thumbs_path) == false) {
+                wxFileName::Mkdir(thumbs_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(vae_path) == false) {
+                wxFileName::Mkdir(vae_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(lora_path) == false) {
+                wxFileName::Mkdir(lora_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(embedding_path) == false) {
+                wxFileName::Mkdir(embedding_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(controlnet_path) == false) {
+                wxFileName::Mkdir(controlnet_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(esrgan_path) == false) {
+                wxFileName::Mkdir(esrgan_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(taesd_path) == false) {
+                wxFileName::Mkdir(taesd_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(presets_path) == false) {
+                wxFileName::Mkdir(presets_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(jobs_path) == false) {
+                wxFileName::Mkdir(jobs_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(imagespath) == false) {
+                wxFileName::Mkdir(imagespath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+        }
+
+        ~config() {
+            if (this->configBase != nullptr) {
+                this->configBase->Write("/paths/model", this->model);
+                this->configBase->Write("/paths/lora", this->lora);
+                this->configBase->Write("/paths/vae", this->vae);
+                this->configBase->Write("/paths/embedding", this->embedding);
+                this->configBase->Write("/paths/taesd", this->taesd);
+                this->configBase->Write("/paths/esrgan", this->esrgan);
+                this->configBase->Write("/paths/controlnet", this->controlnet);
+                this->configBase->Write("/paths/presets", this->presets);
+                this->configBase->Write("/paths/jobs", this->jobs);
+                this->configBase->Write("/paths/thumbs", this->thumbs_path);
+                this->configBase->Write("/paths/tmp", this->tmppath);
+                this->configBase->Write("/paths/datapath", this->datapath);
+                this->configBase->Write("/paths/output", this->output);
+                this->configBase->Write("/keep_model_in_memory", this->keep_model_in_memory);
+                this->configBase->Write("/save_all_image", this->save_all_image);
+                this->configBase->Write("/n_threads", this->n_threads);
+                this->configBase->Write("/show_notification", this->show_notifications);
+                this->configBase->Write("/notification_timeout", this->notification_timeout);
+                this->configBase->Write("/image_quality", this->image_quality);
+                this->configBase->Write("/enable_civitai", this->enable_civitai);
+                this->configBase->Write("/auto_gen_hash", this->auto_gen_hash);
+                this->configBase->Write("/widgetVisible", this->widgetVisible);
+            }
+        }
     };
-    inline std::string formatUnixTimestampToDate(long timestamp) {
+
+    inline std::string
+    formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);
         std::tm* timeinfo = std::localtime(&time);
 

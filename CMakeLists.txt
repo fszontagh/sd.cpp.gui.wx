@@ -79,9 +79,11 @@ set(SOURCES
     src/ui/MainWindowCivitAiWindow.cpp
     src/ui/MainWindowImageDialog.cpp
     src/ui/MainWindowUI.cpp
+    src/ui/MainWindowDesktopWidget.cpp
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
     src/libs/SharedMemoryManager.cpp
+
 )
 
 if (WIN32)
@@ -93,6 +95,13 @@ add_subdirectory(extprocess)
 # Set target for the application
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE src/pch.h)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${PROJECT_BINARY_NAME} PRIVATE -Wunused)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(${PROJECT_BINARY_NAME} PRIVATE /w44265) # Hasonló figyelmeztetés MSVC-ben
+endif()
+
 
 if (NOT WIN32)
 

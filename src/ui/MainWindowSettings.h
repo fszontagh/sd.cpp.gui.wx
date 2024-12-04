@@ -22,13 +22,13 @@ protected:
 
 public:
     /** Constructor */
-    MainWindowSettings(wxWindow* parent);
+    MainWindowSettings(wxWindow* parent, wxConfigBase* config, sd_gui_utils::config * cfg);
     ~MainWindowSettings();
     //// end generated class members
 private:
     void InitConfig();
-    wxFileConfig* fileConfig;
-    std::shared_ptr<sd_gui_utils::config> cfg;
+    wxConfigBase* config;
+    sd_gui_utils::config* cfg;
     std::string ini_path;
     std::map<int, std::string> locales;
 };
