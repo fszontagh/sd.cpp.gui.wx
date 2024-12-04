@@ -47,7 +47,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
                 stepsDone = item->step > stepsSum ? stepsSum : item->step;
             }
 
-            steps = wxString::Format("%d/%d", stepsDone, stepsSum);
+            steps = wxString::Format("%zu/%zu", stepsDone, stepsSum);
 
             this->m_currentProgress->SetRange(stepsSum);
             this->m_currentProgress->SetValue(stepsDone);

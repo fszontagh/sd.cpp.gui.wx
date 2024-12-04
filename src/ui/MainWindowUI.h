@@ -177,6 +177,9 @@ private:
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
     void UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QM::QueueEvents& event);
+    void SetSchedulerByType(schedule_t schedule);
+    void SetSamplerByType(sample_method_t sampler);
+    void SetTypeByType(sd_type_t type);
     inline void DisableControlNet() {
         this->m_controlnetModels->Disable();
         this->m_controlnetModels->Select(0);

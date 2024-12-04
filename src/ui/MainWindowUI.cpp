@@ -66,13 +66,17 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->cnOnCpu->SetValue(controlnet_on_cpu);
     this->vaeOnCpu->SetValue(vae_on_cpu);
 
-    if (widgetVisible) {
-        this->m_showWidget->SetLabel(_("Hide Widget"));
-        if (this->widget == nullptr) {
-            this->widget = new MainWindowDesktopWidget(this);
-            wxPersistenceManager::Get().RegisterAndRestore(this->widget);
+    if (BUILD_TYPE != "Release") {
+        if (widgetVisible) {
+            this->m_showWidget->SetLabel(_("Hide Widget"));
+            if (this->widget == nullptr) {
+                this->widget = new MainWindowDesktopWidget(this);
+                wxPersistenceManager::Get().RegisterAndRestore(this->widget);
+            }
+            this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
         }
-        this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
+    } else {
+        this->m_showWidget->Hide();
     }
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
@@ -735,20 +739,8 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->keep_checkpoint_in_memory     = this->m_keep_other_models_in_memory->GetValue();
         item->keep_upscaler_in_memory       = this->m_keep_upscaler_in_memory->GetValue();
 
-        auto selectedwType = this->m_type->GetStringSelection();
-        for (auto types : sd_gui_utils::sd_type_gui_names) {
-            if (types.second == selectedwType) {
-                item->params.wtype = (sd_type_t)types.first;
-            }
-        }
-
-        auto selectedScheduler = this->m_scheduler->GetStringSelection();
-        for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
-            if (schedulers.second == selectedScheduler) {
-                item->params.schedule = (schedule_t)schedulers.first;
-                break;
-            }
-        }
+        item->params.wtype    = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(this->m_type->GetSelection())));
+        item->params.schedule = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(this->m_scheduler->GetSelection())));
 
         if (this->mapp->cfg->save_all_image) {
             item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
@@ -758,6 +750,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     }
 
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
+
+    item->params.wtype         = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(this->m_type->GetSelection())));
+    item->params.schedule      = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(this->m_scheduler->GetSelection())));
+    item->params.sample_method = static_cast<sample_method_t>(reinterpret_cast<uintptr_t>(this->m_sampler->GetClientData(this->m_sampler->GetSelection())));
 
     auto diffusionModel = this->m_filePickerDiffusionModel->GetPath().utf8_string();
 
@@ -887,29 +883,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.control_strength   = 0;
     }
 
-    item->params.sample_method = (sample_method_t)this->m_sampler->GetCurrentSelection();
-
-    auto selectedwType = this->m_type->GetStringSelection();
-    for (auto types : sd_gui_utils::sd_type_gui_names) {
-        if (types.second == selectedwType) {
-            item->params.wtype = (sd_type_t)types.first;
-        }
-    }
-
-    auto selectedScheduler = this->m_scheduler->GetStringSelection();
-    for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
-        if (schedulers.second == selectedScheduler) {
-            item->params.schedule = (schedule_t)schedulers.first;
-            break;
-        }
-    }
-
     item->params.batch_count = this->m_batch_count->GetValue();
-
-    item->params.width  = this->m_width->GetValue();
-    item->params.height = this->m_height->GetValue();
-
-    item->params.vae_tiling = this->m_vae_tiling->GetValue();
+    item->params.width       = this->m_width->GetValue();
+    item->params.height      = this->m_height->GetValue();
+    item->params.vae_tiling  = this->m_vae_tiling->GetValue();
 
     item->mode = type;
 
@@ -930,15 +907,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (modelinfo != nullptr && modelinfo->sha256.empty() && this->mapp->cfg->auto_gen_hash) {
         item->hash_fullsize = modelinfo->size;
         item->need_sha256   = true;
-        // sd_gui_utils::VoidHolder* holder = new sd_gui_utils::VoidHolder;
-        // holder->p1                       = (void*)this->GetEventHandler();
-        // holder->p2                       = (void*)item.get();
-        // holder->p3                       = (void*)modelinfo;
-        // this->voids.emplace_back(holder);
-        // item->status = QM::QueueStatus::PENDING;
-        // this->qmanager->AddItem(item);
-        // auto hash = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void*)holder, &MainWindowUI::ModelHashingCallback);
-        // this->ModelManager->setHash(modelinfo->path.c_str(), hash);
     }
     this->qmanager->AddItem(item);
 
@@ -1485,7 +1453,9 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         }
     }
 
-    this->m_sampler->SetSelection(item.params.sample_method);
+    this->SetSamplerByType(item.params.sample_method);
+    this->SetSchedulerByType(item.params.schedule);
+    this->SetTypeByType(item.params.wtype);
 
     if (!item.params.taesd_path.empty()) {
         int index = 0;
@@ -1513,23 +1483,6 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
                     }
                 }
             }
-        }
-    }
-
-    auto type_name = sd_gui_utils::sd_type_gui_names[item.params.wtype];
-    for (unsigned int index = 0; index < this->m_type->GetCount(); ++index) {
-        if (this->m_type->GetString(index) == wxString(type_name)) {
-            this->m_type->Select(index);
-            break;
-        }
-    }
-
-    auto sheduler_name = sd_gui_utils::sd_scheduler_gui_names[item.params.schedule];
-
-    for (unsigned int index = 0; index < this->m_scheduler->GetCount(); ++index) {
-        if (this->m_scheduler->GetString(index) == wxString(sheduler_name)) {
-            this->m_scheduler->Select(index);
-            break;
         }
     }
 
@@ -1755,7 +1708,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
         data.push_back(wxVariant("--"));  // sample method
         data.push_back(wxVariant("--"));  // seed
     } else {
-        data.push_back(wxVariant(sd_gui_utils::sample_method_str[(int)item->params.sample_method]));
+        data.push_back(wxVariant(sd_gui_utils::samplerUiName.at(item->params.sample_method)));
         data.push_back(wxVariant(std::to_string(item->params.seed)));
     }
 
@@ -2148,6 +2101,7 @@ std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_util
 
     comment.append(wxString::Format(", Seed: %" PRId64, myItem.params.seed).utf8_string());
     comment.append(wxString::Format(", Sampler: %s", sd_gui_utils::samplerSdWebuiNames.at(myItem.params.sample_method)));
+    comment.append(wxString::Format(", Scheduler: %s", sd_gui_utils::schedule_str[myItem.params.schedule]));
     comment.append(wxString::Format(", Schedule type: %s", sd_gui_utils::schedulerSdWebuiNames.at(myItem.params.schedule)));
     comment.append(wxString::Format(", CFG scale: %s", cfgScale).utf8_string());
     comment.append(wxString::Format(", Size: %dx%d", myItem.params.width, myItem.params.height).utf8_string());
@@ -2499,52 +2453,14 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
     for (auto item : params) {
         // try to find a sampler
         if (item.first.Lower().Contains("sampler")) {
-            /// we default sampler is euler_a :)
-            /// in automatic, the default is unipc, we dont have it
-            if (item.second.Lower() == "default" || item.second.Lower() == "automatic") {
-                this->m_sampler->Select(0);
-                continue;
-            }
-            unsigned int index = 0;
-            for (auto sampler : sd_gui_utils::sample_method_str) {
-                if (sampler == item.second) {
-                    this->m_sampler->Select(index);
-                    break;
-                }
-                index++;
-            }
-            index = 0;
-            for (auto sampler : sd_gui_utils::samplerSdWebuiNames) {
-                if (sampler.second == item.second || wxString(sampler.second).Lower() == item.second.Lower()) {
-                    this->m_sampler->Select(index);
-                    break;
-                }
-                index++;
-            }
+            const auto fsampler = sd_gui_utils::FindSamplerFromString(item.second);
+            this->SetSamplerByType(fsampler);
         }
 
         // try to find a scheduler
         if (item.first.Lower() == "scheduler" || item.first == "schedule type" || item.first.Lower().Contains("schedule")) {
-            if (item.second.Lower() == "default" || item.second.Lower() == "automatic") {
-                this->m_scheduler->Select(0);
-                continue;
-            }
-            unsigned int index = 0;
-            for (auto scheduler : sd_gui_utils::sd_scheduler_gui_names) {
-                if (scheduler.second == item.second) {
-                    this->m_scheduler->Select(index);
-                    break;
-                }
-                index++;
-            }
-            index = 0;
-            for (auto scheduler : sd_gui_utils::schedulerSdWebuiNames) {
-                if (scheduler.second == item.second || wxString(scheduler.second).Lower() == item.second.Lower()) {
-                    this->m_scheduler->Select(index);
-                    break;
-                }
-                index++;
-            }
+            const auto fscheduler = sd_gui_utils::FindSchedulerFromString(item.second);
+            this->SetSchedulerByType(fscheduler);
         }
 
         // get the seed, but our seed maximum is smaller than sdgui
@@ -2757,11 +2673,25 @@ void MainWindowUI::StartGeneration(std::shared_ptr<QM::QueueItem> myJob) {
 
 void MainWindowUI::loadSamplerList() {
     this->m_sampler->Clear();
-    for (auto sampler : sd_gui_utils::sample_method_str) {
-        int _u = this->m_sampler->Append(sampler);
 
-        if (std::string(sampler) == "euler_a") {
+    for (auto sampler : sd_gui_utils::samplerUiName) {
+        auto _u = this->m_sampler->Append(sampler.second, reinterpret_cast<void*>(static_cast<uintptr_t>(sampler.first)));
+        if (sampler.first == sample_method_t::EULER) {
             this->m_sampler->Select(_u);
+        }
+    }
+}
+
+void MainWindowUI::loadSchedulerList() {
+    this->m_scheduler->Clear();
+
+    for (auto type : sd_gui_utils::sd_scheduler_gui_names) {
+        auto _z = this->m_scheduler->Append(type.second);
+
+        this->m_scheduler->SetClientData(_z, reinterpret_cast<void*>(static_cast<uintptr_t>(type.first)));
+
+        if (type.first == schedule_t::DEFAULT) {
+            this->m_scheduler->Select(_z);
         }
     }
 }
@@ -2769,10 +2699,7 @@ void MainWindowUI::loadTypeList() {
     this->m_type->Clear();
     unsigned int selected = 0;
     for (auto type : sd_gui_utils::sd_type_gui_names) {
-        auto _z = this->m_type->Append(type.second);
-        if (type.second == "Count") {
-            selected = _z;
-        }
+        this->m_type->Append(type.second, reinterpret_cast<void*>(static_cast<uintptr_t>(type.first)));
     }
 
     std::string selectByBackend = "";
@@ -2795,19 +2722,6 @@ void MainWindowUI::loadTypeList() {
             }
         }
     }
-}
-
-void MainWindowUI::loadSchedulerList() {
-    this->m_scheduler->Clear();
-    unsigned int selected = 0;
-
-    for (auto type : sd_gui_utils::sd_scheduler_gui_names) {
-        auto _z = this->m_scheduler->Append(type.second);
-        if (type.second == "Default") {
-            selected = _z;
-        }
-    }
-    this->m_scheduler->Select(selected);
 }
 
 void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer) {
@@ -3379,7 +3293,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         data.clear();
         if (item->mode != QM::GenerationMode::CONVERT) {
             data.push_back(wxVariant(_("Scheduler")));
-            data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sd_scheduler_gui_names[item->params.schedule])));
+            data.push_back(wxVariant(sd_gui_utils::sd_scheduler_gui_names[item->params.schedule]));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
@@ -3430,7 +3344,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         data.clear();
 
         data.push_back(wxVariant(_("Sampler")));
-        data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sample_method_str[item->params.sample_method])));
+        data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::samplerUiName.at(item->params.sample_method))));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
@@ -4018,7 +3932,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
     auto selectedScheduler = this->m_scheduler->GetStringSelection();
     for (auto schedulers : sd_gui_utils::sd_scheduler_gui_names) {
         if (schedulers.second == selectedScheduler) {
-            item->params.schedule = (schedule_t)schedulers.first;
+            item->params.schedule = schedulers.first;
             break;
         }
     }
@@ -4320,10 +4234,42 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
 
         // upscaler and the tieled vae will generate more steps after diffusion
         if (stepsSum < stepsDone) {
-            stepsSum = item->steps;
+            stepsSum  = item->steps;
             stepsDone = item->step;
         }
         this->m_currentProgress->SetRange(stepsSum);
         this->m_currentProgress->SetValue(stepsDone > stepsSum ? stepsSum : stepsDone);
+    }
+}
+
+void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
+    for (auto i = 0; this->m_scheduler->GetCount(); i++) {
+        schedule_t selectedType = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(i)));
+
+        if (schedule == selectedType) {
+            this->m_scheduler->Select(i);
+            break;
+        }
+    }
+}
+void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
+    for (auto i = 0; this->m_sampler->GetCount(); i++) {
+        sample_method_t selectedType = static_cast<sample_method_t>(reinterpret_cast<uintptr_t>(this->m_sampler->GetClientData(i)));
+
+        if (sampler == selectedType) {
+            this->m_sampler->Select(i);
+            break;
+        }
+    }
+}
+
+void MainWindowUI::SetTypeByType(sd_type_t type) {
+    for (auto i = 0; this->m_type->GetCount(); i++) {
+        sd_type_t selectedType = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(i)));
+
+        if (type == selectedType) {
+            this->m_type->Select(i);
+            break;
+        }
     }
 }

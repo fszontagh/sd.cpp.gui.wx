@@ -541,6 +541,19 @@ namespace sd_gui_utils {
         "ays",
         "gits"};
 
+    inline const std::unordered_map<sample_method_t, wxString> samplerUiName = {
+        {sample_method_t::EULER, _("Euler")},
+        {sample_method_t::EULER_A, _("Euler a")},
+        {sample_method_t::DPM2, _("DPM2")},
+        {sample_method_t::DPMPP2M, _("DPM++ 2M")},
+        {sample_method_t::DPMPP2Mv2, _("DPM++ 2Mv2")},
+        {sample_method_t::DPMPP2S_A, _("DPM++ 2S a")},
+        {sample_method_t::HEUN, _("Heun")},
+        {sample_method_t::LCM, _("LCM")},
+        {sample_method_t::IPNDM, _("IPNDM")},
+        {sample_method_t::IPNDM_V, _("IPNDM_V")},
+    };
+
     inline const std::unordered_map<sample_method_t, std::string> samplerSdWebuiNames = {
         {sample_method_t::N_SAMPLE_METHODS, "Automatic"},
         {sample_method_t::EULER, "Euler"},
@@ -567,7 +580,6 @@ namespace sd_gui_utils {
 
     // f32, f16, q4_0, q4_1, q5_0, q5_1, q8_0
     inline std::map<int, std::string> sd_type_gui_names = {
-        {SD_TYPE_COUNT, "Count"},
         {SD_TYPE_F32, "F32"},
         {SD_TYPE_F16, "F16"},
         {SD_TYPE_Q4_0, "Q4_0"},
@@ -579,15 +591,13 @@ namespace sd_gui_utils {
         {SD_TYPE_Q3_K, "Q3_K"},
         {SD_TYPE_Q4_K, "Q4_K"}};
 
-    inline std::map<int, std::string> sd_scheduler_gui_names = {
-        {0, "Default"},
-        {1, "Discrete"},
-        {2, "Karras"},
-        {3, "Exponential"},
-        {4, "Ays"},
-        {5, "Gits"}
-
-    };
+    inline std::map<schedule_t, wxString> sd_scheduler_gui_names = {
+        {schedule_t::DEFAULT, "Default"},
+        {schedule_t::DISCRETE, "Discrete"},
+        {schedule_t::KARRAS, "Karras"},
+        {schedule_t::EXPONENTIAL, "Exponential"},
+        {schedule_t::AYS, "Ays"},
+        {schedule_t::GITS, "Gits"}};
 
     /* JSONize SD Params*/
     enum class ThreadEvents {
@@ -777,6 +787,44 @@ namespace sd_gui_utils {
         }
         // Return the unique full file path as a string
         return fullPath.GetFullPath();
+    }
+
+    inline schedule_t FindSchedulerFromString(const wxString& str) {
+        for (const auto s : sd_gui_utils::schedulerSdWebuiNames) {
+            if (s.second == str) {
+                return s.first;
+            }
+        }
+        for (const auto s : sd_gui_utils::schedulerSdWebuiNames) {
+            if (s.second == str) {
+                return s.first;
+            }
+        }
+        int counter = 0;
+        for (const auto s : sd_gui_utils::schedule_str) {
+            if (str.Contains(s)) {
+                return schedule_t(counter);
+            }
+            counter++;
+        }
+        return schedule_t::DEFAULT;
+    }
+
+    inline sample_method_t FindSamplerFromString(const wxString& str) {
+        for (const auto s : sd_gui_utils::samplerSdWebuiNames) {
+            if (s.second == str) {
+                return s.first;
+            }
+        }
+
+        int counter = 0;
+        for (const auto s : sd_gui_utils::sample_method_str) {
+            if (str.Contains(s)) {
+                return sample_method_t(counter);
+            }
+            counter++;
+        }
+        return sample_method_t::EULER;  // euler is the default
     }
 
     /*

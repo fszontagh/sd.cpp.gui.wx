@@ -17616,7 +17616,7 @@
     <object class="Frame" expanded="true">
       <property name="aui_managed">0</property>
       <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
-      <property name="bg"></property>
+      <property name="bg">32,32,32</property>
       <property name="center">wxBOTH</property>
       <property name="context_help"></property>
       <property name="context_menu">0</property>
@@ -17624,7 +17624,7 @@
       <property name="enabled">1</property>
       <property name="event_handler">impl_virtual</property>
       <property name="extra_style"></property>
-      <property name="fg"></property>
+      <property name="fg">224,224,224</property>
       <property name="font"></property>
       <property name="hidden">0</property>
       <property name="id">wxID_ANY</property>
@@ -17632,7 +17632,7 @@
       <property name="minimum_size"></property>
       <property name="name">DesktopWidget</property>
       <property name="pos"></property>
-      <property name="size">400,-1</property>
+      <property name="size">400,68</property>
       <property name="style">wxFRAME_NO_TASKBAR|wxSTAY_ON_TOP</property>
       <property name="subclass">; ; forward_declare</property>
       <property name="title"></property>
@@ -17663,7 +17663,7 @@
             <object class="sizeritem" expanded="false">
               <property name="border">5</property>
               <property name="flag">wxALL|wxEXPAND</property>
-              <property name="proportion">1</property>
+              <property name="proportion">0</property>
               <object class="wxStaticText" expanded="false">
                 <property name="BottomDockable">1</property>
                 <property name="LeftDockable">1</property>
@@ -17711,7 +17711,7 @@
                 <property name="pos"></property>
                 <property name="resize">Resizable</property>
                 <property name="show">1</property>
-                <property name="size">-1,-1</property>
+                <property name="size">-1,24</property>
                 <property name="style"></property>
                 <property name="subclass">; ; forward_declare</property>
                 <property name="toolbar_pane">0</property>
@@ -17760,7 +17760,7 @@
                 <property name="maximum_size"></property>
                 <property name="min_size"></property>
                 <property name="minimize_button">0</property>
-                <property name="minimum_size"></property>
+                <property name="minimum_size">-1,16</property>
                 <property name="moveable">1</property>
                 <property name="name">m_currentProgress</property>
                 <property name="pane_border">1</property>

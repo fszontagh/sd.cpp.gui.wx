@@ -1259,7 +1259,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer117;
 	bSizer117 = new wxBoxSizer( wxVERTICAL );
 
-	m_imageinfo_preview = new wxStaticBitmap( m_scrolledWindow5, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, wxBORDER_DEFAULT|wxBORDER_STATIC );
+	m_imageinfo_preview = new wxStaticBitmap( m_scrolledWindow5, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
 	m_imageinfo_preview->DragAcceptFiles( true );
 	m_imageinfo_preview->SetMinSize( wxSize( 384,384 ) );
 	m_imageinfo_preview->SetMaxSize( wxSize( 1024,1024 ) );
@@ -2440,6 +2440,8 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	this->SetExtraStyle( wxWS_EX_TRANSIENT );
+	this->SetForegroundColour( wxColour( 224, 224, 224 ) );
+	this->SetBackgroundColour( wxColour( 32, 32, 32 ) );
 
 	wxBoxSizer* bSizer122;
 	bSizer122 = new wxBoxSizer( wxHORIZONTAL );
@@ -2447,15 +2449,16 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 	wxBoxSizer* bSizer128;
 	bSizer128 = new wxBoxSizer( wxVERTICAL );
 
-	m_currentStatus = new wxStaticText( this, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_currentStatus = new wxStaticText( this, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxSize( -1,24 ), 0 );
 	m_currentStatus->Wrap( -1 );
 	m_currentStatus->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
 
-	bSizer128->Add( m_currentStatus, 1, wxALL|wxEXPAND, 5 );
+	bSizer128->Add( m_currentStatus, 0, wxALL|wxEXPAND, 5 );
 
 	m_currentProgress = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
 	m_currentProgress->SetValue( 0 );
 	m_currentProgress->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
+	m_currentProgress->SetMinSize( wxSize( -1,16 ) );
 
 	bSizer128->Add( m_currentProgress, 0, wxALL|wxEXPAND, 5 );
 
