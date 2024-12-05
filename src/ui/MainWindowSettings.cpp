@@ -124,6 +124,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->cfg->auto_gen_hash          = this->m_autogen_hash->GetValue();
 
     auto language = this->locales[this->m_language->GetSelection()];
+    this->cfg->language = language;
     this->config->Write("/language", wxString::FromUTF8Unchecked(language));
     this->config->Flush();
     this->Close();
@@ -160,6 +161,7 @@ void MainWindowSettings::InitConfig() {
     this->m_notification_timeout->SetValue(this->cfg->notification_timeout);
     this->m_enableCivitai->SetValue(this->cfg->enable_civitai);
     this->m_output_filename_format->SetValue(this->cfg->output_filename_format);
+    this->m_autogen_hash->SetValue(this->cfg->auto_gen_hash);
 
     //  populate available languages
     /*this->m_language->Append("English");

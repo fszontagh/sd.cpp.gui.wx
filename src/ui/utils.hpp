@@ -405,6 +405,9 @@ namespace sd_gui_utils {
             if (wxFileName::DirExists(imagespath) == false) {
                 wxFileName::Mkdir(imagespath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
+            if (wxFileName::DirExists(tmppath) == false) {
+                wxFileName::Mkdir(tmppath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
         }
 
         ~config() {
