@@ -22,6 +22,7 @@ protected:
     void OnMouseMotion(wxMouseEvent& event) override;
     void OnLeftMouseDClick(wxMouseEvent& event) override;
     void OnWidgetPaint(wxPaintEvent& event) override;
+    void OnIconize(wxIconizeEvent& event) override;
 
 public:
     /** Constructor */

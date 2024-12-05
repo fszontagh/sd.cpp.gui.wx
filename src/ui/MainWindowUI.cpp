@@ -74,6 +74,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
                 wxPersistenceManager::Get().RegisterAndRestore(this->widget);
             }
             this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
+            this->m_showWidget->SetValue(true);
         }
     } else {
         this->m_showWidget->Hide();

@@ -17642,6 +17642,7 @@
       <property name="xrc_skip_sizer">1</property>
       <event name="OnClose">OnClose</event>
       <event name="OnEnterWindow">OnMouseEnter</event>
+      <event name="OnIconize">OnIconize</event>
       <event name="OnLeaveWindow">OnMouseLeave</event>
       <event name="OnLeftDClick">OnLeftMouseDClick</event>
       <event name="OnLeftDown">OnMouseLeftDown</event>

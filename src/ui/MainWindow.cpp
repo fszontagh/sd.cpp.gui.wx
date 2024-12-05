@@ -2480,6 +2480,7 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 	// Connect Events
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( DesktopWidget::OnClose ) );
 	this->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
+	this->Connect( wxEVT_ICONIZE, wxIconizeEventHandler( DesktopWidget::OnIconize ) );
 	this->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
 	this->Connect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ) );
 	this->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );
@@ -2493,6 +2494,7 @@ DesktopWidget::~DesktopWidget()
 	// Disconnect Events
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( DesktopWidget::OnClose ) );
 	this->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
+	this->Disconnect( wxEVT_ICONIZE, wxIconizeEventHandler( DesktopWidget::OnIconize ) );
 	this->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
 	this->Disconnect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ) );
 	this->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );

@@ -560,6 +560,7 @@ class DesktopWidget : public wxFrame
 		// Virtual event handlers, override them in your derived class
 		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnMouseEnter( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnIconize( wxIconizeEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeave( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnLeftMouseDClick( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeftDown( wxMouseEvent& event ) { event.Skip(); }

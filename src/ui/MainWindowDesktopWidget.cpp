@@ -16,12 +16,11 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
     int width  = this->m_background.GetWidth();
     int height = this->m_background.GetHeight();
 
-    // Pixel-by-pixel átlátszósági maszk létrehozása
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             unsigned char alpha = image.GetAlpha(x, y);
             if (alpha > 0) {
-                region.Union(x, y, 1, 1);  // Pixel hozzáadása a régióhoz
+                region.Union(x, y, 1, 1);
             }
         }
     }
@@ -138,4 +137,8 @@ void MainWindowDesktopWidget::OnWidgetPaint(wxPaintEvent& event) {
         }
         delete gc;
     }
+}
+
+void MainWindowDesktopWidget::OnIconize(wxIconizeEvent& event) {
+    // do nothing
 }
