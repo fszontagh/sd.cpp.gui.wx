@@ -555,21 +555,21 @@ class DesktopWidget : public wxFrame
 	protected:
 		wxStaticText* m_currentStatus;
 		wxGauge* m_currentProgress;
-		wxStaticBitmap* m_bitmap10;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnMouseEnter( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeave( wxMouseEvent& event ) { event.Skip(); }
-		virtual void OnMouseMotion( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnLeftMouseDClick( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeftDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnMouseLeftUp( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnMouseMotion( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnWidgetPaint( wxPaintEvent& event ) { event.Skip(); }
 
 
 	public:
 
-		DesktopWidget( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,68 ), long style = wxFRAME_NO_TASKBAR|wxSTAY_ON_TOP|wxBORDER_NONE, const wxString& name = wxT("DesktopWidget") );
+		DesktopWidget( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,68 ), long style = wxFRAME_NO_TASKBAR|wxFRAME_SHAPED|wxSTAY_ON_TOP|wxBORDER_NONE|wxTRANSPARENT_WINDOW, const wxString& name = wxT("DesktopWidget") );
 
 		~DesktopWidget();
 

@@ -2481,7 +2481,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             this->m_steps->SetValue(std::atoi(item.second.c_str()));
         }
 
-        if (item.first == "cfgscale") {
+        if (item.first == "cfgscale" || item.first == "cfg scale" || item.first == "cfg" || item.first == "cfg_scale") {
             this->m_cfg->SetValue(static_cast<double>(std::atof(item.second.c_str())));
         }
 

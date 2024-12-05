@@ -13,7 +13,6 @@
 #include "embedded_files/cube.png.h"
 #include "embedded_files/dice_four.png.h"
 #include "embedded_files/disk.png.h"
-#include "embedded_files/drag.png.h"
 #include "embedded_files/file_import.png.h"
 #include "embedded_files/forward.png.h"
 #include "embedded_files/images.png.h"
@@ -1256,6 +1255,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_scrolledWindow5 = new wxScrolledWindow( m_splitter4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
 	m_scrolledWindow5->SetScrollRate( 5, 5 );
+	m_scrolledWindow5->SetBackgroundColour( wxColour( 64, 64, 64 ) );
+
 	wxBoxSizer* bSizer117;
 	bSizer117 = new wxBoxSizer( wxVERTICAL );
 
@@ -1264,7 +1265,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageinfo_preview->SetMinSize( wxSize( 384,384 ) );
 	m_imageinfo_preview->SetMaxSize( wxSize( 1024,1024 ) );
 
-	bSizer117->Add( m_imageinfo_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
+	bSizer117->Add( m_imageinfo_preview, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND, 5 );
 
 
 	m_scrolledWindow5->SetSizer( bSizer117 );
@@ -2438,10 +2439,10 @@ CivitAiWindow::~CivitAiWindow()
 
 DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxFrame( parent, id, title, pos, size, style, name )
 {
-	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+	this->SetSizeHints( wxDefaultSize, wxSize( 400,68 ) );
 	this->SetExtraStyle( wxWS_EX_TRANSIENT );
 	this->SetForegroundColour( wxColour( 224, 224, 224 ) );
-	this->SetBackgroundColour( wxColour( 32, 32, 32 ) );
+	this->SetBackgroundColour( wxColour( 77, 77, 77 ) );
 
 	wxBoxSizer* bSizer122;
 	bSizer122 = new wxBoxSizer( wxHORIZONTAL );
@@ -2449,33 +2450,22 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 	wxBoxSizer* bSizer128;
 	bSizer128 = new wxBoxSizer( wxVERTICAL );
 
-	m_currentStatus = new wxStaticText( this, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxSize( -1,24 ), 0 );
+	m_currentStatus = new wxStaticText( this, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	m_currentStatus->Wrap( -1 );
 	m_currentStatus->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
+	m_currentStatus->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
 
-	bSizer128->Add( m_currentStatus, 0, wxALL|wxEXPAND, 5 );
+	bSizer128->Add( m_currentStatus, 1, wxEXPAND, 0 );
 
-	m_currentProgress = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
+	m_currentProgress = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxSize( 320,-1 ), wxGA_HORIZONTAL );
 	m_currentProgress->SetValue( 0 );
 	m_currentProgress->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
 	m_currentProgress->SetMinSize( wxSize( -1,16 ) );
 
-	bSizer128->Add( m_currentProgress, 0, wxALL|wxEXPAND, 5 );
+	bSizer128->Add( m_currentProgress, 1, wxEXPAND, 0 );
 
 
-	bSizer122->Add( bSizer128, 1, wxALL|wxEXPAND, 5 );
-
-	wxBoxSizer* bSizer127;
-	bSizer127 = new wxBoxSizer( wxVERTICAL );
-
-	bSizer127->SetMinSize( wxSize( 24,-1 ) );
-	m_bitmap10 = new wxStaticBitmap( this, wxID_ANY, drag_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
-	m_bitmap10->SetToolTip( _("Hold left mouse button to drag the widget\nDouble click to show main window") );
-
-	bSizer127->Add( m_bitmap10, 0, wxALL, 5 );
-
-
-	bSizer122->Add( bSizer127, 0, wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer122->Add( bSizer128, 1, wxALL|wxEXPAND, 10 );
 
 
 	this->SetSizer( bSizer122 );
@@ -2487,10 +2477,11 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( DesktopWidget::OnClose ) );
 	this->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
 	this->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
+	this->Connect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ) );
+	this->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );
+	this->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ) );
 	this->Connect( wxEVT_MOTION, wxMouseEventHandler( DesktopWidget::OnMouseMotion ) );
-	m_bitmap10->Connect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ), NULL, this );
-	m_bitmap10->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ), NULL, this );
-	m_bitmap10->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ), NULL, this );
+	this->Connect( wxEVT_PAINT, wxPaintEventHandler( DesktopWidget::OnWidgetPaint ) );
 }
 
 DesktopWidget::~DesktopWidget()
@@ -2499,9 +2490,10 @@ DesktopWidget::~DesktopWidget()
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( DesktopWidget::OnClose ) );
 	this->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseEnter ) );
 	this->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( DesktopWidget::OnMouseLeave ) );
+	this->Disconnect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ) );
+	this->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ) );
+	this->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ) );
 	this->Disconnect( wxEVT_MOTION, wxMouseEventHandler( DesktopWidget::OnMouseMotion ) );
-	m_bitmap10->Disconnect( wxEVT_LEFT_DCLICK, wxMouseEventHandler( DesktopWidget::OnLeftMouseDClick ), NULL, this );
-	m_bitmap10->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( DesktopWidget::OnMouseLeftDown ), NULL, this );
-	m_bitmap10->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( DesktopWidget::OnMouseLeftUp ), NULL, this );
+	this->Disconnect( wxEVT_PAINT, wxPaintEventHandler( DesktopWidget::OnWidgetPaint ) );
 
 }

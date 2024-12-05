@@ -1,8 +1,36 @@
 #include "MainWindowDesktopWidget.h"
+#include "embedded_files/widget_bg.png.h"
 
 MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
     : DesktopWidget(parent) {
     this->dragging = false;
+
+    this->SetBackgroundStyle(wxBG_STYLE_CUSTOM);
+    this->SetBackgroundColour(wxColour(0, 0, 0, 0));
+    
+
+    this->m_background = widget_bg_png_to_wx_bitmap();
+    this->m_background.UseAlpha();
+    auto image = this->m_background.ConvertToImage();
+
+    wxRegion region;
+    int width  = this->m_background.GetWidth();
+    int height = this->m_background.GetHeight();
+
+    // Pixel-by-pixel átlátszósági maszk létrehozása
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            unsigned char alpha = image.GetAlpha(x, y);
+            if (alpha > 0)
+            {
+                region.Union(x, y, 1, 1);  // Pixel hozzáadása a régióhoz
+            }
+        }
+    }
+
+    // Alak beállítása a widgeten
+    this->SetShape(region);
+
     parent->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
 }
 void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
@@ -25,7 +53,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
 
         size_t stepsSum  = 0;  // item->params.sample_steps * item->params.batch_count;
         size_t stepsDone = 0;  // item->stats.time_per_step.size();
-        wxString steps         = wxEmptyString;
+        wxString steps   = wxEmptyString;
 
         if (event == QM::QueueEvents::ITEM_MODEL_HASH_START || event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE) {
             stepsSum  = item->hash_fullsize;
@@ -63,9 +91,6 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
                                                          wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status)),
                                                          steps));
     }
-}
-void MainWindowDesktopWidget::OnClose(wxCloseEvent& event) {
-    // this->RemoveEventHandler(this->GetEventHandler());
 }
 
 void MainWindowDesktopWidget::OnMouseEnter(wxMouseEvent& event) {
@@ -105,4 +130,18 @@ void MainWindowDesktopWidget::OnLeftMouseDClick(wxMouseEvent& event) {
     auto p = static_cast<MainWindowUI*>(this->m_parent);
     // p->RequestUserAttention();
     p->Raise();
+}
+
+void MainWindowDesktopWidget::OnWidgetPaint(wxPaintEvent& event) {
+    wxPaintDC dc(this);
+    wxGraphicsContext* gc = wxGraphicsContext::Create(dc);
+    if (gc) {
+        //        gc->SetBrush(wxBrush(wxColour(255, 0, 0, 27)));
+        //        gc->DrawRectangle(0, 0, this->GetSize().GetWidth(), this->GetSize().GetHeight());
+
+        if (m_background.IsOk()) {
+            gc->DrawBitmap(m_background, 0, 0, m_background.GetWidth(), m_background.GetHeight());
+        }
+        delete gc;
+    }
 }

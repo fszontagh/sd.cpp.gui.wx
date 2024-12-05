@@ -16,6 +16,7 @@
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
 #endif
+#include "wx/graphics.h"
 #include "wx/artprov.h"
 #include "wx/taskbar.h"
 #include "wx/persist/toplevel.h"
