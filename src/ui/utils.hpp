@@ -828,10 +828,20 @@ namespace sd_gui_utils {
     }
 
     static wxString formatSecs(double sec) {
-        wxTimeSpan timeSpan = wxTimeSpan::Seconds(static_cast<wxLongLong>(sec));
-        wxString formattedTime = timeSpan.Format(); // Lokalizált formátum
+        wxTimeSpan timeSpan    = wxTimeSpan::Seconds(static_cast<wxLongLong>(sec));
+        wxString formattedTime = timeSpan.Format();  // Lokalizált formátum
         return formattedTime;
-    }    
+    }
+
+    class IntClientData : public wxClientData {
+    public:
+        IntClientData(int id)
+            : m_id(id) { ; }
+        int getId() const { return m_id; }
+
+    private:
+        int m_id;
+    };
 
     /*
      * Used at m_notebook1302OnNotebookPageChanged

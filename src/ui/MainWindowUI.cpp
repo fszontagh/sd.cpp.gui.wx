@@ -283,7 +283,7 @@ void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onVaeSelect(wxCommandEvent& event) {
-    this->m_vae->SetToolTip(this->m_vae->GetStringSelection().utf8_string());
+    this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
 }
 
 void MainWindowUI::onRandomGenerateButton(wxCommandEvent& event) {
@@ -356,8 +356,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG ||
         selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG ||
         selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS ||
-        selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO
-        ) {
+        selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO) {
         if (this->m_model->GetCount() > 1) {
             this->m_model->Enable();
         }
@@ -727,6 +726,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             break;
     }
 
+    auto wClientData  = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_type->GetClientObject(this->m_type->GetSelection()));
+    auto sClientData  = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_scheduler->GetClientObject(this->m_scheduler->GetSelection()));
+    auto smClientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(this->m_sampler->GetSelection()));
+
     if (type == QM::GenerationMode::UPSCALE) {
         std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
         item->model                         = this->m_upscaler_model->GetStringSelection().utf8_string();
@@ -738,8 +741,8 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->keep_checkpoint_in_memory     = this->m_keep_other_models_in_memory->GetValue();
         item->keep_upscaler_in_memory       = this->m_keep_upscaler_in_memory->GetValue();
 
-        item->params.wtype    = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(this->m_type->GetSelection())));
-        item->params.schedule = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(this->m_scheduler->GetSelection())));
+        item->params.wtype    = static_cast<sd_type_t>(wClientData->getId());
+        item->params.schedule = static_cast<schedule_t>(sClientData->getId());
 
         if (this->mapp->cfg->save_all_image) {
             item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
@@ -750,9 +753,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
 
-    item->params.wtype         = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(this->m_type->GetSelection())));
-    item->params.schedule      = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(this->m_scheduler->GetSelection())));
-    item->params.sample_method = static_cast<sample_method_t>(reinterpret_cast<uintptr_t>(this->m_sampler->GetClientData(this->m_sampler->GetSelection())));
+    item->params.wtype         = static_cast<sd_type_t>(wClientData->getId());
+    item->params.schedule      = static_cast<schedule_t>(sClientData->getId());
+    item->params.sample_method = static_cast<sample_method_t>(smClientData->getId());
 
     auto diffusionModel = this->m_filePickerDiffusionModel->GetPath().utf8_string();
 
@@ -1983,6 +1986,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
 
 void MainWindowUI::loadVaeList() {
     this->LoadFileList(sd_gui_utils::DirTypes::VAE);
+    this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
 }
 
 void MainWindowUI::loadEsrganList() {
@@ -2546,6 +2550,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             for (auto i = 0; i < this->m_vae->GetCount(); i++) {
                 if (this->m_vae->GetString(i).Contains(item.second)) {
                     this->m_vae->Select(i);
+                    this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
                     break;
                 }
             }
@@ -2567,6 +2572,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
         for (auto i = 0; i < this->m_vae->GetCount(); i++) {
             if (this->m_vae->GetString(i).Contains(VaeToFind)) {
                 this->m_vae->Select(i);
+                this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
                 break;
             }
         }
@@ -2682,7 +2688,8 @@ void MainWindowUI::loadSamplerList() {
     this->m_sampler->Clear();
 
     for (auto sampler : sd_gui_utils::samplerUiName) {
-        auto _u = this->m_sampler->Append(sampler.second, reinterpret_cast<void*>(static_cast<uintptr_t>(sampler.first)));
+        auto _u = this->m_sampler->Append(sampler.second);
+        this->m_sampler->SetClientObject(_u, new sd_gui_utils::IntClientData(sampler.first));
         if (sampler.first == sample_method_t::EULER) {
             this->m_sampler->Select(_u);
         }
@@ -2695,7 +2702,7 @@ void MainWindowUI::loadSchedulerList() {
     for (auto type : sd_gui_utils::sd_scheduler_gui_names) {
         auto _z = this->m_scheduler->Append(type.second);
 
-        this->m_scheduler->SetClientData(_z, reinterpret_cast<void*>(static_cast<uintptr_t>(type.first)));
+        this->m_scheduler->SetClientObject(_z, new sd_gui_utils::IntClientData(type.first));
 
         if (type.first == schedule_t::DEFAULT) {
             this->m_scheduler->Select(_z);
@@ -2706,7 +2713,8 @@ void MainWindowUI::loadTypeList() {
     this->m_type->Clear();
     unsigned int selected = 0;
     for (auto type : sd_gui_utils::sd_type_gui_names) {
-        this->m_type->Append(type.second, reinterpret_cast<void*>(static_cast<uintptr_t>(type.first)));
+        auto _z = this->m_type->Append(type.second);
+        this->m_type->SetClientObject(_z, new sd_gui_utils::IntClientData(type.first));
     }
 
     std::string selectByBackend = "";
@@ -4271,9 +4279,9 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
 
 void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
     for (auto i = 0; this->m_scheduler->GetCount(); i++) {
-        schedule_t selectedType = static_cast<schedule_t>(reinterpret_cast<uintptr_t>(this->m_scheduler->GetClientData(i)));
+        auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_scheduler->GetClientObject(i));
 
-        if (schedule == selectedType) {
+        if (schedule == clientData->getId()) {
             this->m_scheduler->Select(i);
             break;
         }
@@ -4281,9 +4289,9 @@ void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
 }
 void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
     for (auto i = 0; this->m_sampler->GetCount(); i++) {
-        sample_method_t selectedType = static_cast<sample_method_t>(reinterpret_cast<uintptr_t>(this->m_sampler->GetClientData(i)));
+        auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(i));
 
-        if (sampler == selectedType) {
+        if (sampler == clientData->getId()) {
             this->m_sampler->Select(i);
             break;
         }
@@ -4292,9 +4300,8 @@ void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
 
 void MainWindowUI::SetTypeByType(sd_type_t type) {
     for (auto i = 0; this->m_type->GetCount(); i++) {
-        sd_type_t selectedType = static_cast<sd_type_t>(reinterpret_cast<uintptr_t>(this->m_type->GetClientData(i)));
-
-        if (type == selectedType) {
+        auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_type->GetClientObject(i));
+        if (type == clientData->getId()) {
             this->m_type->Select(i);
             break;
         }
