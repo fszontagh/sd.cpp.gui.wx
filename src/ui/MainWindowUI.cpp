@@ -68,7 +68,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     if (BUILD_TYPE != "Release") {
         if (widgetVisible) {
-            this->m_showWidget->SetLabel(_("Hide Widget"));
+            this->m_showWidget->SetToolTip(_("Hide Widget"));
             if (this->widget == nullptr) {
                 this->widget = new MainWindowDesktopWidget(this);
                 wxPersistenceManager::Get().RegisterAndRestore(this->widget);
@@ -1182,12 +1182,10 @@ void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
         this->widget = new MainWindowDesktopWidget(this);
         wxPersistenceManager::Get().RegisterAndRestore(this->widget);
         widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
-        this->m_showWidget->SetLabel(_("Hide Widget"));
         this->m_showWidget->SetToolTip(_("Hide Widget"));
         this->mapp->cfg->widgetVisible = true;        
     }else{
         widget->HideWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
-        this->m_showWidget->SetLabel(_("Show Widget"));
         this->m_showWidget->SetToolTip(_("Show Widget"));
         this->mapp->cfg->widgetVisible = false;
         this->widget->Destroy();
