@@ -355,7 +355,9 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     if (selected == sd_gui_utils::GuiMainPanels::PANEL_QUEUE ||
         selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG ||
         selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG ||
-        selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS) {
+        selected == sd_gui_utils::GuiMainPanels::PANEL_MODELS ||
+        selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO
+        ) {
         if (this->m_model->GetCount() > 1) {
             this->m_model->Enable();
         }
@@ -410,7 +412,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
                 this->m_button7->Disable();  // swap button
             }
         }
-        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG) {
+        if (selected == sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG || selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO) {
             if (this->m_filePickerDiffusionModel->GetPath().empty() == false && wxFileName(this->m_filePickerDiffusionModel->GetPath()).IsDir() == false) {
                 this->m_model->Disable();
                 this->m_model->SetSelection(0);
@@ -426,7 +428,7 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         }
     }
     // upscaler
-    if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER || selected == sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO) {
+    if (selected == sd_gui_utils::GuiMainPanels::PANEL_UPSCALER) {
         this->m_model->Disable();
         this->m_type->Disable();
         this->m_vae->Disable();
