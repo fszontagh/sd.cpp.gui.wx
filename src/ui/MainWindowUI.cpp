@@ -66,18 +66,15 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->cnOnCpu->SetValue(controlnet_on_cpu);
     this->vaeOnCpu->SetValue(vae_on_cpu);
 
-    if (BUILD_TYPE != "Release") {
-        if (widgetVisible) {
-            this->m_showWidget->SetToolTip(_("Hide Widget"));
-            if (this->widget == nullptr) {
-                this->widget = new MainWindowDesktopWidget(this);
-                wxPersistenceManager::Get().RegisterAndRestore(this->widget);
-            }
-            this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
-            this->m_showWidget->SetValue(true);
+    if (widgetVisible) {
+        this->m_showWidget->SetToolTip(_("Hide Widget"));
+        if (this->widget == nullptr) {
+            this->widget = new MainWindowDesktopWidget(NULL);
+            this->widget->PassParentEventHandler(this->GetEventHandler());
+            wxPersistenceManager::Get().RegisterAndRestore(this->widget);
         }
-    } else {
-        this->m_showWidget->Hide();
+        this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
+        this->m_showWidget->SetValue(true);
     }
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
@@ -1179,12 +1176,13 @@ void MainWindowUI::OnImageInfoLoadImg2img(wxCommandEvent& event) {
 
 void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
     if (this->widget == nullptr) {
-        this->widget = new MainWindowDesktopWidget(this);
+        this->widget = new MainWindowDesktopWidget(NULL);
+        this->widget->PassParentEventHandler(this->GetEventHandler());
         wxPersistenceManager::Get().RegisterAndRestore(this->widget);
         widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
         this->m_showWidget->SetToolTip(_("Hide Widget"));
-        this->mapp->cfg->widgetVisible = true;        
-    }else{
+        this->mapp->cfg->widgetVisible = true;
+    } else {
         widget->HideWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
         this->m_showWidget->SetToolTip(_("Show Widget"));
         this->mapp->cfg->widgetVisible = false;

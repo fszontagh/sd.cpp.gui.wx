@@ -27,6 +27,7 @@ protected:
 public:
     /** Constructor */
     MainWindowDesktopWidget(wxWindow* parent);
+    void PassParentEventHandler(wxEvtHandler* eventHandler);
     //// end generated class members
 
 private:
@@ -34,6 +35,7 @@ private:
     int x, y;
     wxPoint m_delta;
     wxBitmap m_background;
+    wxEvtHandler* pEvents;
     void OnThreadMessage(wxThreadEvent& e);
 };
 

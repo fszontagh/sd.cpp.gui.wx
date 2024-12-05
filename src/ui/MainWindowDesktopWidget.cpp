@@ -27,8 +27,10 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
     this->SetShape(region);
     this->m_currentStatus->SetBackgroundColour(wxColour(0, 0, 0, 0));
     this->m_currentStatus->SetForegroundColour(wxColour(255, 255, 255));
-
-    parent->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
+}
+void MainWindowDesktopWidget::PassParentEventHandler(wxEvtHandler* eventHandler) {
+    this->pEvents = eventHandler;
+    this->pEvents->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
 }
 void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetSkipped() == false) {
@@ -121,8 +123,8 @@ void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
 }
 
 void MainWindowDesktopWidget::OnLeftMouseDClick(wxMouseEvent& event) {
-    auto p = static_cast<MainWindowUI*>(this->m_parent);
-    p->Raise();
+    // auto p = static_cast<MainWindowUI*>(this->m_parent);
+    // p->Raise();
 }
 
 void MainWindowDesktopWidget::OnWidgetPaint(wxPaintEvent& event) {
