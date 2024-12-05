@@ -1265,7 +1265,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageinfo_preview->SetMinSize( wxSize( 384,384 ) );
 	m_imageinfo_preview->SetMaxSize( wxSize( 1024,1024 ) );
 
-	bSizer117->Add( m_imageinfo_preview, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxEXPAND, 5 );
+	bSizer117->Add( m_imageinfo_preview, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5 );
 
 
 	m_scrolledWindow5->SetSizer( bSizer117 );
@@ -2441,7 +2441,7 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 {
 	this->SetSizeHints( wxDefaultSize, wxSize( 400,68 ) );
 	this->SetExtraStyle( wxWS_EX_TRANSIENT );
-	this->SetForegroundColour( wxColour( 224, 224, 224 ) );
+	this->SetForegroundColour( wxColour( 255, 255, 255 ) );
 	this->SetBackgroundColour( wxColour( 77, 77, 77 ) );
 
 	wxBoxSizer* bSizer122;
@@ -2453,7 +2453,7 @@ DesktopWidget::DesktopWidget( wxWindow* parent, wxWindowID id, const wxString& t
 	m_currentStatus = new wxStaticText( this, wxID_ANY, _("Current job: none"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	m_currentStatus->Wrap( -1 );
 	m_currentStatus->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
-	m_currentStatus->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+	m_currentStatus->SetForegroundColour( wxColour( 255, 255, 255 ) );
 
 	bSizer128->Add( m_currentStatus, 1, wxEXPAND, 0 );
 

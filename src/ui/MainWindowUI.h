@@ -217,7 +217,7 @@ private:
     // std::shared_ptr<QM::QueueItem> handleSdImage(std::string result, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
     std::shared_ptr<QM::QueueItem> handleSdImage(const std::string& tmpImagePath, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
 
-    std::string paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
+    wxString paramsToImageComment(const QM::QueueItem& myItem);
     std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode);
     void onimg2ImgImageOpen(const wxString& file);

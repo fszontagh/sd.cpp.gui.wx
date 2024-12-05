@@ -7,7 +7,6 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
 
     this->SetBackgroundStyle(wxBG_STYLE_CUSTOM);
     this->SetBackgroundColour(wxColour(0, 0, 0, 0));
-    
 
     this->m_background = widget_bg_png_to_wx_bitmap();
     this->m_background.UseAlpha();
@@ -21,14 +20,11 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             unsigned char alpha = image.GetAlpha(x, y);
-            if (alpha > 0)
-            {
+            if (alpha > 0) {
                 region.Union(x, y, 1, 1);  // Pixel hozzáadása a régióhoz
             }
         }
     }
-
-    // Alak beállítása a widgeten
     this->SetShape(region);
 
     parent->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
@@ -107,8 +103,6 @@ void MainWindowDesktopWidget::OnMouseLeftUp(wxMouseEvent& event) {
 void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
     if (event.Dragging() && event.LeftIsDown()) {
         wxPoint mouseOnScreen = wxGetMousePosition();
-
-        // Ha a dragging még nem kezdődött meg, állítsuk be a kezdeti értékeket
         if (!this->dragging) {
             this->dragging = true;
 
@@ -118,7 +112,6 @@ void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
             std::cout << "Start dragging. Delta: " << m_delta.x << ", " << m_delta.y << std::endl;
         }
 
-        // Mozgás kiszámítása és ablak pozíciójának frissítése
         wxPoint newPosition = wxPoint(mouseOnScreen.x - m_delta.x, mouseOnScreen.y - m_delta.y);
         this->Move(newPosition);
     } else {
@@ -128,7 +121,6 @@ void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
 
 void MainWindowDesktopWidget::OnLeftMouseDClick(wxMouseEvent& event) {
     auto p = static_cast<MainWindowUI*>(this->m_parent);
-    // p->RequestUserAttention();
     p->Raise();
 }
 

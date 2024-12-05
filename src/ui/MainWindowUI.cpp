@@ -2068,34 +2068,39 @@ void MainWindowUI::loadTaesdList() {
     this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
 }
 
-std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
-    // we can't write png chunks. SDWEBUI Forge uses png idata "Postprocessing" to store upscale infos... we don't do that yet, so empty exifs
+wxString MainWindowUI::paramsToImageComment(const QM::QueueItem& myItem) {
     // TODO: copy original image's exif...
     if (myItem.mode == QM::GenerationMode::UPSCALE) {
         return "";
     }
-    auto modelPath = std::filesystem::path(modelInfo.path);
-
-    std::string sha256;
-    if (!modelInfo.sha256.empty()) {
-        modelInfo.sha256.substr(0, 10);
+    if (myItem.params.model_path.empty() && myItem.params.diffusion_model_path.empty()) {
+        return std::string();
     }
 
-    if (myItem.params.model_path.empty()) {
-        modelPath = std::filesystem::path(myItem.params.diffusion_model_path);
+    wxFileName modelPath;
+    wxString sha256;
+
+    if (!myItem.params.model_path.empty()) {
+        modelPath      = wxFileName(myItem.params.model_path);
+        auto modelInfo = this->ModelManager->getIntoPtr(myItem.params.model_path);
+        sha256         = wxString::FromUTF8(modelInfo->sha256);
+        if (sha256.empty() == false) {
+            sha256 = sha256.substr(0, 10);
+        }
+    } else {
+        modelPath = wxFileName(myItem.params.diffusion_model_path);
     }
 
-    std::string comment = myItem.params.prompt;
+    wxString comment = wxString::FromUTF8Unchecked(myItem.params.prompt);
 
     if (!myItem.params.negative_prompt.empty()) {
-        comment.append(wxString::Format("\nNegative prompt: %s", myItem.params.negative_prompt).utf8_string());
+        comment.append(wxString::Format("\nNegative prompt: %s", myItem.params.negative_prompt));
     }
 
     wxString cfgScale = wxString::Format("%.2f", myItem.params.cfg_scale);
     cfgScale.Replace(wxT(","), wxT("."));
 
     comment.append(wxString::Format("\nSteps: %d", myItem.params.sample_steps).utf8_string());
-
     comment.append(wxString::Format(", Seed: %" PRId64, myItem.params.seed).utf8_string());
     comment.append(wxString::Format(", Sampler: %s", sd_gui_utils::samplerSdWebuiNames.at(myItem.params.sample_method)));
     comment.append(wxString::Format(", Scheduler: %s", sd_gui_utils::schedule_str[myItem.params.schedule]));
@@ -2103,7 +2108,7 @@ std::string MainWindowUI::paramsToImageComment(QM::QueueItem myItem, sd_gui_util
     comment.append(wxString::Format(", CFG scale: %s", cfgScale).utf8_string());
     comment.append(wxString::Format(", Size: %dx%d", myItem.params.width, myItem.params.height).utf8_string());
     comment.append(", Parser: stable-diffusion.cpp");
-    comment.append(wxString::Format(", Model: %s", modelPath.filename().replace_extension().string()).utf8_string());
+    comment.append(wxString::Format(", Model: %s", modelPath.GetName()));
 
     if (!sha256.empty()) {
         comment.append(wxString::Format(", Model hash: %s", sha256).utf8_string());
@@ -2526,16 +2531,21 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 modelFound = true;
                 continue;
             }
+            for (auto i = 0; i < this->m_model->GetCount(); i++) {
+                if (this->m_model->GetString(i).Contains(item.second)) {
+                    this->m_model->Select(i);
+                    modelFound = true;
+                    break;
+                }
+            }
         }
 
         if (item.first.Lower().Contains("vae")) {
-            unsigned int index = 0;
-            for (auto vae : this->VaeFiles) {
-                if (vae.second.find(item.second) != std::string::npos) {
-                    this->m_vae->Select(index);
-                    continue;
+            for (auto i = 0; i < this->m_vae->GetCount(); i++) {
+                if (this->m_vae->GetString(i).Contains(item.second)) {
+                    this->m_vae->Select(i);
+                    break;
                 }
-                index++;
             }
         }
     }
@@ -2544,21 +2554,19 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
     unsigned int module_counter = 1;
     std::string VaeToFind;
     for (auto item : params) {
-        wxString searchName = wxString::Format("Module %d", module_counter);
-        if (item.first.Lower().Contains(searchName.Lower())) {
+        wxString searchName = wxString::Format("module %d", module_counter);
+        if (item.first.Lower().Contains(searchName.Lower()) && VaeToFind.empty()) {
             // sadly, only one vae loadable once
             VaeToFind = item.second;
         }
+        module_counter++;
     }
     if (VaeToFind.empty() == false) {
-        int vaeIndex = 0;
-        for (const auto vae : this->VaeFiles) {
-            wxString vaeName = wxString::FromUTF8Unchecked(vae.first);
-            if (vaeName.Lower().Contains(VaeToFind)) {
-                this->m_vae->Select(vaeIndex);
+        for (auto i = 0; i < this->m_vae->GetCount(); i++) {
+            if (this->m_vae->GetString(i).Contains(VaeToFind)) {
+                this->m_vae->Select(i);
                 break;
             }
-            vaeIndex++;
         }
     }
 }
@@ -3625,7 +3633,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
 
         // add generation parameters into the image meta
         if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
-            std::string comment = wxString::FromUTF8Unchecked(this->paramsToImageComment(*itemPtr, this->ModelManager->getInfo(itemPtr->params.model_path))).utf8_string();
+            std::string comment = this->paramsToImageComment(*itemPtr).utf8_string();
 
             if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
                 std::unordered_map<wxString, wxString> _pngData = {
