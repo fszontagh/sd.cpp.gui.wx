@@ -87,6 +87,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
+	m_showWidget = new wxBitmapToggleButton( m_panel10, wxID_ANY, images_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_showWidget->SetBitmap( images_png_to_wx_bitmap() );
+	m_showWidget->SetToolTip( _("Show Widget") );
+
+	bSizer97->Add( m_showWidget, 0, wxALL, 5 );
+
 	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_stop_background_process->SetBitmap( cross_circle_png_to_wx_bitmap() );
@@ -155,9 +162,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	wxBoxSizer* bSizer123;
 	bSizer123 = new wxBoxSizer( wxVERTICAL );
-
-	m_showWidget = new wxButton( m_panel10, wxID_ANY, _("Show Widget"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer123->Add( m_showWidget, 0, wxALL, 5 );
 
 
 	sizer0021->Add( bSizer123, 1, wxEXPAND, 5 );
@@ -1477,10 +1481,10 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
 	m_civitai->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_showWidget->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnShowWidget ), NULL, this );
 	m_stop_background_process->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnStopBackgroundProcess ), NULL, this );
 	m_model->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
-	m_showWidget->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnShowWidget ), NULL, this );
 	m_vae->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	vaeOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onVAEOnCpu ), NULL, this );
 	clipOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );
@@ -1560,10 +1564,10 @@ mainUI::~mainUI()
 	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
 	m_civitai->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCivitAitButton ), NULL, this );
+	m_showWidget->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnShowWidget ), NULL, this );
 	m_stop_background_process->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnStopBackgroundProcess ), NULL, this );
 	m_model->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onModelSelect ), NULL, this );
 	m_type->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onTypeSelect ), NULL, this );
-	m_showWidget->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnShowWidget ), NULL, this );
 	m_vae->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onVaeSelect ), NULL, this );
 	vaeOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onVAEOnCpu ), NULL, this );
 	clipOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );

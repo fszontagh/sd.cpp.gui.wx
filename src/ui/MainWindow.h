@@ -21,6 +21,7 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/button.h>
+#include <wx/tglbtn.h>
 #include <wx/statline.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
@@ -59,6 +60,7 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_refrersh;
 		wxBitmapButton* m_about;
 		wxBitmapButton* m_civitai;
+		wxBitmapToggleButton* m_showWidget;
 		wxBitmapButton* m_stop_background_process;
 		wxStaticLine* m_staticline5;
 		wxStaticText* m_staticText160;
@@ -67,7 +69,6 @@ class mainUI : public wxFrame
 		wxChoice* m_type;
 		wxStaticText* m_currentStatus;
 		wxGauge* m_currentProgress;
-		wxButton* m_showWidget;
 		wxPanel* m_panel12;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxStaticText* m_staticText161;
@@ -245,10 +246,10 @@ class mainUI : public wxFrame
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitAitButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnShowWidget( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnStopBackgroundProcess( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnShowWidget( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }

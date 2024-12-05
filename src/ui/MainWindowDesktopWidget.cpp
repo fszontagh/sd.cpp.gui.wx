@@ -6,7 +6,7 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
     this->dragging = false;
 
     this->SetBackgroundStyle(wxBG_STYLE_CUSTOM);
-    this->SetBackgroundColour(wxColour(0, 0, 0, 0));
+    this->SetOwnBackgroundColour(wxColour(0, 0, 0, 0));
 
     this->m_background = widget_bg_png_to_wx_bitmap();
     this->m_background.UseAlpha();
@@ -26,6 +26,8 @@ MainWindowDesktopWidget::MainWindowDesktopWidget(wxWindow* parent)
         }
     }
     this->SetShape(region);
+    this->m_currentStatus->SetBackgroundColour(wxColour(0, 0, 0, 0));
+    this->m_currentStatus->SetForegroundColour(wxColour(255, 255, 255));
 
     parent->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
 }

@@ -1180,17 +1180,17 @@ void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
     if (this->widget == nullptr) {
         this->widget = new MainWindowDesktopWidget(this);
         wxPersistenceManager::Get().RegisterAndRestore(this->widget);
-    }
-
-    if (widget->IsShown()) {
-        widget->HideWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
-        this->m_showWidget->SetLabel(_("Show Widget"));
-        this->mapp->cfg->widgetVisible = false;
-    } else {
-        widget->ClearBackground();
         widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
         this->m_showWidget->SetLabel(_("Hide Widget"));
-        this->mapp->cfg->widgetVisible = true;
+        this->m_showWidget->SetToolTip(_("Hide Widget"));
+        this->mapp->cfg->widgetVisible = true;        
+    }else{
+        widget->HideWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
+        this->m_showWidget->SetLabel(_("Show Widget"));
+        this->m_showWidget->SetToolTip(_("Show Widget"));
+        this->mapp->cfg->widgetVisible = false;
+        this->widget->Destroy();
+        this->widget = nullptr;
     }
 }
 void MainWindowUI::cleanUpImageInformations() {
