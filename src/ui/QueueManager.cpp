@@ -213,6 +213,9 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetSkipped() == false) {
         e.Skip();
     }
+    if (e.GetId() == 9999) {
+        return;
+    }
     auto msg = e.GetString();
 
     wxString token   = msg.substr(0, msg.find(":"));

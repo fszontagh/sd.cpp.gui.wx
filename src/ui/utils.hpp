@@ -827,6 +827,12 @@ namespace sd_gui_utils {
         return sample_method_t::EULER;  // euler is the default
     }
 
+    static wxString formatSecs(double sec) {
+        wxTimeSpan timeSpan = wxTimeSpan::Seconds(static_cast<wxLongLong>(sec));
+        wxString formattedTime = timeSpan.Format(); // Lokalizált formátum
+        return formattedTime;
+    }    
+
     /*
      * Used at m_notebook1302OnNotebookPageChanged
      * FYI: keep the order as the gui builder

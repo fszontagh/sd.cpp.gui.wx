@@ -262,10 +262,9 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
     if (this->m_model->GetSelection() == 0) {
         this->m_generate1->Disable();
         this->m_generate2->Disable();
-        {
-            std::lock_guard<std::mutex> lock(this->taskBarMutex);
-            this->m_statusBar166->SetStatusText(_("No model selected"));
-        }
+
+        this->m_statusBar166->SetStatusText(_("No model selected"));
+
         return;
     }
     auto name = this->m_model->GetStringSelection().utf8_string();
@@ -274,11 +273,9 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
         this->m_generate1->Enable();
     }
     this->m_generate2->Enable();
-    {
-        std::lock_guard<std::mutex> lock(this->taskBarMutex);
-        this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
-        this->m_model->SetToolTip(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
-    }
+
+    this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
+    this->m_model->SetToolTip(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
 }
 
 void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
@@ -2763,6 +2760,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetSkipped() == false) {
         e.Skip();
     }
+
+    // this is a taskbar event
+    if (e.GetId() == 9999) {
+        this->m_statusBar166->SetStatusText(e.GetString(), 1);
+        return;
+    }
+
     auto msg = e.GetString().utf8_string();
 
     std::string token                      = msg.substr(0, msg.find(":"));
@@ -2863,14 +2867,17 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->writeLog(message);
                 {
                     if (this->jobsCountSinceSegfault > 0) {
-                        std::lock_guard<std::mutex> lock(this->taskBarMutex);
                         wxString msg;
                         if (this->jobsCountSinceSegfault.load() > 1) {
                             msg = _("%d jobs and %d steps without a segfault");
                         } else {
                             msg = _("%d job and %d step without a segfault");
                         }
-                        this->m_statusBar166->SetStatusText(wxString::Format(msg, this->jobsCountSinceSegfault.load(), this->stepsCountSinceSegfault.load()), 1);
+
+                        wxThreadEvent* event = new wxThreadEvent();
+                        event->SetString(wxString::Format(msg, this->jobsCountSinceSegfault.load(), this->stepsCountSinceSegfault.load()));
+                        event->SetId(9999);
+                        wxQueueEvent(this, event);
                     }
                 }
                 // update global status info
@@ -4107,8 +4114,10 @@ void MainWindowUI::ProcessCheckThread() {
                 std::string exitMsg = "exit";
                 this->sharedMemory->write(exitMsg.c_str(), exitMsg.size());
                 {
-                    std::lock_guard<std::mutex> lock(this->taskBarMutex);
-                    this->m_statusBar166->SetStatusText(_("Stopping..."), 1);
+                    wxThreadEvent* event = new wxThreadEvent();
+                    event->SetString(_("Stopping..."));
+                    event->SetId(9999);
+                    wxQueueEvent(this, event);
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
                 return;
@@ -4123,8 +4132,13 @@ void MainWindowUI::ProcessCheckThread() {
             }
             {  // it will be updated again, when a  job is finished
                 if (this->jobsCountSinceSegfault == 0) {
-                    std::lock_guard<std::mutex> lock(this->taskBarMutex);
-                    this->m_statusBar166->SetStatusText(_("Process is ready"), 1);
+                    {
+                        wxThreadEvent* event = new wxThreadEvent();
+                        event->SetString(_("Process is ready"));
+                        event->SetId(9999);
+                        wxQueueEvent(this, event);
+                    }
+
                     if (this->qmanager->GetCurrentItem() == nullptr) {
                         this->m_stop_background_process->Enable();
                     } else {
@@ -4140,8 +4154,10 @@ void MainWindowUI::ProcessCheckThread() {
         this->sharedMemory->clear();
         this->qmanager->resetRunning(_("External process stopped"));
         {
-            std::lock_guard<std::mutex> lock(this->taskBarMutex);
-            this->m_statusBar166->SetStatusText(_("Process is stopped"), 1);
+            wxThreadEvent* event = new wxThreadEvent();
+            event->SetString(_("Process is stopped"));
+            event->SetId(9999);
+            wxQueueEvent(this, event);
         }
         delete this->subprocess;
         // restart
@@ -4151,8 +4167,10 @@ void MainWindowUI::ProcessCheckThread() {
         int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
         if (0 != result) {
             {
-                std::lock_guard<std::mutex> lock(this->taskBarMutex);
-                this->m_statusBar166->SetStatusText(_("Failed to restart the background process..."), 1);
+                wxThreadEvent* event = new wxThreadEvent();
+                event->SetString(_("Failed to restart the background process..."));
+                event->SetId(9999);
+                wxQueueEvent(this, event);
                 this->m_stop_background_process->Disable();
             }
         }
@@ -4213,7 +4231,6 @@ void MainWindowUI::writeLog(const std::string& message) {
     this->writeLog(wxString::FromUTF8Unchecked(message));
 }
 void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QM::QueueEvents& event) {
-    std::lock_guard<std::mutex> lock(this->taskBarMutex);
     this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
 
     if (event == QM::QueueEvents::ITEM_STATUS_CHANGED) {

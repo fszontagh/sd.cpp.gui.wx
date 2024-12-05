@@ -9,6 +9,9 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetSkipped() == false) {
         e.Skip();
     }
+    if (e.GetId() == 9999) {
+        return;
+    }
     auto msg = e.GetString().utf8_string();
 
     std::string token                      = msg.substr(0, msg.find(":"));
