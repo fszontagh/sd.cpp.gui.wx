@@ -1,1 +1,1 @@
-set(WXWIDGETS_VERSION "3.2.6")
+set(WXWIDGETS_VERSION "3.2.6" CACHE STRING "wxWidget forced version, default: 3.2.6")

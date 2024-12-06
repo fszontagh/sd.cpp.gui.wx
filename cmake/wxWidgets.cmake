@@ -2,7 +2,8 @@ if (NOT WIN32)
 
     set(wxWidgets_USE_STATIC ON)
     set(wxBUILD_SHARED OFF)
-    option(wxWidgets_EXTRA_PATH "wxWidget extra search path" OFF)
+    set(WXWIDGETS_EXTRA_PATH "" CACHE STRING "wxWidget extra search path, default: \"\"")
+
     
     set(wxWidgets_TYPE "system")
 
@@ -10,14 +11,20 @@ if (NOT WIN32)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     pkg_check_modules(PANGO REQUIRED pango)
     
-    find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET 
-     PATHS ${wxWidgets_EXTRA_PATH}
-    )
-    
+    if (NOT WXWIDGETS_EXTRA_PATH STREQUAL "")
 
+        find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET
+        PATHS ${WXWIDGETS_EXTRA_PATH})
+        else()
+        find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET)
+    endif()
+    
+    
+    
+    
     if (NOT wxWidgets_FOUND)
 
-        message(STATUS "wxWidgets not found, downloading...")
+        message(STATUS "wxWidgets not found, using fetch content with tag v${WXWIDGETS_VERSION}")
         set(wxWidgets_TYPE "download")
     
         FetchContent_Declare(
@@ -25,6 +32,7 @@ if (NOT WIN32)
             GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
             GIT_TAG "v${WXWIDGETS_VERSION}"
             EXCLUDE_FROM_ALL
+            FIND_PACKAGE_ARGS NAMES wxWidgets
         )
         FetchContent_MakeAvailable(wxWidgets)
 
@@ -32,6 +40,7 @@ if (NOT WIN32)
             FetchContent_Populate(wxwidgets)
             add_subdirectory(${wxwidgets_SOURCE_DIR} ${wxwidgets_BUILD_DIR} EXCLUDE_FROM_ALL)
         endif()
+        find_package(wxWidgets ${WXWIDGETS_VERSION} REQUIRED)
 
     endif(NOT wxWidgets_FOUND)
 else()
@@ -40,6 +49,6 @@ endif(NOT WIN32)
 
 if (NOT wxWidgets_FOUND)
     message(FATAL_ERROR "wxWidgets not found")
-    else()
-        message(STATUS "wxWidgets found: ${wxWidgets_VERSION} ${wxWidgets_TYPE}")
-endif(NOT wxWidgets_FOUND)
+else()
+    message(STATUS "wxWidgets found: ${wxWidgets_VERSION} ${wxWidgets_TYPE} ${wxWidgets_DIR}")
+endif()
