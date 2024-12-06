@@ -2,16 +2,23 @@ if (NOT WIN32)
 
     set(wxWidgets_USE_STATIC ON)
     set(wxBUILD_SHARED OFF)
+    option(wxWidgets_EXTRA_PATH "wxWidget extra search path" OFF)
     
+    set(wxWidgets_TYPE "system")
+
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     pkg_check_modules(PANGO REQUIRED pango)
     
-    find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET)
+    find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET 
+     PATHS ${wxWidgets_EXTRA_PATH}
+    )
+    
 
     if (NOT wxWidgets_FOUND)
 
         message(STATUS "wxWidgets not found, downloading...")
+        set(wxWidgets_TYPE "download")
     
         FetchContent_Declare(
             wxWidgets
@@ -30,3 +37,9 @@ if (NOT WIN32)
 else()
 	find_package(wxWidgets)
 endif(NOT WIN32)
+
+if (NOT wxWidgets_FOUND)
+    message(FATAL_ERROR "wxWidgets not found")
+    else()
+        message(STATUS "wxWidgets found: ${wxWidgets_VERSION} ${wxWidgets_TYPE}")
+endif(NOT wxWidgets_FOUND)
