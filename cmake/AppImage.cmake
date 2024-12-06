@@ -6,6 +6,7 @@ configure_file(${CMAKE_SOURCE_DIR}/platform/linux/AppImageRecipe.yml.in ${CMAKE_
 
 
 set(APPDEPENDS ${PROJECT_BINARY_NAME})
+list(APPEND APPDEPENDS ${PROJECT_BINARY_NAME}_diffuser)
 
 if (SDGUI_AVX)
   list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
