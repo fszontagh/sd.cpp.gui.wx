@@ -351,7 +351,7 @@ jobs:
             build/_deps/wxwidgets-src
             build/_deps/wxwidgets-build
             build/_deps/wxwidgets-subbuild
-          key: ${{ matrix.os }}-wxwidgets-${{ hashFiles('cmake/wxWidgets.cmake') }}
+          key: ${{ matrix.os }}-wxwidgets-${{ hashFiles('cmake/wxWidgets_version.cmake') }}
           restore-keys: ${{ matrix.os }}-wxwidgets
 
       - name: Restore builds
