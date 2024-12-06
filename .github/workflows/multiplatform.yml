@@ -374,6 +374,10 @@ jobs:
         run: |
           cd build
           cmake --build . --config Release --target package
+          mkdir AppImageSource/usr/lib
+          cp -p /usr/lib/x86_64-linux-gnu/libexiv2* AppImageSource/usr/lib
+          cp -p /usr/lib/x86_64-linux-gnu/libjpeg* AppImageSource/usr/lib
+          cp -p /usr/lib/x86_64-linux-gnu/libpng* AppImageSource/usr/lib
           cmake --build . --config Release --target AppImage
 
       - name: Upload Release Outputs
