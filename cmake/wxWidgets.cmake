@@ -7,19 +7,26 @@ if (NOT WIN32)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     pkg_check_modules(PANGO REQUIRED pango)
     
-    
-    FetchContent_Declare(
-        wxWidgets
-        GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
-        GIT_TAG v3.2.6
-        EXCLUDE_FROM_ALL
-    )
-    FetchContent_MakeAvailable(wxWidgets)
+    find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET)
 
-    if(NOT wxwidgets_POPULATED)
-        FetchContent_Populate(wxwidgets)
-        add_subdirectory(${wxwidgets_SOURCE_DIR} ${wxwidgets_BUILD_DIR} EXCLUDE_FROM_ALL)
-    endif()
+    if (NOT wxWidgets_FOUND)
+
+        message(STATUS "wxWidgets not found, downloading...")
+    
+        FetchContent_Declare(
+            wxWidgets
+            GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
+            GIT_TAG "v${WXWIDGETS_VERSION}"
+            EXCLUDE_FROM_ALL
+        )
+        FetchContent_MakeAvailable(wxWidgets)
+
+        if(NOT wxwidgets_POPULATED)
+            FetchContent_Populate(wxwidgets)
+            add_subdirectory(${wxwidgets_SOURCE_DIR} ${wxwidgets_BUILD_DIR} EXCLUDE_FROM_ALL)
+        endif()
+
+    endif(NOT wxWidgets_FOUND)
 else()
 	find_package(wxWidgets)
 endif(NOT WIN32)

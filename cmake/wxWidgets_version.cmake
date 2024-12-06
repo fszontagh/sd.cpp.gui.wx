@@ -1,0 +1,1 @@
+set(WXWIDGETS_VERSION "3.2.6")
