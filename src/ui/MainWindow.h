@@ -179,7 +179,6 @@ class mainUI : public wxFrame
 		wxNotebook* m_notebook4;
 		wxPanel* m_panel23;
 		wxStaticBitmap* m_img2imgDiffusionPreview;
-		wxPanel* m_panel22;
 		wxStaticBitmap* m_img2img_preview;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
@@ -287,6 +286,12 @@ class mainUI : public wxFrame
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseEnter( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseLeave( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseDown( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseUp( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseMotion( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgPaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
@@ -310,6 +315,7 @@ class mainUI : public wxFrame
 
 	public:
 		wxBoxSizer* bSizer8911;
+		wxScrolledWindow* m_img2imPanel;
 		wxHtmlWindow* m_upscalerHelp;
 		wxSplitterWindow* m_splitter4;
 		wxBoxSizer* imageInfoSizer;

@@ -81,6 +81,14 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
 
+    // prepare paint
+    this->m_img2img_preview->SetBackgroundStyle(wxBG_STYLE_PAINT);
+    this->inpaintBitMap = this->m_img2img_preview->GetBitmap();
+    wxMemoryDC dc(this->inpaintBitMap);
+    dc.SetBackground(*wxWHITE_BRUSH);
+    dc.Clear();
+    // prepare paint
+
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
 
@@ -1042,7 +1050,8 @@ void MainWindowUI::OnImg2ImgPreviewButton(wxCommandEvent& event) {
 void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     auto origSize = this->m_img2img_preview->GetSize();
     this->m_img2img_preview->SetBitmap(this->AppOrigPlaceHolderBitmap);
-    this->m_img2img_preview->SetSize(origSize);
+    this->m_img2img_preview->SetSize(this->AppOrigPlaceHolderBitmap.GetSize());
+    this->inpaintBitMap = this->AppOrigPlaceHolderBitmap;
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
     auto path = wxFileName(this->m_img2imgOpen->GetPath());
@@ -2585,11 +2594,14 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
     if (img.LoadFile(file)) {
         auto origSize = this->m_img2img_preview->GetSize();
 
-        auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
+        //auto preview = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
 
-        this->m_img2img_preview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
-        this->m_img2img_preview->SetBitmap(preview);
-        this->m_img2img_preview->SetSize(origSize);
+        //this->m_img2img_preview->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
+        //this->m_img2img_preview->SetBitmap(preview);
+        //this->m_img2img_preview->SetSize(origSize);
+        this->m_img2img_preview->SetBitmap(img);
+        this->inpaintBitMap = img;
+        //this->inpaintBitMap = preview;
 
         this->m_img2im_preview_img->Enable();
         this->m_delete_initial_img->Enable();
@@ -4303,4 +4315,43 @@ void MainWindowUI::SetTypeByType(sd_type_t type) {
             break;
         }
     }
+}
+
+void MainWindowUI::OnImg2ImgMouseDown(wxMouseEvent& event) {
+    this->onImg2ImgPaintLastPos   = event.GetPosition();
+    this->onImg2ImgPaintIsDrawing = true;
+    std::cout << "OnMouseDown" << std::endl;
+};
+void MainWindowUI::OnImg2ImgMouseUp(wxMouseEvent& event) {
+    this->onImg2ImgPaintIsDrawing = false;
+    std::cout << "OnMouseUp" << std::endl;
+};
+void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
+    if (this->onImg2ImgPaintIsDrawing && event.Dragging() && event.LeftIsDown()) {
+        wxPoint pos = event.GetPosition();
+        std::cout << "OnMouseMotion pos: " << pos.x << ", " << pos.y << std::endl;
+
+        wxMemoryDC dc(this->inpaintBitMap);
+        dc.SetBrush(*wxRED_BRUSH);
+        dc.SetPen(*wxRED_PEN);
+        dc.DrawCircle(pos, 10);
+
+        this->onImg2ImgPaintLastPos = pos;
+        //   this->m_img2img_preview->Refresh();
+        this->m_img2img_preview->SetBitmap(this->inpaintBitMap);
+    }
+};
+
+void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
+    wxAutoBufferedPaintDC dc(this->m_img2img_preview);
+    dc.DrawBitmap(this->inpaintBitMap, 0, 0, false);
+}
+
+void MainWindowUI::OnImg2ImgMouseEnter(wxMouseEvent& event) {
+}
+void MainWindowUI::OnImg2ImgMouseLeave(wxMouseEvent& event) {
+    if (this->onImg2ImgPaintIsDrawing) {
+        std::cout << "Mouse leave... " << std::endl;
+    }
+    this->onImg2ImgPaintIsDrawing = false;
 }

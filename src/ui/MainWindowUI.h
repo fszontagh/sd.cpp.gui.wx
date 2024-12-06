@@ -77,6 +77,13 @@ protected:
     void OnImageInfoLoadTxt2img(wxCommandEvent& event) override;
     void OnImageInfoLoadImg2img(wxCommandEvent& event) override;
     void OnShowWidget(wxCommandEvent& event) override;
+    // painting on img2img
+    void OnImg2ImgMouseDown(wxMouseEvent& event) override;
+    void OnImg2ImgMouseUp(wxMouseEvent& event) override;
+    void OnImg2ImgMouseMotion(wxMouseEvent& event) override;
+    void OnImg2ImgPaint(wxPaintEvent& event) override;
+    void OnImg2ImgMouseEnter(wxMouseEvent& event) override;
+    void OnImg2ImgMouseLeave(wxMouseEvent& event) override;
 
 public:
     /** Constructor */
@@ -141,6 +148,10 @@ private:
     wxString extprocessCommand;
     wxString extProcessParam;
     wxString extprocessLastError;
+
+    wxPoint onImg2ImgPaintLastPos; 
+    bool onImg2ImgPaintIsDrawing; 
+    wxBitmap inpaintBitMap;
 
     // std::ofstream logfile;
     wxFile logfile;

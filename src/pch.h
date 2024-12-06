@@ -38,6 +38,7 @@
 #include "wx/tokenzr.h"
 #include "wx/sstream.h"
 #include "wx/txtstrm.h"
+#include <wx/dcbuffer.h>
 
 #include "libs/json.hpp"
 

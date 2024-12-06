@@ -1020,11 +1020,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_panel23->Layout();
 	bSizer1003->Fit( m_panel23 );
 	m_notebook4->AddPage( m_panel23, _("Diffusion"), false );
-	m_panel22 = new wxPanel( m_notebook4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_img2imPanel = new wxScrolledWindow( m_notebook4, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
+	m_img2imPanel->SetScrollRate( 5, 5 );
+	m_img2imPanel->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
+
 	wxBoxSizer* bSizer101;
 	bSizer101 = new wxBoxSizer( wxVERTICAL );
 
-	m_img2img_preview = new wxStaticBitmap( m_panel22, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+	m_img2img_preview = new wxStaticBitmap( m_img2imPanel, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2img_preview->SetBackgroundColour( wxColour( 64, 64, 64 ) );
 	m_img2img_preview->DragAcceptFiles( true );
 	m_img2img_preview->SetMinSize( wxSize( 200,-1 ) );
@@ -1032,10 +1035,10 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer101->Add( m_img2img_preview, 1, wxEXPAND, 5 );
 
 
-	m_panel22->SetSizer( bSizer101 );
-	m_panel22->Layout();
-	bSizer101->Fit( m_panel22 );
-	m_notebook4->AddPage( m_panel22, _("Input image"), true );
+	m_img2imPanel->SetSizer( bSizer101 );
+	m_img2imPanel->Layout();
+	bSizer101->Fit( m_img2imPanel );
+	m_notebook4->AddPage( m_img2imPanel, _("Input image"), true );
 
 	bSizer29->Add( m_notebook4, 1, wxEXPAND, 5 );
 
@@ -1532,6 +1535,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2img_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgMouseDown ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( mainUI::OnImg2ImgMouseUp ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_MOTION, wxMouseEventHandler( mainUI::OnImg2ImgMouseMotion ), NULL, this );
+	m_img2img_preview->Connect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
@@ -1615,6 +1624,12 @@ mainUI::~mainUI()
 	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2img_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgMouseDown ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( mainUI::OnImg2ImgMouseUp ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_MOTION, wxMouseEventHandler( mainUI::OnImg2ImgMouseMotion ), NULL, this );
+	m_img2img_preview->Disconnect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
