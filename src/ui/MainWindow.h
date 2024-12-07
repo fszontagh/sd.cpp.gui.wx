@@ -185,8 +185,13 @@ class mainUI : public wxFrame
 		wxStaticText* m_inpaintZoom;
 		wxStaticText* m_inpaintImageResolution;
 		wxButton* m_inpaintSaveMask;
+		wxButton* m_inpaintInvert;
 		wxButton* m_inpaintResizeToSdSize;
+		wxFilePickerCtrl* m_inpaintOpenMask;
 		wxStaticText* m_staticText69;
+		wxBitmapToggleButton* m_inPaintBrushStyleCircle;
+		wxBitmapToggleButton* m_inPaintBrushStyleSquare;
+		wxBitmapToggleButton* m_inPaintBrushStyleTriangle;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
@@ -294,7 +299,10 @@ class mainUI : public wxFrame
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnInpaintSaveMask( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnInpaintInvertMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintResizeImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnInpaintMaskOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void OnInPaintBrushStyleToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseEnter( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseLeave( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseDown( wxMouseEvent& event ) { event.Skip(); }
@@ -302,6 +310,8 @@ class mainUI : public wxFrame
 		virtual void OnImg2ImgMouseMotion( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseWheel( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPaint( wxPaintEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgRMouseDown( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgRMouseUp( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }

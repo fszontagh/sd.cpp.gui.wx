@@ -312,5 +312,37 @@ namespace sd_gui_utils {
         }
     }
 
+    inline void InvertWhiteAndTransparent(wxBitmap& bitmap) {
+        // Készíts egy wxImage-et a bitmap-ból
+        wxImage image = bitmap.ConvertToImage();
+
+        // Győződj meg róla, hogy az alpha csatorna inicializálva van
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        // Pixelek átvizsgálása
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // Pixel színének és alfa értékének lekérése
+                unsigned char red   = image.GetRed(x, y);
+                unsigned char green = image.GetGreen(x, y);
+                unsigned char blue  = image.GetBlue(x, y);
+                unsigned char alpha = image.GetAlpha(x, y);
+
+                // Ha a pixel fehér (255, 255, 255) és teljesen látható
+                if (red == 255 && green == 255 && blue == 255 && alpha == 255) {
+                    image.SetAlpha(x, y, 0);
+                }
+                // Ha a pixel teljesen átlátszó
+                else if (alpha == 0) {
+                    image.SetRGB(x, y, 255, 255, 255);
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+        bitmap = wxBitmap(image);
+    }
+
 }
 #endif  // SRC_UI_IMAGEUTILS_H

@@ -846,6 +846,38 @@ namespace sd_gui_utils {
         int m_id;
     };
 
+    struct wxPointDouble {
+        wxPointDouble() = default;
+        wxPointDouble(const wxPointDouble&)            = default;
+        wxPointDouble(wxPointDouble&&)                 = default;
+        wxPointDouble& operator=(const wxPointDouble&) = default;
+        wxPointDouble& operator=(wxPointDouble&&)      = default;
+        wxPointDouble& operator=(wxPoint&&) {
+            x = static_cast<double>(x);
+            y = static_cast<double>(y);
+            return *this;
+        }
+        wxPointDouble& operator=(wxPoint&) {
+            x = static_cast<double>(x);
+            y = static_cast<double>(y);
+            return *this;
+        }
+        wxPointDouble(wxPoint pos)
+            : x(pos.x), y(pos.y) {}
+        wxPointDouble(double x, double y)
+            : x(x), y(y) {}
+        double x = 0;
+        double y = 0;
+    };
+    struct wxPosition {
+        wxPosition(sd_gui_utils::wxPointDouble pos, wxPoint offset, sd_gui_utils::wxPointDouble originalPos)
+            : pos(pos), offset(offset), originalPos(originalPos) {}
+        wxPosition() = default;
+        sd_gui_utils::wxPointDouble pos;
+        wxPoint offset;
+        wxPointDouble originalPos;
+    };
+
     /*
      * Used at m_notebook1302OnNotebookPageChanged
      * FYI: keep the order as the gui builder

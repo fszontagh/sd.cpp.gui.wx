@@ -7,6 +7,7 @@
 
 #include "MainWindow.h"
 
+#include "embedded_files/circle.png.h"
 #include "embedded_files/civitai.png.h"
 #include "embedded_files/controlnet.png.h"
 #include "embedded_files/cross_circle.png.h"
@@ -26,7 +27,9 @@
 #include "embedded_files/replace.png.h"
 #include "embedded_files/sd.cpp.gui_blankimage.png.h"
 #include "embedded_files/settings.png.h"
+#include "embedded_files/square.png.h"
 #include "embedded_files/trash.png.h"
+#include "embedded_files/triangle.png.h"
 
 // Using the construction of a static object to ensure that the help provider is set
 // wx Manages the most recent HelpProvider passed to ::Set, but not the previous ones
@@ -1031,12 +1034,16 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer130;
 	bSizer130 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush size: 1"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush size: 10"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintBrushSize->Wrap( -1 );
+	m_inpaintBrushSize->SetMinSize( wxSize( 100,-1 ) );
+
 	bSizer130->Add( m_inpaintBrushSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom: 1x"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintZoom->Wrap( -1 );
+	m_inpaintZoom->SetMinSize( wxSize( 100,-1 ) );
+
 	bSizer130->Add( m_inpaintZoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintImageResolution = new wxStaticText( m_panel26, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
@@ -1050,11 +1057,17 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer130->Add( m_inpaintSaveMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_inpaintInvert = new wxButton( m_panel26, wxID_ANY, _("Invert mask"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer130->Add( m_inpaintInvert, 0, wxALL, 5 );
+
 	m_inpaintResizeToSdSize = new wxButton( m_panel26, wxID_ANY, _("Resize image"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintResizeToSdSize->Enable( false );
 	m_inpaintResizeToSdSize->SetToolTip( _("Resize the image to fit into the selected resolution") );
 
 	bSizer130->Add( m_inpaintResizeToSdSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintOpenMask = new wxFilePickerCtrl( m_panel26, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL );
+	bSizer130->Add( m_inpaintOpenMask, 0, wxALL, 5 );
 
 
 	bSizer128->Add( bSizer130, 1, 0, 0 );
@@ -1065,6 +1078,28 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText69 = new wxStaticText( m_panel26, wxID_ANY, _("Ctrl + Mouse wheel to ZOOM\nShift + Mouse wheel to Change brush size"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText69->Wrap( -1 );
 	bSizer129->Add( m_staticText69, 1, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+
+	m_inPaintBrushStyleCircle = new wxBitmapToggleButton( m_panel26, wxID_ANY, circle_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inPaintBrushStyleCircle->SetValue( true );
+
+	m_inPaintBrushStyleCircle->SetBitmap( circle_png_to_wx_bitmap() );
+	m_inPaintBrushStyleCircle->SetToolTip( _("Change the brush shape to circle") );
+
+	bSizer129->Add( m_inPaintBrushStyleCircle, 0, wxALL, 5 );
+
+	m_inPaintBrushStyleSquare = new wxBitmapToggleButton( m_panel26, wxID_ANY, square_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_inPaintBrushStyleSquare->SetBitmap( square_png_to_wx_bitmap() );
+	m_inPaintBrushStyleSquare->SetToolTip( _("Change the brush shape to square") );
+
+	bSizer129->Add( m_inPaintBrushStyleSquare, 0, wxALL, 5 );
+
+	m_inPaintBrushStyleTriangle = new wxBitmapToggleButton( m_panel26, wxID_ANY, triangle_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+
+	m_inPaintBrushStyleTriangle->SetBitmap( triangle_png_to_wx_bitmap() );
+	m_inPaintBrushStyleTriangle->SetToolTip( _("Change the brush shape to triangle") );
+
+	bSizer129->Add( m_inPaintBrushStyleTriangle, 0, wxALL, 5 );
 
 
 	bSizer128->Add( bSizer129, 1, wxEXPAND, 0 );
@@ -1582,7 +1617,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_inpaintSaveMask->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
+	m_inpaintInvert->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
+	m_inpaintOpenMask->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnInpaintMaskOpen ), NULL, this );
+	m_inPaintBrushStyleCircle->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
+	m_inPaintBrushStyleSquare->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
+	m_inPaintBrushStyleTriangle->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
@@ -1591,6 +1631,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imPanel->Connect( wxEVT_MOTION, wxMouseEventHandler( mainUI::OnImg2ImgMouseMotion ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( mainUI::OnImg2ImgMouseWheel ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
+	m_img2imPanel->Connect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
+	m_img2imPanel->Connect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
@@ -1674,7 +1716,12 @@ mainUI::~mainUI()
 	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_inpaintSaveMask->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
+	m_inpaintInvert->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
+	m_inpaintOpenMask->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnInpaintMaskOpen ), NULL, this );
+	m_inPaintBrushStyleCircle->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
+	m_inPaintBrushStyleSquare->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
+	m_inPaintBrushStyleTriangle->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
@@ -1683,6 +1730,8 @@ mainUI::~mainUI()
 	m_img2imPanel->Disconnect( wxEVT_MOTION, wxMouseEventHandler( mainUI::OnImg2ImgMouseMotion ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_MOUSEWHEEL, wxMouseEventHandler( mainUI::OnImg2ImgMouseWheel ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
+	m_img2imPanel->Disconnect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
+	m_img2imPanel->Disconnect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
