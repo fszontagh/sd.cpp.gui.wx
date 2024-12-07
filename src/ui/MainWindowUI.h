@@ -82,8 +82,11 @@ protected:
     void OnImg2ImgMouseUp(wxMouseEvent& event) override;
     void OnImg2ImgMouseMotion(wxMouseEvent& event) override;
     void OnImg2ImgPaint(wxPaintEvent& event) override;
-    void OnImg2ImgMouseEnter(wxMouseEvent& event) override;
+    //void OnImg2ImgMouseEnter(wxMouseEvent& event) override;
     void OnImg2ImgMouseLeave(wxMouseEvent& event) override;
+    void OnImg2ImgMouseWheel(wxMouseEvent& event) override;
+    void OnInpaintSaveMask(wxCommandEvent& event) override;
+    void OnInpaintResizeImage(wxCommandEvent& event) override;
 
 public:
     /** Constructor */
@@ -152,6 +155,11 @@ private:
     wxPoint onImg2ImgPaintLastPos; 
     bool onImg2ImgPaintIsDrawing; 
     wxBitmap inpaintBitMap;
+    wxImage inpaintOrigImage;
+    wxImage inpaintZoomedImage;
+    double inpaintZoomFactor = 1.0;
+    const double inpaintZoomFactorStep = 0.1;
+    int inpaintBrushSize = 10;
 
     // std::ofstream logfile;
     wxFile logfile;

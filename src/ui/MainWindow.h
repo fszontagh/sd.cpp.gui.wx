@@ -179,7 +179,14 @@ class mainUI : public wxFrame
 		wxNotebook* m_notebook4;
 		wxPanel* m_panel23;
 		wxStaticBitmap* m_img2imgDiffusionPreview;
-		wxStaticBitmap* m_img2img_preview;
+		wxPanel* m_panel25;
+		wxPanel* m_panel26;
+		wxStaticText* m_inpaintBrushSize;
+		wxStaticText* m_inpaintZoom;
+		wxStaticText* m_inpaintImageResolution;
+		wxButton* m_inpaintSaveMask;
+		wxButton* m_inpaintResizeToSdSize;
+		wxStaticText* m_staticText69;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
@@ -286,11 +293,14 @@ class mainUI : public wxFrame
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnInpaintSaveMask( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnInpaintResizeImage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseEnter( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseLeave( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseUp( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseMotion( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgMouseWheel( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
