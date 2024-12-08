@@ -83,12 +83,31 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     // prepare paint
     this->m_img2imPanel->SetBackgroundStyle(wxBG_STYLE_PAINT);
-    wxImage inpaintImg(this->m_width->GetValue(), this->m_height->GetValue());
-    inpaintImg.InitAlpha();
-    this->inpaintBitMap = wxBitmap(inpaintImg);
+
+    wxImage inpaintImage(512, 512);
+    inpaintImage.SetMaskColour(0, 0, 0);
+    inpaintImage.InitAlpha();
+    inpaintImage.SetMask(false);
+    this->inpaintBitMap = wxBitmap(inpaintImage);
     wxMemoryDC dc(this->inpaintBitMap);
     dc.SetBackground(*wxTRANSPARENT_BRUSH);
     dc.Clear();
+
+    this->inpaintCanvas = wxBitmap(inpaintImage);
+    wxMemoryDC dc2(this->inpaintCanvas);
+    dc2.SetBackground(*wxWHITE_BRUSH);
+    dc2.Clear();
+
+    wxImage canvasBorder = wxImage(this->inpaintCanvas.GetWidth() + 5, this->inpaintCanvas.GetHeight() + 5);
+    canvasBorder.SetMaskColour(0, 0, 0);
+    canvasBorder.InitAlpha();
+    canvasBorder.SetMask(false);
+    this->inpaintCanvasBorder = wxBitmap(canvasBorder);
+
+    wxMemoryDC dc3(this->inpaintCanvasBorder);
+    dc3.SetBackground(*wxRED_BRUSH);
+    dc3.Clear();
+
     this->inpaintOrigImage   = wxImage(this->m_width->GetValue(), this->m_height->GetValue());
     this->inpaintZoomedImage = wxImage(this->m_width->GetValue(), this->m_height->GetValue());
     // prepare paint
@@ -1061,14 +1080,18 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     this->m_inpaintSaveMask->Disable();
     this->inpaintImageLoaded = false;
 
-    wxImage inpaintImage = this->inpaintOrigImage;
+    wxImage inpaintImage(512, 512);
+    inpaintImage.SetMaskColour(0, 0, 0);
     inpaintImage.InitAlpha();
+    inpaintImage.SetMask(false);
     this->inpaintBitMap = wxBitmap(inpaintImage);
-
     wxMemoryDC dc(this->inpaintBitMap);
     dc.SetBackground(*wxTRANSPARENT_BRUSH);
     dc.Clear();
-    this->m_image2image_panel->SetScrollPos(wxBOTH, 0, true);
+
+    this->m_img2imPanel->SetVirtualSize(this->inpaintOrigImage.GetWidth(), this->inpaintOrigImage.GetHeight());
+    this->m_img2imPanel->SetScrollRate(10, 10);
+    this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
 
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
@@ -2621,8 +2644,6 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
                 return;
             }
         }
-        this->inpaintImageSize    = img.GetSize();
-        this->inpaintOutPaintSize = img.GetSize();
 
         this->m_inpaintSaveMask->Enable();
 
@@ -2634,10 +2655,25 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
         inpaintImage.SetMaskColour(0, 0, 0);
         inpaintImage.InitAlpha();
         inpaintImage.SetMask(false);
+
         this->inpaintBitMap = wxBitmap(inpaintImage);
         wxMemoryDC dc(this->inpaintBitMap);
         dc.SetBackground(*wxTRANSPARENT_BRUSH);
         dc.Clear();
+
+        wxImage canvasImage(img.GetWidth(), img.GetHeight());
+        wxImage canvasBorderImage(img.GetWidth() + 5, img.GetHeight() + 5);
+
+        this->inpaintCanvas       = wxBitmap(canvasImage);
+        this->inpaintCanvasBorder = wxBitmap(canvasBorderImage);
+
+        wxMemoryDC dc2(this->inpaintCanvas);
+        dc2.SetBackground(*wxTRANSPARENT_BRUSH);
+        dc2.Clear();
+
+        wxMemoryDC dc3(this->inpaintCanvasBorder);
+        dc3.SetBackground(*wxRED_BRUSH);
+        dc3.Clear();
 
         this->m_img2imPanel->SetVirtualSize(img.GetWidth(), img.GetHeight());
         this->m_img2imPanel->SetScrollRate(10, 10);
@@ -4475,16 +4511,49 @@ void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
     this->onImg2ImgPaintIsDrawing = false;
     // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
 }
+void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
+    int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
+    int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
+    int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
+    int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
+    sd_gui_utils::ResizeWithBorder(this->inpaintCanvas, canvasTop, canvasLeft, canvasRight, canvasBottom);
+
+    // recreate the this->inapintCanvasBorder
+    wxImage inpaintCanvasBorderImage = wxImage(this->inpaintCanvas.GetWidth() + 5, this->inpaintCanvas.GetHeight() + 5);
+    inpaintCanvasBorderImage.SetMaskColour(0, 0, 0);
+    inpaintCanvasBorderImage.InitAlpha();
+    inpaintCanvasBorderImage.SetMask(false);
+    this->inpaintCanvasBorder = wxBitmap(inpaintCanvasBorderImage);
+
+    wxMemoryDC dc(this->inpaintCanvasBorder);
+    dc.SetBackground(*wxRED_BRUSH);
+    dc.Clear();
+}
 void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
     this->m_inpaintClearMask->Disable();
-    wxImage inpaintImage = this->inpaintOrigImage;
-    inpaintImage.InitAlpha();
-    this->inpaintBitMap = wxBitmap(inpaintImage);
+    if (this->inpaintImageLoaded == false) {
+        return;
+    }
 
+    auto oldScale = this->inpaintBitMap.GetScaleFactor();
+
+    wxImage inpaintImage(this->inpaintOrigImage.GetWidth(), this->inpaintOrigImage.GetHeight());
+    inpaintImage.SetMaskColour(0, 0, 0);
+    inpaintImage.InitAlpha();
+    inpaintImage.SetMask(false);
+    this->inpaintBitMap = wxBitmap(inpaintImage);
     wxMemoryDC dc(this->inpaintBitMap);
     dc.SetBackground(*wxTRANSPARENT_BRUSH);
     dc.Clear();
-    this->m_image2image_panel->SetScrollPos(wxBOTH, 0, true);
+
+    this->inpaintBitMap.SetScaleFactor(oldScale);
+
+    if (this->inpaintOrigImage.IsOk()) {
+        this->m_img2imPanel->SetVirtualSize(this->inpaintOrigImage.GetWidth(), this->inpaintOrigImage.GetHeight());
+    }
+
+    this->m_img2imPanel->SetScrollRate(10, 10);
+    this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
 }
 void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
     auto object = dynamic_cast<wxToggleButton*>(event.GetEventObject());
@@ -4522,6 +4591,9 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
 
     // convert black to transparent pixels
     wxImage image = wxImage(event.GetPath(), wxBITMAP_TYPE_PNG);
+    if (image.HasAlpha() == false) {
+        image.InitAlpha();
+    }
 
     if (this->inpaintBitMap.GetWidth() < image.GetWidth() || this->inpaintBitMap.GetHeight() < image.GetHeight()) {
         this->writeLog(wxString::Format(_("Inpaint mask open: the resolution of the mask does not match the resolution of the image: %s"), event.GetPath()), true);
@@ -4655,50 +4727,68 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     int imageWidth  = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetWidth() : 0;
     int imageHeight = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetHeight() : 0;
 
-    wxPoint offset = this->m_img2imPanel->GetViewStart();
+    int canvasWidth  = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledWidth() : 0;
+    int canvasHeight = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledHeight() : 0;
+
+    int borderWidth  = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledWidth() : 0;
+    int borderHeight = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledHeight() : 0;
+
+    wxPoint viewStart = this->m_img2imPanel->GetViewStart();
     int scrollUnitX, scrollUnitY;
     this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
-    offset.x *= scrollUnitX;
-    offset.y *= scrollUnitY;
+    int scrollOffsetX = viewStart.x * scrollUnitX;
+    int scrollOffsetY = viewStart.y * scrollUnitY;
 
-    int offsetX = 0;
-    int offsetY = 0;
-    if (panelWidth > imageWidth) {
-        offsetX = (panelWidth - imageWidth) / 2;
-    }
-    if (panelHeight > imageHeight) {
-        offsetY = (panelHeight - imageHeight) / 2;
-    }
+    int offsetX = (panelWidth > borderWidth ? (panelWidth - borderWidth) / 2 : 0) - scrollOffsetX;
+    int offsetY = (panelHeight > borderHeight ? (panelHeight - borderHeight) / 2 : 0) - scrollOffsetY;
 
     wxBrush background(wxColour(33, 33, 33));
     dc.SetBackground(background);
     dc.Clear();
 
+    if (this->inpaintCanvasBorder.IsOk()) {
+        dc.DrawBitmap(this->inpaintCanvasBorder, offsetX, offsetY, false);
+        std::cout << "Border: " << offsetX << ", " << offsetY << std::endl;
+    }
+
+    if (this->inpaintCanvas.IsOk()) {
+        int canvasOffsetX = offsetX + (borderWidth - canvasWidth) / 2;
+        int canvasOffsetY = offsetY + (borderHeight - canvasHeight) / 2;
+        dc.DrawBitmap(this->inpaintCanvas, canvasOffsetX, canvasOffsetY, false);
+        std::cout << "Canvas: " << canvasOffsetX << ", " << canvasOffsetY << std::endl;
+    }
+
     if (this->inpaintZoomedImage.IsOk()) {
-        dc.DrawBitmap(this->inpaintZoomedImage, offsetX - offset.x, offsetY - offset.y, false);
+        int imageOffsetX = offsetX + (borderWidth - imageWidth) / 2;
+        int imageOffsetY = offsetY + (borderHeight - imageHeight) / 2;
+        dc.DrawBitmap(this->inpaintZoomedImage, imageOffsetX, imageOffsetY, false);
+        std::cout << "Image: " << imageOffsetX << ", " << imageOffsetY << std::endl;
     }
 
     if (this->inpaintBitMap.IsOk()) {
-        if (this->m_inpaintClearMask->IsThisEnabled() == false) {
+        int bitmapOffsetX = offsetX + (borderWidth - imageWidth) / 2;
+        int bitmapOffsetY = offsetY + (borderHeight - imageHeight) / 2;
+
+        if (!this->m_inpaintClearMask->IsThisEnabled()) {
             this->m_inpaintClearMask->Enable();
         }
-        dc.DrawBitmap(this->inpaintBitMap, offsetX - offset.x, offsetY - offset.y, true);  // Átlátszóság engedélyezése
+
+        dc.DrawBitmap(this->inpaintBitMap, bitmapOffsetX, bitmapOffsetY, true);
+        std::cout << "Bitmap: " << bitmapOffsetX << ", " << bitmapOffsetY << std::endl;
     }
 }
 
 void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
-    if (this->inpaintImageLoaded == false) {
+    if (!this->inpaintImageLoaded) {
         event.Skip();
         return;
     }
+
     int rotation = event.GetWheelRotation();
 
     if (event.ControlDown() && this->inpaintOrigImage.IsOk()) {
-        if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0) {
-            return;
-        }
-
-        if (this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1) {
+        if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0 ||
+            this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1) {
             return;
         }
 
@@ -4706,7 +4796,7 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
 
         if (rotation > 0) {
             this->inpaintZoomFactor += this->inpaintZoomFactorStep;
-        } else if (rotation < 0 && this->inpaintZoomFactor > this->inpaintZoomFactorStep) {
+        } else if (rotation < 0) {
             this->inpaintZoomFactor -= this->inpaintZoomFactorStep;
         }
 
@@ -4716,21 +4806,38 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
             wxIMAGE_QUALITY_HIGH);
 
         this->inpaintBitMap.SetScaleFactor(1.0 / this->inpaintZoomFactor);
+        this->inpaintCanvas.SetScaleFactor(1.0 / this->inpaintZoomFactor);
+        this->inpaintCanvasBorder.SetScaleFactor(1.0 / this->inpaintZoomFactor);
 
         wxPoint mousePos  = event.GetPosition();
         wxPoint viewStart = this->m_img2imPanel->GetViewStart();
         int scrollUnitX, scrollUnitY;
         this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
 
-        wxPoint newViewStart = viewStart;
-        newViewStart.x += (mousePos.x / oldZoomFactor - mousePos.x / this->inpaintZoomFactor) / scrollUnitX;
-        newViewStart.y += (mousePos.y / oldZoomFactor - mousePos.y / this->inpaintZoomFactor) / scrollUnitY;
+        // Számítsuk ki a görgetési eltolást a zoom középpontja alapján
+        double zoomFactorRatio = oldZoomFactor / this->inpaintZoomFactor;
+        wxPoint newViewStart   = viewStart;
+        newViewStart.x += (mousePos.x + viewStart.x * scrollUnitX -
+                           (this->m_img2imPanel->GetClientSize().GetWidth() / 2)) *
+                          (1 - zoomFactorRatio) / scrollUnitX;
+        newViewStart.y += (mousePos.y + viewStart.y * scrollUnitY -
+                           (this->m_img2imPanel->GetClientSize().GetHeight() / 2)) *
+                          (1 - zoomFactorRatio) / scrollUnitY;
+
+        // Limitáljuk a scroll pozícióját a virtuális méreten belül
+        newViewStart.x = std::max(0, std::min(newViewStart.x,
+                                              (this->inpaintCanvasBorder.GetWidth() - this->m_img2imPanel->GetClientSize().GetWidth()) / scrollUnitX));
+        newViewStart.y = std::max(0, std::min(newViewStart.y,
+                                              (this->inpaintCanvasBorder.GetHeight() - this->m_img2imPanel->GetClientSize().GetHeight()) / scrollUnitY));
+
         this->m_img2imPanel->Scroll(newViewStart);
 
+        // Frissítsük a virtuális méretet a canvas méretéhez igazítva
         this->m_img2imPanel->SetVirtualSize(
-            this->inpaintZoomedImage.GetWidth(),
-            this->inpaintZoomedImage.GetHeight());
+            this->inpaintCanvasBorder.GetWidth(),
+            this->inpaintCanvasBorder.GetHeight());
 
+        // Frissítsük a zoom státuszt
         this->m_img2imPanel->Refresh();
         this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintZoomFactor * 100));
     }

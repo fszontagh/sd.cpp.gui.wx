@@ -193,6 +193,15 @@ class mainUI : public wxFrame
 		wxBitmapToggleButton* m_inPaintBrushStyleCircle;
 		wxBitmapToggleButton* m_inPaintBrushStyleSquare;
 		wxBitmapToggleButton* m_inPaintBrushStyleTriangle;
+		wxStaticText* m_staticText691;
+		wxTextCtrl* m_inpaintCanvasTop;
+		wxStaticText* m_staticText701;
+		wxTextCtrl* m_inpaintCanvasRight;
+		wxStaticText* m_staticText71;
+		wxTextCtrl* m_inpaintCanvasBottom;
+		wxStaticText* m_staticText721;
+		wxTextCtrl* m_inpaintCanvasLeft;
+		wxButton* m_inpaintCanvasResizeApply;
 		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
@@ -314,6 +323,7 @@ class mainUI : public wxFrame
 		virtual void OnImg2ImgPaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgRMouseDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgRMouseUp( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnInpaintCanvasResizeApply( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }

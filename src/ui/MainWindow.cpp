@@ -1095,7 +1095,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_staticText69 = new wxStaticText( m_panel26, wxID_ANY, _("Ctrl + Mouse wheel to ZOOM\nShift + Mouse wheel to Change brush size"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText69->Wrap( -1 );
-	bSizer129->Add( m_staticText69, 1, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+	bSizer129->Add( m_staticText69, 1, wxALIGN_CENTER_VERTICAL, 0 );
 
 	m_inPaintBrushStyleCircle = new wxBitmapToggleButton( m_panel26, wxID_ANY, circle_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inPaintBrushStyleCircle->SetValue( true );
@@ -1133,6 +1133,43 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imPanel->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
 
 	bSizer126->Add( m_img2imPanel, 1, wxEXPAND | wxALL, 5 );
+
+	wxBoxSizer* bSizer127;
+	bSizer127 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText691 = new wxStaticText( m_panel25, wxID_ANY, _("Outpaint Top:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText691->Wrap( -1 );
+	bSizer127->Add( m_staticText691, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintCanvasTop = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
+	bSizer127->Add( m_inpaintCanvasTop, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText701 = new wxStaticText( m_panel25, wxID_ANY, _("Right:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText701->Wrap( -1 );
+	bSizer127->Add( m_staticText701, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintCanvasRight = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
+	bSizer127->Add( m_inpaintCanvasRight, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText71 = new wxStaticText( m_panel25, wxID_ANY, _("Bottom:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText71->Wrap( -1 );
+	bSizer127->Add( m_staticText71, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintCanvasBottom = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
+	bSizer127->Add( m_inpaintCanvasBottom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_staticText721 = new wxStaticText( m_panel25, wxID_ANY, _("Left:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText721->Wrap( -1 );
+	bSizer127->Add( m_staticText721, 0, wxALL, 5 );
+
+	m_inpaintCanvasLeft = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
+	bSizer127->Add( m_inpaintCanvasLeft, 0, wxALL, 5 );
+
+	m_inpaintCanvasResizeApply = new wxButton( m_panel25, wxID_ANY, _("MyButton"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer127->Add( m_inpaintCanvasResizeApply, 0, wxALL, 5 );
+
+
+	bSizer126->Add( bSizer127, 0, wxEXPAND, 5 );
 
 
 	m_panel25->SetSizer( bSizer126 );
@@ -1652,6 +1689,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imPanel->Connect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
+	m_inpaintCanvasResizeApply->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
@@ -1752,6 +1790,7 @@ mainUI::~mainUI()
 	m_img2imPanel->Disconnect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
+	m_inpaintCanvasResizeApply->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );

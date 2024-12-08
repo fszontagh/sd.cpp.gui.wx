@@ -93,6 +93,7 @@ protected:
     void OnInpaintMaskOpen(wxFileDirPickerEvent& event) override;
     void OnInPaintBrushStyleToggle(wxCommandEvent& event) override;
     void OnInpaintCleanMask(wxCommandEvent& event) override;
+    void OnInpaintCanvasResizeApply(wxCommandEvent& event) override;
 
 public:
     /** Constructor */
@@ -162,8 +163,8 @@ private:
     bool onImg2ImgPaintIsDrawing;
     bool inpaintImageLoaded = false;
     wxBitmap inpaintBitMap;
-    wxSize inpaintOutPaintSize;
-    wxSize inpaintImageSize;
+    wxBitmap inpaintCanvas;
+    wxBitmap inpaintCanvasBorder;
     wxImage inpaintOrigImage;
     wxImage inpaintZoomedImage;
     double inpaintZoomFactor           = 1.0;
