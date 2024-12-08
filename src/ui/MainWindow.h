@@ -187,6 +187,7 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_inpaintSaveMask;
 		wxBitmapButton* m_inpaintInvert;
 		wxBitmapButton* m_inpaintResizeToSdSize;
+		wxBitmapButton* m_inpaintClearMask;
 		wxFilePickerCtrl* m_inpaintOpenMask;
 		wxStaticText* m_staticText69;
 		wxBitmapToggleButton* m_inPaintBrushStyleCircle;
@@ -301,6 +302,7 @@ class mainUI : public wxFrame
 		virtual void OnInpaintSaveMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintInvertMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintResizeImage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnInpaintCleanMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintMaskOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnInPaintBrushStyleToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseEnter( wxMouseEvent& event ) { event.Skip(); }

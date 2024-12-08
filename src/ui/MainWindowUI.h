@@ -92,6 +92,7 @@ protected:
     void OnInpaintInvertMask(wxCommandEvent& event) override;
     void OnInpaintMaskOpen(wxFileDirPickerEvent& event) override;
     void OnInPaintBrushStyleToggle(wxCommandEvent& event) override;
+    void OnInpaintCleanMask(wxCommandEvent& event) override;
 
 public:
     /** Constructor */

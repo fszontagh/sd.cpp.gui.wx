@@ -1074,6 +1074,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer130->Add( m_inpaintResizeToSdSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
+	m_inpaintClearMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_inpaintClearMask->SetBitmap( trash_png_to_wx_bitmap() );
+	m_inpaintClearMask->Enable( false );
+	m_inpaintClearMask->SetToolTip( _("Clear the mask") );
+
+	bSizer130->Add( m_inpaintClearMask, 0, wxALL, 5 );
+
 	m_inpaintOpenMask = new wxFilePickerCtrl( m_panel26, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL );
 	m_inpaintOpenMask->SetToolTip( _("Open a mask image from file") );
 
@@ -1629,6 +1637,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintSaveMask->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
+	m_inpaintClearMask->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCleanMask ), NULL, this );
 	m_inpaintOpenMask->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnInpaintMaskOpen ), NULL, this );
 	m_inPaintBrushStyleCircle->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_inPaintBrushStyleSquare->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
@@ -1728,6 +1737,7 @@ mainUI::~mainUI()
 	m_inpaintSaveMask->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
+	m_inpaintClearMask->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCleanMask ), NULL, this );
 	m_inpaintOpenMask->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnInpaintMaskOpen ), NULL, this );
 	m_inPaintBrushStyleCircle->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_inPaintBrushStyleSquare->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );

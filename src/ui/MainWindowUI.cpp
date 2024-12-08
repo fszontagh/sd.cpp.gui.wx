@@ -1064,11 +1064,12 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     wxImage inpaintImage = this->inpaintOrigImage;
     inpaintImage.InitAlpha();
     this->inpaintBitMap = wxBitmap(inpaintImage);
+
     wxMemoryDC dc(this->inpaintBitMap);
     dc.SetBackground(*wxTRANSPARENT_BRUSH);
     dc.Clear();
+    this->m_image2image_panel->SetScrollPos(wxBOTH, 0, true);
 
-    this->m_image2image_panel->Refresh();
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
 
@@ -2640,7 +2641,7 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
 
         this->m_img2imPanel->SetVirtualSize(img.GetWidth(), img.GetHeight());
         this->m_img2imPanel->SetScrollRate(10, 10);
-        this->m_img2imPanel->SetScrollPos(0, 0, true);
+        this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
 
         this->inpaintBrushSize  = 10;
         this->inpaintZoomFactor = 1;
@@ -4438,7 +4439,7 @@ void MainWindowUI::OnInpaintResizeImage(wxCommandEvent& event) {
 
     this->m_img2imPanel->SetVirtualSize(resized.GetWidth(), resized.GetHeight());
     this->m_img2imPanel->SetScrollRate(10, 10);
-    this->m_img2imPanel->SetScrollPos(0, 0, true);
+    this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
 
     //    this->inpaintBitMap = wxBitmap(resized);
 }
@@ -4473,6 +4474,17 @@ void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
 void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
     this->onImg2ImgPaintIsDrawing = false;
     // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
+}
+void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
+    this->m_inpaintClearMask->Disable();
+    wxImage inpaintImage = this->inpaintOrigImage;
+    inpaintImage.InitAlpha();
+    this->inpaintBitMap = wxBitmap(inpaintImage);
+
+    wxMemoryDC dc(this->inpaintBitMap);
+    dc.SetBackground(*wxTRANSPARENT_BRUSH);
+    dc.Clear();
+    this->m_image2image_panel->SetScrollPos(wxBOTH, 0, true);
 }
 void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
     auto object = dynamic_cast<wxToggleButton*>(event.GetEventObject());
@@ -4530,6 +4542,7 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
     this->inpaintBitMap = wxBitmap(image);
     this->inpaintBitMap.SetScaleFactor(oldScale);
     this->m_img2imPanel->Refresh();
+    this->m_inpaintClearMask->Enable();
 }
 
 void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
@@ -4665,8 +4678,10 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
         dc.DrawBitmap(this->inpaintZoomedImage, offsetX - offset.x, offsetY - offset.y, false);
     }
 
-    // Rajz bitmap rajzolása
     if (this->inpaintBitMap.IsOk()) {
+        if (this->m_inpaintClearMask->IsThisEnabled() == false) {
+            this->m_inpaintClearMask->Enable();
+        }
         dc.DrawBitmap(this->inpaintBitMap, offsetX - offset.x, offsetY - offset.y, true);  // Átlátszóság engedélyezése
     }
 }
@@ -4679,6 +4694,14 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     int rotation = event.GetWheelRotation();
 
     if (event.ControlDown() && this->inpaintOrigImage.IsOk()) {
+        if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0) {
+            return;
+        }
+
+        if (this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1) {
+            return;
+        }
+
         double oldZoomFactor = this->inpaintZoomFactor;
 
         if (rotation > 0) {
