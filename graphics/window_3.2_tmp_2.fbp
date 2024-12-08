@@ -7813,20 +7813,20 @@
                                       </object>
                                     </object>
                                   </object>
-                                  <object class="sizeritem" expanded="false">
+                                  <object class="sizeritem" expanded="true">
                                     <property name="border">5</property>
                                     <property name="flag">wxEXPAND</property>
                                     <property name="proportion">1</property>
-                                    <object class="wxBoxSizer" expanded="false">
+                                    <object class="wxBoxSizer" expanded="true">
                                       <property name="minimum_size"></property>
                                       <property name="name">bSizer29</property>
                                       <property name="orient">wxHORIZONTAL</property>
                                       <property name="permission">none</property>
-                                      <object class="sizeritem" expanded="false">
+                                      <object class="sizeritem" expanded="true">
                                         <property name="border">5</property>
                                         <property name="flag">wxEXPAND</property>
                                         <property name="proportion">1</property>
-                                        <object class="wxNotebook" expanded="false">
+                                        <object class="wxNotebook" expanded="true">
                                           <property name="BottomDockable">1</property>
                                           <property name="LeftDockable">1</property>
                                           <property name="RightDockable">1</property>
@@ -7880,7 +7880,7 @@
                                           <property name="window_extra_style"></property>
                                           <property name="window_name"></property>
                                           <property name="window_style"></property>
-                                          <object class="notebookpage" expanded="false">
+                                          <object class="notebookpage" expanded="true">
                                             <property name="bitmap"></property>
                                             <property name="label">Diffusion</property>
                                             <property name="select">0</property>
@@ -8004,11 +8004,11 @@
                                               </object>
                                             </object>
                                           </object>
-                                          <object class="notebookpage" expanded="false">
+                                          <object class="notebookpage" expanded="true">
                                             <property name="bitmap"></property>
                                             <property name="label">Preview and InPaint</property>
                                             <property name="select">1</property>
-                                            <object class="wxPanel" expanded="false">
+                                            <object class="wxPanel" expanded="true">
                                               <property name="BottomDockable">1</property>
                                               <property name="LeftDockable">1</property>
                                               <property name="RightDockable">1</property>
@@ -8060,16 +8060,16 @@
                                               <property name="window_extra_style"></property>
                                               <property name="window_name"></property>
                                               <property name="window_style">wxTAB_TRAVERSAL</property>
-                                              <object class="wxBoxSizer" expanded="false">
+                                              <object class="wxBoxSizer" expanded="true">
                                                 <property name="minimum_size"></property>
                                                 <property name="name">bSizer126</property>
                                                 <property name="orient">wxVERTICAL</property>
                                                 <property name="permission">none</property>
-                                                <object class="sizeritem" expanded="false">
+                                                <object class="sizeritem" expanded="true">
                                                   <property name="border">5</property>
                                                   <property name="flag">wxALL|wxEXPAND</property>
                                                   <property name="proportion">0</property>
-                                                  <object class="wxPanel" expanded="false">
+                                                  <object class="wxPanel" expanded="true">
                                                     <property name="BottomDockable">1</property>
                                                     <property name="LeftDockable">1</property>
                                                     <property name="RightDockable">1</property>
@@ -8121,16 +8121,16 @@
                                                     <property name="window_extra_style"></property>
                                                     <property name="window_name"></property>
                                                     <property name="window_style">wxTAB_TRAVERSAL</property>
-                                                    <object class="wxBoxSizer" expanded="false">
+                                                    <object class="wxBoxSizer" expanded="true">
                                                       <property name="minimum_size"></property>
                                                       <property name="name">bSizer128</property>
                                                       <property name="orient">wxVERTICAL</property>
                                                       <property name="permission">none</property>
-                                                      <object class="sizeritem" expanded="false">
+                                                      <object class="sizeritem" expanded="true">
                                                         <property name="border">0</property>
                                                         <property name="flag"></property>
                                                         <property name="proportion">1</property>
-                                                        <object class="wxBoxSizer" expanded="false">
+                                                        <object class="wxBoxSizer" expanded="true">
                                                           <property name="minimum_size"></property>
                                                           <property name="name">bSizer130</property>
                                                           <property name="orient">wxHORIZONTAL</property>
@@ -8321,11 +8321,11 @@
                                                               <property name="wrap">-1</property>
                                                             </object>
                                                           </object>
-                                                          <object class="sizeritem" expanded="false">
+                                                          <object class="sizeritem" expanded="true">
                                                             <property name="border">5</property>
                                                             <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
                                                             <property name="proportion">0</property>
-                                                            <object class="wxButton" expanded="false">
+                                                            <object class="wxBitmapButton" expanded="true">
                                                               <property name="BottomDockable">1</property>
                                                               <property name="LeftDockable">1</property>
                                                               <property name="RightDockable">1</property>
@@ -8337,7 +8337,7 @@
                                                               <property name="auth_needed">0</property>
                                                               <property name="best_size"></property>
                                                               <property name="bg"></property>
-                                                              <property name="bitmap"></property>
+                                                              <property name="bitmap">Load From Embedded File; icons/16/disk.png</property>
                                                               <property name="caption"></property>
                                                               <property name="caption_visible">1</property>
                                                               <property name="center_pane">0</property>
@@ -8352,7 +8352,7 @@
                                                               <property name="dock_fixed">0</property>
                                                               <property name="docking">Left</property>
                                                               <property name="drag_accept_files">0</property>
-                                                              <property name="enabled">0</property>
+                                                              <property name="enabled">1</property>
                                                               <property name="fg"></property>
                                                               <property name="floatable">1</property>
                                                               <property name="focus"></property>
@@ -8360,7 +8360,7 @@
                                                               <property name="gripper">0</property>
                                                               <property name="hidden">0</property>
                                                               <property name="id">wxID_ANY</property>
-                                                              <property name="label">Save mask</property>
+                                                              <property name="label"></property>
                                                               <property name="margins"></property>
                                                               <property name="markup">0</property>
                                                               <property name="max_size"></property>
@@ -8385,7 +8385,7 @@
                                                               <property name="style"></property>
                                                               <property name="subclass">; ; forward_declare</property>
                                                               <property name="toolbar_pane">0</property>
-                                                              <property name="tooltip"></property>
+                                                              <property name="tooltip">Save the mask into png</property>
                                                               <property name="validator_data_type"></property>
                                                               <property name="validator_style">wxFILTER_NONE</property>
                                                               <property name="validator_type">wxDefaultValidator</property>
@@ -8398,9 +8398,9 @@
                                                           </object>
                                                           <object class="sizeritem" expanded="true">
                                                             <property name="border">5</property>
-                                                            <property name="flag">wxALL</property>
+                                                            <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
                                                             <property name="proportion">0</property>
-                                                            <object class="wxButton" expanded="true">
+                                                            <object class="wxBitmapButton" expanded="true">
                                                               <property name="BottomDockable">1</property>
                                                               <property name="LeftDockable">1</property>
                                                               <property name="RightDockable">1</property>
@@ -8412,7 +8412,7 @@
                                                               <property name="auth_needed">0</property>
                                                               <property name="best_size"></property>
                                                               <property name="bg"></property>
-                                                              <property name="bitmap"></property>
+                                                              <property name="bitmap">Load From Embedded File; icons/16/replace.png</property>
                                                               <property name="caption"></property>
                                                               <property name="caption_visible">1</property>
                                                               <property name="center_pane">0</property>
@@ -8435,7 +8435,7 @@
                                                               <property name="gripper">0</property>
                                                               <property name="hidden">0</property>
                                                               <property name="id">wxID_ANY</property>
-                                                              <property name="label">Invert mask</property>
+                                                              <property name="label"></property>
                                                               <property name="margins"></property>
                                                               <property name="markup">0</property>
                                                               <property name="max_size"></property>
@@ -8460,7 +8460,7 @@
                                                               <property name="style"></property>
                                                               <property name="subclass">; ; forward_declare</property>
                                                               <property name="toolbar_pane">0</property>
-                                                              <property name="tooltip"></property>
+                                                              <property name="tooltip">Invert mask</property>
                                                               <property name="validator_data_type"></property>
                                                               <property name="validator_style">wxFILTER_NONE</property>
                                                               <property name="validator_type">wxDefaultValidator</property>
@@ -8471,11 +8471,11 @@
                                                               <event name="OnButtonClick">OnInpaintInvertMask</event>
                                                             </object>
                                                           </object>
-                                                          <object class="sizeritem" expanded="false">
+                                                          <object class="sizeritem" expanded="true">
                                                             <property name="border">5</property>
                                                             <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
                                                             <property name="proportion">0</property>
-                                                            <object class="wxButton" expanded="false">
+                                                            <object class="wxBitmapButton" expanded="true">
                                                               <property name="BottomDockable">1</property>
                                                               <property name="LeftDockable">1</property>
                                                               <property name="RightDockable">1</property>
@@ -8487,7 +8487,7 @@
                                                               <property name="auth_needed">0</property>
                                                               <property name="best_size"></property>
                                                               <property name="bg"></property>
-                                                              <property name="bitmap"></property>
+                                                              <property name="bitmap">Load From Embedded File; icons/16/drag.png</property>
                                                               <property name="caption"></property>
                                                               <property name="caption_visible">1</property>
                                                               <property name="center_pane">0</property>
@@ -8502,7 +8502,7 @@
                                                               <property name="dock_fixed">0</property>
                                                               <property name="docking">Left</property>
                                                               <property name="drag_accept_files">0</property>
-                                                              <property name="enabled">0</property>
+                                                              <property name="enabled">1</property>
                                                               <property name="fg"></property>
                                                               <property name="floatable">1</property>
                                                               <property name="focus"></property>
@@ -8510,7 +8510,7 @@
                                                               <property name="gripper">0</property>
                                                               <property name="hidden">0</property>
                                                               <property name="id">wxID_ANY</property>
-                                                              <property name="label">Resize image</property>
+                                                              <property name="label"></property>
                                                               <property name="margins"></property>
                                                               <property name="markup">0</property>
                                                               <property name="max_size"></property>
@@ -8535,7 +8535,7 @@
                                                               <property name="style"></property>
                                                               <property name="subclass">; ; forward_declare</property>
                                                               <property name="toolbar_pane">0</property>
-                                                              <property name="tooltip">Resize the image to fit into the selected resolution</property>
+                                                              <property name="tooltip">Resize image to the selected resolution at the left panel&#x0A;WARNING: this will delete the current mask if have!</property>
                                                               <property name="validator_data_type"></property>
                                                               <property name="validator_style">wxFILTER_NONE</property>
                                                               <property name="validator_type">wxDefaultValidator</property>
@@ -8548,7 +8548,7 @@
                                                           </object>
                                                           <object class="sizeritem" expanded="true">
                                                             <property name="border">5</property>
-                                                            <property name="flag">wxALL</property>
+                                                            <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
                                                             <property name="proportion">0</property>
                                                             <object class="wxFilePickerCtrl" expanded="true">
                                                               <property name="BottomDockable">1</property>
@@ -8600,7 +8600,7 @@
                                                               <property name="style">wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL</property>
                                                               <property name="subclass">; ; forward_declare</property>
                                                               <property name="toolbar_pane">0</property>
-                                                              <property name="tooltip"></property>
+                                                              <property name="tooltip">Open a mask image from file</property>
                                                               <property name="validator_data_type"></property>
                                                               <property name="validator_style">wxFILTER_NONE</property>
                                                               <property name="validator_type">wxDefaultValidator</property>

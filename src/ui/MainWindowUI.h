@@ -161,6 +161,8 @@ private:
     bool onImg2ImgPaintIsDrawing;
     bool inpaintImageLoaded = false;
     wxBitmap inpaintBitMap;
+    wxSize inpaintOutPaintSize;
+    wxSize inpaintImageSize;
     wxImage inpaintOrigImage;
     wxImage inpaintZoomedImage;
     double inpaintZoomFactor           = 1.0;
@@ -205,7 +207,7 @@ private:
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
-    sd_gui_utils::wxPosition InPaintCalcMousePose(wxMouseEvent &event);
+    sd_gui_utils::wxPosition InPaintCalcMousePose(wxMouseEvent& event);
 
     inline void DisableControlNet() {
         this->m_controlnetModels->Disable();

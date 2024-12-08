@@ -14,6 +14,7 @@
 #include "embedded_files/cube.png.h"
 #include "embedded_files/dice_four.png.h"
 #include "embedded_files/disk.png.h"
+#include "embedded_files/drag.png.h"
 #include "embedded_files/file_import.png.h"
 #include "embedded_files/forward.png.h"
 #include "embedded_files/images.png.h"
@@ -1052,22 +1053,31 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer130->Add( m_inpaintImageResolution, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintSaveMask = new wxButton( m_panel26, wxID_ANY, _("Save mask"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_inpaintSaveMask->Enable( false );
+	m_inpaintSaveMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_inpaintSaveMask->SetBitmap( disk_png_to_wx_bitmap() );
+	m_inpaintSaveMask->SetToolTip( _("Save the mask into png") );
 
 	bSizer130->Add( m_inpaintSaveMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintInvert = new wxButton( m_panel26, wxID_ANY, _("Invert mask"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer130->Add( m_inpaintInvert, 0, wxALL, 5 );
+	m_inpaintInvert = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_inpaintResizeToSdSize = new wxButton( m_panel26, wxID_ANY, _("Resize image"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_inpaintResizeToSdSize->Enable( false );
-	m_inpaintResizeToSdSize->SetToolTip( _("Resize the image to fit into the selected resolution") );
+	m_inpaintInvert->SetBitmap( replace_png_to_wx_bitmap() );
+	m_inpaintInvert->SetToolTip( _("Invert mask") );
+
+	bSizer130->Add( m_inpaintInvert, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintResizeToSdSize = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_inpaintResizeToSdSize->SetBitmap( drag_png_to_wx_bitmap() );
+	m_inpaintResizeToSdSize->SetToolTip( _("Resize image to the selected resolution at the left panel\nWARNING: this will delete the current mask if have!") );
 
 	bSizer130->Add( m_inpaintResizeToSdSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintOpenMask = new wxFilePickerCtrl( m_panel26, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL );
-	bSizer130->Add( m_inpaintOpenMask, 0, wxALL, 5 );
+	m_inpaintOpenMask->SetToolTip( _("Open a mask image from file") );
+
+	bSizer130->Add( m_inpaintOpenMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer128->Add( bSizer130, 1, 0, 0 );

@@ -184,9 +184,9 @@ class mainUI : public wxFrame
 		wxStaticText* m_inpaintBrushSize;
 		wxStaticText* m_inpaintZoom;
 		wxStaticText* m_inpaintImageResolution;
-		wxButton* m_inpaintSaveMask;
-		wxButton* m_inpaintInvert;
-		wxButton* m_inpaintResizeToSdSize;
+		wxBitmapButton* m_inpaintSaveMask;
+		wxBitmapButton* m_inpaintInvert;
+		wxBitmapButton* m_inpaintResizeToSdSize;
 		wxFilePickerCtrl* m_inpaintOpenMask;
 		wxStaticText* m_staticText69;
 		wxBitmapToggleButton* m_inPaintBrushStyleCircle;

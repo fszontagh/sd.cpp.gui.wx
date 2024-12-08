@@ -330,18 +330,19 @@ namespace sd_gui_utils {
                 unsigned char blue  = image.GetBlue(x, y);
                 unsigned char alpha = image.GetAlpha(x, y);
 
-                // Ha a pixel fehér (255, 255, 255) és teljesen látható
                 if (red == 255 && green == 255 && blue == 255 && alpha == 255) {
                     image.SetAlpha(x, y, 0);
                 }
-                // Ha a pixel teljesen átlátszó
-                else if (alpha == 0) {
+                
+                else if (alpha < 255) {
                     image.SetRGB(x, y, 255, 255, 255);
                     image.SetAlpha(x, y, 255);
                 }
             }
         }
+        auto oldScale = bitmap.GetScaleFactor();
         bitmap = wxBitmap(image);
+        bitmap.SetScaleFactor(oldScale);
     }
 
 }

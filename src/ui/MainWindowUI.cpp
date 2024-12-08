@@ -2620,6 +2620,9 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
                 return;
             }
         }
+        this->inpaintImageSize    = img.GetSize();
+        this->inpaintOutPaintSize = img.GetSize();
+
         this->m_inpaintSaveMask->Enable();
 
         this->inpaintOrigImage   = img;
@@ -4385,14 +4388,19 @@ void MainWindowUI::OnInpaintSaveMask(wxCommandEvent& event) {
     }
 
     wxImage image = this->inpaintBitMap.ConvertToImage();
-    // convert alpha to black
+    // convert alpha to black -> white where to inpaint, black is the natural, so where no white thats will be the black
+    // we convert everything to black which is not pure white without alpha
     for (int x = 0; x < image.GetWidth(); ++x) {
         for (int y = 0; y < image.GetHeight(); ++y) {
-            // Alfa érték lekérése
             unsigned char alpha = image.GetAlpha(x, y);
-
-            // Ha a pixel teljesen átlátszó, állítsuk feketévé
-            if (alpha == 0) {
+            auto red            = image.GetRed(x, y);
+            auto green          = image.GetGreen(x, y);
+            auto blue           = image.GetBlue(x, y);
+            if (alpha < 255) {
+                image.SetRGB(x, y, 0, 0, 0);
+                image.SetAlpha(x, y, 255);
+            }
+            if (red != 255 || green != 255 || blue != 255) {
                 image.SetRGB(x, y, 0, 0, 0);
                 image.SetAlpha(x, y, 255);
             }
@@ -4448,12 +4456,11 @@ void MainWindowUI::OnImg2ImgMouseDown(wxMouseEvent& event) {
     }
     this->onImg2ImgPaintIsDrawing = true;
     this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
-   
 }
 
 void MainWindowUI::OnImg2ImgMouseUp(wxMouseEvent& event) {
     this->onImg2ImgPaintIsDrawing = false;
-    //this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
+    // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
 }
 void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
     if (this->inpaintImageLoaded == false) {
@@ -4465,7 +4472,7 @@ void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
 }
 void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
     this->onImg2ImgPaintIsDrawing = false;
-    //this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
+    // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
 }
 void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
     auto object = dynamic_cast<wxToggleButton*>(event.GetEventObject());
@@ -4504,9 +4511,8 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
     // convert black to transparent pixels
     wxImage image = wxImage(event.GetPath(), wxBITMAP_TYPE_PNG);
 
-    if (this->inpaintBitMap.GetWidth() != image.GetWidth() && this->inpaintBitMap.GetHeight() != image.GetHeight()) {
-        this->writeLog(wxString::Format(_("Inpaint mask open: file not found: %s"), event.GetPath()), true);
-        return;
+    if (this->inpaintBitMap.GetWidth() < image.GetWidth() || this->inpaintBitMap.GetHeight() < image.GetHeight()) {
+        this->writeLog(wxString::Format(_("Inpaint mask open: the resolution of the mask does not match the resolution of the image: %s"), event.GetPath()), true);
     }
 
     for (int x = 0; x < image.GetWidth(); ++x) {
@@ -4591,7 +4597,8 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
             }
         }
         if (event.RightIsDown()) {
-            wxImage img = this->inpaintBitMap.ConvertToImage();
+            wxImage img = this->inpaintBitMap.ConvertToImage().Scale(this->inpaintBitMap.GetScaledWidth(), this->inpaintBitMap.GetScaledHeight(), wxIMAGE_QUALITY_HIGH);
+
             if (!img.HasAlpha()) {
                 img.InitAlpha();
             }
@@ -4629,15 +4636,12 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
 void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     wxAutoBufferedPaintDC dc(this->m_img2imPanel);
 
-    // Panel mérete
     int panelWidth, panelHeight;
     this->m_img2imPanel->GetClientSize(&panelWidth, &panelHeight);
 
-    // Kép mérete
     int imageWidth  = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetWidth() : 0;
     int imageHeight = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetHeight() : 0;
 
-    // Görgetési eltolás kiszámítása (pixelekben)
     wxPoint offset = this->m_img2imPanel->GetViewStart();
     int scrollUnitX, scrollUnitY;
     this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
@@ -4657,7 +4661,6 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     dc.SetBackground(background);
     dc.Clear();
 
-    // Kép rajzolása
     if (this->inpaintZoomedImage.IsOk()) {
         dc.DrawBitmap(this->inpaintZoomedImage, offsetX - offset.x, offsetY - offset.y, false);
     }
