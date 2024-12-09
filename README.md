@@ -35,6 +35,13 @@ Licensed under the MIT License.
 Refer to the [GitHub Releases](https://github.com/fszontagh/sd.cpp.gui.wx/releases) page for available installers.  
 For compiling on unsupported operating systems, consult the Wiki.
 
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=fszontagh/sd.cpp.gui.wx&type=Date)](https://star-history.com/#fszontagh/sd.cpp.gui.wx&Date)
+
 ----------
 
 _Use at your own risk!_  
