@@ -32,13 +32,21 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->Maximize();
     }
 
-    this->qmanager     = std::make_shared<QM::QueueManager>(this->GetEventHandler(), this->mapp->cfg->jobs);
-    this->ModelManager = std::make_shared<ModelInfo::Manager>(this->mapp->cfg->datapath);
+    this->qmanager        = std::make_shared<QM::QueueManager>(this->GetEventHandler(), this->mapp->cfg->jobs);
+    this->ModelManager    = std::make_shared<ModelInfo::Manager>(this->mapp->cfg->datapath);
+    this->treeListManager = std::make_unique<TreeListManager>(this->m_modelTreeList);
+    this->m_modelTreeList->ClearColumns();
+
+    this->treeListManager->AppendColumn(_("Name"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->treeListManager->AppendColumn(_("Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->treeListManager->AppendColumn(_("Type"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->treeListManager->AppendColumn(_("Hash"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
 
     this->initLog();
 
     // load
     this->LoadPresets();
+    // this->LoadPromptTemplates();
     this->loadModelList();
     this->loadLoraList();
     this->loadVaeList();
@@ -46,7 +54,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->loadControlnetList();
     this->loadEsrganList();
     this->loadEmbeddingList();
-    this->refreshModelTable();
+    // this->refreshModelTable();
     this->loadSchedulerList();
     this->loadSamplerList();
     this->loadTypeList();
@@ -272,8 +280,8 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
     }
     this->m_generate2->Enable();
 
-    this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
-    this->m_model->SetToolTip(wxString::Format(_("Model: %s"), this->ModelFiles.at(name)));
+    this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), name));
+    this->m_model->SetToolTip(wxString::Format(_("Model: %s"), name));
 }
 
 void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
@@ -342,6 +350,46 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     }
 
     sd_gui_utils::GuiMainPanels selected = static_cast<sd_gui_utils::GuiMainPanels>(event.GetSelection());
+    // show hide side panels
+
+    switch (selected) {
+        case sd_gui_utils::GuiMainPanels::PANEL_QUEUE: {
+            this->m_modelDetailsPanel->Hide();
+            this->m_rightMainPanel->Hide();
+            this->m_splitter6->SetSashInvisible(false);
+            this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
+            this->m_joblist_item_details->Show();
+        } break;
+        case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG:
+        case sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG:
+        case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER: {
+            this->m_modelDetailsPanel->Hide();
+            this->m_joblist_item_details->Hide();
+            this->m_splitter6->SetSashInvisible(true);
+            this->m_splitter6->SetSashPosition(340);
+            this->m_rightMainPanel->Show();
+        } break;
+        case sd_gui_utils::GuiMainPanels::PANEL_MODELS: {
+            this->m_rightMainPanel->Hide();
+            this->m_joblist_item_details->Hide();
+            this->m_splitter6->SetSashInvisible(false);
+            this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
+            this->m_modelDetailsPanel->Show();
+        } break;
+        case sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO: {
+            this->m_joblist_item_details->Hide();
+            this->m_modelDetailsPanel->Hide();
+            this->m_splitter6->SetSashInvisible(true);
+            this->m_splitter6->SetSashPosition(340);
+            this->m_rightMainPanel->Show();
+        } break;
+        default:
+            break;
+    }
+    this->bSizer137->Layout();
+    this->bSizer138->Layout();
+    this->m_splitter6->Layout();
+    this->m_splitter6->Refresh();
 
     if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG)  // on img2img and img2vid the vae_decode_only is false, otherwise true
     {
@@ -556,54 +604,69 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
         PopupMenu(menu);
         delete menu;
     }
+}
 
-    if (source == this->m_data_model_list) {
-        if (this->m_data_model_list->GetSelectedItemsCount() == 0) {
-            return;
-        }
-        wxMenu* menu = new wxMenu();
-        auto item    = this->m_data_model_list->GetCurrentItem();
-
-        wxDataViewListStore* store             = this->m_data_model_list->GetStore();
-        sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(store->GetItemData(item));
-
-        if (!modelinfo->sha256.empty()) {
-            menu->Append(100, _("RE-Calculate Hash"));
-        } else {
-            menu->Append(100, _("Calculate Hash"));
-        }
-        if (!modelinfo->civitaiPlainJson.empty() && modelinfo->hash_progress_size == 0 && this->mapp->cfg->enable_civitai == true) {
-            menu->Append(105, _("Force update info from CivitAi"));
-        }
-
-        if (modelinfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
-            menu->Append(200, wxString::Format(_("Select model %s to the next job"), modelinfo->name));
-            if (modelinfo->state == sd_gui_utils::CivitAiState::OK && this->mapp->cfg->enable_civitai == true) {
-                menu->Append(199, _("Open model on CivitAi.com in default browser"));
-            }
-            if (modelinfo->name.find(".safetensors")) {
-                menu->AppendSeparator();
-                menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
-            }
-        }
-        if (modelinfo->model_type == sd_gui_utils::DirTypes::LORA) {
-            auto shortname = std::filesystem::path(modelinfo->name).replace_extension().string();
-            menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), shortname));
-            menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), shortname));
-            menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), shortname));
-            menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), shortname));
-        }
-        if (modelinfo->model_type == sd_gui_utils::DirTypes::EMBEDDING) {
-            auto shortname = std::filesystem::path(modelinfo->name).replace_extension().string();
-            menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), shortname));
-            menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), shortname));
-            menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), shortname));
-            menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), shortname));
-        }
-        menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
-        PopupMenu(menu);
-        delete menu;
+void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
+    wxTreeListItems selections;
+    if (this->m_modelTreeList->GetSelections(selections) == 0) {
+        return;
     }
+    // TODO: implement multiple model handling
+    auto item      = selections.front();  // get the first
+    auto modelInfo = this->treeListManager->FindItem(item);
+
+    if (!modelInfo) {
+        return;
+    }
+    std::cout << "Selected: " << modelInfo->name << std::endl;
+    wxMenu* menu = new wxMenu();
+
+    if (!modelInfo->sha256.empty()) {
+        menu->Append(100, _("RE-Calculate Hash"));
+    } else {
+        menu->Append(100, _("Calculate Hash"));
+    }
+
+    if (!modelInfo->civitaiPlainJson.empty() && modelInfo->hash_progress_size == 0 && this->mapp->cfg->enable_civitai == true) {
+        menu->Append(105, _("Force update info from CivitAi"));
+    }
+
+    if (modelInfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+        menu->Append(200, wxString::Format(_("Select model %s to the next job"), modelInfo->name));
+        if (modelInfo->state == sd_gui_utils::CivitAiState::OK && this->mapp->cfg->enable_civitai == true) {
+            menu->Append(199, _("Open model on CivitAi.com in default browser"));
+        }
+        if (modelInfo->name.find(".safetensors")) {
+            menu->AppendSeparator();
+            menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
+        }
+    }
+
+    if (modelInfo->model_type == sd_gui_utils::DirTypes::LORA) {
+        auto shortname = wxFileName(modelInfo->path).GetName();
+        menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), shortname));
+        menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), shortname));
+        menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), shortname));
+        menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), shortname));
+    }
+    if (modelInfo->model_type == sd_gui_utils::DirTypes::EMBEDDING) {
+        auto shortname = wxFileName(modelInfo->path).GetName();
+        menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), shortname));
+        menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), shortname));
+        menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), shortname));
+        menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), shortname));
+        if (BUILD_TYPE != "Debug") {
+            // large embeddings not supported
+            menu->Enable(111, false);
+            menu->Enable(112, false);
+            menu->Enable(113, false);
+            menu->Enable(114, false);
+        }
+    }
+
+    menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
+    PopupMenu(menu);
+    delete menu;
 }
 
 void MainWindowUI::OnJobListItemSelection(wxDataViewEvent& event) {
@@ -729,12 +792,17 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     auto smClientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(this->m_sampler->GetSelection()));
 
     if (type == QM::GenerationMode::UPSCALE) {
+        auto esrganModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_upscaler_model->GetClientData(this->m_upscaler_model->GetSelection()));
+        if (esrganModel == nullptr) {
+            wxLogError(_("No upscaler model found!"));
+            return;
+        }
         std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
         item->model                         = this->m_upscaler_model->GetStringSelection().utf8_string();
         item->mode                          = type;
-        item->params.esrgan_path            = this->EsrganFiles.at(this->m_upscaler_model->GetStringSelection().utf8_string());
+        item->params.esrgan_path            = esrganModel->path;
         item->initial_image                 = this->m_upscaler_filepicker->GetPath();
-        item->params.mode                   = SDMode::MODE_COUNT;
+        item->params.mode                   = SDMode::UPSCALE;
         item->params.n_threads              = this->mapp->cfg->n_threads;
         item->keep_checkpoint_in_memory     = this->m_keep_other_models_in_memory->GetValue();
         item->keep_upscaler_in_memory       = this->m_keep_upscaler_in_memory->GetValue();
@@ -767,12 +835,22 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     }
 
     if (this->m_taesd->GetCurrentSelection() > 0) {
-        item->params.taesd_path = this->TaesdFiles.at(this->m_taesd->GetStringSelection().utf8_string());
+        auto taesdModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_taesd->GetClientData(this->m_taesd->GetCurrentSelection()));
+        if (taesdModel == nullptr) {
+            wxLogError(_("No taesd model found!"));
+            return;
+        }
+        item->params.taesd_path = taesdModel->path;
     } else {
         item->params.taesd_path = "";
     }
     if (this->m_vae->GetCurrentSelection() > 0) {
-        item->params.vae_path = this->VaeFiles.at(this->m_vae->GetStringSelection().utf8_string());
+        auto vaeModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_vae->GetClientData(this->m_vae->GetCurrentSelection()));
+        if (vaeModel == nullptr) {
+            wxLogError(_("No vae model found!"));
+            return;
+        }
+        item->params.vae_path = vaeModel->path;
     } else {
         item->params.vae_path = "";
     }
@@ -798,6 +876,34 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (type == QM::GenerationMode::TXT2IMG) {
         item->params.prompt          = this->m_prompt->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt->GetValue().utf8_string();
+
+        if (this->m_promptPresets->GetSelection() > 0) {
+            for (const auto& preset : this->PromptTemplates) {
+                if (preset.second.name == this->m_promptPresets->GetStringSelection().utf8_string()) {
+                    if (preset.second.prompt.empty() == false) {
+                        wxString _prompt      = wxString::FromUTF8Unchecked(preset.second.prompt);
+                        item->original_prompt = item->params.prompt;
+                        if (_prompt.Contains("{prompt}")) {
+                            _prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.prompt));
+                            item->params.prompt = _prompt.utf8_string();
+                        } else {
+                            item->params.prompt = item->params.prompt + " " + preset.second.prompt;
+                        }
+                    }
+
+                    if (preset.second.negative_prompt.empty() == false) {
+                        wxString _neg_prompt           = wxString::FromUTF8Unchecked(preset.second.negative_prompt);
+                        item->original_negative_prompt = item->params.negative_prompt;
+                        if (_neg_prompt.Contains("{prompt}")) {
+                            _neg_prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.negative_prompt));
+                            item->params.negative_prompt = _neg_prompt.utf8_string();
+                        } else {
+                            item->params.negative_prompt = item->params.negative_prompt + " " + preset.second.negative_prompt;
+                        }
+                    }
+                }
+            }
+        }
 
         if (this->m_controlnetModels->GetSelection() > 0) {
             item->params.control_net_cpu = this->cnOnCpu->GetValue();
@@ -871,7 +977,12 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (diffusionModel.empty() == false) {
             this->writeLog(wxString::Format(_("Skipping controlnet with diffusion model: %s"), diffusionModel.c_str()));
         } else {
-            item->params.controlnet_path = this->ControlnetModels.at(this->m_controlnetModels->GetStringSelection().utf8_string());
+            auto controlnetModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_controlnetModels->GetClientData(this->m_controlnetModels->GetSelection()));
+            if (controlnetModel == nullptr) {
+                wxLogError(_("No controlnet model found!"));
+                return;
+            }
+            item->params.controlnet_path = controlnetModel->path;
             // do not set the control image if we have no model
             if (this->m_controlnetImageOpen->GetPath().length() > 0) {
                 item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
@@ -959,31 +1070,20 @@ void MainWindowUI::onFilePickerDiffusionModel(wxFileDirPickerEvent& event) {
     this->m_filePickerClipG->Disable();
     this->m_neg_prompt->Disable();
 
-    // auto select the vae  for first mathcing
-    for (const auto vae : this->VaeFiles) {
-        if (vae.first.ends_with("/ae.safetensors") || vae.first == "ae.safetensors") {
-            this->m_vae->SetStringSelection(vae.first);
-            break;
-        }
+    auto vaeModel = this->ModelManager->searchByName(std::vector<std::string>{{"/ae.safetensors"}, {"ae.safetensors"}}, sd_gui_utils::DirTypes::VAE);
+
+    if (vaeModel != nullptr) {
+        this->m_vae->SetStringSelection(vaeModel->path);
     }
 
-    // autoselect clipl for bestmatch
-    if (this->m_filePickerClipL->GetPath().empty()) {
-        for (const auto vae : this->VaeFiles) {
-            if (vae.first.ends_with("/clip_l.safetensors") || vae.first == "clip_l.safetensors" || vae.first.find("clip_l") != std::string::npos) {
-                this->m_filePickerClipL->SetPath(vae.second);
-                break;
-            }
-        }
+    auto clipModel = this->ModelManager->searchByName(std::vector<std::string>{{"/clip_l.safetensors"}, {"clip_l.safetensors"}, {"clip_l"}}, sd_gui_utils::DirTypes::VAE);
+    if (clipModel != nullptr) {
+        this->m_filePickerClipL->SetPath(clipModel->path);
     }
 
-    if (this->m_filePickerT5XXL->GetPath().empty()) {
-        for (const auto vae : this->VaeFiles) {
-            if (vae.first.ends_with("/t5xxl.safetensors") || vae.first == "t5xxl.safetensors" || vae.first.find("t5xxl") != std::string::npos) {
-                this->m_filePickerT5XXL->SetPath(vae.second);
-                break;
-            }
-        }
+    auto t5xxlModel = this->ModelManager->searchByName(std::vector<std::string>{{"/t5xxl.safetensors"}, {"t5xxl.safetensors"}, {"t5xxl"}}, sd_gui_utils::DirTypes::VAE);
+    if (t5xxlModel != nullptr) {
+        this->m_filePickerT5XXL->SetPath(t5xxlModel->path);
     }
 
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
@@ -1052,10 +1152,15 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
         this->m_img2imgOpen->SetPath(path.GetPath());
     }
     this->mapp->cfg->lastImg2ImgPath = this->m_img2imgOpen->GetPath();
-    this->mapp->config->Write("lastImg2ImgPath", this->m_img2imgOpen->GetPath());
-    this->mapp->config->Flush(true);
-
     this->m_generate2->Disable();
+}
+
+void MainWindowUI::OnMainSplitterSashPosChanged(wxSplitterEvent& event) {
+    auto pos       = event.GetSashPosition();
+    auto selection = this->m_notebook1302->GetSelection();
+    if (selection != wxNOT_FOUND) {
+        this->mapp->cfg->mainSashPose = pos;
+    }
 }
 
 void MainWindowUI::OnUpscalerDropFile(wxDropFilesEvent& event) {
@@ -1114,36 +1219,33 @@ void MainWindowUI::OnUpscalerFactorChange(wxSpinEvent& event) {
 
 void MainWindowUI::OnCheckboxLoraFilter(wxCommandEvent& event) {
     auto value = this->m_modellist_filter->GetValue().utf8_string();
-    this->refreshModelTable(value);
+    // this->refreshModelTable(value);
 }
 
 void MainWindowUI::OnCheckboxCheckpointFilter(wxCommandEvent& event) {
     auto value = this->m_modellist_filter->GetValue().utf8_string();
-    this->refreshModelTable(value);
+    // this->refreshModelTable(value);
 }
 
 void MainWindowUI::OnModellistFilterKeyUp(wxKeyEvent& event) {
     auto value = this->m_modellist_filter->GetValue().utf8_string();
-    this->refreshModelTable(value);
+    // this->refreshModelTable(value);
 }
 
-void MainWindowUI::OnDataModelActivated(wxDataViewEvent& event) {}
-
-void MainWindowUI::OnDataModelSelected(wxDataViewEvent& event) {
-    auto store = this->m_data_model_list->GetStore();
-    auto row   = this->m_data_model_list->GetSelectedRow();
-    if (row == wxNOT_FOUND) {
+void MainWindowUI::OnDataModelTreeSelected(wxTreeListEvent& event) {
+    wxTreeListItems selections;
+    if (this->m_modelTreeList->GetSelections(selections) == 0) {
         return;
     }
-    auto currentItem                       = store->GetItem(row);
-    sd_gui_utils::ModelFileInfo* _item     = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(store->GetItemData(currentItem));
-    sd_gui_utils::ModelFileInfo* modelinfo = this->ModelManager->getIntoPtr(_item->path);
+    auto item      = selections.front();  // get the first
+    auto modelInfo = this->treeListManager->FindItem(item);
 
-    // download infos only when empty and sha256 is present
-    if (modelinfo->civitaiPlainJson.empty() && !modelinfo->sha256.empty() && this->mapp->cfg->enable_civitai) {
-        this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+    if (!modelInfo) {
+        return;
     }
-    this->UpdateModelInfoDetailsFromModelList(modelinfo);
+
+    std::cout << "Selected: " << modelInfo->name << std::endl;
+    this->UpdateModelInfoDetailsFromModelList(modelInfo);
 }
 
 void MainWindowUI::onCnOnCpu(wxCommandEvent& event) {
@@ -1417,7 +1519,10 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
     }
 
     if (!item.params.model_path.empty() && std::filesystem::exists(item.params.model_path)) {
-        sd_gui_utils::ModelFileInfo model = this->ModelManager->getInfo(item.params.model_path);
+        sd_gui_utils::ModelFileInfo* model = this->ModelManager->getIntoPtr(item.params.model_path);
+        if (model == nullptr) {
+            return;
+        }
         this->ChangeModelByInfo(model);
         this->m_generate2->Enable();
         if (!this->m_img2imgOpen->GetPath().empty()) {
@@ -1457,31 +1562,21 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
     this->SetTypeByType(item.params.wtype);
 
     if (!item.params.taesd_path.empty()) {
-        int index = 0;
-        for (auto taesd : this->TaesdFiles) {
-            if (item.params.taesd_path == taesd.second) {
-                for (unsigned int _u = 0; _u < this->m_taesd->GetCount(); ++_u) {
-                    if (this->m_taesd->GetString(_u) == taesd.first) {
-                        this->m_taesd->Select(_u);
-                        break;
-                    }
-                }
-            }
-            index++;
+        auto taesd = this->ModelManager->getIntoPtr(item.params.taesd_path);
+        if (taesd == nullptr) {
+            this->writeLog(_("Taesd file not found: " + item.params.taesd_path), true);
+        } else {
+            this->m_taesd->SetStringSelection(taesd->name);
         }
     }
 
     if (!item.params.vae_path.empty() &&
         std::filesystem::exists(item.params.vae_path)) {
-        for (auto vae : this->VaeFiles) {
-            if (item.params.vae_path == vae.second) {
-                for (unsigned int _u = 0; _u < this->m_vae->GetCount(); ++_u) {
-                    if (this->m_vae->GetString(_u) == vae.first) {
-                        this->m_vae->Select(_u);
-                        break;
-                    }
-                }
-            }
+        auto vaeModel = this->ModelManager->getIntoPtr(item.params.vae_path);
+        if (vaeModel == nullptr) {
+            this->writeLog(_("Vae file not found: " + item.params.vae_path), true);
+        } else {
+            this->m_vae->SetStringSelection(vaeModel->name);
         }
     }
 
@@ -1492,21 +1587,20 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             this->onControlnetImageOpen(item.params.control_image_path);
         }
 
-        for (auto cnmodel : this->ControlnetModels) {
-            if (cnmodel.second == item.params.controlnet_path) {
-                for (unsigned int _u = 0; _u < this->m_controlnetModels->GetCount(); ++_u) {
-                    if (this->m_controlnetModels->GetString(_u) == cnmodel.first) {
-                        this->m_controlnetModels->Select(_u);
-                        break;
-                    }
-                }
-            }
+        auto controlnetModel = this->ModelManager->getIntoPtr(item.params.controlnet_path);
+        if (controlnetModel == nullptr) {
+            this->writeLog(_("Controlnet file not found: " + item.params.controlnet_path), true);
+        } else {
+            this->m_controlnetModels->SetStringSelection(controlnetModel->name);
         }
     }
 }
 
-void MainWindowUI::UpdateModelInfoDetailsFromModelList(
-    sd_gui_utils::ModelFileInfo* modelinfo) {
+void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo) {
+    if (modelinfo == nullptr) {
+        std::cerr << __FILE__ << ":" << __LINE__ << "Model is null" << std::endl;
+        return;
+    }
     this->m_model_details->DeleteAllItems();
     this->m_model_details_description->Hide();
     this->m_model_details_description->SetPage("");
@@ -1548,8 +1642,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(
     data.clear();
 
     data.push_back(wxVariant(_("Type")));
-    data.push_back(
-        wxVariant(wxString::Format("%s", modelinfo->CivitAiInfo.model.type)));
+    data.push_back(wxVariant(wxString::Format("%s", modelinfo->CivitAiInfo.model.type)));
     this->m_model_details->AppendItem(data);
     data.clear();
 
@@ -1559,8 +1652,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(
     } else {
         this->m_model_details_description->Show();
         // this->m_model_details_description->SetLabelMarkup(modelinfo->CivitAiInfo.description);
-        this->m_model_details_description->SetPage(
-            modelinfo->CivitAiInfo.description);
+        this->m_model_details_description->SetPage(modelinfo->CivitAiInfo.description);
     }
     int idx = 0;
     for (auto file : modelinfo->CivitAiInfo.files) {
@@ -1831,6 +1923,76 @@ void MainWindowUI::loadEmbeddingList() {
     this->LoadFileList(sd_gui_utils::DirTypes::EMBEDDING);
 }
 
+void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
+    auto itemId = evt.GetId();
+    if (itemId == wxNOT_FOUND) {
+        return;
+    }
+
+    wxTreeListItems selections;
+    if (this->m_modelTreeList->GetSelections(selections) == 0) {
+        return;
+    }
+
+    auto item      = selections.front();  // get the first
+    auto modelinfo = this->treeListManager->FindItem(item);
+
+    if (!modelinfo) {
+        return;
+    }
+
+    auto shortname = wxFileName(modelinfo->path).GetName();
+
+    switch (itemId) {
+        case 100: {
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo));
+        } break;
+        case 101: {
+            this->m_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt->GetValue(), shortname));
+        } break;
+        case 102: {
+            this->m_neg_prompt->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt->GetValue(), shortname));
+        } break;
+        case 103: {
+            this->m_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_prompt2->GetValue(), shortname));
+        } break;
+        case 104: {
+            this->m_neg_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), shortname));
+        } break;
+        case 105: {
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+        } break;
+        case 111: {
+            this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
+        } break;
+        case 112: {
+            this->m_neg_prompt->SetValue(wxString::Format("%s %s", this->m_neg_prompt->GetValue(), shortname));
+        } break;
+        case 113: {
+            this->m_prompt2->SetValue(wxString::Format("%s %s", this->m_prompt2->GetValue(), shortname));
+        } break;
+        case 114: {
+            this->m_neg_prompt2->SetValue(wxString::Format("%s %s", this->m_neg_prompt2->GetValue(), shortname));
+        } break;
+        case 115: {
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+        } break;
+        case 199: {
+            wxString url = wxString::Format("https://civitai.com/models/%d", modelinfo->CivitAiInfo.modelId);
+            wxLaunchDefaultBrowser(url);
+        } break;
+        case 200: {
+            this->ChangeModelByInfo(modelinfo);
+        } break;
+        // model converter
+        case 201: {
+            this->PrepareModelConvert(modelinfo);
+        } break;
+        default:
+            break;
+    }
+}
+
 void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
     auto tu = evt.GetId();
 
@@ -1861,12 +2023,12 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 this->ChangeGuiFromQueueItem(*qitem);
                 break;
             case 3:
-                this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->params.prompt));
-                this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->params.negative_prompt));
+                this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+                this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
                 break;
             case 4:
-                this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->params.prompt));
-                this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->params.negative_prompt));
+                this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+                this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
                 break;
             case 5: {
                 if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
@@ -1910,75 +2072,6 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
         }
         return;
     }
-    /*
-    101   lora txt2img
-    102   lora txt2img neg
-    103   lora img2img
-    104   lora img2img neg
-    */
-    if (tu >= 100 && tu < 300) {
-        wxDataViewListStore* store = this->m_data_model_list->GetStore();
-        int currow                 = this->m_data_model_list->GetSelectedRow();
-        if (currow == wxNOT_FOUND) {
-            return;
-        }
-        auto currentItem = store->GetItem(currow);
-
-        sd_gui_utils::ModelFileInfo* modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(store->GetItemData(currentItem));
-        auto shortname                         = std::filesystem::path(modelinfo->name).replace_extension().string();
-        switch (tu) {
-            case 100:
-                this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelHashCalc, this, this->GetEventHandler(), modelinfo));
-                break;
-            case 101:
-                this->m_prompt->SetValue(wxString::Format(
-                    "%s <lora:%s:0.5>", this->m_prompt->GetValue(), shortname));
-                break;
-            case 102:
-                this->m_neg_prompt->SetValue(wxString::Format(
-                    "%s <lora:%s:0.5>", this->m_neg_prompt->GetValue(), shortname));
-                break;
-            case 103:
-                this->m_prompt2->SetValue(wxString::Format(
-                    "%s <lora:%s:0.5>", this->m_prompt2->GetValue(), shortname));
-                break;
-            case 104:
-                this->m_neg_prompt2->SetValue(wxString::Format("%s <lora:%s:0.5>", this->m_neg_prompt2->GetValue(), shortname));
-                break;
-            case 105:
-                this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
-                break;
-            case 111:
-                this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
-                break;
-            case 112:
-                this->m_neg_prompt->SetValue(wxString::Format("%s %s", this->m_neg_prompt->GetValue(), shortname));
-                break;
-            case 113:
-                this->m_prompt2->SetValue(
-                    wxString::Format("%s %s", this->m_prompt2->GetValue(), shortname));
-                break;
-            case 114:
-                this->m_neg_prompt2->SetValue(wxString::Format("%s %s", this->m_neg_prompt2->GetValue(), shortname));
-                break;
-            case 115:
-                this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
-                break;
-            case 199: {
-                //
-                wxString url = wxString::Format("https://civitai.com/models/%d", modelinfo->CivitAiInfo.modelId);
-                wxLaunchDefaultBrowser(url);
-            } break;
-            case 200: {
-                this->ChangeModelByInfo(*modelinfo);
-            } break;
-            // model converter
-            case 201: {
-                this->PrepareModelConvert(modelinfo);
-            } break;
-        }
-        return;
-    }
 }
 
 void MainWindowUI::loadVaeList() {
@@ -1988,83 +2081,6 @@ void MainWindowUI::loadVaeList() {
 
 void MainWindowUI::loadEsrganList() {
     this->LoadFileList(sd_gui_utils::DirTypes::ESRGAN);
-}
-
-void MainWindowUI::refreshModelTable(const wxString& filter) {
-    auto types = sd_gui_utils::DirTypes::LORA | sd_gui_utils::DirTypes::CHECKPOINT | sd_gui_utils::DirTypes::EMBEDDING;
-
-    if (!this->m_checkbox_lora_filter->IsChecked()) {
-        types &= ~sd_gui_utils::DirTypes::LORA;
-    }
-
-    if (!this->m_checkbox_filter_checkpoints->IsChecked()) {
-        types &= ~sd_gui_utils::DirTypes::CHECKPOINT;
-    }
-    if (!this->m_checkbox_filter_embeddings->IsChecked()) {
-        types &= ~sd_gui_utils::DirTypes::EMBEDDING;
-    }
-
-    auto store = this->m_data_model_list->GetStore();
-
-    std::vector<sd_gui_utils::ModelFileInfo> list = this->ModelManager->getList();
-    std::vector<sd_gui_utils::ModelFileInfo> filtered_list;
-
-    std::copy_if(list.begin(), list.end(), std::back_inserter(filtered_list),
-                 [types](const sd_gui_utils::ModelFileInfo& info) {
-                     return sd_gui_utils::filterByModelType(info.model_type, types);
-                 });
-
-    if (!filter.empty()) {
-        std::vector<sd_gui_utils::ModelFileInfo> tmp_list;
-        std::copy_if(
-            filtered_list.begin(), filtered_list.end(),
-            std::back_inserter(tmp_list),
-            [types, filter](const sd_gui_utils::ModelFileInfo& model) {
-                auto name = model.name;
-                auto path = model.path;
-                std::transform(name.begin(), name.end(), name.begin(),
-                               [](unsigned char c) {
-                                   return std::tolower(c);
-                               });
-                std::transform(path.begin(), path.end(), path.begin(),
-                               [](unsigned char c) {
-                                   return std::tolower(c);
-                               });
-
-                return (path.find(filter) != std::string::npos ||
-                        name.find(filter) != std::string::npos) ||
-                       ((!model.civitaiPlainJson.empty() &&
-                         model.hash_progress_size != 0) &&
-                        (model.CivitAiInfo.name.find(filter) != std::string::npos ||
-                         model.CivitAiInfo.model.name.find(filter) !=
-                             std::string::npos));
-            });
-        filtered_list = tmp_list;
-    }
-
-    store->DeleteAllItems();
-    for (auto ele : filtered_list) {
-        wxVector<wxVariant> itemData;
-        itemData.push_back(ele.name);                                    // name
-        itemData.push_back(ele.size_f);                                  // size
-        itemData.push_back(sd_gui_utils::dirtypes_str[ele.model_type]);  // type
-        itemData.push_back(ele.sha256.substr(0, 10));                    // autov2 hash
-        itemData.push_back(
-            sd_gui_utils::civitai_state_str[ele.state]);  // civitai state
-        if (ele.hash_progress_size > 0) {
-            int current_progress = 0;
-            if (ele.hash_fullsize != 0) {
-                current_progress = static_cast<int>((ele.hash_progress_size * 100) / ele.hash_fullsize);
-            }
-            itemData.push_back(current_progress);  // progress bar
-        } else {
-            itemData.push_back(ele.sha256.empty() ? 0 : 100);  // progress bar
-        }
-        store->AppendItem(itemData, (wxUIntPtr)this->ModelManager->getIntoPtr(
-                                        ele.path));  // setClientData
-    }
-    // remove which not needed
-    this->m_data_model_list->Refresh();
 }
 
 void MainWindowUI::loadTaesdList() {
@@ -2206,34 +2222,37 @@ void MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T
 }
 
 void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
-    std::string basepath;
-
+    wxString basepath;
     switch (type) {
-        case sd_gui_utils::DirTypes::VAE:
-            this->VaeFiles.clear();
+        case sd_gui_utils::DirTypes::VAE: {
             this->m_vae->Clear();
             this->m_vae->Append(_("-none-"));
             this->m_vae->Select(0);
             basepath = this->mapp->cfg->vae;
-            break;
-        case sd_gui_utils::DirTypes::LORA:
+        } break;
+        case sd_gui_utils::DirTypes::LORA: {
             basepath = this->mapp->cfg->lora;
-            break;
-        case sd_gui_utils::DirTypes::CHECKPOINT:
-            this->ModelFiles.clear();
-            this->ModelFilesIndex.clear();
+        } break;
+        case sd_gui_utils::DirTypes::CHECKPOINT: {
             this->m_model->Clear();
             this->m_model->Append(_("-none-"));
             this->m_model->Select(0);
             basepath = this->mapp->cfg->model;
-            break;
-        case sd_gui_utils::DirTypes::PRESETS:
+        } break;
+        case sd_gui_utils::DirTypes::PRESETS: {
             this->Presets.clear();
             this->m_preset_list->Clear();
             this->m_preset_list->Append(_("-none-"));
             this->m_preset_list->Select(0);
             basepath = this->mapp->cfg->presets;
-            break;
+        } break;
+        case sd_gui_utils::DirTypes::PROMPT_TEMPLATES: {
+            this->Presets.clear();
+            this->m_promptPresets->Clear();
+            this->m_promptPresets->Append(_("-none-"));
+            this->m_promptPresets->Select(0);
+            basepath = this->mapp->cfg->prompt_templates;
+        } break;
         case sd_gui_utils::DirTypes::TAESD: {
             this->m_taesd->Clear();
             this->m_taesd->Append(_("-none-"));
@@ -2243,186 +2262,152 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         case sd_gui_utils::DirTypes::EMBEDDING: {
             basepath = this->mapp->cfg->embedding;
         } break;
-        case sd_gui_utils::DirTypes::CONTROLNET:
+        case sd_gui_utils::DirTypes::CONTROLNET: {
             this->m_controlnetModels->Clear();
             this->m_controlnetModels->Append(_("-none-"));
             this->m_controlnetModels->Select(0);
             basepath = this->mapp->cfg->controlnet;
-            break;
-        case sd_gui_utils::DirTypes::ESRGAN:
+        } break;
+        case sd_gui_utils::DirTypes::ESRGAN: {
             this->m_upscaler_model->Clear();
             this->m_upscaler_model->Append(_("-none-"));
             this->m_upscaler_model->Select(0);
             basepath = this->mapp->cfg->esrgan;
-            break;
+        } break;
         default:
             return;
-            break;
     }
 
-    for (auto const& dir_entry : std::filesystem::recursive_directory_iterator(basepath)) {
-        if (!dir_entry.exists() || !dir_entry.is_regular_file() ||
-            !dir_entry.path().has_extension()) {
+    wxArrayString entries;
+    wxDir::GetAllFiles(basepath, &entries, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
+
+    for (const auto& entry : entries) {
+        wxFileName file(entry);
+
+        if (!file.FileExists()) {
+            std::cout << "File not exists: " << file.GetAbsolutePath().utf8_string() << std::endl;
             continue;
         }
 
-        std::filesystem::path path = dir_entry.path();
-
-        std::string ext = path.extension().string();
-
-        if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-            if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), ext) == CHECKPOINT_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::LORA) {
-            if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), ext) == LORA_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-            if (std::find(EMBEDDING_FILE_EXTENSIONS.begin(), EMBEDDING_FILE_EXTENSIONS.end(), ext) == EMBEDDING_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::VAE) {
-            if (std::find(VAE_FILE_EXTENSIONS.begin(), VAE_FILE_EXTENSIONS.end(), ext) == VAE_FILE_EXTENSIONS.end()) {
-                continue;
-            }
+        if (file.IsDir()) {
+            continue;
         }
 
-        if (type == sd_gui_utils::DirTypes::PRESETS) {
-            if (ext != ".json") {
-                continue;
-            }
+        wxString ext = file.GetExt();
+
+        // File extension filtering
+        if ((type == sd_gui_utils::DirTypes::CHECKPOINT &&
+             std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), ext.ToStdString()) == CHECKPOINT_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::LORA &&
+             std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), ext.ToStdString()) == LORA_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::EMBEDDING &&
+             std::find(EMBEDDING_FILE_EXTENSIONS.begin(), EMBEDDING_FILE_EXTENSIONS.end(), ext.ToStdString()) == EMBEDDING_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::VAE &&
+             std::find(VAE_FILE_EXTENSIONS.begin(), VAE_FILE_EXTENSIONS.end(), ext.ToStdString()) == VAE_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::PRESETS && ext != "json") ||
+            (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES && ext != "json") ||
+            (type == sd_gui_utils::DirTypes::TAESD &&
+             std::find(TAESD_FILE_EXTENSIONS.begin(), TAESD_FILE_EXTENSIONS.end(), ext.ToStdString()) == TAESD_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::ESRGAN &&
+             std::find(ESRGAN_FILE_EXTENSIONS.begin(), ESRGAN_FILE_EXTENSIONS.end(), ext.ToStdString()) == ESRGAN_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::CONTROLNET &&
+             std::find(CONTROLNET_FILE_EXTENSIONS.begin(), CONTROLNET_FILE_EXTENSIONS.end(), ext.ToStdString()) == CONTROLNET_FILE_EXTENSIONS.end())) {
+            std::cout << "Skipping while not a model: " << file.GetAbsolutePath().utf8_string() << std::endl;
+            continue;
         }
 
-        if (type == sd_gui_utils::DirTypes::TAESD) {
-            if (std::find(TAESD_FILE_EXTENSIONS.begin(), TAESD_FILE_EXTENSIONS.end(), ext) == TAESD_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::ESRGAN) {
-            if (std::find(ESRGAN_FILE_EXTENSIONS.begin(), ESRGAN_FILE_EXTENSIONS.end(), ext) == ESRGAN_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-            if (std::find(CONTROLNET_FILE_EXTENSIONS.begin(), CONTROLNET_FILE_EXTENSIONS.end(), ext) == CONTROLNET_FILE_EXTENSIONS.end()) {
-                continue;
-            }
-        }
-        std::string name = path.filename().string();
-        // prepend the subdirectory to the modelname
-        // // wxFileName::GetPathSeparator()
-        std::string path_name = path.parent_path().string();
-
-        sd_gui_utils::replace(path_name, basepath, "");
-        if (!path_name.empty()) {
-            name = path_name.substr(1) + "/" + name;
-        }
+        wxString name = file.GetAbsolutePath();
+        name.Replace(basepath + wxFileName::GetPathSeparator(), "");
 
         if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-            this->ModelFiles.emplace(name, dir_entry.path().string());
-            this->ModelFilesIndex[name] = this->ModelFiles.size();
-            this->ModelManager->addModel(dir_entry.path().string(), type, name);
+            auto model_info = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (model_info) {
+                this->treeListManager->AddItem(model_info);
+                this->m_model->Append(name, model_info);
+            }
 
-            sd_gui_utils::ModelFileInfo* _minfo = this->ModelManager->getIntoPtr(dir_entry.path().string());
+        } else if (type == sd_gui_utils::DirTypes::LORA) {
+            auto lora = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (lora) {
+                this->treeListManager->AddItem(lora);
+            }
+        } else if (type == sd_gui_utils::DirTypes::EMBEDDING) {
+            auto embedding = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (embedding) {
+                this->treeListManager->AddItem(embedding);
+            }
 
-            this->m_model->Append(name, (void*)_minfo);
-        }
-        if (type == sd_gui_utils::DirTypes::LORA) {
-            this->LoraFiles.emplace(name, dir_entry.path().string());
-            this->ModelManager->addModel(dir_entry.path().string(), type, name);
-        }
-        if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-            this->EmbeddingFiles.emplace(name, dir_entry.path().string());
-            this->ModelManager->addModel(dir_entry.path().string(), type, name);
-        }
-        if (type == sd_gui_utils::DirTypes::ESRGAN) {
-            this->EsrganFiles.emplace(name, dir_entry.path().string());
-            this->m_upscaler_model->Append(name);
-        }
-        if (type == sd_gui_utils::DirTypes::VAE) {
-            this->m_vae->Append(name);
-            this->VaeFiles.emplace(name, dir_entry.path().string());
-        }
-        if (type == sd_gui_utils::DirTypes::PRESETS) {
-            sd_gui_utils::generator_preset preset;
-            std::ifstream f(path.string());
+        } else if (type == sd_gui_utils::DirTypes::ESRGAN) {
+            auto esrgan = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (esrgan) {
+                this->treeListManager->AddItem(esrgan);
+                this->m_upscaler_model->Append(name, esrgan);
+            }
+
+        } else if (type == sd_gui_utils::DirTypes::VAE) {
+            auto vae = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (vae) {
+                this->treeListManager->AddItem(vae);
+                this->m_vae->Append(name, vae);
+            }
+
+        } else if (type == sd_gui_utils::DirTypes::PRESETS) {
+            std::ifstream f(file.GetFullPath().ToStdString());
             try {
-                nlohmann::json data = nlohmann::json::parse(f);
-                preset              = data;
-                preset.path         = path.string();
+                nlohmann::json data                   = nlohmann::json::parse(f);
+                sd_gui_utils::generator_preset preset = data;
+                preset.path                           = file.GetFullPath().ToStdString();
                 this->m_preset_list->Append(preset.name);
                 this->Presets.emplace(preset.name, preset);
-            } catch (const std::exception& e) {
-                std::remove(path.string().c_str());
+            } catch (...) {
+                wxLogError("Failed to parse preset: %s", file.GetFullPath());
             }
-        }
-        if (type == sd_gui_utils::DirTypes::TAESD) {
+        } else if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
+            std::ifstream f(file.GetFullPath().ToStdString());
+            try {
+                nlohmann::json array = nlohmann::json::parse(f);
+                if (array.is_array()) {
+                    for (const auto& item : array) {
+                        if (item.is_object()) {
+                            sd_gui_utils::prompt_templates templateItem = item;
+                            templateItem.path                           = file.GetFullPath().ToStdString();
+                            this->m_promptPresets->Append(templateItem.name);
+                            this->PromptTemplates.emplace(templateItem.name, templateItem);
+                        }
+                    }
+                }
+            } catch (...) {
+                wxLogError("Failed to parse prompt template: %s", file.GetFullPath());
+            }
+        } else if (type == sd_gui_utils::DirTypes::TAESD) {
             this->m_taesd->Append(name);
-            this->TaesdFiles.emplace(name, dir_entry.path().string());
-        }
-        if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-            this->m_controlnetModels->Append(name);
-            this->ControlnetModels.emplace(name, dir_entry.path().string());
         }
     }
 
+    this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(type), this->ModelManager->GetCount(type)));
+
     if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-        this->writeLog(wxString::Format(_("Loaded checkpoints: %" PRIuMAX "\n"), this->ModelFiles.size()));
-        if (this->ModelFiles.size() > 0) {
-            this->m_model->Enable();
-        } else {
-            this->m_model->Disable();
-        }
+        this->m_model->Enable((this->ModelManager->GetCount(type) > 0));
     }
-    if (type == sd_gui_utils::DirTypes::LORA) {
-        this->writeLog(wxString::Format(_("Loaded Loras: %" PRIuMAX "\n"), this->LoraFiles.size()));
-    }
-    if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-        this->writeLog(wxString::Format(_("Loaded embeddings: %" PRIuMAX "\n"), this->EmbeddingFiles.size()));
-    }
-    if (type == sd_gui_utils::DirTypes::VAE) {
-        this->writeLog(wxString::Format(_("Loaded vaes: %" PRIuMAX "\n"), this->VaeFiles.size()));
-        if (this->VaeFiles.size() > 0) {
-            this->m_vae->Enable();
-        } else {
-            this->m_vae->Disable();
-        }
-    }
-    if (type == sd_gui_utils::DirTypes::PRESETS) {
-        this->writeLog(wxString::Format(_("Loaded presets: %" PRIuMAX "\n"), this->Presets.size()));
-        if (this->Presets.size() > 0) {
-            this->m_preset_list->Enable();
-        } else {
-            this->m_preset_list->Disable();
-        }
-    }
+
     if (type == sd_gui_utils::DirTypes::TAESD) {
-        this->writeLog(wxString::Format(_("Loaded taesd: %" PRIuMAX "\n"), this->TaesdFiles.size()));
-        if (this->TaesdFiles.size() > 0) {
-            this->m_taesd->Enable();
-        } else {
-            this->m_taesd->Disable();
-        }
+        this->m_taesd->Enable((this->ModelManager->GetCount(type) > 0));
     }
-    if (type == sd_gui_utils::DirTypes::ESRGAN) {
-        this->writeLog(wxString::Format(_("Loaded esrgan: %" PRIuMAX "\n"), this->EsrganFiles.size()));
-        if (this->EsrganFiles.size() > 0) {
-            this->m_upscaler_model->Enable();
-        } else {
-            this->m_upscaler_model->Disable();
-        }
-    }
+
     if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-        this->writeLog(wxString::Format(_("Loaded controlnet: %" PRIuMAX "\n"), this->ControlnetModels.size()));
-        if (this->ControlnetModels.size() > 0) {
-            this->m_controlnetModels->Enable();
-        } else {
-            this->m_controlnetModels->Disable();
-        }
+        this->m_controlnetModels->Enable((this->ModelManager->GetCount(type) > 0));
+    }
+
+    if (type == sd_gui_utils::DirTypes::VAE) {
+        this->m_vae->Enable((this->ModelManager->GetCount(type) > 0));
+    }
+
+    if (type == sd_gui_utils::DirTypes::PRESETS) {
+        this->m_preset_list->Enable((this->ModelManager->GetCount(type) > 0));
+    }
+
+    if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
+        this->m_promptPresets->Enable((this->PromptTemplates.size()> 0));
     }
 }
 void MainWindowUI::loadLoraList() {
@@ -2513,7 +2498,7 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
         if (item.first == "modelhash" || item.first == "model hash" && !modelFound) {
             auto check = this->ModelManager->getByHash(item.second.utf8_string());
             if (!check.path.empty()) {
-                this->m_model->Select(this->ModelFilesIndex[check.name]);
+                this->m_model->SetStringSelection(check.name);
                 modelFound = true;
                 continue;
             }
@@ -2522,15 +2507,15 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             // get by name
             auto check = this->ModelManager->getInfoByName(item.second.utf8_string());
             if (!check.path.empty()) {
-                this->m_model->Select(this->ModelFilesIndex[check.name]);
+                this->m_model->SetStringSelection(check.name);
                 modelFound = true;
                 continue;
             }
 
             // search by name
             auto check2 = this->ModelManager->findInfoByName(item.second.utf8_string());
-            if (!check.path.empty()) {
-                this->m_model->Select(this->ModelFilesIndex[check2.name]);
+            if (!check2.path.empty()) {
+                this->m_model->SetStringSelection(check2.name);
                 modelFound = true;
                 continue;
             }
@@ -2942,10 +2927,14 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->ModelManager->UpdateInfo(modelinfo);
         this->writeLog(wxString::Format(_("Model civitai image downloaded for model: %s\n"), modelinfo->name));
         // update if the current selected item is the updated item info
-        if (this->m_data_model_list->GetSelectedItemsCount() > 0) {
-            wxDataViewItem item               = this->m_data_model_list->GetCurrentItem();
-            sd_gui_utils::ModelFileInfo* info = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_data_model_list->GetItemData(item));
-            if (info->path == modelinfo->path) {
+        wxTreeListItems selections;
+        if (this->m_modelTreeList->GetSelections(selections) > 0) {
+            wxTreeListItem item = selections.front();  // get the first
+            auto selectedModel  = this->treeListManager->FindItem(item);
+            if (!selectedModel) {
+                return;
+            }
+            if (selectedModel->path == modelinfo->path) {
                 this->UpdateModelInfoDetailsFromModelList(modelinfo);
             }
         }
@@ -2964,44 +2953,29 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_START) {
-        sd_gui_utils::ModelFileInfo* modelinfo =
-            e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         this->writeLog(wxString::Format(_("Model civitai info download start: %s\n"), modelinfo->name));
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_FINISHED) {
-        sd_gui_utils::ModelFileInfo* modelinfo  = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        sd_gui_utils::ModelFileInfo newInfo     = this->ModelManager->updateCivitAiInfo(modelinfo);
-        sd_gui_utils::ModelFileInfo* newInfoptr = this->ModelManager->getIntoPtr(newInfo.path);
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        this->ModelManager->updateCivitAiInfo(modelinfo);
 
-        if (newInfo.state == sd_gui_utils::CivitAiState::OK) {
-            this->writeLog(wxString::Format(_("Model civitai info download finished: %s\n"), newInfo.CivitAiInfo.name));
-            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoImageDownload, this, this->GetEventHandler(), newInfoptr));
+        if (modelinfo->state == sd_gui_utils::CivitAiState::OK) {
+            this->writeLog(wxString::Format(_("Model civitai info download finished: %s\n"), modelinfo->CivitAiInfo.name));
+            this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoImageDownload, this, this->GetEventHandler(), modelinfo));
         }
-        if (newInfo.state == sd_gui_utils::CivitAiState::NOT_FOUND) {
-            this->writeLog(wxString::Format(_("Model civitai info not found: %s Hash: %s\n"), newInfo.name, newInfo.sha256.substr(0, 10)));
+        if (modelinfo->state == sd_gui_utils::CivitAiState::NOT_FOUND) {
+            this->writeLog(wxString::Format(_("Model civitai info not found: %s Hash: %s\n"), modelinfo->name, modelinfo->sha256.substr(0, 10)));
         }
-        if (newInfo.state == sd_gui_utils::CivitAiState::ERR) {
-            this->writeLog(wxString::Format(_("Model civitai info unkown parsing error happened: %s Hash: %s\n"), newInfo.name, newInfo.sha256.substr(0, 10)));
+        if (modelinfo->state == sd_gui_utils::CivitAiState::ERR) {
+            this->writeLog(wxString::Format(_("Model civitai info unkown parsing error happened: %s Hash: %s\n"), modelinfo->name, modelinfo->sha256.substr(0, 10)));
         }
         // update anyway
         this->UpdateModelInfoDetailsFromModelList(modelinfo);
         // update table
-        auto store     = this->m_data_model_list->GetStore();
-        int civitAiCol = this->m_data_model_list->GetColumnCount() - 2;  // civitai col
 
-        for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-            auto _item      = store->GetItem(i);
-            auto _item_data = store->GetItemData(_item);
-            auto* _qitem    = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(_item_data);
-            if (_qitem->path == modelinfo->path) {
-                store->SetValueByRow(sd_gui_utils::civitai_state_str[modelinfo->state], i, civitAiCol);
-                store->RowValueChanged(i, civitAiCol);
-                this->m_data_model_list->Refresh();
-                this->m_data_model_list->Update();
-                break;
-            }
-        }
+        // TODO: add a civitai icon to the model item
         // update table
 
         return;
@@ -3011,33 +2985,19 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS) {
         // modelinfo
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        auto store                             = this->m_data_model_list->GetStore();
-        int progressCol                        = this->m_data_model_list->GetColumnCount() - 1;  // progressbar col
-        int hashCol                            = this->m_data_model_list->GetColumnCount() - 3;
-        size_t _x                              = modelinfo->hash_progress_size;
-        size_t _m                              = modelinfo->hash_fullsize;
-        int current_progress                   = 0;
-        auto _hr1                              = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
-        auto _hr2                              = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
+
+        size_t _x            = modelinfo->hash_progress_size;
+        size_t _m            = modelinfo->hash_fullsize;
+        int current_progress = 0;
+        auto _hr1            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
+        auto _hr2            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
 
         if (_m != 0) {
             current_progress = static_cast<int>((_x * 100) / _m);
         }
-
-        for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-            auto _item      = store->GetItem(i);
-            auto _item_data = store->GetItemData(_item);
-            auto* _qitem    = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(_item_data);
-            if (_qitem->path == modelinfo->path) {
-                store->SetValueByRow(current_progress, i, progressCol);
-                store->SetValueByRow(modelinfo->sha256.substr(0, 10), i, hashCol);
-                store->RowValueChanged(i, progressCol);
-                store->RowValueChanged(i, hashCol);
-                this->m_data_model_list->Refresh();
-                this->m_data_model_list->Update();
-                break;
-            }
-        }
+        this->treeListManager->UpdateItem(modelinfo);
+        this->treeListManager->ChangeText(modelinfo->path, wxString::Format("%u%% (%.f %s/%.f %s)", current_progress, _hr1.first, _hr1.second.c_str(), _hr2.first, _hr2.second.c_str()), 3);
+        return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
@@ -3049,6 +3009,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         file << j;
         file.close();
         modelinfo->hash_progress_size = 0;
+        modelinfo->hash_fullsize      = 0;
+        this->treeListManager->ChangeText(modelinfo->path, modelinfo->sha256, 3);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
@@ -3059,7 +3021,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             modelinfo->hash_progress_size = myjob->hash_progress_size;
             modelinfo->hash_fullsize      = myjob->hash_fullsize;
             this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
-            std::cout << "Hashing: " << modelinfo->hash_progress_size << "/" << modelinfo->hash_fullsize << std::endl;
         }
 
         // update column
@@ -3187,8 +3148,9 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
             // type = sd_gui_utils::DirTypes::EMBEDDING;
             this->loadEmbeddingList();
         }
-        auto value = this->m_modellist_filter->GetValue();
-        this->refreshModelTable(value);
+
+        // auto value = this->m_modellist_filter->GetValue();
+        // this->refreshModelTable(value);
 
         auto title   = _("Model download finished");
         auto message = wxString::Format(_("The model download is finished: %s"), name);
@@ -3734,6 +3696,9 @@ void MainWindowUI::onControlnetImageOpen(const wxString& file) {
 void MainWindowUI::LoadPresets() {
     this->LoadFileList(sd_gui_utils::DirTypes::PRESETS);
 }
+void MainWindowUI::LoadPromptTemplates() {
+    this->LoadFileList(sd_gui_utils::DirTypes::PROMPT_TEMPLATES);
+}
 
 void MainWindowUI::ChangeModelByName(wxString ModelName) {
     sd_gui_utils::ModelFileInfo minfo = this->ModelManager->findInfoByName(ModelName.utf8_string());
@@ -3757,14 +3722,27 @@ void MainWindowUI::ChangeModelByName(wxString ModelName) {
 
 void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info) {
     for (unsigned int _z = 0; _z < this->m_model->GetCount(); _z++) {
-        sd_gui_utils::ModelFileInfo* m =
-            reinterpret_cast<sd_gui_utils::ModelFileInfo*>(
-                this->m_model->GetClientData(_z));
-        // maybe this is the none
+        sd_gui_utils::ModelFileInfo* m = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(_z));
         if (m == nullptr) {
             continue;
         }
-        if (info == m) {
+        if (info.path == m->path) {
+            this->m_model->SetSelection(_z);
+            return;
+        }
+    }
+}
+
+void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo* info) {
+    if (info == nullptr) {
+        return;
+    }
+    for (unsigned int _z = 0; _z < this->m_model->GetCount(); _z++) {
+        sd_gui_utils::ModelFileInfo* m = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(_z));
+        if (m == nullptr) {
+            continue;
+        }
+        if (info->path == m->path) {
             this->m_model->SetSelection(_z);
             return;
         }
@@ -3772,12 +3750,14 @@ void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info) {
 }
 
 void MainWindowUI::loadModelList() {
-    std::string oldSelection = this->m_model->GetStringSelection().utf8_string();
+    auto oldSelection = this->m_model->GetStringSelection();
 
     this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
 
-    if (this->ModelFilesIndex.find(oldSelection) != this->ModelFilesIndex.end()) {
-        this->m_model->SetSelection(this->ModelFilesIndex[oldSelection]);
+    auto found = this->m_model->FindString(oldSelection, false);
+
+    if (found != wxNOT_FOUND) {
+        this->m_model->SetSelection(found);
     }
 }
 
@@ -3960,8 +3940,11 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
     }
 
     if (this->m_vae->GetCurrentSelection() > 0) {
-        usingVae              = this->m_vae->GetStringSelection().utf8_string();
-        item->params.vae_path = this->VaeFiles.at(usingVae);
+        auto vaeClientData = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_vae->GetClientData(this->m_vae->GetCurrentSelection()));
+        if (vaeClientData != nullptr) {
+            usingVae              = vaeClientData->name;
+            item->params.vae_path = vaeClientData->path;
+        }
     }
 
     wxString question = wxString::Format(_("Do you want to convert model %s with quantation %s to gguf format?"), modelInfo->name, newType);
@@ -4114,16 +4097,16 @@ void MainWindowUI::ProcessOutputThread() {
 void MainWindowUI::ProcessCheckThread() {
     while (this->extProcessNeedToRun == true) {
         if (subprocess_alive(this->subprocess) != 0) {
-            char* buffer = new char[SHARED_MEMORY_SIZE];
-            this->sharedMemory->read(buffer, SHARED_MEMORY_SIZE);
+            std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
 
-            if (std::strlen(buffer) > 0) {
-                bool state = this->ProcessEventHandler(std::string(buffer, std::strlen(buffer)));
+            this->sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE);
+
+            if (std::strlen(buffer.get()) > 0) {
+                bool state = this->ProcessEventHandler(std::string(buffer.get(), std::strlen(buffer.get())));
                 if (state == true) {
                     this->sharedMemory->clear();
                 }
             }
-            delete buffer;
 
             if (this->extProcessNeedToRun == false) {
                 std::string exitMsg = "exit";

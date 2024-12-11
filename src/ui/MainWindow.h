@@ -28,17 +28,18 @@
 #include <wx/choice.h>
 #include <wx/gauge.h>
 #include <wx/panel.h>
+#include <wx/dataview.h>
+#include <wx/html/htmlwin.h>
 #include <wx/checkbox.h>
 #include <wx/spinctrl.h>
 #include <wx/scrolwin.h>
-#include <wx/dataview.h>
 #include <wx/splitter.h>
 #include <wx/statbmp.h>
 #include <wx/textctrl.h>
 #include <wx/filepicker.h>
 #include <wx/notebook.h>
-#include <wx/html/htmlwin.h>
 #include <wx/srchctrl.h>
+#include <wx/treelist.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/slider.h>
@@ -69,8 +70,15 @@ class mainUI : public wxFrame
 		wxChoice* m_type;
 		wxStaticText* m_currentStatus;
 		wxGauge* m_currentProgress;
-		wxPanel* m_panel12;
-		wxScrolledWindow* m_scrolledWindow1;
+		wxPanel* m_modelDetailsPanel;
+		wxDataViewListCtrl* m_model_details;
+		wxDataViewColumn* m_dataViewListColumn11;
+		wxDataViewColumn* m_dataViewListColumn21;
+		wxHtmlWindow* m_model_details_description;
+		wxDataViewListCtrl* m_joblist_item_details;
+		wxDataViewColumn* m_dataViewListColumn1;
+		wxDataViewColumn* m_dataViewListColumn2;
+		wxScrolledWindow* m_rightMainPanel;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
 		wxCheckBox* vaeOnCpu;
@@ -99,8 +107,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText239;
 		wxSpinCtrl* m_height;
 		wxBitmapButton* m_button7;
-		wxStaticLine* m_staticline4;
-		wxStaticText* m_staticText17;
 		wxBitmapButton* m_save_preset;
 		wxBitmapButton* m_load_preset;
 		wxChoice* m_preset_list;
@@ -111,7 +117,7 @@ class mainUI : public wxFrame
 		wxChoice* m_sdXlres;
 		wxStaticText* m_staticText49;
 		wxChoice* m_promptPresets;
-		wxPanel* m_panel11;
+		wxPanel* m_panel31;
 		wxNotebook* m_notebook1302;
 		wxPanel* m_jobs_panel;
 		wxButton* m_start_jobs;
@@ -131,10 +137,6 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn321111111;
 		wxDataViewColumn* m_dataViewListColumn3211111111;
 		wxDataViewColumn* m_dataViewListColumn32111111111;
-		wxPanel* m_panel15;
-		wxDataViewListCtrl* m_joblist_item_details;
-		wxDataViewColumn* m_dataViewListColumn1;
-		wxDataViewColumn* m_dataViewListColumn2;
 		wxScrolledWindow* m_scrolledWindow41;
 		wxStaticBitmap* m_bitmap6;
 		wxPanel* m_text2img_panel;
@@ -223,20 +225,7 @@ class mainUI : public wxFrame
 		wxCheckBox* m_checkbox_filter_checkpoints;
 		wxCheckBox* m_checkbox_filter_embeddings;
 		wxSearchCtrl* m_modellist_filter;
-		wxSplitterWindow* m_splitter3;
-		wxPanel* m_panel16;
-		wxDataViewListCtrl* m_data_model_list;
-		wxDataViewColumn* m_dataViewListColumn3;
-		wxDataViewColumn* m_dataViewListColumn4;
-		wxDataViewColumn* m_dataViewListColumn5;
-		wxDataViewColumn* m_dataViewListColumn6;
-		wxDataViewColumn* m_dataViewListColumn8;
-		wxDataViewColumn* m_dataViewListColumn7;
-		wxPanel* m_panel17;
-		wxDataViewListCtrl* m_model_details;
-		wxDataViewColumn* m_dataViewListColumn11;
-		wxDataViewColumn* m_dataViewListColumn21;
-		wxHtmlWindow* m_model_details_description;
+		wxTreeListCtrl* m_modelTreeList;
 		wxScrolledWindow* m_scrolledWindow4;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
@@ -250,6 +239,7 @@ class mainUI : public wxFrame
 		virtual void OnStopBackgroundProcess( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnMainSplitterSashPosChanged( wxSplitterEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
@@ -304,23 +294,34 @@ class mainUI : public wxFrame
 		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
-		virtual void OnDataModelActivated( wxDataViewEvent& event ) { event.Skip(); }
-		virtual void OnDataModelSelected( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeActivated( wxTreeListEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeContextMenu( wxTreeListEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeSelected( wxTreeListEvent& event ) { event.Skip(); }
 
 
 	public:
+		wxSplitterWindow* m_splitter6;
+		wxPanel* m_panel32;
+		wxBoxSizer* bSizer137;
+		wxBoxSizer* bSizer1001;
+		wxBoxSizer* bSizer138;
 		wxBoxSizer* bSizer8911;
 		wxHtmlWindow* m_upscalerHelp;
 		wxSplitterWindow* m_splitter4;
 		wxBoxSizer* imageInfoSizer;
 		wxBoxSizer* bSizer119;
 		wxFlexGridSizer* fgSizer1;
-		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer891;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
 		~mainUI();
+
+		void m_splitter6OnIdle( wxIdleEvent& )
+		{
+			m_splitter6->SetSashPosition( 340 );
+			m_splitter6->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter6OnIdle ), NULL, this );
+		}
 
 		void m_splitter2OnIdle( wxIdleEvent& )
 		{
@@ -332,12 +333,6 @@ class mainUI : public wxFrame
 		{
 			m_splitter4->SetSashPosition( 0 );
 			m_splitter4->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter4OnIdle ), NULL, this );
-		}
-
-		void m_splitter3OnIdle( wxIdleEvent& )
-		{
-			m_splitter3->SetSashPosition( -300 );
-			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 		}
 
 };

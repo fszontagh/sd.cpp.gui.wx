@@ -44,20 +44,21 @@ namespace sd_gui_utils {
     } VoidHolder;
 
     enum class DirTypes : int {
-        EMPTY       = 0,        // If no option is set
-        LORA        = 1 << 0,   // The LORA option represents the 0th bit
-        CHECKPOINT  = 1 << 1,   // The CHECKPOINT option represents the 1st bit
-        VAE         = 1 << 2,   // The VAE option represents the 2nd bit
-        PRESETS     = 1 << 3,   // The PRESETS option represents the 3rd bit
-        PROMPTS     = 1 << 4,   // The PROMPTS option represents the 4th bit
-        NEG_PROMPTS = 1 << 5,   // The NEG_PROMPTS option represents the 5th bit
-        TAESD       = 1 << 6,   // The TAESD option represents the 6th bit
-        ESRGAN      = 1 << 7,   // The ESRGAN option represents the 7th bit
-        CONTROLNET  = 1 << 8,   // The CONTROLNET option represents the 8th bit
-        UPSCALER    = 1 << 9,   // The UPSCALER option represents the 9th bit
-        EMBEDDING   = 1 << 10,  // The EMBEDDING option represents the 10th bit
-        ALL         = -1,       // All options are set
-        UNKNOWN     = -2,       // The unknown option
+        EMPTY            = 0,        // If no option is set
+        LORA             = 1 << 0,   // The LORA option represents the 0th bit
+        CHECKPOINT       = 1 << 1,   // The CHECKPOINT option represents the 1st bit
+        VAE              = 1 << 2,   // The VAE option represents the 2nd bit
+        PRESETS          = 1 << 3,   // The PRESETS option represents the 3rd bit
+        PROMPTS          = 1 << 4,   // The PROMPTS option represents the 4th bit
+        NEG_PROMPTS      = 1 << 5,   // The NEG_PROMPTS option represents the 5th bit
+        TAESD            = 1 << 6,   // The TAESD option represents the 6th bit
+        ESRGAN           = 1 << 7,   // The ESRGAN option represents the 7th bit
+        CONTROLNET       = 1 << 8,   // The CONTROLNET option represents the 8th bit
+        UPSCALER         = 1 << 9,   // The UPSCALER option represents the 9th bit
+        EMBEDDING        = 1 << 10,  // The EMBEDDING option represents the 10th bit
+        PROMPT_TEMPLATES = 1 << 11,  // The PROMPT_TEMPLATES option represents the 11th bit
+        ALL              = -1,       // All options are set
+        UNKNOWN          = -2,       // The unknown option
     };
 
     template <>
@@ -95,12 +96,38 @@ namespace sd_gui_utils {
         "Parse error",
         "",
     };
+
+    enum class ModelInfoTag {
+        None      = 0,       // No specific tag
+        Deletable = 1 << 0,  // Indicates the item can be deleted
+        Favorite  = 1 << 1   // Indicates the item is marked as favorite
+    };
+
+    // Allow bitwise operations for ModelInfoTag.
+    inline ModelInfoTag operator|(ModelInfoTag lhs, ModelInfoTag rhs) {
+        return static_cast<ModelInfoTag>(static_cast<int>(lhs) | static_cast<int>(rhs));
+    }
+
+    inline ModelInfoTag& operator|=(ModelInfoTag& lhs, ModelInfoTag rhs) {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+
+    inline ModelInfoTag operator&(ModelInfoTag lhs, ModelInfoTag rhs) {
+        return static_cast<ModelInfoTag>(static_cast<int>(lhs) & static_cast<int>(rhs));
+    }
+
+    inline bool HasTag(ModelInfoTag tags, ModelInfoTag tag) {
+        return (tags & tag) != ModelInfoTag::None;
+    }
+
     struct ModelFileInfo {
         std::string name;
-        std::string path;
+        std::string path = "";
         std::string url;
         std::string poster;
         std::string sha256;
+        sd_gui_utils::ModelInfoTag tags = sd_gui_utils::ModelInfoTag::None;
         size_t size;
         std::string size_f;
         std::string meta_file;
@@ -111,12 +138,11 @@ namespace sd_gui_utils {
         CivitAi::ModelInfo CivitAiInfo;
         sd_gui_utils::CivitAiState state = sd_gui_utils::CivitAiState::NOT_CHECKED;
         std::vector<std::string> preview_images;
+        std::string folderGroupName = "";
 
         ModelFileInfo() = default;
-        // Copy konstruktor
         ModelFileInfo(const sd_gui_utils::ModelFileInfo& other)
-            : name(other.name), path(other.path), url(other.url), poster(other.poster), sha256(other.sha256), size(other.size), size_f(other.size_f), meta_file(other.meta_file), hash_progress_size(other.hash_progress_size), hash_fullsize(other.hash_fullsize), model_type(other.model_type), civitaiPlainJson(other.civitaiPlainJson), CivitAiInfo(other.CivitAiInfo), state(other.state), preview_images(other.preview_images) {}
-        // Copy assignment operator
+            : name(other.name), path(other.path), url(other.url), poster(other.poster), sha256(other.sha256), tags(other.tags), size(other.size), size_f(other.size_f), meta_file(other.meta_file), hash_progress_size(other.hash_progress_size), hash_fullsize(other.hash_fullsize), model_type(other.model_type), civitaiPlainJson(other.civitaiPlainJson), CivitAiInfo(other.CivitAiInfo), state(other.state), preview_images(other.preview_images), folderGroupName(folderGroupName) {}
         ModelFileInfo& operator=(const sd_gui_utils::ModelFileInfo& other) {
             if (this != &other) {
                 name               = other.name;
@@ -124,6 +150,7 @@ namespace sd_gui_utils {
                 url                = other.url;
                 poster             = other.poster;
                 sha256             = other.sha256;
+                tags               = other.tags;
                 size               = other.size;
                 size_f             = other.size_f;
                 meta_file          = other.meta_file;
@@ -134,6 +161,7 @@ namespace sd_gui_utils {
                 CivitAiInfo        = other.CivitAiInfo;
                 state              = other.state;
                 preview_images     = other.preview_images;
+                folderGroupName    = other.folderGroupName;
             }
             return *this;
         }
@@ -144,6 +172,9 @@ namespace sd_gui_utils {
             return path == rh.path;
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo* rh) const {
+            if (rh == nullptr) {
+                return false;
+            }
             return path == rh->path;
         }
         inline bool operator==(const std::string& otherPath) const {
@@ -157,6 +188,7 @@ namespace sd_gui_utils {
                            {"url", p.url},
                            {"poster", wxString(p.poster.c_str()).utf8_string()},
                            {"sha256", p.sha256},
+                           {"tags", (int)p.tags},
                            {"size", p.size},
                            {"size_f", p.size_f},
                            {"meta_file", wxString(p.meta_file.c_str()).utf8_string()},
@@ -164,7 +196,8 @@ namespace sd_gui_utils {
                            {"civitaiPlainJson", p.civitaiPlainJson},
                            {"CivitAiInfo", p.CivitAiInfo},
                            {"state", (int)p.state},
-                           {"preview_images", p.preview_images}
+                           {"preview_images", p.preview_images},
+                           {"folderGroupName", p.folderGroupName}
 
         };
     }
@@ -219,6 +252,12 @@ namespace sd_gui_utils {
         if (j.contains("preview_images")) {
             p.preview_images = j.at("preview_images").get<std::vector<std::string>>();
         }
+        if (j.contains("folderGroupName")) {
+            p.folderGroupName = j.at("folderGroupName").get<std::string>();
+        }
+        if (j.contains("tags")) {
+            p.tags = (sd_gui_utils::ModelInfoTag)p.tags;
+        }
     }
     inline std::string to_hex(std::array<uint8_t, 32> data) {
         std::ostringstream oss;
@@ -233,15 +272,6 @@ namespace sd_gui_utils {
         return bytes / (1024 * 1024);  // 1 MB = 1024 * 1024 bájt
     }
 
-    struct cout_redirect {
-        cout_redirect(std::streambuf* new_buffer)
-            : old(std::cout.rdbuf(new_buffer)) {}
-
-        ~cout_redirect() { std::cout.rdbuf(old); }
-
-    private:
-        std::streambuf* old;
-    };
     enum imageTypes { JPG,
                       PNG,
                       WEBP };
@@ -258,6 +288,7 @@ namespace sd_gui_utils {
         wxString taesd                     = "";
         wxString esrgan                    = "";
         wxString presets                   = "";
+        wxString prompt_templates          = "";
         wxString output                    = "";
         wxString jobs                      = "";
         wxString controlnet                = "";
@@ -280,6 +311,7 @@ namespace sd_gui_utils {
         wxString lastImg2ImgPath           = "";
         wxString lastUpscalerPath          = "";
         bool widgetVisible                 = false;
+        int mainSashPose                   = 320;
         config(wxConfigBase* config)
             : configBase(config) {
             wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
@@ -302,6 +334,9 @@ namespace sd_gui_utils {
 
             wxString presets_path = datapath;
             presets_path.append("presets");
+
+            wxString prompt_templates_path = datapath;
+            prompt_templates_path.append("prompt_templates");
 
             wxString jobs_path = datapath;
             jobs_path.append("queue_jobs");
@@ -331,6 +366,7 @@ namespace sd_gui_utils {
             this->esrgan                 = config->Read("/paths/esrgan", esrgan_path);
             this->controlnet             = config->Read("/paths/controlnet", controlnet_path);
             this->presets                = config->Read("/paths/presets", presets_path);
+            this->prompt_templates       = config->Read("/paths/prompt_templates", prompt_templates_path);
             this->jobs                   = config->Read("/paths/jobs", jobs_path);
             this->output                 = config->Read("/paths/output", imagespath);
             this->keep_model_in_memory   = config->Read("/keep_model_in_memory", this->keep_model_in_memory);
@@ -347,8 +383,10 @@ namespace sd_gui_utils {
             this->lastUpscalerPath       = config->Read("/lastUpscalerPath", this->lastUpscalerPath);
             this->auto_gen_hash          = config->ReadBool("/auto_gen_hash", this->auto_gen_hash);
             this->widgetVisible          = config->ReadBool("/widgetVisible", this->widgetVisible);
-            int idx                      = 0;
-            auto saved_image_type        = config->Read("/image_type", "JPG");
+            this->mainSashPose           = config->Read("/mainSashPose", this->mainSashPose);
+
+            int idx               = 0;
+            auto saved_image_type = config->Read("/image_type", "JPG");
 
             for (auto type : sd_gui_utils::image_types_str) {
                 if (saved_image_type == type) {
@@ -398,6 +436,10 @@ namespace sd_gui_utils {
                 wxFileName::Mkdir(presets_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
 
+            if (wxFileName::DirExists(prompt_templates_path) == false) {
+                wxFileName::Mkdir(prompt_templates_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
             if (wxFileName::DirExists(jobs_path) == false) {
                 wxFileName::Mkdir(jobs_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
@@ -420,6 +462,7 @@ namespace sd_gui_utils {
                 this->configBase->Write("/paths/esrgan", this->esrgan);
                 this->configBase->Write("/paths/controlnet", this->controlnet);
                 this->configBase->Write("/paths/presets", this->presets);
+                this->configBase->Write("/paths/prompt_templates", this->prompt_templates);
                 this->configBase->Write("/paths/jobs", this->jobs);
                 this->configBase->Write("/paths/thumbs", this->thumbs_path);
                 this->configBase->Write("/paths/tmp", this->tmppath);
@@ -434,6 +477,7 @@ namespace sd_gui_utils {
                 this->configBase->Write("/enable_civitai", this->enable_civitai);
                 this->configBase->Write("/auto_gen_hash", this->auto_gen_hash);
                 this->configBase->Write("/widgetVisible", this->widgetVisible);
+                this->configBase->Write("/mainSashPose", this->mainSashPose);
             }
         }
     };
@@ -464,6 +508,7 @@ namespace sd_gui_utils {
         std::string mode;  // modes_str
         int batch;
         std::string type;  // types_str
+        bool read_only = false;
         std::string path;
     };
 
@@ -478,6 +523,7 @@ namespace sd_gui_utils {
             {"name", p.name},
             {"mode", p.mode},
             {"type", p.type},
+            {"read_only", p.read_only},
             {"sampler", (int)p.sampler},
             {"batch", p.batch},
         };
@@ -495,9 +541,22 @@ namespace sd_gui_utils {
         if (j.contains("type")) {
             j.at("type").get_to(p.type);
         }
+        if (j.contains("read_only")) {
+            j.at("read_only").get_to(p.read_only);
+        }
         j.at("batch").get_to(p.batch);
         p.sampler = j.at("sampler").get<sample_method_t>();
     }
+
+    struct prompt_templates {
+        std::string name;
+        std::string prompt;
+        std::string negative_prompt;
+        std::string path;
+        bool read_only = false;
+    };
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(prompt_templates, name, prompt, negative_prompt, path, read_only)
 
     inline int GetCurrentUnixTimestamp() {
         const auto p1 = std::chrono::system_clock::now();

@@ -167,21 +167,23 @@ namespace QM {
         std::vector<QM::QueueItemImage> images = {};
         int step = 0, steps = 0;
         size_t hash_fullsize = 0, hash_progress_size = 0;
-        float time                         = 0;
-        std::string model                  = "";
-        QM::GenerationMode mode            = QM::GenerationMode::TXT2IMG;
-        std::string initial_image          = "";
-        std::string status_message         = "";
-        uint32_t upscale_factor            = 4;
-        std::string sha256                 = "";
-        std::vector<std::string> rawImages = {};
-        std::string app_version            = SD_GUI_VERSION;
-        std::string git_version            = GIT_HASH;
-        bool keep_checkpoint_in_memory     = false;
-        bool keep_upscaler_in_memory       = false;
-        bool need_sha256                   = false;
-        std::string generated_sha256       = "";
-        int update_index                   = -1;
+        float time                           = 0;
+        std::string model                    = "";
+        QM::GenerationMode mode              = QM::GenerationMode::TXT2IMG;
+        std::string initial_image            = "";
+        std::string status_message           = "";
+        uint32_t upscale_factor              = 4;
+        std::string sha256                   = "";
+        std::vector<std::string> rawImages   = {};
+        std::string app_version              = SD_GUI_VERSION;
+        std::string git_version              = GIT_HASH;
+        std::string original_prompt          = "";
+        std::string original_negative_prompt = "";        
+        bool keep_checkpoint_in_memory       = false;
+        bool keep_upscaler_in_memory         = false;
+        bool need_sha256                     = false;
+        std::string generated_sha256         = "";
+        int update_index                     = -1;
         QueueItem(const QueueItem& other)
             : id(other.id),
               created_at(other.created_at),
@@ -207,6 +209,8 @@ namespace QM {
               rawImages(other.rawImages),
               app_version(other.app_version),
               git_version(other.git_version),
+              original_prompt(other.original_prompt),
+              original_negative_prompt(other.original_negative_prompt),
               keep_checkpoint_in_memory(other.keep_checkpoint_in_memory),
               keep_upscaler_in_memory(other.keep_upscaler_in_memory),
               need_sha256(other.need_sha256),
@@ -241,6 +245,8 @@ namespace QM {
         rawImages,
         app_version,
         git_version,
+        original_prompt,
+        original_negative_prompt,
         keep_checkpoint_in_memory,
         keep_upscaler_in_memory,
         need_sha256,
@@ -249,7 +255,7 @@ namespace QM {
 
     class QueueManager {
     public:
-        QueueManager(wxEvtHandler* eventHandler, const wxString &jobsdir);
+        QueueManager(wxEvtHandler* eventHandler, const wxString& jobsdir);
         ~QueueManager();
         int AddItem(const QM::QueueItem& _item, bool fromFile = false);
         int AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);

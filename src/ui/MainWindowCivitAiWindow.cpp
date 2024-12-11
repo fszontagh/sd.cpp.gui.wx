@@ -35,10 +35,8 @@ void MainWindowCivitAiWindow::m_dataViewListCtrl5OnDataViewListCtrlSelectionChan
         _d->Destroy();
     }
     this->bitmaps.clear();
-    for (auto& _pi : this->previewImages) {
-        delete _pi.second;
-    }
-    this->previewImages.clear();
+
+    this->previewImagesMap.clear();
 
     if (selected == wxNOT_FOUND) {
         return;
@@ -354,16 +352,16 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread) {
         }
         this->bitmaps.clear();
 
-        for (auto& img : this->previewImages) {
+        for (auto& img : this->previewImagesMap) {
             if (img.second->downloaded && std::filesystem::exists(img.second->localpath)) {
                 auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.second->localpath), 200, 200, wxColour(0, 0, 0, 0), wxString::FromUTF8Unchecked(this->config->thumbs_path));
                 wxStaticBitmap* bitmap = new wxStaticBitmap(m_scrolledWindow4, wxID_ANY, resized, wxDefaultPosition, wxSize(200, 200), 0);
-                bitmap->SetClientData((void*)img.second);
+                bitmap->SetClientData((void*)img.second.get());
                 image_container->Add(bitmap, 0, wxALL | wxRESERVE_SPACE_EVEN_IF_HIDDEN, 1);
                 this->bitmaps.emplace_back(bitmap);
             } else {
                 wxStaticBitmap* bitmap = new wxStaticBitmap(m_scrolledWindow4, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(200, 200), 0);
-                bitmap->SetClientData((void*)img.second);
+                bitmap->SetClientData((void*)img.second.get());
                 image_container->Add(bitmap, 0, wxALL | wxRESERVE_SPACE_EVEN_IF_HIDDEN, 1);
                 this->bitmaps.emplace_back(bitmap);
             }
@@ -383,16 +381,13 @@ void MainWindowCivitAiWindow::SendThreadEvent(std::string payload) {
 }
 
 void MainWindowCivitAiWindow::loadImages(nlohmann::json js) {
-    for (auto& del : this->previewImages) {
-        delete del.second;
-    }
-    this->previewImages.clear();
+    this->previewImagesMap.clear();
     if (js.contains("images") && !js["images"].is_null()) {
         for (auto img : js["images"]) {
             int img_id      = img["id"].get<int>();
             bool downloaded = false;
 
-            auto _p = this->config->tmppath; //+ wxFileName::GetPathSeparator().GetValue() << std::to_string(img_id);
+            auto _p = this->config->tmppath;  //+ wxFileName::GetPathSeparator().GetValue() << std::to_string(img_id);
             _p.Append(wxFileName::GetPathSeparators() + std::to_string(img_id));
             std::filesystem::path path(_p.utf8_string());
 
@@ -409,13 +404,13 @@ void MainWindowCivitAiWindow::loadImages(nlohmann::json js) {
                 downloaded = true;
             }
 
-            CivitAi::PreviewImage* pmage = new CivitAi::PreviewImage();
-            pmage->downloaded            = downloaded;
-            pmage->id                    = img_id;
-            pmage->localpath             = local_path;
-            pmage->url                   = img["url"].get<std::string>();
+            auto pmage        = std::make_shared<CivitAi::PreviewImage>();
+            pmage->downloaded = downloaded;
+            pmage->id         = img_id;
+            pmage->localpath  = local_path;
+            pmage->url        = img["url"].get<std::string>();
 
-            this->previewImages[pmage->id] = pmage;
+            this->previewImagesMap[pmage->id] = pmage;
             if (pmage->downloaded == false) {
                 this->imgDownloadThreads.emplace_back(new std::thread(&MainWindowCivitAiWindow::imgDownloadThread, this, pmage, js["id"].get<int>()));
             }
@@ -489,7 +484,7 @@ void MainWindowCivitAiWindow::populateVersions(nlohmann::json js) {
         this->m_model_description->SetPage("");
     }
 }
-void MainWindowCivitAiWindow::imgDownloadThread(CivitAi::PreviewImage* previewImage, int versionId) {
+void MainWindowCivitAiWindow::imgDownloadThread(std::shared_ptr<CivitAi::PreviewImage> previewImage, int versionId) {
     // Get API key from store, if available
     wxString username = "civitai_api_key";
     wxSecretValue password;
@@ -734,6 +729,13 @@ void MainWindowCivitAiWindow::OnSearch(std::string query) {
 }
 
 void MainWindowCivitAiWindow::SendThreadEvent(std::string str, int id, CivitAi::PreviewImage* payload) {
+    wxThreadEvent* event = new wxThreadEvent();
+    event->SetPayload(payload);
+    event->SetString(str);
+    event->SetInt(id);
+    wxQueueEvent(this->GetEventHandler(), event);
+}
+void MainWindowCivitAiWindow::SendThreadEvent(std::string str, int id, std::shared_ptr<CivitAi::PreviewImage> payload) {
     wxThreadEvent* event = new wxThreadEvent();
     event->SetPayload(payload);
     event->SetString(str);

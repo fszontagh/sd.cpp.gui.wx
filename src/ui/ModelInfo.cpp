@@ -15,74 +15,87 @@ ModelInfo::Manager::~Manager() {
     ModelInfos.clear();
 }
 
-void ModelInfo::Manager::addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString name) {
-    auto meta_path  = wxFileName(this->GetMetaPath(mpath));
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString name) {
+    std::unique_lock<std::mutex> lock(mutex);
+    wxString _meta = this->GetMetaPath(mpath);
+
+    if (_meta.empty()) {
+        return nullptr;
+    }
+    wxFileName meta_path = wxFileName(_meta);
+
     auto model_path = wxFileName(mpath);
 
+    // remove the model path from the folder group name
+    auto folderGroupName = name;
+    // folderGroupName.Replace(mpath, "");
+    folderGroupName.Replace(model_path.GetFullName(), "");
+    folderGroupName.Replace(wxFileName::GetPathSeparator(), "");
+    folderGroupName.Replace("\\", "");
+    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + "/");
+
+    std::cout << " name: " << name.utf8_str() << " folderGroupName: " << folderGroupName.utf8_str() << std::endl;
+
     if (meta_path.FileExists()) {
-        wxFile input(meta_path.GetAbsolutePath(), wxFile::read);
-        if (!input.IsOpened()) {
-            wxLogError("Could not open meta file for reading: %s", meta_path.GetAbsolutePath());
-            return;
-        }
+        std::cout << "Checking meta: " << meta_path.GetAbsolutePath() << std::endl;
+        wxFile input;
         try {
-            nlohmann::json data;
+            if (!input.Open(meta_path.GetAbsolutePath()) || !input.IsOpened()) {
+                wxLogError("Could not open meta file for reading: %s", meta_path.GetAbsolutePath());
+                input.Close();
+                return nullptr;
+            }
             wxString data_str;
             input.ReadAll(&data_str);
-            data = nlohmann::json::parse(data_str.utf8_string());
 
-            sd_gui_utils::ModelFileInfo _z;
-            sd_gui_utils::from_json(data, _z);
+            nlohmann::json data             = nlohmann::json::parse(data_str.utf8_string());
+            sd_gui_utils::ModelFileInfo* _z = new sd_gui_utils::ModelFileInfo(data.get<sd_gui_utils::ModelFileInfo>());
 
             if (meta_path.GetModificationTime() < model_path.GetModificationTime()) {
-                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = this->GenerateMeta(model_path, type, name, _z);
+                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = this->GenerateMeta(model_path, type, name);
             } else {
-                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = new sd_gui_utils::ModelFileInfo(_z);
+                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = std::move(_z);
             }
 
-            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->meta_file  = meta_path.GetAbsolutePath().utf8_string();
-            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->model_type = type;
-            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->name       = name;
-            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->path       = model_path.GetAbsolutePath().utf8_string();
+            if (this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName.empty()) {
+                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName = folderGroupName.utf8_string();
+            }
+
             input.Close();
+            return this->ModelInfos[model_path.GetAbsolutePath().utf8_string()];
+
         } catch (const std::exception& e) {
             wxLogError("Exception: %s file: %s", e.what(), model_path.GetAbsolutePath());
+            input.Close();
+            return nullptr;
         }
     } else {
         // no meta found, create a new one
         sd_gui_utils::ModelFileInfo* meta                            = this->GenerateMeta(model_path, type, name);
-        this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = meta;
-
-        //        wxFile output(model_path.GetAbsolutePath(), wxFile::write);
-        //        if (!output.IsOpened()) {
-        //            wxLogError("Could not open meta file for writing: %s", meta->meta_file);
-        //            return;
-        //        }
+        meta->folderGroupName                                        = folderGroupName.utf8_string();
+        this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = std::move(meta);
         this->WriteIntoMeta(meta);
+        return this->ModelInfos[model_path.GetAbsolutePath().utf8_string()];
     }
+    return nullptr;
 }
 
 bool ModelInfo::Manager::exists(std::string model_path) {
+    std::unique_lock<std::mutex> lock(mutex);
     if (this->ModelInfos.find(model_path) != this->ModelInfos.end()) {
         return true;
     }
     return false;
 }
 
-std::vector<sd_gui_utils::ModelFileInfo> ModelInfo::Manager::getList() {
-    std::vector<sd_gui_utils::ModelFileInfo> list;
-    for (std::map<std::string, sd_gui_utils::ModelFileInfo*>::iterator itr = this->ModelInfos.begin(); itr != this->ModelInfos.end(); itr++) {
-        list.emplace_back(*(itr)->second);
-    }
-    return list;
-}
 
 std::string ModelInfo::Manager::pathByName(std::string model_name) {
     return this->getInfoByName(model_name).path;
 }
 
 void ModelInfo::Manager::setHash(std::string model_path, std::string hash) {
-    if (this->exists(model_path)) {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (this->ModelInfos.contains(model_path)) {
         this->ModelInfos[model_path]->sha256 = hash;
         this->WriteIntoMeta(this->ModelInfos[model_path]);
     }
@@ -156,36 +169,39 @@ sd_gui_utils::ModelFileInfo ModelInfo::Manager::findInfoByName(std::string model
     return sd_gui_utils::ModelFileInfo();
 }
 
-std::string ModelInfo::Manager::GenerateName(std::string model_path, std::string basepath) {
-    auto path        = std::filesystem::path(model_path);
-    auto ext         = path.extension().string();
-    std::string name = path.filename().replace_extension("").string();
-    // prepend the subdirectory to the modelname
-    // // wxFileName::GetPathSeparator()
-    auto path_name = path.string();
-    sd_gui_utils::replace(path_name, basepath, "");
-    sd_gui_utils::replace(path_name, "//", "");
-    sd_gui_utils::replace(path_name, "\\\\", "");
-    sd_gui_utils::replace(path_name, ext, "");
-
-    name = path_name.substr(1);
-    return name;
-}
-
-sd_gui_utils::ModelFileInfo ModelInfo::Manager::updateCivitAiInfo(std::string model_path, std::string info) {
-    sd_gui_utils::ModelFileInfo* model = this->getIntoPtr(model_path);
-    return this->updateCivitAiInfo(model);
-}
-sd_gui_utils::ModelFileInfo ModelInfo::Manager::updateCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo) {
-    if (modelinfo->civitaiPlainJson.empty()) {
-        return sd_gui_utils::ModelFileInfo();
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type) {
+    for (auto model : this->ModelInfos) {
+        if (model.second->model_type != type) {
+            continue;
+        }
+        if (model.first.ends_with(keyword) ||
+            model.second->name.ends_with(keyword) ||
+            model.first == keyword) {
+            return model.second;
+        }
     }
-    sd_gui_utils::ModelFileInfo* m = this->getIntoPtr(modelinfo->path);
-    m->civitaiPlainJson            = modelinfo->civitaiPlainJson;
-    this->ParseCivitAiInfo(m);
-    sd_gui_utils::ModelFileInfo newInfo = this->getInfo(m->path);
-    this->WriteIntoMeta(newInfo);
-    return newInfo;
+    return nullptr;
+}
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type) {
+    for (auto model : this->ModelInfos) {
+        if (model.second->model_type != type) {
+            continue;
+        }
+        for (auto keyword : keywords) {
+            auto f = this->searchByName(keyword, type);
+            if (f != nullptr) {
+                return f;
+            }
+        }
+    }
+    return nullptr;
+}
+void ModelInfo::Manager::updateCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo) {
+    if (modelinfo->civitaiPlainJson.empty()) {
+        return;
+    }
+    this->ParseCivitAiInfo(modelinfo);
+    this->WriteIntoMeta(modelinfo);
 }
 
 void ModelInfo::Manager::UpdateInfo(sd_gui_utils::ModelFileInfo* modelinfo) {
@@ -195,16 +211,17 @@ void ModelInfo::Manager::UpdateInfo(sd_gui_utils::ModelFileInfo* modelinfo) {
 sd_gui_utils::ModelFileInfo* ModelInfo::Manager::GenerateMeta(const wxFileName& model_path, sd_gui_utils::DirTypes type, const wxString& name, sd_gui_utils::ModelFileInfo copyMeta) {
     auto path = model_path.GetFullPath().ToStdString();
 
-    sd_gui_utils::ModelFileInfo* mi = new sd_gui_utils::ModelFileInfo(copyMeta);
-    mi->size                        = model_path.GetSize().GetValue();
-    auto s                          = sd_gui_utils::humanReadableFileSize(mi->size);
-    mi->size_f                      = wxString::Format("%.1f%s", s.first, s.second);
-    mi->hash_fullsize               = 0;
-    mi->hash_progress_size          = 0;
-    mi->model_type                  = type;
+    sd_gui_utils::ModelFileInfo* mi = new sd_gui_utils::ModelFileInfo();
+
+    mi->size               = model_path.GetSize().GetValue();
+    auto s                 = sd_gui_utils::humanReadableFileSize(mi->size);
+    mi->size_f             = wxString::Format("%.1f%s", s.first, s.second);
+    mi->hash_fullsize      = 0;
+    mi->hash_progress_size = 0;
+    mi->model_type         = type;
 
     mi->meta_file = this->GetMetaPath(model_path.GetAbsolutePath());
-    mi->name      = name;
+    mi->name      = model_path.GetFullName();
     mi->path      = path;
     return mi;
 }
@@ -253,23 +270,23 @@ void ModelInfo::Manager::ParseCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo
 
 wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path) {
     if (model_path.IsEmpty()) {
-        throw std::invalid_argument("Model path is empty");
+        return wxEmptyString;
     }
 
     wxFileName path(model_path);
     if (!path.Exists()) {
-        throw std::invalid_argument("Model path does not exist");
+        return wxEmptyString;
     }
 
     path.SetExt("json");
     wxFileName meta_path(this->MetaStorePath, path.GetFullName());
 
     if (!wxDirExists(meta_path.GetPath())) {
-        throw std::runtime_error("Meta path parent directory does not exist");
+        return wxEmptyString;
     }
 
     if (!wxFileName::DirExists(meta_path.GetPath())) {
-        throw std::runtime_error("Meta path parent is not a directory");
+        return wxEmptyString;
     }
 
     return meta_path.GetFullPath(wxPATH_UNIX);

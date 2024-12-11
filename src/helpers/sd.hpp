@@ -216,6 +216,7 @@ inline const char* modes_str[] = {"txt2img", "img2img", "convert", "upscale"};
 enum SDMode { TXT2IMG,
               IMG2IMG,
               CONVERT,
+              UPSCALE,
               MODE_COUNT };
 
 struct SDParams {
