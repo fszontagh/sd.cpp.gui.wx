@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE)) {
             if (std::strlen(buffer.get()) > 0) {
                 std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE);
-                if (message.find("exit") != std::string::npos) {
+                if (message == "exit") {
                     std::cout << "Got exit command, exiting... " << std::endl;
                     needToRun = false;
                     break;

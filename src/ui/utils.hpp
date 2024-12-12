@@ -83,6 +83,7 @@ namespace sd_gui_utils {
         {sd_gui_utils::DirTypes::CONTROLNET, "CONTROLNET"},
         {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
         {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
+        {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
         {sd_gui_utils::DirTypes::ALL, "ALL"},
         {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"}};
 
@@ -112,6 +113,9 @@ namespace sd_gui_utils {
         lhs = lhs | rhs;
         return lhs;
     }
+    inline ModelInfoTag operator~(ModelInfoTag tag) {
+        return static_cast<ModelInfoTag>(~static_cast<int>(tag));
+    }
 
     inline ModelInfoTag operator&(ModelInfoTag lhs, ModelInfoTag rhs) {
         return static_cast<ModelInfoTag>(static_cast<int>(lhs) & static_cast<int>(rhs));
@@ -139,6 +143,8 @@ namespace sd_gui_utils {
         sd_gui_utils::CivitAiState state = sd_gui_utils::CivitAiState::NOT_CHECKED;
         std::vector<std::string> preview_images;
         std::string folderGroupName = "";
+        std::string target_filename = "";
+        int move_progress           = 0;
 
         ModelFileInfo() = default;
         ModelFileInfo(const sd_gui_utils::ModelFileInfo& other)
@@ -188,7 +194,7 @@ namespace sd_gui_utils {
                            {"url", p.url},
                            {"poster", wxString(p.poster.c_str()).utf8_string()},
                            {"sha256", p.sha256},
-                           {"tags", (int)p.tags},
+                           {"tags", static_cast<int>(p.tags)},
                            {"size", p.size},
                            {"size_f", p.size_f},
                            {"meta_file", wxString(p.meta_file.c_str()).utf8_string()},
@@ -256,7 +262,7 @@ namespace sd_gui_utils {
             p.folderGroupName = j.at("folderGroupName").get<std::string>();
         }
         if (j.contains("tags")) {
-            p.tags = (sd_gui_utils::ModelInfoTag)p.tags;
+            p.tags = static_cast<sd_gui_utils::ModelInfoTag>(j.at("tags").get<int>());
         }
     }
     inline std::string to_hex(std::array<uint8_t, 32> data) {
@@ -275,7 +281,15 @@ namespace sd_gui_utils {
     enum imageTypes { JPG,
                       PNG,
                       WEBP };
-    inline const char* image_types_str[] = {"JPG", "PNG", "WEBP"};
+
+    inline const std::unordered_map<imageTypes, wxString> image_types_str = {
+        {sd_gui_utils::imageTypes::JPG, "JPG"},
+        {sd_gui_utils::imageTypes::PNG, "PNG"}};
+
+    inline const std::unordered_map<wxString, sd_gui_utils::imageTypes> image_types_str_reverse = {
+        {"JPG", sd_gui_utils::imageTypes::JPG},
+        {"PNG", sd_gui_utils::imageTypes::PNG}};
+
     class config {
     private:
         wxConfigBase* configBase = nullptr;
@@ -312,6 +326,7 @@ namespace sd_gui_utils {
         wxString lastUpscalerPath          = "";
         bool widgetVisible                 = false;
         int mainSashPose                   = 320;
+        bool favorite_models_only          = false;
         config(wxConfigBase* config)
             : configBase(config) {
             wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
@@ -384,17 +399,15 @@ namespace sd_gui_utils {
             this->auto_gen_hash          = config->ReadBool("/auto_gen_hash", this->auto_gen_hash);
             this->widgetVisible          = config->ReadBool("/widgetVisible", this->widgetVisible);
             this->mainSashPose           = config->Read("/mainSashPose", this->mainSashPose);
+            this->favorite_models_only   = config->ReadBool("/favorite_models_only", this->favorite_models_only);
 
             int idx               = 0;
             auto saved_image_type = config->Read("/image_type", "JPG");
 
-            for (auto type : sd_gui_utils::image_types_str) {
-                if (saved_image_type == type) {
-                    this->image_type = (sd_gui_utils::imageTypes)idx;
-                    break;
-                }
-                idx++;
+            if (sd_gui_utils::image_types_str_reverse.contains(saved_image_type)) {
+                this->image_type = sd_gui_utils::image_types_str_reverse.at(saved_image_type);
             }
+
             // check if directories exists
             if (wxFileName::DirExists(datapath) == false) {
                 wxFileName(datapath).Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
@@ -478,6 +491,8 @@ namespace sd_gui_utils {
                 this->configBase->Write("/auto_gen_hash", this->auto_gen_hash);
                 this->configBase->Write("/widgetVisible", this->widgetVisible);
                 this->configBase->Write("/mainSashPose", this->mainSashPose);
+                this->configBase->Write("/favorite_models_only,", this->favorite_models_only);
+                this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
             }
         }
     };
@@ -680,6 +695,10 @@ namespace sd_gui_utils {
         MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS,
         MODEL_INFO_DOWNLOAD_IMAGES_DONE,
         MODEL_INFO_DOWNLOAD_IMAGE_FAILED,
+        MODEL_MOVE_START,
+        MODEL_MOVE_FAILED,
+        MODEL_MOVE_DONE,
+        MODEL_MOVE_UPDATE
     };
     // sd c++
 

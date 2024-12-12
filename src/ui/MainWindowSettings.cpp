@@ -95,7 +95,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->config->Write("/paths/output", this->m_images_output->GetPath());
     this->config->Write("/image_quality", this->m_image_quality->GetValue());
     this->config->Write("/png_compression_level", this->m_png_compression->GetValue());
-    this->config->Write("/image_type", sd_gui_utils::image_types_str[this->m_image_type->GetSelection()]);
+    this->config->Write("/image_type", this->m_image_type->GetStringSelection());
     this->config->Write("/show_notification", this->m_show_notifications->GetValue());
     this->config->Write("/notification_timeout", this->m_notification_timeout->GetValue());
     this->config->Write("/enable_civitai", this->m_enableCivitai->GetValue());
@@ -116,7 +116,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->cfg->output                 = this->m_images_output->GetPath().utf8_string();
     this->cfg->image_quality          = this->m_image_quality->GetValue();
     this->cfg->png_compression_level  = this->m_png_compression->GetValue();
-    this->cfg->image_type             = (sd_gui_utils::imageTypes)this->m_image_type->GetSelection();
+    this->cfg->image_type             = sd_gui_utils::image_types_str_reverse.at(this->m_image_type->GetStringSelection());
     this->cfg->show_notifications     = this->m_show_notifications->GetValue();
     this->cfg->notification_timeout   = this->m_notification_timeout->GetValue();
     this->cfg->enable_civitai         = this->m_enableCivitai->GetValue();

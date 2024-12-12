@@ -32,12 +32,12 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
     folderGroupName.Replace(model_path.GetFullName(), "");
     folderGroupName.Replace(wxFileName::GetPathSeparator(), "");
     folderGroupName.Replace("\\", "");
+    if (folderGroupName.empty() == false && !this->folderGroups.contains(folderGroupName)) {
+        this->folderGroups[folderGroupName] = wxFileName(wxFileName(mpath).GetPath());
+    }
     folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + "/");
 
-    std::cout << " name: " << name.utf8_str() << " folderGroupName: " << folderGroupName.utf8_str() << std::endl;
-
     if (meta_path.FileExists()) {
-        std::cout << "Checking meta: " << meta_path.GetAbsolutePath() << std::endl;
         wxFile input;
         try {
             if (!input.Open(meta_path.GetAbsolutePath()) || !input.IsOpened()) {
@@ -87,7 +87,6 @@ bool ModelInfo::Manager::exists(std::string model_path) {
     }
     return false;
 }
-
 
 std::string ModelInfo::Manager::pathByName(std::string model_name) {
     return this->getInfoByName(model_name).path;

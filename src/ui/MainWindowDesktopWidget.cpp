@@ -111,8 +111,6 @@ void MainWindowDesktopWidget::OnMouseMotion(wxMouseEvent& event) {
 
             wxPoint windowScreenPos = this->GetScreenPosition();
             m_delta                 = wxPoint(mouseOnScreen.x - windowScreenPos.x, mouseOnScreen.y - windowScreenPos.y);
-
-            std::cout << "Start dragging. Delta: " << m_delta.x << ", " << m_delta.y << std::endl;
         }
 
         wxPoint newPosition = wxPoint(mouseOnScreen.x - m_delta.x, mouseOnScreen.y - m_delta.y);

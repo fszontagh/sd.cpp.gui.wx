@@ -29,7 +29,6 @@ public:
         wxString textB = treelist->GetItemText(second, column);
         return textA.CmpNoCase(textB);
     }
-
 };
 
 class TreeListManager {
@@ -69,11 +68,13 @@ public:
             name.Replace(item->folderGroupName, "");
             name.Replace(wxFileName::GetPathSeparator(), "");
         }
-
+        if (sd_gui_utils::HasTag(item->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
+            name.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
+        }
         wxTreeListItem newItem = treeListCtrl->AppendItem(parentItem, name);
         treeListCtrl->SetItemText(newItem, 1, wxString(item->size_f));
         treeListCtrl->SetItemText(newItem, 2, wxString(ConvertTypeToString(item->model_type)));
-        treeListCtrl->SetItemText(newItem, 3, wxString(item->sha256));
+        treeListCtrl->SetItemText(newItem, 3, wxString(item->sha256).substr(0, 10));
         treeListCtrl->SetItemData(newItem, new ModelFileInfoData(const_cast<sd_gui_utils::ModelFileInfo*>(item)));
     }
 
@@ -137,7 +138,6 @@ public:
 private:
     wxTreeListCtrl* treeListCtrl;
     wxVector<TreeListManager::ColumnInfo> columns;
-
     std::map<wxString, wxTreeListItem> parentMap;
     wxTreeListItem GetOrCreateParent(const wxString& folderGroupName) {
         return GetOrCreateParent(folderGroupName.utf8_string());

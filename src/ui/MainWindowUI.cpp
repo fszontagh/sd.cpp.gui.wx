@@ -46,7 +46,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     // load
     this->LoadPresets();
-    // this->LoadPromptTemplates();
+    this->LoadPromptTemplates();
     this->loadModelList();
     this->loadLoraList();
     this->loadVaeList();
@@ -84,6 +84,14 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->widget->ShowWithEffect(wxShowEffect::wxSHOW_EFFECT_BLEND, 1000);
         this->m_showWidget->SetValue(true);
     }
+
+    // restore the splitter pose, the default tab is the job list
+    // this->m_notebook1302->ChangeSelection(static_cast<size_t>(sd_gui_utils::GuiMainPanels::PANEL_QUEUE));
+    // this->m_modelDetailsPanel->Hide();
+    // this->m_rightMainPanel->Hide();
+    // this->m_splitter6->SetSashInvisible(false);
+    // this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
+    // this->m_joblist_item_details->Show();
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
@@ -266,19 +274,14 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
     // check if really selected a model, or just the first element, which is
     // always exists...
     if (this->m_model->GetSelection() == 0) {
-        this->m_generate1->Disable();
-        this->m_generate2->Disable();
+        this->m_queue->Disable();
 
         this->m_statusBar166->SetStatusText(_("No model selected"));
 
         return;
     }
     auto name = this->m_model->GetStringSelection().utf8_string();
-    // img2img has an image
-    if (!this->m_img2imgOpen->GetPath().empty() && !wxFileName(this->m_img2imgOpen->GetPath()).IsDir()) {
-        this->m_generate1->Enable();
-    }
-    this->m_generate2->Enable();
+    this->CheckQueueButton();
 
     this->m_statusBar166->SetStatusText(wxString::Format(_("Model: %s"), name));
     this->m_model->SetToolTip(wxString::Format(_("Model: %s"), name));
@@ -326,12 +329,9 @@ void MainWindowUI::OnWHChange(wxSpinEvent& event) {
     int w = this->m_width->GetValue();
     int h = this->m_height->GetValue();
 
-    if (this->m_model->GetCurrentSelection() > 0) {
-        this->m_generate2->Enable(true);
-    }
-
     this->init_width  = w;
     this->init_height = h;
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::onResolutionSwap(wxCommandEvent& event) {
@@ -340,6 +340,7 @@ void MainWindowUI::onResolutionSwap(wxCommandEvent& event) {
 
     this->m_height->SetValue(oldW);
     this->m_width->SetValue(oldH);
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
@@ -353,43 +354,19 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     // show hide side panels
 
     switch (selected) {
-        case sd_gui_utils::GuiMainPanels::PANEL_QUEUE: {
-            this->m_modelDetailsPanel->Hide();
-            this->m_rightMainPanel->Hide();
-            this->m_splitter6->SetSashInvisible(false);
-            this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
-            this->m_joblist_item_details->Show();
-        } break;
-        case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG:
-        case sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG:
-        case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER: {
-            this->m_modelDetailsPanel->Hide();
-            this->m_joblist_item_details->Hide();
-            this->m_splitter6->SetSashInvisible(true);
-            this->m_splitter6->SetSashPosition(340);
-            this->m_rightMainPanel->Show();
-        } break;
+        case sd_gui_utils::GuiMainPanels::PANEL_QUEUE:
         case sd_gui_utils::GuiMainPanels::PANEL_MODELS: {
             this->m_rightMainPanel->Hide();
-            this->m_joblist_item_details->Hide();
-            this->m_splitter6->SetSashInvisible(false);
-            this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
-            this->m_modelDetailsPanel->Show();
+            this->bSizer138->Layout();
         } break;
-        case sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO: {
-            this->m_joblist_item_details->Hide();
-            this->m_modelDetailsPanel->Hide();
-            this->m_splitter6->SetSashInvisible(true);
-            this->m_splitter6->SetSashPosition(340);
+        case sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO:
+        case sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG:
+        case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG:
+        case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER: {
             this->m_rightMainPanel->Show();
+            this->bSizer138->Layout();
         } break;
-        default:
-            break;
     }
-    this->bSizer137->Layout();
-    this->bSizer138->Layout();
-    this->m_splitter6->Layout();
-    this->m_splitter6->Refresh();
 
     if (selected == sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG)  // on img2img and img2vid the vae_decode_only is false, otherwise true
     {
@@ -494,6 +471,8 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         this->m_height->Disable();
         this->m_button7->Disable();  // swap button
     }
+
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::onJobsStart(wxCommandEvent& event) {
@@ -618,7 +597,6 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
     if (!modelInfo) {
         return;
     }
-    std::cout << "Selected: " << modelInfo->name << std::endl;
     wxMenu* menu = new wxMenu();
 
     if (!modelInfo->sha256.empty()) {
@@ -629,6 +607,8 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
 
     if (!modelInfo->civitaiPlainJson.empty() && modelInfo->hash_progress_size == 0 && this->mapp->cfg->enable_civitai == true) {
         menu->Append(105, _("Force update info from CivitAi"));
+    } else {
+        menu->Append(105, _("Update info from CivitAi"));
     }
 
     if (modelInfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
@@ -663,6 +643,12 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             menu->Enable(114, false);
         }
     }
+
+    // move file into another folder
+    menu->AppendSeparator();
+    menu->Append(300, _("&Move model into another folder"));
+    menu->Append(301, _("&Delete"));
+
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
     PopupMenu(menu);
@@ -761,14 +747,9 @@ void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
-    bool generate1State                    = this->m_generate1->IsEnabled();
-    bool generate2State                    = this->m_generate2->IsEnabled();
-    bool generate3State                    = this->m_generate_upscaler->IsEnabled();
     sd_gui_utils::ModelFileInfo* modelinfo = nullptr;
 
-    this->m_generate1->Enable(false);
-    this->m_generate2->Enable(false);
-    this->m_generate_upscaler->Enable(false);
+    this->CheckQueueButton();
 
     auto type  = QM::GenerationMode::TXT2IMG;
     int pageId = this->m_notebook1302->GetSelection();
@@ -1021,10 +1002,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     }
     this->qmanager->AddItem(item);
 
-    this->m_generate1->Enable(generate1State);
-    this->m_generate2->Enable(generate2State);
-    this->m_generate_upscaler->Enable(generate3State);
-
     this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
     this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
@@ -1087,18 +1064,17 @@ void MainWindowUI::onFilePickerDiffusionModel(wxFileDirPickerEvent& event) {
     }
 
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();
+        this->m_queue->Enable();
     }
 }
 void MainWindowUI::onFilePickerClipL(wxFileDirPickerEvent& event) {
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();
         this->DisableControlNet();
     }
 }
 void MainWindowUI::onFilePickerT5XXL(wxFileDirPickerEvent& event) {
     if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false && this->m_filePickerDiffusionModel->GetPath().empty() == false) {
-        this->m_generate2->Enable();
+        this->m_queue->Enable();
     }
 }
 void MainWindowUI::onCleanDiffusionModel(wxCommandEvent& event) {
@@ -1152,15 +1128,7 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
         this->m_img2imgOpen->SetPath(path.GetPath());
     }
     this->mapp->cfg->lastImg2ImgPath = this->m_img2imgOpen->GetPath();
-    this->m_generate2->Disable();
-}
-
-void MainWindowUI::OnMainSplitterSashPosChanged(wxSplitterEvent& event) {
-    auto pos       = event.GetSashPosition();
-    auto selection = this->m_notebook1302->GetSelection();
-    if (selection != wxNOT_FOUND) {
-        this->mapp->cfg->mainSashPose = pos;
-    }
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::OnUpscalerDropFile(wxDropFilesEvent& event) {
@@ -1183,19 +1151,12 @@ void MainWindowUI::OnDeleteUpscaleImage(wxCommandEvent& event) {
     this->m_upscaler_source_image->SetBitmap(this->AppOrigPlaceHolderBitmap);
     this->m_upscaler_source_image->SetSize(origSize);
     this->m_upscaler_filepicker->SetPath("");
-    this->m_generate_upscaler->Disable();
-    // this->m_upscaler_factor->SetValue(2.0);
     this->Layout();
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::OnUpscalerModelSelection(wxCommandEvent& event) {
-    if (this->m_upscaler_model->GetCurrentSelection() != 0) {
-        if (!this->m_upscaler_filepicker->GetPath().empty()) {
-            this->m_generate_upscaler->Enable();
-            return;
-        }
-    }
-    this->m_generate_upscaler->Disable();
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::OnUpscalerFactorChange(wxSpinEvent& event) {
@@ -1217,21 +1178,6 @@ void MainWindowUI::OnUpscalerFactorChange(wxSpinEvent& event) {
     }
 }
 
-void MainWindowUI::OnCheckboxLoraFilter(wxCommandEvent& event) {
-    auto value = this->m_modellist_filter->GetValue().utf8_string();
-    // this->refreshModelTable(value);
-}
-
-void MainWindowUI::OnCheckboxCheckpointFilter(wxCommandEvent& event) {
-    auto value = this->m_modellist_filter->GetValue().utf8_string();
-    // this->refreshModelTable(value);
-}
-
-void MainWindowUI::OnModellistFilterKeyUp(wxKeyEvent& event) {
-    auto value = this->m_modellist_filter->GetValue().utf8_string();
-    // this->refreshModelTable(value);
-}
-
 void MainWindowUI::OnDataModelTreeSelected(wxTreeListEvent& event) {
     wxTreeListItems selections;
     if (this->m_modelTreeList->GetSelections(selections) == 0) {
@@ -1244,8 +1190,32 @@ void MainWindowUI::OnDataModelTreeSelected(wxTreeListEvent& event) {
         return;
     }
 
-    std::cout << "Selected: " << modelInfo->name << std::endl;
+    this->m_ModelFavorite->SetValue(sd_gui_utils::HasTag(modelInfo->tags, sd_gui_utils::ModelInfoTag::Favorite));
     this->UpdateModelInfoDetailsFromModelList(modelInfo);
+}
+
+void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
+    wxTreeListItems selections;
+    if (this->m_modelTreeList->GetSelections(selections) == 0) {
+        return;
+    }
+    auto item      = selections.front();  // get the first
+    auto modelInfo = this->treeListManager->FindItem(item);
+
+    if (!modelInfo) {
+        return;
+    }
+
+    if (this->m_ModelFavorite->GetValue()) {
+        modelInfo->tags  = modelInfo->tags | sd_gui_utils::ModelInfoTag::Favorite;
+        wxString newName = modelInfo->name;
+        newName.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
+        this->treeListManager->ChangeText(modelInfo->path, newName, 0);
+    } else {
+        this->treeListManager->ChangeText(modelInfo->path, modelInfo->name, 0);
+        modelInfo->tags = modelInfo->tags & ~sd_gui_utils::ModelInfoTag::Favorite;
+    }
+    this->ModelManager->UpdateInfo(modelInfo);
 }
 
 void MainWindowUI::onCnOnCpu(wxCommandEvent& event) {
@@ -1524,10 +1494,6 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             return;
         }
         this->ChangeModelByInfo(model);
-        this->m_generate2->Enable();
-        if (!this->m_img2imgOpen->GetPath().empty()) {
-            this->m_generate1->Enable();
-        }
     }
 
     if (item.params.clip_g_path.empty() == false && std::filesystem::exists(item.params.clip_g_path)) {
@@ -1553,7 +1519,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         this->m_neg_prompt->Disable();
 
         if (this->m_filePickerClipL->GetPath().empty() == false && this->m_filePickerT5XXL->GetPath().empty() == false) {
-            this->m_generate2->Enable();
+            this->m_queue->Enable();
         }
     }
 
@@ -1594,6 +1560,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             this->m_controlnetModels->SetStringSelection(controlnetModel->name);
         }
     }
+    this->CheckQueueButton();
 }
 
 void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo) {
@@ -1609,13 +1576,28 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         bm->Destroy();
     }
     this->modelImagePreviews.clear();
-    this->m_scrolledWindow4->FitInside();
+    this->m_modelDetailsImageList->FitInside();
 
     if (modelinfo->state == sd_gui_utils::CivitAiState::NOT_FOUND ||
         modelinfo->state == sd_gui_utils::CivitAiState::ERR) {
         return;
     }
     if (modelinfo->civitaiPlainJson.empty()) {
+        wxVector<wxVariant> data;
+        data.push_back(wxVariant(_("File name")));
+        data.push_back(wxVariant(wxString::Format("%s", modelinfo->path)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+        data.push_back(wxVariant(_("Hash")));
+        data.push_back(wxVariant(wxString::Format("%s", modelinfo->sha256)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+        // file size
+        data.push_back(wxVariant(_("File size")));
+        data.push_back(wxVariant(wxString::Format("%s", modelinfo->size_f)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+
         return;
     }
 
@@ -1685,7 +1667,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         }
         if (std::filesystem::exists(img.local_path)) {
             wxImage resized        = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.local_path), 256, 256, wxColour(0, 0, 0, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
-            wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow4, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(resized.GetSize()), 0);
+            wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_modelDetailsImageList, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(resized.GetSize()), 0);
             bitmap->Hide();
             bitmap->SetBitmap(resized);
             auto tooltip = wxString::Format(_("Resolution: %s Seed: %" PRId64 " Steps: %d"), img.meta.Size, img.meta.seed, img.meta.steps);
@@ -1721,17 +1703,17 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {
-                            this->m_prompt->SetLabel(img.meta.prompt);
-                            this->m_neg_prompt->SetLabel(img.meta.negativePrompt);
+                            this->m_prompt->SetValue(img.meta.prompt);
+                            this->m_neg_prompt->SetValue(img.meta.negativePrompt);
                         } break;
                         case 1: {
-                            this->m_prompt2->SetLabel(img.meta.prompt);
-                            this->m_neg_prompt2->SetLabel(img.meta.negativePrompt);
+                            this->m_prompt2->SetValue(img.meta.prompt);
+                            this->m_neg_prompt2->SetValue(img.meta.negativePrompt);
                         } break;
                         case 2: {
                             this->onimg2ImgImageOpen(img.local_path);
-                            this->m_prompt2->SetLabel(img.meta.prompt);
-                            this->m_neg_prompt2->SetLabel(img.meta.negativePrompt);
+                            this->m_prompt2->SetValue(img.meta.prompt);
+                            this->m_neg_prompt2->SetValue(img.meta.negativePrompt);
                         } break;
                         case 3: {
                             if (img.meta.cfgScale > 0) {
@@ -1739,7 +1721,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                             }
 
                             int seed = static_cast<int>(img.meta.seed);
-                            if (img.meta.seed > 0 && (seed > INT_MIN && seed < INT_MAX)) {
+                            if (img.meta.seed > 0 && (seed > this->m_seed->GetMin() && seed < this->m_seed->GetMax())) {
                                 this->m_seed->SetValue(seed);
                             }
                             if (img.meta.steps > -1) {
@@ -1751,7 +1733,6 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                                     std::string part1 = img.meta.Size.substr(0, pos);
                                     std::string part2 = img.meta.Size.substr(pos + 1);
 
-                                    // Az első és a második részt számokká alakítja
                                     int width, height;
                                     std::istringstream(part1) >> width;
                                     std::istringstream(part2) >> height;
@@ -1762,7 +1743,6 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                         } break;
                         case 4: {
                             this->ChangeModelByInfo(*modelinfo);
-                            this->m_generate2->Enable();
                         } break;
                         case 10: {
                             // wxString url =
@@ -1781,8 +1761,8 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         index++;
     }
 
-    this->m_scrolledWindow4->FitInside();
-    this->m_scrolledWindow4->SetScrollbar(wxVERTICAL, 0, 0, 0);
+    this->m_modelDetailsImageList->FitInside();
+    this->m_modelDetailsImageList->SetScrollbar(wxVERTICAL, 0, 0, 0);
 }
 
 void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> item) {
@@ -2039,7 +2019,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                         dialog.ShowModal();
                     }
                 } else {
-                    auto model = this->ModelManager->getInfo(qitem->params.model_path);
+                    auto model = this->ModelManager->getIntoPtr(qitem->params.model_path);
                     this->ChangeModelByInfo(model);
                 }
             } break;
@@ -2247,7 +2227,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             basepath = this->mapp->cfg->presets;
         } break;
         case sd_gui_utils::DirTypes::PROMPT_TEMPLATES: {
-            this->Presets.clear();
+            this->PromptTemplates.clear();
             this->m_promptPresets->Clear();
             this->m_promptPresets->Append(_("-none-"));
             this->m_promptPresets->Select(0);
@@ -2312,7 +2292,6 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
              std::find(ESRGAN_FILE_EXTENSIONS.begin(), ESRGAN_FILE_EXTENSIONS.end(), ext.ToStdString()) == ESRGAN_FILE_EXTENSIONS.end()) ||
             (type == sd_gui_utils::DirTypes::CONTROLNET &&
              std::find(CONTROLNET_FILE_EXTENSIONS.begin(), CONTROLNET_FILE_EXTENSIONS.end(), ext.ToStdString()) == CONTROLNET_FILE_EXTENSIONS.end())) {
-            std::cout << "Skipping while not a model: " << file.GetAbsolutePath().utf8_string() << std::endl;
             continue;
         }
 
@@ -2360,7 +2339,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
                 this->m_preset_list->Append(preset.name);
                 this->Presets.emplace(preset.name, preset);
             } catch (...) {
-                wxLogError("Failed to parse preset: %s", file.GetFullPath());
+                this->writeLog(wxString::Format(_("Failed to parse preset: %s"), file.GetFullPath()));
             }
         } else if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
             std::ifstream f(file.GetFullPath().ToStdString());
@@ -2377,14 +2356,18 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
                     }
                 }
             } catch (...) {
-                wxLogError("Failed to parse prompt template: %s", file.GetFullPath());
+                this->writeLog(wxString::Format(_("Failed to parse prompt template: %s"), file.GetFullPath()));
             }
         } else if (type == sd_gui_utils::DirTypes::TAESD) {
             this->m_taesd->Append(name);
         }
     }
 
-    this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(type), this->ModelManager->GetCount(type)));
+    if (sd_gui_utils::dirtypes_str.contains(type)) {
+        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(type), this->ModelManager->GetCount(type)));
+    } else {
+        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(sd_gui_utils::DirTypes::UNKNOWN), this->ModelManager->GetCount(type)));
+    }
 
     if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
         this->m_model->Enable((this->ModelManager->GetCount(type) > 0));
@@ -2407,7 +2390,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
     }
 
     if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
-        this->m_promptPresets->Enable((this->PromptTemplates.size()> 0));
+        this->m_promptPresets->Enable((this->PromptTemplates.size() > 0));
     }
 }
 void MainWindowUI::loadLoraList() {
@@ -2578,9 +2561,6 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
 
         this->m_img2im_preview_img->Enable();
         this->m_delete_initial_img->Enable();
-        if (this->m_model->GetSelection() > 0) {
-            this->m_generate1->Enable();
-        }
         this->m_width->SetValue(img.GetWidth());
         this->m_height->SetValue(img.GetHeight());
         this->m_width->Disable();
@@ -2588,6 +2568,7 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
         this->m_img2imgOpen->SetPath(file);
 
         this->readMetaDataFromImage(wxFileName(file), SDMode::IMG2IMG, true);
+        this->CheckQueueButton();
     } else {
         wxMessageBox(_("Can not open image!"));
     }
@@ -2617,7 +2598,6 @@ void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
         auto origSize = this->m_upscaler_source_image->GetSize();
         auto preview  = sd_gui_utils::ResizeImageToMaxSize(img, origSize.GetWidth(), origSize.GetHeight());
 
-        this->m_generate_upscaler->Enable();
         this->m_upscaler_source_image->SetScaleMode(wxStaticBitmap::Scale_AspectFill);
         this->m_upscaler_source_image->SetBitmap(preview);
         this->m_upscaler_source_image->SetSize(origSize);
@@ -2631,12 +2611,7 @@ void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
 
         this->m_static_upscaler_target_height->SetLabel(wxString::Format("%dpx", target_height));
         this->m_static_upscaler_target_width->SetLabel(wxString::Format("%dpx", target_width));
-
-        if (this->m_upscaler_model->GetCurrentSelection() != 0) {
-            this->m_generate_upscaler->Enable();
-        } else {
-            this->m_generate_upscaler->Disable();
-        }
+        this->CheckQueueButton();
     }
 }
 
@@ -2940,6 +2915,22 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         }
         return;
     }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_START || threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_UPDATE) {
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        this->treeListManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_UPDATE) {
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        this->treeListManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_FAILED) {
+        sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
+        this->treeListManager->ChangeText(modelinfo->path, modelinfo->size_f, 1);
+        this->writeLog(wxString::Format(_("Model move error: %s\n"), modelinfo->name));
+        return;
+    }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_START) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         this->ModelManager->UpdateInfo(modelinfo);
@@ -2996,7 +2987,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             current_progress = static_cast<int>((_x * 100) / _m);
         }
         this->treeListManager->UpdateItem(modelinfo);
-        this->treeListManager->ChangeText(modelinfo->path, wxString::Format("%u%% (%.f %s/%.f %s)", current_progress, _hr1.first, _hr1.second.c_str(), _hr2.first, _hr2.second.c_str()), 3);
+        this->treeListManager->ChangeText(modelinfo->path, wxString::Format("%u%% (%.2f %s/%.2f %s)", current_progress, _hr1.first, _hr1.second.c_str(), _hr2.first, _hr2.second.c_str()), 3);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE) {
@@ -3010,7 +3001,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         file.close();
         modelinfo->hash_progress_size = 0;
         modelinfo->hash_fullsize      = 0;
-        this->treeListManager->ChangeText(modelinfo->path, modelinfo->sha256, 3);
+        this->treeListManager->ChangeText(modelinfo->path, modelinfo->sha256.substr(0, 10), 3);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
@@ -3711,10 +3702,7 @@ void MainWindowUI::ChangeModelByName(wxString ModelName) {
         }
         if (m->path == minfo.path) {
             this->m_model->SetSelection(_z);
-            this->m_generate2->Enable();
-            if (this->m_img2imgOpen->GetPath().length() > 0) {
-                this->m_generate1->Enable();
-            }
+            this->CheckQueueButton();
             return;
         }
     }
@@ -3728,6 +3716,7 @@ void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info) {
         }
         if (info.path == m->path) {
             this->m_model->SetSelection(_z);
+            this->CheckQueueButton();
             return;
         }
     }
@@ -3777,6 +3766,19 @@ void MainWindowUI::threadedModelHashCalc(wxEvtHandler* eventHandler, sd_gui_util
 }
 
 void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_utils::ModelFileInfo* modelinfo) {
+    // there is no hash, start hashing
+    if (modelinfo->sha256.empty()) {
+        modelinfo->hash_fullsize = modelinfo->size;
+
+        sd_gui_utils::VoidHolder* holder = new sd_gui_utils::VoidHolder;
+        holder->p1                       = (void*)eventHandler;
+        holder->p2                       = (void*)modelinfo;
+
+        modelinfo->sha256 = sd_gui_utils::sha256_file_openssl(modelinfo->path.c_str(), (void*)holder, &MainWindowUI::ModelStandaloneHashingCallback);
+        MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE, modelinfo);
+        // the info download will start automatically if hash is done
+        return;
+    }
     MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_START, modelinfo);
 
     // get apikey from store, if available

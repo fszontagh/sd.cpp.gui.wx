@@ -20,6 +20,7 @@ namespace ModelInfo {
         wxString GetMetaPath(const wxString& model_path);
         wxString MetaStorePath;
         std::unordered_map<sd_gui_utils::DirTypes, unsigned int> ModelCount;
+        std::unordered_map<wxString, wxFileName> folderGroups;
 
     public:
         Manager(const wxString& meta_base_path);
@@ -35,8 +36,16 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string hash);
         sd_gui_utils::ModelFileInfo getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo findInfoByName(std::string model_name);
-        sd_gui_utils::ModelFileInfo* searchByName(const std::string &keyword, const sd_gui_utils::DirTypes &type);
-        sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string> &keywords, const sd_gui_utils::DirTypes &type);
+        sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
+        sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
+        inline const wxFileName getFolderGroup(const wxString& group_name) {
+            if (this->folderGroups.contains(group_name)) {
+                return this->folderGroups[group_name];
+            }
+            return wxFileName();
+        }
+        inline const std::unordered_map<wxString, wxFileName> getFolderGroups() const { return this->folderGroups; }
+
         void updateCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo);
         void UpdateInfo(sd_gui_utils::ModelFileInfo* modelinfo);
         inline unsigned int GetCount(sd_gui_utils::DirTypes type) {

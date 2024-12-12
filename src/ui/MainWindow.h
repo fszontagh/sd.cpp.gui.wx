@@ -29,17 +29,18 @@
 #include <wx/gauge.h>
 #include <wx/panel.h>
 #include <wx/dataview.h>
-#include <wx/html/htmlwin.h>
-#include <wx/checkbox.h>
-#include <wx/spinctrl.h>
-#include <wx/scrolwin.h>
 #include <wx/splitter.h>
 #include <wx/statbmp.h>
-#include <wx/textctrl.h>
-#include <wx/filepicker.h>
+#include <wx/scrolwin.h>
 #include <wx/notebook.h>
-#include <wx/srchctrl.h>
+#include <wx/textctrl.h>
+#include <wx/spinctrl.h>
+#include <wx/filepicker.h>
+#include <wx/checkbox.h>
+#include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
+#include <wx/hyperlink.h>
+#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/slider.h>
@@ -70,14 +71,120 @@ class mainUI : public wxFrame
 		wxChoice* m_type;
 		wxStaticText* m_currentStatus;
 		wxGauge* m_currentProgress;
-		wxPanel* m_modelDetailsPanel;
+		wxPanel* m_panel31;
+		wxNotebook* m_notebook1302;
+		wxPanel* m_jobs_panel;
+		wxButton* m_start_jobs;
+		wxButton* m_pause_jobs;
+		wxButton* m_delete_all_jobs;
+		wxStaticText* m_static_number_of_jobs;
+		wxSplitterWindow* m_splitter2;
+		wxPanel* m_panel14;
+		wxDataViewListCtrl* m_joblist;
+		wxDataViewColumn* m_dataViewListColumn32;
+		wxDataViewColumn* m_dataViewListColumn321;
+		wxDataViewColumn* m_dataViewListColumn3211;
+		wxDataViewColumn* m_dataViewListColumn32111;
+		wxDataViewColumn* m_dataViewListColumn321111;
+		wxDataViewColumn* m_dataViewListColumn3211111;
+		wxDataViewColumn* m_dataViewListColumn32111111;
+		wxDataViewColumn* m_dataViewListColumn321111111;
+		wxDataViewColumn* m_dataViewListColumn3211111111;
+		wxDataViewColumn* m_dataViewListColumn32111111111;
+		wxScrolledWindow* m_scrolledWindow41;
+		wxStaticBitmap* m_bitmap6;
+		wxStaticText* m_staticText64;
+		wxDataViewListCtrl* m_joblist_item_details;
+		wxDataViewColumn* m_dataViewListColumn1;
+		wxDataViewColumn* m_dataViewListColumn2;
+		wxPanel* m_text2img_panel;
+		wxNotebook* m_notebook3;
+		wxPanel* m_diffusionPreviewTab;
+		wxStaticBitmap* m_txt2txtDeiffusionPreview;
+		wxPanel* m_controlnetPreviewTab;
+		wxStaticBitmap* m_controlnetImagePreview;
+		wxTextCtrl* m_prompt;
+		wxTextCtrl* m_neg_prompt;
+		wxBitmapButton* m_bpButton25;
+		wxStaticText* m_staticText70;
+		wxStaticText* m_staticText522;
+		wxSpinCtrlDouble* slgScale;
+		wxStaticText* m_staticText5221;
+		wxTextCtrl* m_skipLayers;
+		wxStaticText* m_staticText52211;
+		wxSpinCtrlDouble* skipLayerStart;
+		wxStaticText* m_staticText522111;
+		wxSpinCtrlDouble* skipLayerEnd;
+		wxStaticLine* m_staticline41;
+		wxStaticText* m_staticText52111;
+		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxCheckBox* diffusionFlashAttn;
+		wxBitmapButton* m_cleanDiffusionModel;
+		wxStaticText* m_staticText52;
+		wxFilePickerCtrl* m_filePickerClipL;
+		wxStaticText* m_staticText521;
+		wxFilePickerCtrl* m_filePickerClipG;
+		wxStaticText* m_staticText5211;
+		wxFilePickerCtrl* m_filePickerT5XXL;
+		wxFilePickerCtrl* m_controlnetImageOpen;
+		wxCheckBox* cnOnCpu;
+		wxChoice* m_controlnetModels;
+		wxSpinCtrlDouble* m_controlnetStrength;
+		wxButton* m_controlnetImagePreviewButton;
+		wxBitmapButton* m_controlnetImageDelete;
+		wxPanel* m_image2image_panel;
+		wxNotebook* m_notebook4;
+		wxPanel* m_panel23;
+		wxStaticBitmap* m_img2imgDiffusionPreview;
+		wxPanel* m_panel22;
+		wxStaticBitmap* m_img2img_preview;
+		wxTextCtrl* m_prompt2;
+		wxTextCtrl* m_neg_prompt2;
+		wxFilePickerCtrl* m_img2imgOpen;
+		wxStaticText* m_staticText24;
+		wxSpinCtrlDouble* m_strength;
+		wxButton* m_img2im_preview_img;
+		wxBitmapButton* m_delete_initial_img;
+		wxPanel* m_upscaler;
+		wxStaticBitmap* m_upscaler_source_image;
+		wxStaticText* m_staticText62;
+		wxFilePickerCtrl* m_upscaler_filepicker;
+		wxBitmapButton* m_delete_upscale_image;
+		wxStaticText* m_staticText61;
+		wxChoice* m_upscaler_model;
+		wxStaticText* m_staticText63;
+		wxStaticText* m_static_upscaler_width;
+		wxStaticText* m_staticText65;
+		wxStaticText* m_static_upscaler_height;
+		wxStaticText* m_staticText631;
+		wxStaticText* m_static_upscaler_target_width;
+		wxStaticText* m_staticText651;
+		wxStaticText* m_static_upscaler_target_height;
+		wxStaticText* m_staticText67;
+		wxSpinCtrl* m_upscaler_factor;
+		wxCheckBox* m_keep_upscaler_in_memory;
+		wxCheckBox* m_keep_other_models_in_memory;
+		wxPanel* m_imageinfo;
+		wxScrolledWindow* m_scrolledWindow5;
+		wxStaticBitmap* m_imageinfo_preview;
+		wxScrolledWindow* m_scrolledWindow7;
+		wxTextCtrl* m_imageInfoPrompt;
+		wxTextCtrl* m_imageInfoNegPrompt;
+		wxTextCtrl* m_imageInfoList;
+		wxButton* m_imageInfoLoadTotxt;
+		wxButton* m_imageInfoLoadToimg2img;
+		wxFilePickerCtrl* m_imageInfoOpen;
+		wxBitmapButton* m_cleanImageInfo;
+		wxPanel* m_models_panel;
+		wxTreeListCtrl* m_modelTreeList;
+		wxScrolledWindow* m_modelDetailsImageList;
+		wxStaticText* m_staticText641;
+		wxHyperlinkCtrl* m_model_info_link;
+		wxCheckBox* m_ModelFavorite;
 		wxDataViewListCtrl* m_model_details;
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
-		wxDataViewListCtrl* m_joblist_item_details;
-		wxDataViewColumn* m_dataViewListColumn1;
-		wxDataViewColumn* m_dataViewListColumn2;
 		wxScrolledWindow* m_rightMainPanel;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
@@ -117,116 +224,8 @@ class mainUI : public wxFrame
 		wxChoice* m_sdXlres;
 		wxStaticText* m_staticText49;
 		wxChoice* m_promptPresets;
-		wxPanel* m_panel31;
-		wxNotebook* m_notebook1302;
-		wxPanel* m_jobs_panel;
-		wxButton* m_start_jobs;
-		wxButton* m_pause_jobs;
-		wxButton* m_delete_all_jobs;
-		wxStaticText* m_static_number_of_jobs;
-		wxSplitterWindow* m_splitter2;
-		wxPanel* m_panel14;
-		wxDataViewListCtrl* m_joblist;
-		wxDataViewColumn* m_dataViewListColumn32;
-		wxDataViewColumn* m_dataViewListColumn321;
-		wxDataViewColumn* m_dataViewListColumn3211;
-		wxDataViewColumn* m_dataViewListColumn32111;
-		wxDataViewColumn* m_dataViewListColumn321111;
-		wxDataViewColumn* m_dataViewListColumn3211111;
-		wxDataViewColumn* m_dataViewListColumn32111111;
-		wxDataViewColumn* m_dataViewListColumn321111111;
-		wxDataViewColumn* m_dataViewListColumn3211111111;
-		wxDataViewColumn* m_dataViewListColumn32111111111;
-		wxScrolledWindow* m_scrolledWindow41;
-		wxStaticBitmap* m_bitmap6;
-		wxPanel* m_text2img_panel;
-		wxTextCtrl* m_prompt;
-		wxTextCtrl* m_neg_prompt;
-		wxBitmapButton* m_bpButton25;
-		wxStaticText* m_staticText70;
-		wxStaticText* m_staticText522;
-		wxSpinCtrlDouble* slgScale;
-		wxStaticText* m_staticText5221;
-		wxTextCtrl* m_skipLayers;
-		wxStaticText* m_staticText52211;
-		wxSpinCtrlDouble* skipLayerStart;
-		wxStaticText* m_staticText522111;
-		wxSpinCtrlDouble* skipLayerEnd;
-		wxStaticLine* m_staticline41;
-		wxStaticText* m_staticText52111;
-		wxFilePickerCtrl* m_filePickerDiffusionModel;
-		wxCheckBox* diffusionFlashAttn;
-		wxBitmapButton* m_cleanDiffusionModel;
-		wxStaticText* m_staticText52;
-		wxFilePickerCtrl* m_filePickerClipL;
-		wxStaticText* m_staticText521;
-		wxFilePickerCtrl* m_filePickerClipG;
-		wxStaticText* m_staticText5211;
-		wxFilePickerCtrl* m_filePickerT5XXL;
-		wxNotebook* m_notebook3;
-		wxPanel* m_diffusionPreviewTab;
-		wxStaticBitmap* m_txt2txtDeiffusionPreview;
-		wxPanel* m_controlnetPreviewTab;
-		wxStaticBitmap* m_controlnetImagePreview;
-		wxButton* m_generate2;
-		wxFilePickerCtrl* m_controlnetImageOpen;
-		wxCheckBox* cnOnCpu;
-		wxChoice* m_controlnetModels;
-		wxSpinCtrlDouble* m_controlnetStrength;
-		wxButton* m_controlnetImagePreviewButton;
-		wxBitmapButton* m_controlnetImageDelete;
-		wxPanel* m_image2image_panel;
-		wxTextCtrl* m_prompt2;
-		wxTextCtrl* m_neg_prompt2;
-		wxNotebook* m_notebook4;
-		wxPanel* m_panel23;
-		wxStaticBitmap* m_img2imgDiffusionPreview;
-		wxPanel* m_panel22;
-		wxStaticBitmap* m_img2img_preview;
-		wxButton* m_generate1;
-		wxFilePickerCtrl* m_img2imgOpen;
-		wxStaticText* m_staticText24;
-		wxSpinCtrlDouble* m_strength;
-		wxButton* m_img2im_preview_img;
-		wxBitmapButton* m_delete_initial_img;
-		wxPanel* m_upscaler;
-		wxStaticText* m_staticText62;
-		wxFilePickerCtrl* m_upscaler_filepicker;
-		wxBitmapButton* m_delete_upscale_image;
-		wxStaticText* m_staticText61;
-		wxChoice* m_upscaler_model;
-		wxStaticText* m_staticText63;
-		wxStaticText* m_static_upscaler_width;
-		wxStaticText* m_staticText65;
-		wxStaticText* m_static_upscaler_height;
-		wxStaticText* m_staticText631;
-		wxStaticText* m_static_upscaler_target_width;
-		wxStaticText* m_staticText651;
-		wxStaticText* m_static_upscaler_target_height;
-		wxStaticText* m_staticText67;
-		wxSpinCtrl* m_upscaler_factor;
-		wxStaticBitmap* m_upscaler_source_image;
-		wxButton* m_generate_upscaler;
-		wxCheckBox* m_keep_upscaler_in_memory;
-		wxCheckBox* m_keep_other_models_in_memory;
-		wxPanel* m_imageinfo;
-		wxScrolledWindow* m_scrolledWindow5;
-		wxStaticBitmap* m_imageinfo_preview;
-		wxScrolledWindow* m_scrolledWindow7;
-		wxTextCtrl* m_imageInfoPrompt;
-		wxTextCtrl* m_imageInfoNegPrompt;
-		wxTextCtrl* m_imageInfoList;
-		wxButton* m_imageInfoLoadTotxt;
-		wxButton* m_imageInfoLoadToimg2img;
-		wxFilePickerCtrl* m_imageInfoOpen;
-		wxBitmapButton* m_cleanImageInfo;
-		wxPanel* m_models_panel;
-		wxCheckBox* m_checkbox_lora_filter;
-		wxCheckBox* m_checkbox_filter_checkpoints;
-		wxCheckBox* m_checkbox_filter_embeddings;
-		wxSearchCtrl* m_modellist_filter;
-		wxTreeListCtrl* m_modelTreeList;
-		wxScrolledWindow* m_scrolledWindow4;
+		wxButton* m_queue;
+		wxCollapsiblePane* m_collapsiblePane2;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -239,21 +238,6 @@ class mainUI : public wxFrame
 		virtual void OnStopBackgroundProcess( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnMainSplitterSashPosChanged( wxSplitterEvent& event ) { event.Skip(); }
-		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
-		virtual void OnWHChange( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void m_notebook1302OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void onJobsStart( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onJobsPause( wxCommandEvent& event ) { event.Skip(); }
@@ -271,7 +255,6 @@ class mainUI : public wxFrame
 		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onCnOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -291,19 +274,28 @@ class mainUI : public wxFrame
 		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnCleanImageInfo( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnCheckboxLoraFilter( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnCheckboxCheckpointFilter( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnModellistFilterKeyUp( wxKeyEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeActivated( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeContextMenu( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeSelected( wxTreeListEvent& event ) { event.Skip(); }
+		virtual void OnModelFavoriteChange( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
+		virtual void OnWHChange( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
-		wxSplitterWindow* m_splitter6;
-		wxPanel* m_panel32;
-		wxBoxSizer* bSizer137;
-		wxBoxSizer* bSizer1001;
 		wxBoxSizer* bSizer138;
 		wxBoxSizer* bSizer8911;
 		wxHtmlWindow* m_upscalerHelp;
@@ -312,16 +304,11 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer119;
 		wxFlexGridSizer* fgSizer1;
 		wxBoxSizer* bSizer891;
+		wxBoxSizer* bSizer1001;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
 		~mainUI();
-
-		void m_splitter6OnIdle( wxIdleEvent& )
-		{
-			m_splitter6->SetSashPosition( 340 );
-			m_splitter6->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter6OnIdle ), NULL, this );
-		}
 
 		void m_splitter2OnIdle( wxIdleEvent& )
 		{
@@ -398,6 +385,7 @@ class Settings : public wxFrame
 		wxSpinCtrl* m_notification_timeout;
 		wxStaticText* m_staticText50;
 		wxChoice* m_language;
+		wxCheckBox* m_favorite_models_only;
 		wxPanel* m_panel18;
 		wxCheckBox* m_enableCivitai;
 		wxStaticText* m_staticText42;
