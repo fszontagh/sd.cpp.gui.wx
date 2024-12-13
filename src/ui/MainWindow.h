@@ -40,7 +40,6 @@
 #include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
-#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/slider.h>
@@ -169,8 +168,13 @@ class mainUI : public wxFrame
 		wxStaticBitmap* m_imageinfo_preview;
 		wxScrolledWindow* m_scrolledWindow7;
 		wxTextCtrl* m_imageInfoPrompt;
+		wxButton* m_imageInfoPromptTo2txt2img;
+		wxButton* m_imageInfoPromptTo2img2img;
 		wxTextCtrl* m_imageInfoNegPrompt;
+		wxButton* m_imageInfoNegPromptTo2txt2img;
+		wxButton* m_imageInfoNegPromptTo2img2img;
 		wxTextCtrl* m_imageInfoList;
+		wxButton* m_ImageInfoTryFindModel;
 		wxButton* m_imageInfoLoadTotxt;
 		wxButton* m_imageInfoLoadToimg2img;
 		wxFilePickerCtrl* m_imageInfoOpen;
@@ -225,7 +229,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText49;
 		wxChoice* m_promptPresets;
 		wxButton* m_queue;
-		wxCollapsiblePane* m_collapsiblePane2;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -270,6 +273,8 @@ class mainUI : public wxFrame
 		virtual void OnUpscalerFactorChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnHtmlLinkClicked( wxHtmlLinkEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoDrop( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoCopyPrompt( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnImageInfoTryFindModel( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoLoadTxt2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
@@ -296,13 +301,14 @@ class mainUI : public wxFrame
 
 
 	public:
+		wxBoxSizer* sizer0001;
 		wxBoxSizer* bSizer138;
 		wxBoxSizer* bSizer8911;
 		wxHtmlWindow* m_upscalerHelp;
 		wxSplitterWindow* m_splitter4;
+		wxBoxSizer* bSizer117;
 		wxBoxSizer* imageInfoSizer;
 		wxBoxSizer* bSizer119;
-		wxFlexGridSizer* fgSizer1;
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
 

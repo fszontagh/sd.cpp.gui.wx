@@ -34,10 +34,11 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtr(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string hash);
-        sd_gui_utils::ModelFileInfo getInfoByName(std::string model_name);
-        sd_gui_utils::ModelFileInfo findInfoByName(std::string model_name);
+        sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name);
+        sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
+        sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
         inline const wxFileName getFolderGroup(const wxString& group_name) {
             if (this->folderGroups.contains(group_name)) {
                 return this->folderGroups[group_name];

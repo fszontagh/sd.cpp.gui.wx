@@ -51,7 +51,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
             nlohmann::json data             = nlohmann::json::parse(data_str.utf8_string());
             sd_gui_utils::ModelFileInfo* _z = new sd_gui_utils::ModelFileInfo(data.get<sd_gui_utils::ModelFileInfo>());
 
-            if (meta_path.GetModificationTime() < model_path.GetModificationTime()) {
+            if (meta_path.GetModificationTime() < model_path.GetModificationTime() || mpath != _z->path) {
                 this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = this->GenerateMeta(model_path, type, name);
             } else {
                 this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = std::move(_z);
@@ -62,6 +62,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
             }
 
             input.Close();
+            this->ModelCount[type]++;
             return this->ModelInfos[model_path.GetAbsolutePath().utf8_string()];
 
         } catch (const std::exception& e) {
@@ -75,6 +76,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
         meta->folderGroupName                                        = folderGroupName.utf8_string();
         this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = std::move(meta);
         this->WriteIntoMeta(meta);
+        this->ModelCount[type]++;
         return this->ModelInfos[model_path.GetAbsolutePath().utf8_string()];
     }
     return nullptr;
@@ -89,7 +91,11 @@ bool ModelInfo::Manager::exists(std::string model_path) {
 }
 
 std::string ModelInfo::Manager::pathByName(std::string model_name) {
-    return this->getInfoByName(model_name).path;
+    auto obj = this->getInfoByName(model_name);
+    if (obj == nullptr) {
+        return std::string();
+    }
+    return obj->path;
 }
 
 void ModelInfo::Manager::setHash(std::string model_path, std::string hash) {
@@ -148,24 +154,24 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtrByHash(std::string ha
     return nullptr;
 }
 // @brief Get a modelinfo by it's name
-sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfoByName(std::string model_name) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getInfoByName(std::string model_name) {
     for (std::map<std::string, sd_gui_utils::ModelFileInfo*>::iterator itr = this->ModelInfos.begin(); itr != this->ModelInfos.end(); itr++) {
         if ((itr)->second->name == model_name) {
-            return *(itr)->second;
+            return (itr)->second;
         }
     }
 
-    return sd_gui_utils::ModelFileInfo();
+    return nullptr;
 }
 // @brief Find a similar named modelinfo
-sd_gui_utils::ModelFileInfo ModelInfo::Manager::findInfoByName(std::string model_name) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findInfoByName(std::string model_name) {
     for (auto model : this->ModelInfos) {
         if (model.second->name.find(model_name) != std::string::npos) {
-            return *model.second;
+            return model.second;
         }
     }
 
-    return sd_gui_utils::ModelFileInfo();
+    return nullptr;
 }
 
 sd_gui_utils::ModelFileInfo* ModelInfo::Manager::searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type) {
@@ -190,6 +196,33 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::searchByName(const std::vector<
             auto f = this->searchByName(keyword, type);
             if (f != nullptr) {
                 return f;
+            }
+        }
+    }
+    return nullptr;
+}
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findModelByImageParams(const std::unordered_map<wxString, wxString>& params) {
+    bool modelFound = false;
+    for (const auto& item : params) {
+        // get by hash
+        if ((item.first == "modelhash" || item.first == "model hash") && !modelFound) {
+            auto check = this->getIntoPtrByHash(item.second.utf8_string());
+            if (check != nullptr) {
+                return check;
+            }
+        }
+
+        if (item.first == "model" && !modelFound) {
+            // get by name
+            auto check = this->getInfoByName(item.second.utf8_string());
+            if (check != nullptr) {
+                return check;
+            }
+
+            // search by name
+            auto check2 = this->findInfoByName(item.second.utf8_string());
+            if (check2 != nullptr) {
+                return check2;
             }
         }
     }

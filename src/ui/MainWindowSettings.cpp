@@ -162,6 +162,7 @@ void MainWindowSettings::InitConfig() {
     this->m_enableCivitai->SetValue(this->cfg->enable_civitai);
     this->m_output_filename_format->SetValue(this->cfg->output_filename_format);
     this->m_autogen_hash->SetValue(this->cfg->auto_gen_hash);
+    this->m_favorite_models_only->SetValue(this->cfg->favorite_models_only);
 
     //  populate available languages
     /*this->m_language->Append("English");

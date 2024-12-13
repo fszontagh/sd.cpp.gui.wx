@@ -78,8 +78,9 @@ protected:
     void OnCleanImageInfo(wxCommandEvent& event) override;
     void OnImageInfoLoadTxt2img(wxCommandEvent& event) override;
     void OnImageInfoLoadImg2img(wxCommandEvent& event) override;
+    void OnImageInfoCopyPrompt(wxCommandEvent& event) override;
+    void OnImageInfoTryFindModel(wxCommandEvent& event) override;
     void OnShowWidget(wxCommandEvent& event) override;
-
 public:
     /** Constructor */
     MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
@@ -160,8 +161,7 @@ private:
     void LoadPromptTemplates();
     void ShowNotification(const wxString& title, const wxString& message);
     void ChangeModelByName(wxString ModelName);
-    void ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info);
-    void ChangeModelByInfo(const sd_gui_utils::ModelFileInfo* info);
+    void ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info);
     void ChangeGuiFromQueueItem(const QM::QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::QueueItem> item);
@@ -193,7 +193,7 @@ private:
                 if (!this->m_img2imgOpen->GetPath().empty() && !wxFileName(this->m_img2imgOpen->GetPath()).IsDir()) {
                     this->m_queue->Enable();
                 }
-                if (this->m_model->GetSelection() > 0) {
+                if (this->m_model->GetSelection() == 0) {
                     this->m_queue->Disable();
                 } else {
                     this->m_queue->Enable();

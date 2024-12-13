@@ -491,7 +491,7 @@ namespace sd_gui_utils {
                 this->configBase->Write("/auto_gen_hash", this->auto_gen_hash);
                 this->configBase->Write("/widgetVisible", this->widgetVisible);
                 this->configBase->Write("/mainSashPose", this->mainSashPose);
-                this->configBase->Write("/favorite_models_only,", this->favorite_models_only);
+                this->configBase->Write("/favorite_models_only", this->favorite_models_only);
                 this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
             }
         }

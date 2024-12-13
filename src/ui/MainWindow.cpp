@@ -49,9 +49,8 @@ static wxFBContextSensitiveHelpSetter s_wxFBSetTheHelpProvider;
 
 mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxFrame( parent, id, title, pos, size, style, name )
 {
-	this->SetSizeHints( wxSize( -1,-1 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 1024,768 ), wxSize( 3072,4096 ) );
 
-	wxBoxSizer* sizer0001;
 	sizer0001 = new wxBoxSizer( wxVERTICAL );
 
 	m_panel10 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
@@ -861,6 +860,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer115 = new wxBoxSizer( wxVERTICAL );
 
 	m_splitter4 = new wxSplitterWindow( m_imageinfo, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_BORDER );
+	m_splitter4->SetSashGravity( 0.5 );
 	m_splitter4->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter4OnIdle ), NULL, this );
 	m_splitter4->SetMinimumPaneSize( 200 );
 
@@ -868,7 +868,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_scrolledWindow5->SetScrollRate( 5, 5 );
 	m_scrolledWindow5->SetBackgroundColour( wxColour( 64, 64, 64 ) );
 
-	wxBoxSizer* bSizer117;
 	bSizer117 = new wxBoxSizer( wxVERTICAL );
 
 	m_imageinfo_preview = new wxStaticBitmap( m_scrolledWindow5, wxID_ANY, sd_cpp_gui_blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
@@ -891,23 +890,51 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageInfoPrompt = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_MULTILINE|wxTE_READONLY );
 	bSizer119->Add( m_imageInfoPrompt, 0, wxALL|wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer108;
+	bSizer108 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_imageInfoPromptTo2txt2img = new wxButton( m_scrolledWindow7, wxID_ANY, _("Copy to txt2img prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer108->Add( m_imageInfoPromptTo2txt2img, 0, wxALL, 5 );
+
+	m_imageInfoPromptTo2img2img = new wxButton( m_scrolledWindow7, wxID_ANY, _("Copy to img2img prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer108->Add( m_imageInfoPromptTo2img2img, 0, wxALL, 5 );
+
+
+	bSizer119->Add( bSizer108, 0, wxEXPAND, 5 );
+
 	m_imageInfoNegPrompt = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_MULTILINE|wxTE_READONLY );
 	bSizer119->Add( m_imageInfoNegPrompt, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1081;
+	bSizer1081 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_imageInfoNegPromptTo2txt2img = new wxButton( m_scrolledWindow7, wxID_ANY, _("Copy to txt2img prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer1081->Add( m_imageInfoNegPromptTo2txt2img, 0, wxALL, 5 );
+
+	m_imageInfoNegPromptTo2img2img = new wxButton( m_scrolledWindow7, wxID_ANY, _("Copy to img2img prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer1081->Add( m_imageInfoNegPromptTo2img2img, 0, wxALL, 5 );
+
+
+	bSizer119->Add( bSizer1081, 0, wxEXPAND, 5 );
 
 	m_imageInfoList = new wxTextCtrl( m_scrolledWindow7, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_LEFT|wxTE_MULTILINE|wxTE_READONLY );
 	m_imageInfoList->SetMinSize( wxSize( -1,120 ) );
 
 	bSizer119->Add( m_imageInfoList, 1, wxALL|wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer112;
+	bSizer112 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_ImageInfoTryFindModel = new wxButton( m_scrolledWindow7, wxID_ANY, _("Find and select model"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ImageInfoTryFindModel->SetToolTip( _("Try to find and load the model by the image parameters") );
+
+	bSizer112->Add( m_ImageInfoTryFindModel, 0, wxALL, 5 );
+
+
+	bSizer119->Add( bSizer112, 0, wxEXPAND, 5 );
+
 
 	imageInfoSizer->Add( bSizer119, 1, wxEXPAND, 5 );
-
-	fgSizer1 = new wxFlexGridSizer( 0, 2, 0, 2 );
-	fgSizer1->SetFlexibleDirection( wxBOTH );
-	fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-
-
-	imageInfoSizer->Add( fgSizer1, 1, wxEXPAND, 5 );
 
 
 	m_scrolledWindow7->SetSizer( imageInfoSizer );
@@ -1287,9 +1314,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	fgSizer2->Add( m_queue, 1, wxALL|wxEXPAND, 5 );
 
 
-	fgSizer2->Add( 0, 0, 1, wxEXPAND, 5 );
-
-
 	m_rightMainPanel->SetSizer( fgSizer2 );
 	m_rightMainPanel->Layout();
 	bSizer138->Add( m_rightMainPanel, 0, wxEXPAND | wxALL, 5 );
@@ -1300,22 +1324,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer138->Fit( m_panel31 );
 	sizer0001->Add( m_panel31, 1, wxALL|wxEXPAND, 5 );
 
-	m_collapsiblePane2 = new wxCollapsiblePane( this, wxID_ANY, _("Logs"), wxDefaultPosition, wxDefaultSize, wxCP_DEFAULT_STYLE );
-	m_collapsiblePane2->Collapse( true );
-
-	wxBoxSizer* bSizer105;
-	bSizer105 = new wxBoxSizer( wxVERTICAL );
-
-	logs = new wxTextCtrl( m_collapsiblePane2->GetPane(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL|wxFULL_REPAINT_ON_RESIZE );
+	logs = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,180 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL );
 	logs->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
+	logs->SetMaxSize( wxSize( -1,200 ) );
 
-	bSizer105->Add( logs, 0, wxEXPAND, 5 );
-
-
-	m_collapsiblePane2->GetPane()->SetSizer( bSizer105 );
-	m_collapsiblePane2->GetPane()->Layout();
-	bSizer105->Fit( m_collapsiblePane2->GetPane() );
-	sizer0001->Add( m_collapsiblePane2, 0, wxALL|wxEXPAND, 5 );
+	sizer0001->Add( logs, 0, wxEXPAND, 5 );
 
 
 	this->SetSizer( sizer0001 );
@@ -1372,6 +1385,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_upscaler_factor->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
 	m_upscalerHelp->Connect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_imageinfo_preview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnImageInfoDrop ), NULL, this );
+	m_imageInfoPromptTo2txt2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoPromptTo2img2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoNegPromptTo2txt2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoNegPromptTo2img2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_ImageInfoTryFindModel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoTryFindModel ), NULL, this );
 	m_imageInfoLoadTotxt->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadTxt2img ), NULL, this );
 	m_imageInfoLoadToimg2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
@@ -1450,6 +1468,11 @@ mainUI::~mainUI()
 	m_upscaler_factor->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnUpscalerFactorChange ), NULL, this );
 	m_upscalerHelp->Disconnect( wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler( mainUI::OnHtmlLinkClicked ), NULL, this );
 	m_imageinfo_preview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::OnImageInfoDrop ), NULL, this );
+	m_imageInfoPromptTo2txt2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoPromptTo2img2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoNegPromptTo2txt2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_imageInfoNegPromptTo2img2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoCopyPrompt ), NULL, this );
+	m_ImageInfoTryFindModel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoTryFindModel ), NULL, this );
 	m_imageInfoLoadTotxt->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadTxt2img ), NULL, this );
 	m_imageInfoLoadToimg2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );

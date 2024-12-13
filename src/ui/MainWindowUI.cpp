@@ -350,6 +350,11 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         return;
     }
 
+    auto obj = dynamic_cast<wxNotebook*>(event.GetEventObject());
+    if (obj != this->m_notebook1302) {
+        return;
+    }
+
     sd_gui_utils::GuiMainPanels selected = static_cast<sd_gui_utils::GuiMainPanels>(event.GetSelection());
     // show hide side panels
 
@@ -599,16 +604,20 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
     }
     wxMenu* menu = new wxMenu();
 
-    if (!modelInfo->sha256.empty()) {
-        menu->Append(100, _("RE-Calculate Hash"));
-    } else {
-        menu->Append(100, _("Calculate Hash"));
+    if (modelInfo->hash_progress_size == 0) {
+        if (!modelInfo->sha256.empty()) {
+            menu->Append(100, _("RE-Calculate Hash"));
+        } else {
+            menu->Append(100, _("Calculate Hash"));
+        }
     }
 
-    if (!modelInfo->civitaiPlainJson.empty() && modelInfo->hash_progress_size == 0 && this->mapp->cfg->enable_civitai == true) {
-        menu->Append(105, _("Force update info from CivitAi"));
-    } else {
-        menu->Append(105, _("Update info from CivitAi"));
+    if (this->mapp->cfg->enable_civitai == true && modelInfo->hash_progress_size == 0) {
+        if (!modelInfo->civitaiPlainJson.empty()) {
+            menu->Append(105, _("Force update info from CivitAi"));
+        } else {
+            menu->Append(105, _("Update info from CivitAi"));
+        }
     }
 
     if (modelInfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
@@ -619,6 +628,9 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
         if (modelInfo->name.find(".safetensors")) {
             menu->AppendSeparator();
             menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
+            if (modelInfo->hash_progress_size > 0) {
+                menu->Enable(201, false);
+            }
         }
     }
 
@@ -644,11 +656,11 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
         }
     }
 
-    // move file into another folder
-    menu->AppendSeparator();
-    menu->Append(300, _("&Move model into another folder"));
-    menu->Append(301, _("&Delete"));
-
+    if (BUILD_TYPE == "Debug") {
+        menu->AppendSeparator();
+        menu->Append(300, _("&Move model into another folder"));
+        menu->Append(301, _("&Delete"));
+    }
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
     PopupMenu(menu);
@@ -1216,6 +1228,23 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
         modelInfo->tags = modelInfo->tags & ~sd_gui_utils::ModelInfoTag::Favorite;
     }
     this->ModelManager->UpdateInfo(modelInfo);
+    if (this->mapp->cfg->favorite_models_only) {
+        // check if in it the m_model, i = 0 is placeholder
+        for (int i = 1; i < this->m_model->GetCount(); i++) {
+            auto model = this->m_model->GetClientData(i);
+            if (model == nullptr) {
+                continue;
+            }
+            if (model == modelInfo) {
+                if (this->m_ModelFavorite->GetValue() == false) {
+                    this->m_model->SetSelection(0);
+                    this->m_model->Delete(i);
+                }
+                return;
+            }
+        }
+        this->m_model->Append(modelInfo->name, modelInfo);
+    }
 }
 
 void MainWindowUI::onCnOnCpu(wxCommandEvent& event) {
@@ -1245,7 +1274,51 @@ void MainWindowUI::OnImageInfoLoadTxt2img(wxCommandEvent& event) {
 void MainWindowUI::OnImageInfoLoadImg2img(wxCommandEvent& event) {
     imageCommentToGuiParams(this->lastImageInfoParams, SDMode::IMG2IMG);
 }
+void MainWindowUI::OnImageInfoCopyPrompt(wxCommandEvent& event) {
+    auto obj = dynamic_cast<wxButton*>(event.GetEventObject());
 
+    if (obj == this->m_imageInfoPromptTo2txt2img) {
+        auto prompt = this->m_imageInfoPrompt->GetValue();
+        if (!prompt.empty()) {
+            this->m_prompt->SetValue(prompt);
+        }
+    }
+    if (obj == this->m_imageInfoPromptTo2img2img) {
+        auto prompt = this->m_imageInfoPrompt->GetValue();
+        if (!prompt.empty()) {
+            this->m_prompt2->SetValue(prompt);
+        }
+    }
+
+    if (obj == this->m_imageInfoNegPromptTo2txt2img) {
+        auto prompt = this->m_imageInfoNegPrompt->GetValue();
+        if (!prompt.empty()) {
+            this->m_neg_prompt->SetValue(prompt);
+        }
+    }
+
+    if (obj == this->m_imageInfoNegPromptTo2img2img) {
+        auto prompt = this->m_imageInfoNegPrompt->GetValue();
+        if (!prompt.empty()) {
+            this->m_neg_prompt2->SetValue(prompt);
+        }
+    }
+}
+
+void MainWindowUI::OnImageInfoTryFindModel(wxCommandEvent& event) {
+    auto loadedImage = this->m_imageInfoOpen->GetPath();
+    if (wxFileName(loadedImage).FileExists() == false || wxFileName(loadedImage).IsDir()) {
+        return;
+    }
+
+    bool found = false;
+    auto model = this->ModelManager->findModelByImageParams(this->lastImageInfoParams);
+    if (model == nullptr) {
+        return;
+    }
+
+    this->ChangeModelByInfo(model);
+}
 void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
     if (this->widget == nullptr) {
         this->widget = new MainWindowDesktopWidget(NULL);
@@ -1289,6 +1362,9 @@ void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
     auto origSize = this->m_imageinfo_preview->GetSize();
     auto preview  = sd_gui_utils::ResizeImageToMaxSize(image, origSize.GetWidth(), origSize.GetHeight());
     this->m_imageinfo_preview->SetBitmap(preview);
+    this->m_imageinfo_preview->SetSize(origSize);
+
+    this->bSizer117->Layout();
 
     if (image.IsOk()) {
         this->mapp->cfg->lastImageInfoPath = imagePath.GetPath().utf8_string();
@@ -1490,10 +1566,9 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
 
     if (!item.params.model_path.empty() && std::filesystem::exists(item.params.model_path)) {
         sd_gui_utils::ModelFileInfo* model = this->ModelManager->getIntoPtr(item.params.model_path);
-        if (model == nullptr) {
-            return;
+        if (model != nullptr) {
+            this->ChangeModelByInfo(model);
         }
-        this->ChangeModelByInfo(model);
     }
 
     if (item.params.clip_g_path.empty() == false && std::filesystem::exists(item.params.clip_g_path)) {
@@ -1532,17 +1607,33 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         if (taesd == nullptr) {
             this->writeLog(_("Taesd file not found: " + item.params.taesd_path), true);
         } else {
-            this->m_taesd->SetStringSelection(taesd->name);
+            for (int i = 0; i < this->m_taesd->GetCount(); i++) {
+                auto teasdModel = this->m_taesd->GetClientData(i);
+                if (teasdModel != nullptr) {
+                    if (taesd == teasdModel) {
+                        this->m_taesd->SetSelection(i);
+                        break;
+                    }
+                }
+            }
         }
     }
 
     if (!item.params.vae_path.empty() &&
         std::filesystem::exists(item.params.vae_path)) {
-        auto vaeModel = this->ModelManager->getIntoPtr(item.params.vae_path);
-        if (vaeModel == nullptr) {
+        auto vae = this->ModelManager->getIntoPtr(item.params.vae_path);
+        if (vae == nullptr) {
             this->writeLog(_("Vae file not found: " + item.params.vae_path), true);
         } else {
-            this->m_vae->SetStringSelection(vaeModel->name);
+            for (int i = 0; i < this->m_vae->GetCount(); i++) {
+                auto vaeModel = this->m_vae->GetClientData(i);
+                if (vaeModel != nullptr) {
+                    if (vaeModel == vae) {
+                        this->m_vae->SetSelection(i);
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -1578,53 +1669,47 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     this->modelImagePreviews.clear();
     this->m_modelDetailsImageList->FitInside();
 
-    if (modelinfo->state == sd_gui_utils::CivitAiState::NOT_FOUND ||
-        modelinfo->state == sd_gui_utils::CivitAiState::ERR) {
-        return;
+    if (modelinfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+        this->m_ModelFavorite->Enable();
+    } else {
+        this->m_ModelFavorite->Disable();
+        this->m_ModelFavorite->SetValue(false);
     }
-    if (modelinfo->civitaiPlainJson.empty()) {
-        wxVector<wxVariant> data;
-        data.push_back(wxVariant(_("File name")));
-        data.push_back(wxVariant(wxString::Format("%s", modelinfo->path)));
-        this->m_model_details->AppendItem(data);
-        data.clear();
-        data.push_back(wxVariant(_("Hash")));
-        data.push_back(wxVariant(wxString::Format("%s", modelinfo->sha256)));
-        this->m_model_details->AppendItem(data);
-        data.clear();
-        // file size
-        data.push_back(wxVariant(_("File size")));
-        data.push_back(wxVariant(wxString::Format("%s", modelinfo->size_f)));
-        this->m_model_details->AppendItem(data);
-        data.clear();
-
-        return;
-    }
-
-    // this->m_data_model_url->SetLabel(modelinfo->CivitAiInfo.model.name + " " +
-    // modelinfo->CivitAiInfo.name); wxString url =
-    // wxString::Format("https://civitai.com/models/%d",
-    // modelinfo->CivitAiInfo.modelId); this->m_data_model_url->SetURL(url);
 
     wxVector<wxVariant> data;
 
-    data.push_back(wxVariant(_("Name")));
-    data.push_back(wxVariant(wxString::Format("%s %s", modelinfo->CivitAiInfo.model.name, modelinfo->CivitAiInfo.name)));
-    this->m_model_details->AppendItem(data);
-    data.clear();
+    if (modelinfo->CivitAiInfo.model.name.empty() == false) {
+        data.push_back(wxVariant(_("Name")));
+        data.push_back(wxVariant(wxString::Format("%s %s", modelinfo->CivitAiInfo.model.name, modelinfo->CivitAiInfo.name)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+    }
 
     data.push_back(wxVariant(_("File name")));
     data.push_back(wxVariant(wxString::Format("%s", modelinfo->path)));
     this->m_model_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant(_("Hash")));
-    data.push_back(wxVariant(wxString::Format("%s", modelinfo->sha256)));
+    if (modelinfo->sha256.empty() == false) {
+        data.push_back(wxVariant(_("Hash")));
+        data.push_back(wxVariant(wxString::Format("%s", modelinfo->sha256)));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+    }
+
+    data.push_back(wxVariant(_("Type")));
+
+    if (modelinfo->CivitAiInfo.model.type.empty() == false) {
+        data.push_back(wxVariant(wxString::Format("%s", modelinfo->CivitAiInfo.model.type)));
+    } else {
+        data.push_back(wxVariant(sd_gui_utils::dirtypes_str.at(modelinfo->model_type)));
+    }
     this->m_model_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant(_("Type")));
-    data.push_back(wxVariant(wxString::Format("%s", modelinfo->CivitAiInfo.model.type)));
+    auto last_modified = wxFileName(modelinfo->path).GetModificationTime();
+    data.push_back(wxVariant(_("Last modified")));
+    data.push_back(wxVariant(wxString::Format("%s", last_modified.Format())));
     this->m_model_details->AppendItem(data);
     data.clear();
 
@@ -1636,6 +1721,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         // this->m_model_details_description->SetLabelMarkup(modelinfo->CivitAiInfo.description);
         this->m_model_details_description->SetPage(modelinfo->CivitAiInfo.description);
     }
+
     int idx = 0;
     for (auto file : modelinfo->CivitAiInfo.files) {
         data.push_back(wxVariant(wxString::Format(_("#%d id"), idx)));
@@ -1670,10 +1756,11 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
             wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_modelDetailsImageList, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(resized.GetSize()), 0);
             bitmap->Hide();
             bitmap->SetBitmap(resized);
-            auto tooltip = wxString::Format(_("Resolution: %s Seed: %" PRId64 " Steps: %d"), img.meta.Size, img.meta.seed, img.meta.steps);
+            auto tooltip = wxString::Format(_("Resolution: %s Seed: %" PRId64 " Steps: %d"), (img.meta.Size.empty() ? _("Unknown") : img.meta.Size), img.meta.seed, img.meta.steps);
             this->bSizer891->Add(bitmap, 0, wxALL, 2);
             this->modelImagePreviews.emplace_back(bitmap);
             bitmap->Show();
+            bitmap->SetToolTip(tooltip);
             bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, modelinfo, tooltip, this](wxMouseEvent& event) {
                 wxMenu* menu = new wxMenu();
                 menu->Append(99, tooltip);
@@ -1690,9 +1777,9 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                 menu->Enable(10, false);
 
                 if (!img.meta.hashes.model.empty()) {
-                    auto imgsModel = this->ModelManager->getByHash(img.meta.hashes.model);
-                    if (!imgsModel.civitaiPlainJson.empty()) {
-                        menu->Append(4, wxString::Format("Select model %s", imgsModel.name));
+                    auto imgsModel = this->ModelManager->getIntoPtrByHash(img.meta.hashes.model);
+                    if (imgsModel != nullptr && !imgsModel->civitaiPlainJson.empty()) {
+                        menu->Append(4, wxString::Format("Select model %s", imgsModel->name));
                     } else {
                         menu->Append(4, wxString::Format("Image's model not found: %s", img.meta.hashes.model));
                         menu->Enable(4, false);
@@ -1742,7 +1829,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                             }
                         } break;
                         case 4: {
-                            this->ChangeModelByInfo(*modelinfo);
+                            this->ChangeModelByInfo(modelinfo);
                         } break;
                         case 10: {
                             // wxString url =
@@ -2302,7 +2389,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             auto model_info = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
             if (model_info) {
                 this->treeListManager->AddItem(model_info);
-                this->m_model->Append(name, model_info);
+                if (this->mapp->cfg->favorite_models_only) {
+                    if (sd_gui_utils::HasTag(model_info->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
+                        this->m_model->Append(name, model_info);
+                    }
+                } else {
+                    this->m_model->Append(name, model_info);
+                }
             }
 
         } else if (type == sd_gui_utils::DirTypes::LORA) {
@@ -2314,6 +2407,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             auto embedding = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
             if (embedding) {
                 this->treeListManager->AddItem(embedding);
+            }
+
+        } else if (type == sd_gui_utils::DirTypes::CONTROLNET) {
+            auto controlnet = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (controlnet) {
+                this->treeListManager->AddItem(controlnet);
+                this->m_controlnetModels->Append(name, controlnet);
             }
 
         } else if (type == sd_gui_utils::DirTypes::ESRGAN) {
@@ -2359,7 +2459,11 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
                 this->writeLog(wxString::Format(_("Failed to parse prompt template: %s"), file.GetFullPath()));
             }
         } else if (type == sd_gui_utils::DirTypes::TAESD) {
-            this->m_taesd->Append(name);
+            auto taesd = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            if (taesd) {
+                this->treeListManager->AddItem(taesd);
+                this->m_taesd->Append(name, taesd);
+            }
         }
     }
 
@@ -2477,40 +2581,6 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
             }
         }
 
-        // try to find by hash, if hash is not empty
-        if (item.first == "modelhash" || item.first == "model hash" && !modelFound) {
-            auto check = this->ModelManager->getByHash(item.second.utf8_string());
-            if (!check.path.empty()) {
-                this->m_model->SetStringSelection(check.name);
-                modelFound = true;
-                continue;
-            }
-        }
-        if (item.first == "model" && !modelFound) {
-            // get by name
-            auto check = this->ModelManager->getInfoByName(item.second.utf8_string());
-            if (!check.path.empty()) {
-                this->m_model->SetStringSelection(check.name);
-                modelFound = true;
-                continue;
-            }
-
-            // search by name
-            auto check2 = this->ModelManager->findInfoByName(item.second.utf8_string());
-            if (!check2.path.empty()) {
-                this->m_model->SetStringSelection(check2.name);
-                modelFound = true;
-                continue;
-            }
-            for (auto i = 0; i < this->m_model->GetCount(); i++) {
-                if (this->m_model->GetString(i).Contains(item.second)) {
-                    this->m_model->Select(i);
-                    modelFound = true;
-                    break;
-                }
-            }
-        }
-
         if (item.first.Lower().Contains("vae")) {
             for (auto i = 0; i < this->m_vae->GetCount(); i++) {
                 if (this->m_vae->GetString(i).Contains(item.second)) {
@@ -2541,6 +2611,11 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
                 break;
             }
         }
+    }
+
+    auto model = this->ModelManager->findModelByImageParams(params);
+    if (model != nullptr) {
+        this->ChangeModelByInfo(model);
     }
 }
 
@@ -3486,18 +3561,24 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                 // menu->Enable(99,false);
                 menu->Append(6, _("Open image"));
                 menu->Append(7, _("Open parent folder"));
-                menu->AppendSeparator();
-                menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img.id));
-                menu->Append(1, _("Copy prompts to text2img"));
-                menu->Append(2, _("Copy prompts to img2img"));
-                menu->Append(3, _("Send the image to img2img"));
-                menu->Append(5, _("Upscale"));
+                if (img.type == QM::QueueItemImageType::GENERATED) {
+                    menu->AppendSeparator();
+                    menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img.id));
+                    menu->Append(1, _("Copy prompts to text2img"));
+                    menu->Append(2, _("Copy prompts to img2img"));
+                    menu->Append(3, _("Send the image to img2img"));
+                    menu->Append(5, _("Upscale"));
+                }
+                if (img.type == QM::QueueItemImageType::CONTROLNET) {
+                    menu->AppendSeparator();
+                    menu->Append(8, _("Send image to the controlnet image"));
+                }
 
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item](wxCommandEvent& evt) {
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {
-                            this->m_seed->SetValue(item->params.seed);
+                            this->m_seed->SetValue(item->params.seed + img.id);
                         } break;
                         case 1: {
                             this->m_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
@@ -3519,6 +3600,9 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                         } break;
                         case 7: {
                             wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.pathname).parent_path().string()));
+                        } break;
+                        case 8: {
+                            this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.pathname));
                         } break;
                         default: {
                             return;
@@ -3692,37 +3776,11 @@ void MainWindowUI::LoadPromptTemplates() {
 }
 
 void MainWindowUI::ChangeModelByName(wxString ModelName) {
-    sd_gui_utils::ModelFileInfo minfo = this->ModelManager->findInfoByName(ModelName.utf8_string());
-
-    for (unsigned int _z = 0; _z < this->m_model->GetCount(); _z++) {
-        sd_gui_utils::ModelFileInfo* m = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(_z));
-
-        if (m == nullptr) {
-            continue;
-        }
-        if (m->path == minfo.path) {
-            this->m_model->SetSelection(_z);
-            this->CheckQueueButton();
-            return;
-        }
-    }
+    auto minfo = this->ModelManager->findInfoByName(ModelName.utf8_string());
+    this->ChangeModelByInfo(minfo);
 }
 
-void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo info) {
-    for (unsigned int _z = 0; _z < this->m_model->GetCount(); _z++) {
-        sd_gui_utils::ModelFileInfo* m = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(_z));
-        if (m == nullptr) {
-            continue;
-        }
-        if (info.path == m->path) {
-            this->m_model->SetSelection(_z);
-            this->CheckQueueButton();
-            return;
-        }
-    }
-}
-
-void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo* info) {
+void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
     if (info == nullptr) {
         return;
     }
@@ -3735,6 +3793,10 @@ void MainWindowUI::ChangeModelByInfo(const sd_gui_utils::ModelFileInfo* info) {
             this->m_model->SetSelection(_z);
             return;
         }
+    }
+    if (this->mapp->cfg->favorite_models_only == true) {
+        this->m_model->Append(info->name, info);
+        this->m_model->SetSelection(this->m_model->GetCount() - 1);
     }
 }
 
