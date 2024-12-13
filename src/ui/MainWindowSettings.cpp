@@ -101,6 +101,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->config->Write("/enable_civitai", this->m_enableCivitai->GetValue());
     this->config->Write("/output_filename_format", this->m_output_filename_format->GetValue());
     this->config->Write("/autogen_hash", this->m_autogen_hash->GetValue());
+    this->config->Write("/favorite_models_only", this->m_favorite_models_only->GetValue());
 
     this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
     this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
@@ -122,6 +123,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->cfg->enable_civitai         = this->m_enableCivitai->GetValue();
     this->cfg->output_filename_format = this->m_output_filename_format->GetValue();
     this->cfg->auto_gen_hash          = this->m_autogen_hash->GetValue();
+    this->cfg->favorite_models_only   = this->m_favorite_models_only->GetValue();
 
     auto language = this->locales[this->m_language->GetSelection()];
     this->cfg->language = language;
