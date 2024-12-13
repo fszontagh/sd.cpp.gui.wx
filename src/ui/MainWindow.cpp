@@ -1051,6 +1051,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_rightMainPanel = new wxScrolledWindow( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( 330,-1 ), wxBORDER_THEME|wxHSCROLL|wxVSCROLL );
 	m_rightMainPanel->SetScrollRate( 5, 5 );
+	m_rightMainPanel->Hide();
+
 	wxFlexGridSizer* fgSizer2;
 	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer2->SetFlexibleDirection( wxBOTH );
