@@ -619,6 +619,7 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             parentItem = this->m_modelTreeList->GetItemParent(parentItem);
         }
         menu->Append(106, wxString::Format(_("Create subfolder in: '%s'"), name));
+        menu->Enable(106, false);
     } else {
         if (modelInfo->hash_progress_size == 0) {
             if (!modelInfo->sha256.empty()) {
@@ -674,6 +675,7 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
         if (modelInfo->hash_fullsize == 0) {
             menu->AppendSeparator();
             menu->Append(300, _("&Move model into another sub folder"));
+            menu->Enable(300, false);
             // submenu for named paths
             wxMenu* submenu = new wxMenu();
             submenu->Append(302, "Checkpoints", wxString::Format(_("Move the model into the checkoints folder: %s"), this->mapp->cfg->model));
@@ -683,11 +685,33 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             submenu->Append(306, "TaeSD", wxString::Format(_("Move the model into the TaeSD folder: %s"), this->mapp->cfg->taesd));
             submenu->Append(307, "ESRGAN", wxString::Format(_("Move the model into the ESRGAN (upscalers) folder: %s"), this->mapp->cfg->esrgan));
             submenu->Append(308, "ControlNet", wxString::Format(_("Move the model into the ControlNet folder: %s"), this->mapp->cfg->controlnet));
+            submenu->Enable(302, false);
+            submenu->Enable(303, false);
+            submenu->Enable(304, false);
+            submenu->Enable(305, false);
+            submenu->Enable(306, false);
+            submenu->Enable(307, false);
+            submenu->Enable(308, false);
             menu->AppendSubMenu(submenu, _("&Move to another folder"));
 
             menu->Append(310, _("&Delete model file"));
+            // do not delete the model if it is used in a job
+            for (const auto& qitem : this->qmanager->getList()) {
+                if (qitem.second->params.model_path == modelInfo->path &&
+                    (qitem.second->status == QM::QueueStatus::MODEL_LOADING ||
+                     qitem.second->status == QM::QueueStatus::HASHING ||
+                     qitem.second->status == QM::QueueStatus::HASHING_DONE ||
+                     qitem.second->status == QM::QueueStatus::PAUSED ||
+                     qitem.second->status == QM::QueueStatus::PENDING ||
+                     qitem.second->status == QM::QueueStatus::RUNNING)) {
+                    menu->Enable(310, false);
+                    break;
+                }
+            }
         }
     }
+
+    menu->Append(311, _("Open folder"));
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
     PopupMenu(menu);
@@ -1747,11 +1771,13 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     this->m_model_details->AppendItem(data);
     data.clear();
 
-    auto last_modified = wxFileName(modelinfo->path).GetModificationTime();
-    data.push_back(wxVariant(_("Last modified")));
-    data.push_back(wxVariant(wxString::Format("%s", last_modified.Format())));
-    this->m_model_details->AppendItem(data);
-    data.clear();
+    if (wxFileExists(modelinfo->path)) {
+        auto last_modified = wxFileName(modelinfo->path).GetModificationTime();
+        data.push_back(wxVariant(_("Last modified")));
+        data.push_back(wxVariant(wxString::Format("%s", last_modified.Format())));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+    }
 
     if (modelinfo->CivitAiInfo.description.empty()) {
         this->m_model_details_description->Hide();
@@ -2046,7 +2072,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
 
     wxString shortname;
     // only allow the id 106, because no model needed to it
-    if (modelinfo == nullptr && itemId != 106) {
+    if (modelinfo == nullptr && itemId != 106 && itemId != 311) {
         return;
     }
     if (modelinfo != nullptr) {
@@ -2074,38 +2100,17 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
         } break;
         case 106: {  // create subfolder in three
             // modal dialog to ask the folder name
-            wxString basePath;
             wxTreeListItems selections;
             if (this->m_modelTreeList->GetSelections(selections) == 0) {
                 return;
             }
-            auto selected            = selections.front();
-            auto selectedName        = this->m_modelTreeList->GetItemText(selected);
-            basePath                 = selectedName;
-            wxString groupFolderName = selectedName;
+            wxTreeListItem selected = selections.front();
+            wxString basePath       = this->treeListManager->findParentPath(selected, this->mapp->cfg);
 
-            while (selected.IsOk()) {
-                auto parent         = this->m_modelTreeList->GetItemParent(selected);
-                wxString parentName = this->m_modelTreeList->GetItemText(parent);
-                if (parent.IsOk() == false || parentName.empty()) {
-                    break;
-                }
-                auto parentPath = this->mapp->cfg->getPathByDirType(parentName);
-                if (parentPath.empty() == false) {
-                    basePath.Prepend(parentPath + wxFileName::GetPathSeparators());
-                } else {
-                    parentName.Append(wxFileName::GetPathSeparators());
-                    basePath.Prepend(parentName);
-                }
-                groupFolderName.Prepend(parentName + wxFileName::GetPathSeparators());
-                selected = parent;
+            if (basePath == wxEmptyString) {
+                return;
             }
-            if (basePath == selectedName) {
-                basePath = this->mapp->cfg->getPathByDirType(selectedName);
-                if (basePath.empty() == true) {
-                    return;
-                }
-            }
+
             wxTextEntryDialog dlg(this, wxString::Format(_("Create subfolder in: \n%s\nThe folder will remain hidden within the application until a compatible model file is added to it."), basePath), _("Create folder"));
             if (dlg.ShowModal() == wxID_OK) {
                 auto folderName = dlg.GetValue();
@@ -2120,8 +2125,8 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
                     } else {
                         if (wxFileName::Mkdir(basePath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
                             this->writeLog(wxString::Format(_("Created folder: %s"), basePath), true);
-                            //auto newItem = this->treeListManager->GetOrCreateParent(groupFolderName);
-                            //this->m_modelTreeList->AppendItem(item, folderName);
+                            // auto newItem = this->treeListManager->GetOrCreateParent(groupFolderName);
+                            // this->m_modelTreeList->AppendItem(item, folderName);
                         } else {
                             this->writeLog(wxString::Format(_("Can not create folder: %s"), basePath), true);
                         }
@@ -2165,6 +2170,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
                     choices.Add(dirName);
                 }
             }
+
             choices.Sort(false);
             auto dialog = new wxSingleChoiceDialog(this, _("Select the directory to move the model"), _("Move Model"), choices);
 
@@ -2238,6 +2244,19 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
                 }
                 this->treeListManager->RemoveItem(modelinfo->path);
                 this->ModelManager->deleteModel(modelinfo->path);
+            }
+        } break;
+        case 311: {
+            if (modelinfo != nullptr) {
+                wxLaunchDefaultApplication(wxFileName(modelinfo->path).GetPath());
+            } else {
+                wxTreeListItems selections;
+                if (this->m_modelTreeList->GetSelections(selections) > 0) {
+                    wxString path = this->treeListManager->findParentPath(selections.front(), this->mapp->cfg);
+                    if (path != wxEmptyString) {
+                        wxLaunchDefaultApplication(path);
+                    }
+                }
             }
         } break;
         default:
@@ -2530,6 +2549,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             return;
     }
 
+    this->ModelManager->resetModels(type);
     wxArrayString entries;
     wxDir::GetAllFiles(basepath, &entries, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
 
@@ -4504,7 +4524,7 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
 }
 
 void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
-    for (auto i = 0; this->m_scheduler->GetCount(); i++) {
+    for (auto i = 0; i < this->m_scheduler->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_scheduler->GetClientObject(i));
         if (clientData == nullptr) {
             continue;
@@ -4517,7 +4537,7 @@ void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
     }
 }
 void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
-    for (auto i = 0; this->m_sampler->GetCount(); i++) {
+    for (auto i = 0; i < this->m_sampler->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(i));
         if (clientData == nullptr) {
             continue;
@@ -4530,7 +4550,7 @@ void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
 }
 
 void MainWindowUI::SetTypeByType(sd_type_t type) {
-    for (auto i = 0; this->m_type->GetCount(); i++) {
+    for (auto i = 0; i < this->m_type->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_type->GetClientObject(i));
         if (clientData == nullptr) {
             continue;

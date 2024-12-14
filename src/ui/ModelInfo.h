@@ -40,6 +40,20 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
+        inline void resetModels(sd_gui_utils::DirTypes type) {
+            for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
+                if (it->second->model_type == type) {
+                    delete it->second;
+                    it->second = nullptr;
+                    it         = this->ModelInfos.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            if (this->ModelCount.contains(type)) {
+                this->ModelCount[type] = 0;
+            }
+        }
         inline void deleteModel(std::string model_path) {
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->ModelInfos.contains(model_path)) {

@@ -140,6 +140,36 @@ public:
         return GetOrCreateParent(folderGroupName.utf8_string());
     }
 
+    const wxString findParentPath(const wxTreeListItem& item, sd_gui_utils::config* config) {
+        auto selected     = item;
+        auto selectedName = this->treeListCtrl->GetItemText(item);
+        wxString basePath = selectedName, groupFolderName = selectedName;
+
+        while (selected.IsOk()) {
+            auto parent         = this->treeListCtrl->GetItemParent(selected);
+            wxString parentName = this->treeListCtrl->GetItemText(parent);
+            if (parent.IsOk() == false || parentName.empty()) {
+                break;
+            }
+            auto parentPath = config->getPathByDirType(parentName);
+            if (parentPath.empty() == false) {
+                basePath.Prepend(parentPath + wxFileName::GetPathSeparators());
+            } else {
+                parentName.Append(wxFileName::GetPathSeparators());
+                basePath.Prepend(parentName);
+            }
+            groupFolderName.Prepend(parentName + wxFileName::GetPathSeparators());
+            selected = parent;
+        }
+        if (basePath == selectedName) {
+            basePath = config->getPathByDirType(selectedName);
+            if (basePath.empty() == true) {
+                return wxEmptyString;
+            }
+        }
+        return basePath;
+    }
+
 private:
     wxTreeListCtrl* treeListCtrl;
     wxVector<TreeListManager::ColumnInfo> columns;
@@ -163,9 +193,9 @@ private:
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
-
+        std::cout << "folderGroupName: " << folderGroupName << std::endl;
         std::vector<std::string> groups;
-        SplitFolderGroupName(folderGroupName, groups);
+        SplitFolderGroupName(wxString::FromUTF8Unchecked(folderGroupName), groups);
 
         wxTreeListItem parent = treeListCtrl->GetRootItem();
         std::string fullPath;
@@ -176,9 +206,12 @@ private:
             fullPath += group;
 
             if (parentMap.find(fullPath) == parentMap.end()) {
-                parentMap[fullPath] = treeListCtrl->AppendItem(parent, wxString(group));
+                wxTreeListItem newParent = treeListCtrl->AppendItem(parent, wxString(group));
+                parentMap[fullPath]      = newParent;
+                parent                   = newParent;
+            } else {
+                parent = parentMap[fullPath];
             }
-            parent = parentMap[fullPath];
         }
         return parent;
     }
@@ -202,11 +235,11 @@ private:
         return wxTreeListItem();
     }
 
-    void SplitFolderGroupName(const std::string& folderGroupName, std::vector<std::string>& groups) {
-        std::stringstream ss(folderGroupName);
-        std::string segment;
-        while (std::getline(ss, segment, '/')) {
-            groups.push_back(segment);
+    void SplitFolderGroupName(const wxString& folderGroupName, std::vector<std::string>& groups) {
+        wxStringTokenizer tokenizer(folderGroupName, wxFileName::GetPathSeparator());
+        while (tokenizer.HasMoreTokens()) {
+            wxString token = tokenizer.GetNextToken();
+            groups.push_back(std::string(token.mb_str()));
         }
     }
 

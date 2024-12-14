@@ -25,6 +25,10 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
 
     wxString name = mpath;
     name.Replace(basepath + wxFileName::GetPathSeparator(), "");
+    
+    if (name.SubString(name.Length() - 1, name.Length()) == wxFileName::GetPathSeparator()) {
+        name = name.SubString(0 , name.Length() - 1);
+    }
 
     wxFileName meta_path = wxFileName(_meta);
 
@@ -32,16 +36,13 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
 
     // remove the model path from the folder group name
     auto folderGroupName = name;
-    // folderGroupName.Replace(mpath, "");
     folderGroupName.Replace(model_path.GetFullName(), "");
-    folderGroupName.Replace(wxFileName::GetPathSeparator(), "");
-    folderGroupName.Replace("\\", "");
 
     if (folderGroupName.empty() == false && this->folderGroupExists(folderGroupName) == false) {
-        auto group_full_path = wxFileName(mpath).GetPath();
+        auto group_full_path                = wxFileName(mpath).GetPath();
         this->folderGroups[group_full_path] = wxFileName(group_full_path);
     }
-    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + "/");
+    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + wxFileName::GetPathSeparator());
 
     if (meta_path.FileExists()) {
         wxFile input;
@@ -66,7 +67,6 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
             this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->path = mpath;
             // always reqwrite, if the model is moved into deeper path, then we can redetect
             this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName = folderGroupName.utf8_string();
-
 
             input.Close();
             this->ModelCount[type]++;

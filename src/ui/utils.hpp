@@ -281,19 +281,6 @@ namespace sd_gui_utils {
             p.tags = static_cast<sd_gui_utils::ModelInfoTag>(j.at("tags").get<int>());
         }
     }
-    inline std::string to_hex(std::array<uint8_t, 32> data) {
-        std::ostringstream oss;
-        oss << std::hex << std::setfill('0');
-        for (uint8_t val : data) {
-            oss << std::setw(2) << (unsigned int)val;
-        }
-        return oss.str();
-    }
-
-    inline unsigned long long Bytes2Megabytes(size_t bytes) {
-        return bytes / (1024 * 1024);  // 1 MB = 1024 * 1024 bájt
-    }
-
     enum imageTypes { JPG,
                       PNG,
                       WEBP };
@@ -305,6 +292,30 @@ namespace sd_gui_utils {
     inline const std::unordered_map<wxString, sd_gui_utils::imageTypes> image_types_str_reverse = {
         {"JPG", sd_gui_utils::imageTypes::JPG},
         {"PNG", sd_gui_utils::imageTypes::PNG}};
+
+    inline wxArrayString GetSubdirectories(const wxString& folderPath) {
+        wxArrayString directories;
+
+        // Lambda function for recursive scanning
+        std::function<void(const wxString&)> scanDirectory = [&](const wxString& path) {
+            wxDir dir(path);
+            if (!dir.IsOpened()) {
+                return;  // Skip if the directory cannot be opened
+            }
+
+            wxString subdir;
+            bool cont = dir.GetFirst(&subdir, wxEmptyString, wxDIR_DIRS);
+            while (cont) {
+                wxString fullPath = wxFileName(path, subdir).GetFullPath();
+                directories.Add(fullPath);
+                scanDirectory(fullPath);  // Recursively scan the subdirectory
+                cont = dir.GetNext(&subdir);
+            }
+        };
+
+        scanDirectory(folderPath);
+        return directories;
+    }
 
     class config {
     private:
