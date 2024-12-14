@@ -87,6 +87,22 @@ namespace sd_gui_utils {
         {sd_gui_utils::DirTypes::ALL, "ALL"},
         {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"}};
 
+    inline std::unordered_map<wxString, DirTypes> dirtypes_wxstr = {
+        {wxT("LORA"), sd_gui_utils::DirTypes::LORA},
+        {wxT("CHECKPOINT"), sd_gui_utils::DirTypes::CHECKPOINT},
+        {wxT("VAE"), sd_gui_utils::DirTypes::VAE},
+        {wxT("PRESETS"), sd_gui_utils::DirTypes::PRESETS},
+        {wxT("PROMPTS"), sd_gui_utils::DirTypes::PROMPTS},
+        {wxT("NEG_PROMPTS"), sd_gui_utils::DirTypes::NEG_PROMPTS},
+        {wxT("TAESD"), sd_gui_utils::DirTypes::TAESD},
+        {wxT("ESRGAN"), sd_gui_utils::DirTypes::ESRGAN},
+        {wxT("CONTROLNET"), sd_gui_utils::DirTypes::CONTROLNET},
+        {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER},
+        {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING},
+        {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES},
+        {wxT("ALL"), sd_gui_utils::DirTypes::ALL},
+        {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN}};
+
     enum CivitAiState { OK,
                         NOT_FOUND,
                         ERR,
@@ -327,6 +343,34 @@ namespace sd_gui_utils {
         bool widgetVisible                 = false;
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
+
+        inline const wxString getPathByDirType(const wxString& dirTypeName) {
+            auto f = sd_gui_utils::dirtypes_wxstr.find(dirTypeName);
+            if (f != sd_gui_utils::dirtypes_wxstr.end()) {
+                return this->getPathByDirType(f->second);
+            }
+            return wxEmptyString;
+        };
+        inline const wxString getPathByDirType(sd_gui_utils::DirTypes dirType) {
+            switch (dirType) {
+                case sd_gui_utils::DirTypes::CHECKPOINT:
+                    return this->model;
+                case sd_gui_utils::DirTypes::VAE:
+                    return this->vae;
+                case sd_gui_utils::DirTypes::LORA:
+                    return this->lora;
+                case sd_gui_utils::DirTypes::EMBEDDING:
+                    return this->embedding;
+                case sd_gui_utils::DirTypes::TAESD:
+                    return this->taesd;
+                case sd_gui_utils::DirTypes::PRESETS:
+                    return this->presets;
+                case sd_gui_utils::DirTypes::PROMPT_TEMPLATES:
+                    return this->prompt_templates;
+                default:
+                    return wxEmptyString;
+            }
+        };
         config(wxConfigBase* config)
             : configBase(config) {
             wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
@@ -519,6 +563,7 @@ namespace sd_gui_utils {
         int steps;
         int width, height;
         sample_method_t sampler;
+        schedule_t scheduler;
         std::string name;
         std::string mode;  // modes_str
         int batch;
@@ -540,6 +585,7 @@ namespace sd_gui_utils {
             {"type", p.type},
             {"read_only", p.read_only},
             {"sampler", (int)p.sampler},
+            {"scheduler", (int)p.scheduler},
             {"batch", p.batch},
         };
     }
@@ -561,6 +607,9 @@ namespace sd_gui_utils {
         }
         j.at("batch").get_to(p.batch);
         p.sampler = j.at("sampler").get<sample_method_t>();
+        if (j.contains("scheduler")) {
+            p.scheduler = j.at("scheduler").get<schedule_t>();
+        }
     }
 
     struct prompt_templates {

@@ -596,70 +596,97 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
         return;
     }
     // TODO: implement multiple model handling
-    auto item      = selections.front();  // get the first
-    auto modelInfo = this->treeListManager->FindItem(item);
-
-    if (!modelInfo) {
+    auto item = selections.front();  // get the first
+    if (item.IsOk() == false) {
         return;
     }
+    auto modelInfo = this->treeListManager->FindItem(item);
+
     wxMenu* menu = new wxMenu();
 
-    if (modelInfo->hash_progress_size == 0) {
-        if (!modelInfo->sha256.empty()) {
-            menu->Append(100, _("RE-Calculate Hash"));
-        } else {
-            menu->Append(100, _("Calculate Hash"));
-        }
-    }
+    if (modelInfo == nullptr) {
+        wxString name       = this->m_modelTreeList->GetItemText(item);
+        wxString parentName = wxEmptyString;
+        auto parentItem     = this->m_modelTreeList->GetItemParent(item);
 
-    if (this->mapp->cfg->enable_civitai == true && modelInfo->hash_progress_size == 0) {
-        if (!modelInfo->civitaiPlainJson.empty()) {
-            menu->Append(105, _("Force update info from CivitAi"));
-        } else {
-            menu->Append(105, _("Update info from CivitAi"));
-        }
-    }
+        while (parentItem.IsOk()) {
+            parentName = this->m_modelTreeList->GetItemText(parentItem);
 
-    if (modelInfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
-        menu->Append(200, wxString::Format(_("Select model %s to the next job"), modelInfo->name));
-        if (modelInfo->state == sd_gui_utils::CivitAiState::OK && this->mapp->cfg->enable_civitai == true) {
-            menu->Append(199, _("Open model on CivitAi.com in default browser"));
+            if (parentName.IsEmpty()) {
+                break;
+            }
+            name.Prepend(parentName + wxFileName::GetPathSeparators());
+            parentItem = this->m_modelTreeList->GetItemParent(parentItem);
         }
-        if (modelInfo->name.find(".safetensors")) {
-            menu->AppendSeparator();
-            menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
-            if (modelInfo->hash_progress_size > 0) {
-                menu->Enable(201, false);
+        menu->Append(106, wxString::Format(_("Create subfolder in: '%s'"), name));
+    } else {
+        if (modelInfo->hash_progress_size == 0) {
+            if (!modelInfo->sha256.empty()) {
+                menu->Append(100, _("RE-Calculate &Hash"));
+            } else {
+                menu->Append(100, _("Calculate &Hash"));
             }
         }
-    }
 
-    if (modelInfo->model_type == sd_gui_utils::DirTypes::LORA) {
-        auto shortname = wxFileName(modelInfo->path).GetName();
-        menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), shortname));
-        menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), shortname));
-        menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), shortname));
-        menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), shortname));
-    }
-    if (modelInfo->model_type == sd_gui_utils::DirTypes::EMBEDDING) {
-        auto shortname = wxFileName(modelInfo->path).GetName();
-        menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), shortname));
-        menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), shortname));
-        menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), shortname));
-        menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), shortname));
-        if (BUILD_TYPE != "Debug") {
+        if (this->mapp->cfg->enable_civitai == true && modelInfo->hash_progress_size == 0) {
+            if (!modelInfo->civitaiPlainJson.empty()) {
+                menu->Append(105, _("Force update info from &CivitAi"));
+            } else {
+                menu->Append(105, _("Update info from &CivitAi"));
+            }
+        }
+
+        if (modelInfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+            menu->Append(200, wxString::Format(_("&Select model %s to the next job"), modelInfo->name));
+            if (modelInfo->state == sd_gui_utils::CivitAiState::OK && this->mapp->cfg->enable_civitai == true) {
+                menu->Append(199, _("Open model on CivitAi.com in default browser"));
+            }
+            if (modelInfo->name.find(".safetensors")) {
+                menu->AppendSeparator();
+                menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
+                if (modelInfo->hash_progress_size > 0) {
+                    menu->Enable(201, false);
+                }
+            }
+        }
+
+        if (modelInfo->model_type == sd_gui_utils::DirTypes::LORA) {
+            auto shortname = wxFileName(modelInfo->path).GetName();
+            menu->Append(101, wxString::Format(_("Append to text2img prompt <lora:%s:0.5>"), shortname));
+            menu->Append(102, wxString::Format(_("Append to text2img neg. prompt <lora:%s:0.5>"), shortname));
+            menu->Append(103, wxString::Format(_("Append to img2img prompt <lora:%s:0.5>"), shortname));
+            menu->Append(104, wxString::Format(_("Append to img2img neg. prompt <lora:%s:0.5>"), shortname));
+        }
+        if (modelInfo->model_type == sd_gui_utils::DirTypes::EMBEDDING) {
+            auto shortname = wxFileName(modelInfo->path).GetName();
+            menu->Append(111, wxString::Format(_("Append to text2img prompt %s"), shortname));
+            menu->Append(112, wxString::Format(_("Append to text2img neg. prompt %s"), shortname));
+            menu->Append(113, wxString::Format(_("Append to img2img prompt %s"), shortname));
+            menu->Append(114, wxString::Format(_("Append to img2img neg. prompt %s"), shortname));
+
             // large embeddings not supported
             menu->Enable(111, false);
             menu->Enable(112, false);
             menu->Enable(113, false);
             menu->Enable(114, false);
         }
-    }
 
-    if (BUILD_TYPE == "Debug") {
-        menu->AppendSeparator();
-        menu->Append(300, _("&Move model into another folder"));
-        menu->Append(301, _("&Delete"));
+        if (modelInfo->hash_fullsize == 0) {
+            menu->AppendSeparator();
+            menu->Append(300, _("&Move model into another sub folder"));
+            // submenu for named paths
+            wxMenu* submenu = new wxMenu();
+            submenu->Append(302, "Checkpoints", wxString::Format(_("Move the model into the checkoints folder: %s"), this->mapp->cfg->model));
+            submenu->Append(303, "VAE", wxString::Format(_("Move the model into the VAE folder: %s"), this->mapp->cfg->vae));
+            submenu->Append(304, "Lora", wxString::Format(_("Move the model into the Lora folder: %s"), this->mapp->cfg->lora));
+            submenu->Append(305, "Embedding", wxString::Format(_("Move the model into the Embedding folder: %s"), this->mapp->cfg->embedding));
+            submenu->Append(306, "TaeSD", wxString::Format(_("Move the model into the TaeSD folder: %s"), this->mapp->cfg->taesd));
+            submenu->Append(307, "ESRGAN", wxString::Format(_("Move the model into the ESRGAN (upscalers) folder: %s"), this->mapp->cfg->esrgan));
+            submenu->Append(308, "ControlNet", wxString::Format(_("Move the model into the ControlNet folder: %s"), this->mapp->cfg->controlnet));
+            menu->AppendSubMenu(submenu, _("&Move to another folder"));
+
+            menu->Append(310, _("&Delete model file"));
+        }
     }
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
@@ -778,6 +805,13 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         default:
             return;
             break;
+    }
+
+    if (this->m_scheduler->GetSelection() == wxNOT_FOUND || this->m_scheduler->GetStringSelection().empty()) {
+        this->m_scheduler->SetSelection(0);
+    }
+    if (this->m_sampler->GetSelection() == wxNOT_FOUND || this->m_sampler->GetStringSelection().empty()) {
+        this->m_sampler->SetSelection(0);
     }
 
     auto wClientData  = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_type->GetClientObject(this->m_type->GetSelection()));
@@ -1221,7 +1255,8 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
     if (this->m_ModelFavorite->GetValue()) {
         modelInfo->tags  = modelInfo->tags | sd_gui_utils::ModelInfoTag::Favorite;
         wxString newName = modelInfo->name;
-        newName.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
+        // newName.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
+        newName = wxString::Format(_("%s %s"), _("[F] "), modelInfo->name);
         this->treeListManager->ChangeText(modelInfo->path, newName, 0);
     } else {
         this->treeListManager->ChangeText(modelInfo->path, modelInfo->name, 0);
@@ -1438,21 +1473,25 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
         preset.width     = this->m_width->GetValue();
         preset.height    = this->m_height->GetValue();
 
-        int index = 0;
-        for (auto sampler : sd_gui_utils::sample_method_str) {
-            if (this->m_sampler->GetStringSelection().utf8_string() == sampler) {
-                preset.sampler = (sample_method_t)index;
+        for (auto sampler : sd_gui_utils::samplerUiName) {
+            if (this->m_sampler->GetStringSelection() == sampler.second) {
+                preset.sampler = sampler.first;
                 break;
             }
-            index++;
+        }
+        for (auto scheduler : sd_gui_utils::sd_scheduler_gui_names) {
+            if (this->m_scheduler->GetStringSelection() == scheduler.second) {
+                preset.scheduler = scheduler.first;
+                break;
+            }
         }
         preset.batch = this->m_batch_count->GetValue();
         preset.name  = preset_name.utf8_string();
         preset.type  = this->m_type->GetStringSelection().utf8_string();
-        if (this->m_notebook1302->GetSelection() == 1) {
+        if (this->m_notebook1302->GetSelection() == (int)sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG) {
             preset.mode = modes_str[QM::GenerationMode::TXT2IMG];
         }
-        if (this->m_notebook1302->GetSelection() == 2) {
+        if (this->m_notebook1302->GetSelection() == (int)sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG) {
             preset.mode = modes_str[QM::GenerationMode::IMG2IMG];
         }
 
@@ -1483,7 +1522,8 @@ void MainWindowUI::onLoadPreset(wxCommandEvent& event) {
                 this->m_width->SetValue(preset.second.width);
                 this->m_height->SetValue(preset.second.height);
             }
-            this->m_sampler->SetSelection(preset.second.sampler);
+            this->SetSamplerByType(preset.second.sampler);
+            this->SetSchedulerByType(preset.second.scheduler);
             this->m_batch_count->SetValue(preset.second.batch);
         }
     }
@@ -2004,11 +2044,14 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
     auto item      = selections.front();  // get the first
     auto modelinfo = this->treeListManager->FindItem(item);
 
-    if (!modelinfo) {
+    wxString shortname;
+    // only allow the id 106, because no model needed to it
+    if (modelinfo == nullptr && itemId != 106) {
         return;
     }
-
-    auto shortname = wxFileName(modelinfo->path).GetName();
+    if (modelinfo != nullptr) {
+        shortname = wxFileName(modelinfo->path).GetName();
+    }
 
     switch (itemId) {
         case 100: {
@@ -2028,6 +2071,63 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
         } break;
         case 105: {
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
+        } break;
+        case 106: {  // create subfolder in three
+            // modal dialog to ask the folder name
+            wxString basePath;
+            wxTreeListItems selections;
+            if (this->m_modelTreeList->GetSelections(selections) == 0) {
+                return;
+            }
+            auto selected            = selections.front();
+            auto selectedName        = this->m_modelTreeList->GetItemText(selected);
+            basePath                 = selectedName;
+            wxString groupFolderName = selectedName;
+
+            while (selected.IsOk()) {
+                auto parent         = this->m_modelTreeList->GetItemParent(selected);
+                wxString parentName = this->m_modelTreeList->GetItemText(parent);
+                if (parent.IsOk() == false || parentName.empty()) {
+                    break;
+                }
+                auto parentPath = this->mapp->cfg->getPathByDirType(parentName);
+                if (parentPath.empty() == false) {
+                    basePath.Prepend(parentPath + wxFileName::GetPathSeparators());
+                } else {
+                    parentName.Append(wxFileName::GetPathSeparators());
+                    basePath.Prepend(parentName);
+                }
+                groupFolderName.Prepend(parentName + wxFileName::GetPathSeparators());
+                selected = parent;
+            }
+            if (basePath == selectedName) {
+                basePath = this->mapp->cfg->getPathByDirType(selectedName);
+                if (basePath.empty() == true) {
+                    return;
+                }
+            }
+            wxTextEntryDialog dlg(this, wxString::Format(_("Create subfolder in: \n%s\nThe folder will remain hidden within the application until a compatible model file is added to it."), basePath), _("Create folder"));
+            if (dlg.ShowModal() == wxID_OK) {
+                auto folderName = dlg.GetValue();
+                if (folderName.empty()) {
+                    return;
+                }
+
+                if (folderName.IsEmpty() == false) {
+                    basePath.Append(wxFileName::GetPathSeparator() + folderName);
+                    if (wxDir::Exists(basePath)) {
+                        wxMessageBox(_("Folder already exists"), _("Error"), wxICON_ERROR);
+                    } else {
+                        if (wxFileName::Mkdir(basePath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL)) {
+                            this->writeLog(wxString::Format(_("Created folder: %s"), basePath), true);
+                            //auto newItem = this->treeListManager->GetOrCreateParent(groupFolderName);
+                            //this->m_modelTreeList->AppendItem(item, folderName);
+                        } else {
+                            this->writeLog(wxString::Format(_("Can not create folder: %s"), basePath), true);
+                        }
+                    }
+                }
+            }
         } break;
         case 111: {
             this->m_prompt->SetValue(wxString::Format("%s %s", this->m_prompt->GetValue(), shortname));
@@ -2054,6 +2154,91 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
         // model converter
         case 201: {
             this->PrepareModelConvert(modelinfo);
+        } break;
+        case 300: {  // move the model
+            wxArrayString choices;
+            for (auto& dir : this->ModelManager->getFolderGroups()) {
+                if (dir.second.DirExists()) {
+                    wxString dirName = wxFileName(dir.second.GetPath()).GetName();
+                    dirName.Append(wxFileName::GetPathSeparator());
+                    dirName.Append(dir.second.GetName());
+                    choices.Add(dirName);
+                }
+            }
+            choices.Sort(false);
+            auto dialog = new wxSingleChoiceDialog(this, _("Select the directory to move the model"), _("Move Model"), choices);
+
+            if (dialog->ShowModal() == wxID_OK) {
+            }
+        } break;
+        case 310: {  // delete the model file
+                     // modal for asking
+            auto dlg = new wxMessageDialog(this, wxString::Format(_("Are you sure you want to delete this model?\n%s"), modelinfo->name), _("Delete Model"), wxYES_NO);
+            if (dlg->ShowModal() == wxID_YES) {
+                // remove from the gui
+                if (modelinfo->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+                    for (int i = 0; i < this->m_model->GetCount(); i++) {
+                        auto item = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(i));
+                        if (item != nullptr && item->path == modelinfo->path) {
+                            if (this->m_model->GetSelection() == i) {
+                                this->m_model->SetSelection(0);
+                            }
+                            this->m_model->Delete(i);
+                            break;
+                        }
+                    }
+                }
+                if (modelinfo->model_type == sd_gui_utils::DirTypes::VAE) {
+                    for (int i = 0; i < this->m_vae->GetCount(); i++) {
+                        auto item = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_vae->GetClientData(i));
+                        if (item != nullptr && item->path == modelinfo->path) {
+                            if (this->m_vae->GetSelection() == i) {
+                                this->m_vae->SetSelection(0);
+                            }
+                            this->m_vae->Delete(i);
+                            break;
+                        }
+                    }
+                }
+                if (modelinfo->model_type == sd_gui_utils::DirTypes::TAESD) {
+                    for (int i = 0; i < this->m_taesd->GetCount(); i++) {
+                        auto item = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_taesd->GetClientData(i));
+                        if (item != nullptr && item->path == modelinfo->path) {
+                            if (this->m_taesd->GetSelection() == i) {
+                                this->m_taesd->SetSelection(0);
+                            }
+                            this->m_taesd->Delete(i);
+                            break;
+                        }
+                    }
+                }
+                if (modelinfo->model_type == sd_gui_utils::DirTypes::CONTROLNET) {
+                    for (int i = 0; i < this->m_controlnetModels->GetCount(); i++) {
+                        auto item = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_controlnetModels->GetClientData(i));
+                        if (item != nullptr && item->path == modelinfo->path) {
+                            if (this->m_controlnetModels->GetSelection() == i) {
+                                this->m_controlnetModels->SetSelection(0);
+                            }
+                            this->m_controlnetModels->Delete(i);
+                            break;
+                        }
+                    }
+                }
+                if (modelinfo->model_type == sd_gui_utils::DirTypes::ESRGAN) {
+                    for (int i = 0; i < this->m_upscaler_model->GetCount(); i++) {
+                        auto item = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_upscaler_model->GetClientData(i));
+                        if (item != nullptr && item->path == modelinfo->path) {
+                            if (this->m_upscaler_model->GetSelection() == i) {
+                                this->m_upscaler_model->SetSelection(0);
+                            }
+                            this->m_upscaler_model->Delete(i);
+                            break;
+                        }
+                    }
+                }
+                this->treeListManager->RemoveItem(modelinfo->path);
+                this->ModelManager->deleteModel(modelinfo->path);
+            }
         } break;
         default:
             break;
@@ -2382,52 +2567,49 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             continue;
         }
 
-        wxString name = file.GetAbsolutePath();
-        name.Replace(basepath + wxFileName::GetPathSeparator(), "");
-
         if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-            auto model_info = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto model_info = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (model_info) {
                 this->treeListManager->AddItem(model_info);
                 if (this->mapp->cfg->favorite_models_only) {
                     if (sd_gui_utils::HasTag(model_info->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
-                        this->m_model->Append(name, model_info);
+                        this->m_model->Append(model_info->name, model_info);
                     }
                 } else {
-                    this->m_model->Append(name, model_info);
+                    this->m_model->Append(model_info->name, model_info);
                 }
             }
 
         } else if (type == sd_gui_utils::DirTypes::LORA) {
-            auto lora = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto lora = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (lora) {
                 this->treeListManager->AddItem(lora);
             }
         } else if (type == sd_gui_utils::DirTypes::EMBEDDING) {
-            auto embedding = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto embedding = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (embedding) {
                 this->treeListManager->AddItem(embedding);
             }
 
         } else if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-            auto controlnet = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto controlnet = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (controlnet) {
                 this->treeListManager->AddItem(controlnet);
-                this->m_controlnetModels->Append(name, controlnet);
+                this->m_controlnetModels->Append(controlnet->name, controlnet);
             }
 
         } else if (type == sd_gui_utils::DirTypes::ESRGAN) {
-            auto esrgan = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto esrgan = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (esrgan) {
                 this->treeListManager->AddItem(esrgan);
-                this->m_upscaler_model->Append(name, esrgan);
+                this->m_upscaler_model->Append(esrgan->name, esrgan);
             }
 
         } else if (type == sd_gui_utils::DirTypes::VAE) {
-            auto vae = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto vae = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (vae) {
                 this->treeListManager->AddItem(vae);
-                this->m_vae->Append(name, vae);
+                this->m_vae->Append(vae->name, vae);
             }
 
         } else if (type == sd_gui_utils::DirTypes::PRESETS) {
@@ -2459,10 +2641,10 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
                 this->writeLog(wxString::Format(_("Failed to parse prompt template: %s"), file.GetFullPath()));
             }
         } else if (type == sd_gui_utils::DirTypes::TAESD) {
-            auto taesd = this->ModelManager->addModel(file.GetAbsolutePath(), type, name);
+            auto taesd = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (taesd) {
                 this->treeListManager->AddItem(taesd);
-                this->m_taesd->Append(name, taesd);
+                this->m_taesd->Append(taesd->name, taesd);
             }
         }
     }
@@ -4324,6 +4506,9 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
 void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
     for (auto i = 0; this->m_scheduler->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_scheduler->GetClientObject(i));
+        if (clientData == nullptr) {
+            continue;
+        }
 
         if (schedule == clientData->getId()) {
             this->m_scheduler->Select(i);
@@ -4334,7 +4519,9 @@ void MainWindowUI::SetSchedulerByType(schedule_t schedule) {
 void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
     for (auto i = 0; this->m_sampler->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(i));
-
+        if (clientData == nullptr) {
+            continue;
+        }
         if (sampler == clientData->getId()) {
             this->m_sampler->Select(i);
             break;
@@ -4345,6 +4532,9 @@ void MainWindowUI::SetSamplerByType(sample_method_t sampler) {
 void MainWindowUI::SetTypeByType(sd_type_t type) {
     for (auto i = 0; this->m_type->GetCount(); i++) {
         auto clientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_type->GetClientObject(i));
+        if (clientData == nullptr) {
+            continue;
+        }
         if (type == clientData->getId()) {
             this->m_type->Select(i);
             break;

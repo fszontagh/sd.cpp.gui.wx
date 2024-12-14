@@ -171,7 +171,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	sizer0021->Fit( m_panel10 );
 	sizer0001->Add( m_panel10, 0, wxEXPAND, 5 );
 
-	m_panel31 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel31 = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE|wxTAB_TRAVERSAL );
 	bSizer138 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_notebook1302 = new wxNotebook( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxBK_DEFAULT|wxBORDER_THEME );
@@ -1020,7 +1020,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer107->Add( m_model_info_link, 0, wxALL, 5 );
 
-	m_ModelFavorite = new wxCheckBox( m_models_panel, wxID_ANY, _("⭐ Favorite"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ModelFavorite = new wxCheckBox( m_models_panel, wxID_ANY, _("[F]avorite"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ModelFavorite->Enable( false );
+
 	bSizer107->Add( m_ModelFavorite, 0, wxALL, 5 );
 
 
@@ -1324,7 +1326,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_panel31->SetSizer( bSizer138 );
 	m_panel31->Layout();
 	bSizer138->Fit( m_panel31 );
-	sizer0001->Add( m_panel31, 1, wxEXPAND, 5 );
+	sizer0001->Add( m_panel31, 1, wxEXPAND, 0 );
 
 	logs = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL );
 	logs->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
@@ -1511,7 +1513,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* sizer2010;
 	sizer2010 = new wxBoxSizer( wxVERTICAL );
 
-	m_notebook1696 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_DEFAULT );
+	m_notebook1696 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_DEFAULT|wxBORDER_THEME );
 	m_path_panel = new wxPanel( m_notebook1696, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* sizer2011;
 	sizer2011 = new wxBoxSizer( wxVERTICAL );

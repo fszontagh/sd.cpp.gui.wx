@@ -69,7 +69,8 @@ public:
             name.Replace(wxFileName::GetPathSeparator(), "");
         }
         if (sd_gui_utils::HasTag(item->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
-            name.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
+            // name.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐ --> this is not working on windows
+            name = wxString::Format("%s %s", _("[F] "), name);
         }
         wxTreeListItem newItem = treeListCtrl->AppendItem(parentItem, name);
         treeListCtrl->SetItemText(newItem, 1, wxString(item->size_f));
@@ -135,13 +136,29 @@ public:
         return data ? data->GetFileInfo() : nullptr;
     }
 
+    wxTreeListItem GetOrCreateParent(const wxString& folderGroupName) {
+        return GetOrCreateParent(folderGroupName.utf8_string());
+    }
+
 private:
     wxTreeListCtrl* treeListCtrl;
     wxVector<TreeListManager::ColumnInfo> columns;
     std::map<wxString, wxTreeListItem> parentMap;
-    wxTreeListItem GetOrCreateParent(const wxString& folderGroupName) {
-        return GetOrCreateParent(folderGroupName.utf8_string());
-    }
+
+    /**
+     * Retrieves or creates the parent wxTreeListItem for a given folder group name.
+     *
+     * This function takes a folder group name, which may consist of multiple segments
+     * separated by separator character, and ensures that each segment has a corresponding wxTreeListItem
+     * in the tree. If the specified folder group name is empty, it returns the root item.
+     * For each segment, it checks if a corresponding item already exists; if not, it creates
+     * a new item and inserts it into the tree. The function returns the wxTreeListItem of
+     * the last segment in the folder group name.
+     *
+     * @param folderGroupName A string representing the hierarchical folder group name,
+     *                        where segments are separated by separator character.
+     * @return The wxTreeListItem corresponding to the last segment of the folder group name.
+     */
     wxTreeListItem GetOrCreateParent(const std::string& folderGroupName) {
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
@@ -154,7 +171,7 @@ private:
         std::string fullPath;
         for (const auto& group : groups) {
             if (!fullPath.empty()) {
-                fullPath += "/";
+                fullPath += wxFileName::GetPathSeparator();
             }
             fullPath += group;
 

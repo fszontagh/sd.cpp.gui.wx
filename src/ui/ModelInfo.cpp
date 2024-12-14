@@ -15,13 +15,17 @@ ModelInfo::Manager::~Manager() {
     ModelInfos.clear();
 }
 
-sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString name) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString basepath) {
     std::unique_lock<std::mutex> lock(mutex);
     wxString _meta = this->GetMetaPath(mpath);
 
     if (_meta.empty()) {
         return nullptr;
     }
+
+    wxString name = mpath;
+    name.Replace(basepath + wxFileName::GetPathSeparator(), "");
+
     wxFileName meta_path = wxFileName(_meta);
 
     auto model_path = wxFileName(mpath);
@@ -32,8 +36,10 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
     folderGroupName.Replace(model_path.GetFullName(), "");
     folderGroupName.Replace(wxFileName::GetPathSeparator(), "");
     folderGroupName.Replace("\\", "");
-    if (folderGroupName.empty() == false && !this->folderGroups.contains(folderGroupName)) {
-        this->folderGroups[folderGroupName] = wxFileName(wxFileName(mpath).GetPath());
+
+    if (folderGroupName.empty() == false && this->folderGroupExists(folderGroupName) == false) {
+        auto group_full_path = wxFileName(mpath).GetPath();
+        this->folderGroups[group_full_path] = wxFileName(group_full_path);
     }
     folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + "/");
 
@@ -51,15 +57,16 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
             nlohmann::json data             = nlohmann::json::parse(data_str.utf8_string());
             sd_gui_utils::ModelFileInfo* _z = new sd_gui_utils::ModelFileInfo(data.get<sd_gui_utils::ModelFileInfo>());
 
-            if (meta_path.GetModificationTime() < model_path.GetModificationTime() || mpath != _z->path) {
+            if (meta_path.GetModificationTime() < model_path.GetModificationTime()) {
                 this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = this->GenerateMeta(model_path, type, name);
             } else {
                 this->ModelInfos[model_path.GetAbsolutePath().utf8_string()] = std::move(_z);
             }
 
-            if (this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName.empty()) {
-                this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName = folderGroupName.utf8_string();
-            }
+            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->path = mpath;
+            // always reqwrite, if the model is moved into deeper path, then we can redetect
+            this->ModelInfos[model_path.GetAbsolutePath().utf8_string()]->folderGroupName = folderGroupName.utf8_string();
+
 
             input.Close();
             this->ModelCount[type]++;
