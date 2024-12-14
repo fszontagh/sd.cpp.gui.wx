@@ -60,17 +60,17 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer97;
 	bSizer97 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_settings = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_settings = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
 
 	m_settings->SetBitmap( settings_png_to_wx_bitmap() );
 	bSizer97->Add( m_settings, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_refrersh = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_refrersh = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
 
 	m_refrersh->SetBitmap( refresh_png_to_wx_bitmap() );
 	bSizer97->Add( m_refrersh, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_about = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_about = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
 
 	m_about->SetBitmap( cube_png_to_wx_bitmap() );
 	m_about->SetToolTip( _("About the sd.cpp.gui.wx") );
@@ -78,22 +78,22 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer97->Add( m_about, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_civitai = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_civitai = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
 
 	m_civitai->SetBitmap( civitai_png_to_wx_bitmap() );
 	m_civitai->SetToolTip( _("Open CivitAi.com model browser") );
 	m_civitai->SetHelpText( _("With CivitAi.com model browser, you can search for models or download models") );
 
-	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
+	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_showWidget = new wxBitmapToggleButton( m_panel10, wxID_ANY, images_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0 );
+	m_showWidget = new wxBitmapToggleButton( m_panel10, wxID_ANY, images_png_to_wx_bitmap(), wxDefaultPosition, wxSize( 32,-1 ), 0 );
 
 	m_showWidget->SetBitmap( images_png_to_wx_bitmap() );
 	m_showWidget->SetToolTip( _("Show Widget") );
 
-	bSizer97->Add( m_showWidget, 0, wxALL, 5 );
+	bSizer97->Add( m_showWidget, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
 
 	m_stop_background_process->SetBitmap( cross_circle_png_to_wx_bitmap() );
 	m_stop_background_process->Enable( false );
@@ -101,7 +101,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_stop_background_process->SetToolTip( _("Stop and restart the background process") );
 	m_stop_background_process->SetHelpText( _("This will send a terminate to the background diffuser process. This will clear up all used memory (eg. freeing up all the loaded models)") );
 
-	bSizer97->Add( m_stop_background_process, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
+	bSizer97->Add( m_stop_background_process, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticline5 = new wxStaticLine( m_panel10, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL );
 	bSizer97->Add( m_staticline5, 0, wxEXPAND | wxALL, 5 );
@@ -1324,9 +1324,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_panel31->SetSizer( bSizer138 );
 	m_panel31->Layout();
 	bSizer138->Fit( m_panel31 );
-	sizer0001->Add( m_panel31, 1, wxALL|wxEXPAND, 5 );
+	sizer0001->Add( m_panel31, 1, wxEXPAND, 5 );
 
-	logs = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,180 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL );
+	logs = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,120 ), wxTE_WORDWRAP|wxTE_READONLY|wxTE_MULTILINE|wxTE_AUTO_URL );
 	logs->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 	logs->SetMaxSize( wxSize( -1,200 ) );
 
