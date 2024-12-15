@@ -192,6 +192,9 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
     this->loadTaesdList();
     this->loadControlnetList();
     this->loadEsrganList();
+    this->loadEmbeddingList();
+    this->LoadPresets();
+    this->LoadPromptTemplates();
 }
 
 void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
@@ -2670,34 +2673,42 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         }
     }
 
+    auto counted = this->ModelManager->GetCount(type);
+    if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
+        counted = this->PromptTemplates.size();
+    }
+    if (type == sd_gui_utils::DirTypes::PRESETS) {
+        counted = this->Presets.size();
+    }
+
     if (sd_gui_utils::dirtypes_str.contains(type)) {
-        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(type), this->ModelManager->GetCount(type)));
+        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(type), counted));
     } else {
-        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(sd_gui_utils::DirTypes::UNKNOWN), this->ModelManager->GetCount(type)));
+        this->writeLog(wxString::Format(_("Loaded %s: %d"), sd_gui_utils::dirtypes_str.at(sd_gui_utils::DirTypes::UNKNOWN), counted));
     }
 
     if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
-        this->m_model->Enable((this->ModelManager->GetCount(type) > 0));
+        this->m_model->Enable((counted > 0));
     }
 
     if (type == sd_gui_utils::DirTypes::TAESD) {
-        this->m_taesd->Enable((this->ModelManager->GetCount(type) > 0));
+        this->m_taesd->Enable((counted > 0));
     }
 
     if (type == sd_gui_utils::DirTypes::CONTROLNET) {
-        this->m_controlnetModels->Enable((this->ModelManager->GetCount(type) > 0));
+        this->m_controlnetModels->Enable((counted > 0));
     }
 
     if (type == sd_gui_utils::DirTypes::VAE) {
-        this->m_vae->Enable((this->ModelManager->GetCount(type) > 0));
+        this->m_vae->Enable((counted > 0));
     }
 
     if (type == sd_gui_utils::DirTypes::PRESETS) {
-        this->m_preset_list->Enable((this->ModelManager->GetCount(type) > 0));
+        this->m_preset_list->Enable((counted > 0));
     }
 
     if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
-        this->m_promptPresets->Enable((this->PromptTemplates.size() > 0));
+        this->m_promptPresets->Enable((counted > 0));
     }
 }
 void MainWindowUI::loadLoraList() {
@@ -3402,24 +3413,11 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
     if (token == "DOWNLOAD_FINISH") {
         auto payload = e.GetPayload<CivitAi::DownloadItem*>();
 
-        std::string name = std::filesystem::path(payload->local_file).filename().string();
+        wxString name = wxFileName(payload->local_file).GetFullName();
 
-        if (payload->type == CivitAi::ModelTypes::Checkpoint) {
-            this->loadModelList();
-            //    type = sd_gui_utils::DirTypes::CHECKPOINT;
-        }
-
-        if (payload->type == CivitAi::ModelTypes::LORA) {
-            //  type = sd_gui_utils::DirTypes::LORA;
-            this->loadLoraList();
-        }
-        if (payload->type == CivitAi::ModelTypes::TextualInversion) {
-            // type = sd_gui_utils::DirTypes::EMBEDDING;
-            this->loadEmbeddingList();
-        }
-
-        // auto value = this->m_modellist_filter->GetValue();
-        // this->refreshModelTable(value);
+        // reload everything
+        wxCommandEvent fakeEvenet;
+        this->onModelsRefresh(fakeEvenet);
 
         auto title   = _("Model download finished");
         auto message = wxString::Format(_("The model download is finished: %s"), name);
