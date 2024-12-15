@@ -170,6 +170,11 @@ public:
         return basePath;
     }
 
+    void CleanAll() {
+        treeListCtrl->DeleteAllItems();
+        parentMap.clear();
+    }
+
 private:
     wxTreeListCtrl* treeListCtrl;
     wxVector<TreeListManager::ColumnInfo> columns;

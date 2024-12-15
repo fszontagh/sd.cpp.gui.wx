@@ -185,6 +185,7 @@ void MainWindowUI::onSettings(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
+    this->treeListManager->CleanAll();
     this->loadModelList();
     this->loadLoraList();
     this->loadVaeList();
