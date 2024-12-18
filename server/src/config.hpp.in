@@ -1,0 +1,25 @@
+#ifndef SDGUI_CONFIG_H
+#define SDGUI_CONFIG_H
+#include <string>
+#include <vector>
+
+// Warning: this is an automatic generated header file, do not modify it
+#if defined(_WIN32) || defined(WIN32) || defined(WIN64)
+inline const char* EPROCESS_BINARY_NAME = "@EPROCESS_BINARY_NAME@.exe";
+#else
+inline const char* EPROCESS_BINARY_NAME = "@EPROCESS_BINARY_NAME@";
+#endif
+inline const char* SHARED_MEMORY_PATH         = "/@PROJECT_NAME@";
+inline const unsigned int SHARED_MEMORY_SIZE  = @SHARED_MEMORY_SIZE@;
+inline const unsigned int EPROCESS_SLEEP_TIME = 500;
+inline const unsigned int EPROCESS_STD_BUFFER = 10240;
+
+inline const std::vector<std::string> CHECKPOINT_FILE_EXTENSIONS = {"safetensors", "cpkt", "gguf"};
+inline const std::vector<std::string> EMBEDDING_FILE_EXTENSIONS  = {"safetensors", "pt"};
+inline const std::vector<std::string> LORA_FILE_EXTENSIONS       = {"safetensors", "pt", "ckpt"};
+inline const std::vector<std::string> VAE_FILE_EXTENSIONS        = {"safetensors", "pt", "ckpt", "gguf"};
+inline const std::vector<std::string> TAESD_FILE_EXTENSIONS      = {"safetensors", "pth", "gguf"};
+inline const std::vector<std::string> ESRGAN_FILE_EXTENSIONS     = {"pth", "pt"};
+inline const std::vector<std::string> CONTROLNET_FILE_EXTENSIONS = {"safetensors", "pth"};
+
+#endif
