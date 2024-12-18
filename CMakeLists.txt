@@ -48,16 +48,10 @@ endif()
 
 
 include(cmake/wxWidgets.cmake)
+include(cmake/CpuFeatures.cmake)
 
-# CPU Features dependency
-FetchContent_Declare(
-    cpu_features
-    GIT_REPOSITORY https://github.com/google/cpu_features.git
-    GIT_TAG v0.9.0
-)
-set(BUILD_TESTING OFF)
 
-FetchContent_MakeAvailable(cpu_features)
+
 
 execute_process(
     COMMAND git log -1 --format=%h
@@ -92,6 +86,14 @@ if (WIN32)
 endif()
 
 add_subdirectory(extprocess)
+
+option(SD_SERVER "Build socket server" ON)
+
+if (SD_SERVER)
+    include(cmake/sockets-cpp.cmake)
+    add_subdirectory(server)
+endif()
+
 
 # Set target for the application
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
@@ -144,7 +146,7 @@ if (SDGUI_HIPBLAS)
 endif()
 
 
-list(APPEND APPDEPENDS cpu_features OpenSSL::Crypto CURL::libcurl)
+list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl)
 
 if (WIN32)
     list(APPEND APPDEPENDS exiv2lib)
@@ -160,7 +162,7 @@ add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile)
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE 
     ${CMAKE_CURRENT_BINARY_DIR}
     ${stable_diffusion_SOURCE_DIR}
-    ${cpu_features_SOURCE_DIR}
+    ${CpuFeatures_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
 )
 message(STATUS "APPDEPS: ${APPDEPENDS}")
