@@ -68,6 +68,22 @@ void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
         wxLaunchDefaultApplication(this->m_images_output->GetPath());
     }
 }
+void MainWindowSettings::OnAddServer(wxCommandEvent& event) {
+    auto host = this->m_AddServerHost->GetValue();
+    int port;
+    if (this->m_AddServerPort->GetValue().ToInt(&port) && host.empty() == false) {
+        // check if server already exists
+        for (auto& srv : this->cfg->servers) {
+            if (srv.host == host && srv.port == port) {
+                wxMessageBox("Server already exists", "Error", wxICON_ERROR);
+                return;
+            }
+        }
+        auto srv = sd_gui_utils::sdServer(host.utf8_string(), port);
+        this->cfg->servers.push_back(srv);
+        this->AddRemoteServerToList(srv);
+    }
+}
 
 void MainWindowSettings::onSave(wxCommandEvent& event) {
     // save secret
@@ -103,6 +119,17 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->config->Write("/autogen_hash", this->m_autogen_hash->GetValue());
     this->config->Write("/favorite_models_only", this->m_favorite_models_only->GetValue());
 
+    wxString oldPath = this->config->GetPath();
+    this->config->SetPath("/Servers");
+
+    for (size_t i = 0; i < this->cfg->servers.size(); ++i) {
+        this->config->SetPath(wxString::Format("Server%zu", i));
+        this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i].host));
+        this->config->Write("Port", this->cfg->servers[i].port);
+        this->config->SetPath("..");
+    }
+    this->config->SetPath(oldPath);
+
     this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
     this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
     this->cfg->vae                    = this->m_vae_dir->GetPath().utf8_string();
@@ -125,7 +152,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->cfg->auto_gen_hash          = this->m_autogen_hash->GetValue();
     this->cfg->favorite_models_only   = this->m_favorite_models_only->GetValue();
 
-    auto language = this->locales[this->m_language->GetSelection()];
+    auto language       = this->locales[this->m_language->GetSelection()];
     this->cfg->language = language;
     this->config->Write("/language", wxString::FromUTF8Unchecked(language));
     this->config->Flush();
@@ -166,28 +193,14 @@ void MainWindowSettings::InitConfig() {
     this->m_autogen_hash->SetValue(this->cfg->auto_gen_hash);
     this->m_favorite_models_only->SetValue(this->cfg->favorite_models_only);
 
-    //  populate available languages
-    /*this->m_language->Append("English");
-    this->m_language->Append("简体中文");
-    this->m_language->Append("繁體中文");
-    this->m_language->Append("日本語");
-    this->m_language->Append("Español");
-    this->m_language->Append("Français");
-    this->m_language->Append("Deutsch");
-    this->m_language->Append("Italiano");
-    this->m_language->Append("Português");
-    this->m_language->Append("Русский");
-    this->m_language->Append("日本語");
-    this->m_language->Append("한국어");
-    this->m_language->Append("中文");
-    this->m_language->Append("日本語");
-    this->m_language->Append("中文");*/
+    for (auto& srv : this->cfg->servers) {
+        this->AddRemoteServerToList(srv);
+    }
 
     auto tr     = wxTranslations::Get();
     auto locale = wxUILocale::GetCurrent();
 
     auto systemLocale = wxUILocale::GetSystemLocaleId().GetLanguage();
-
 
     auto langs = tr->GetAvailableTranslations("stablediffusiongui");
 
@@ -214,4 +227,146 @@ void MainWindowSettings::InitConfig() {
         counter++;
     }
     this->m_language->SetSelection(selected);
+}
+void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer& server) {
+    wxSecretStore store  = wxSecretStore::GetDefault();
+    wxString serviceName = wxString::Format(wxT("%s/%s:%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
+    wxString username;
+    wxSecretValue authkey;
+
+    if (store.IsOk() && store.Load(serviceName, username, authkey)) {
+        server.authkey = authkey.GetAsString().utf8_string();
+    }
+
+    wxVector<wxVariant> values;
+    values.push_back(server.enabled);  // enabled
+    values.push_back(wxString::FromUTF8Unchecked(server.host));
+    values.push_back(wxString::Format(wxT("%d"), server.port));
+    values.push_back(authkey.GetAsString());
+    values.push_back("");
+    // get last row
+    auto row   = this->m_serverList->GetItemCount();
+    server.row = row;
+    this->m_serverList->InsertItem(row, values);
+    values.clear();
+}
+
+void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
+    wxDataViewItemArray selections;
+    auto idx = this->m_serverList->GetSelections(selections);
+    if (idx == 0) {
+        return;
+    }
+
+    for (const auto item : selections) {
+        auto row = this->m_serverList->ItemToRow(item);
+        this->m_serverList->DeleteItem(row);
+        // delete from this->cfg->server where this->cfg->server.row == row
+        for (auto it = this->cfg->servers.begin(); it != this->cfg->servers.end();) {
+            if (it->row == row) {
+                it = this->cfg->servers.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+}
+
+void MainWindowSettings::OnServerListStartEditing(wxDataViewEvent& event) {
+    std::cout << "OnServerListStartEditing" << std::endl;
+};
+void MainWindowSettings::OnServerListEditingStarted(wxDataViewEvent& event) {
+    std::cout << "OnServerListEditingStarted" << std::endl;
+};
+void MainWindowSettings::OnServerListItemValueChanged(wxDataViewEvent& event) {
+    auto col  = event.GetColumn();
+    auto item = event.GetItem();
+    auto row  = this->m_serverList->ItemToRow(item);
+
+    if (col == ServerListColumns::SERVER_LIST_COLUMN_ENABLE) {
+        auto value = event.GetValue().GetString();
+        for (auto& srv : this->cfg->servers) {
+            if (srv.row == row) {
+                if (srv.authkey.empty() || srv.host.empty() || srv.port == 0) {
+                    // show a dialog to fill all required fields
+                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
+                    return;
+                }
+                srv.enabled = value == "1";
+            }
+        }
+    }
+}
+void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
+    auto value = event.GetValue().GetString();
+    if (value.empty()) {
+        return;
+    }
+    auto col  = event.GetColumn();
+    auto item = event.GetItem();
+    auto row  = this->m_serverList->ItemToRow(item);
+    for (auto& srv : this->cfg->servers) {
+        if (srv.row == row) {
+            if (col == ServerListColumns::SERVER_LIST_COLUMN_ENABLE) {
+                if (srv.host.empty() || srv.port == 0 || srv.authkey.empty()) {
+                    // show a dialog to fill all required fields
+                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
+                    return;
+                }
+                srv.enabled = value == "1";
+            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_HOST) {
+                // check if host exists
+                for (const auto& server : this->cfg->servers) {
+                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                        wxMessageDialog(this, _("Server already exists")).ShowModal();
+                        this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
+                        return;
+                    }
+                }
+                srv.host = value.utf8_string();
+
+            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {
+                auto oldPort = srv.port;
+                if (value.ToInt(&srv.port) == false) {
+                    srv.port = oldPort;
+                    this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv.port), row, col);
+                }
+                if (srv.port < 1 || srv.port > 65535) {
+                    srv.port = oldPort;
+                    this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv.port), row, col);
+                }
+                for (const auto& server : this->cfg->servers) {
+                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                        wxMessageDialog(this, _("Server already exists")).ShowModal();
+                        this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
+                        return;
+                    }
+                }
+            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_AUTH_KEY) {
+                for (auto& server : this->cfg->servers) {
+                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                        wxSecretStore store  = wxSecretStore::GetDefault();
+                        wxString serviceName = wxString::Format(wxT("%s/%s:%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), wxString::FromUTF8Unchecked(std::to_string(server.port)));
+                        wxString username    = "authkey";
+                        wxSecretValue authkey(value);
+
+                        if (store.IsOk() && store.Save(serviceName, username, authkey)) {
+                            server.authkey = authkey.GetAsString().utf8_string();
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "OnServerListEditingDone val: " << event.GetValue().GetString().utf8_string() << std::endl;
+};
+
+void MainWindowSettings::OnServerListSelectionChanged(wxDataViewEvent& event) {
+    std::cout << "OnServerListSelectionChanged" << std::endl;
+    if (this->m_serverList->GetSelectedItemsCount() > 0) {
+        this->m_deleteServer->Enable();
+    } else {
+        this->m_deleteServer->Disable();
+    }
 }

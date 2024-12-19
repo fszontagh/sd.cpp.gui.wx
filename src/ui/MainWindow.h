@@ -397,6 +397,19 @@ class Settings : public wxFrame
 		wxStaticText* m_staticText42;
 		wxTextCtrl* m_civitai_api_key;
 		wxBitmapButton* m_bpButton15;
+		wxPanel* m_panel181;
+		wxDataViewListCtrl* m_serverList;
+		wxDataViewColumn* m_dataViewListColumn361;
+		wxDataViewColumn* m_dataViewListColumn36;
+		wxDataViewColumn* m_dataViewListColumn37;
+		wxDataViewColumn* m_dataViewListColumn38;
+		wxDataViewColumn* m_dataViewListColumn39;
+		wxButton* m_addServer;
+		wxStaticText* m_staticText68;
+		wxTextCtrl* m_AddServerHost;
+		wxStaticText* m_staticText69;
+		wxTextCtrl* m_AddServerPort;
+		wxButton* m_deleteServer;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
@@ -408,6 +421,13 @@ class Settings : public wxFrame
 		virtual void OnOutputFilenameText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnServerListEditingDone( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnServerListEditingStarted( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnServerListStartEditing( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnServerListItemValueChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnServerListSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnAddServer( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDeleteServer( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }
 
 

@@ -46,6 +46,8 @@ public:
     std::shared_ptr<ServerConfig> configData = nullptr;
 
 private:
+    void ExternalProcessRunner();
+    bool ProcessEventHandler(std::string message);
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;
@@ -58,6 +60,8 @@ private:
     struct subprocess_s* subprocess                          = nullptr;
     wxString extprocessCommand                               = "";
     wxString extProcessParam                                 = "";
+    std::atomic<bool> extprocessIsRunning                    = false;
+    std::atomic<bool> extProcessNeedToRun                    = true;
     wxTimer timer;
 };
 

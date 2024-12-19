@@ -316,7 +316,20 @@ namespace sd_gui_utils {
         scanDirectory(folderPath);
         return directories;
     }
-
+    struct sdServer {
+        std::string name;  // name is get from the over tcp
+        std::string host;
+        std::string authkey;  // dummy, need to reload from the secret store
+        int port       = 0;
+        bool connected = false;  // we check if the server is connected and not needed to store it into config
+        int row;
+        bool enabled                         = false;
+        sdServer& operator=(const sdServer&) = default;
+        sdServer(const std::string& host, int port)
+            : host(host), port(port) {}
+        // copy constructor
+        sdServer(const sdServer& other) = default;
+    };
     class config {
     private:
         wxConfigBase* configBase = nullptr;
@@ -354,6 +367,7 @@ namespace sd_gui_utils {
         bool widgetVisible                 = false;
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
+        std::vector<sd_gui_utils::sdServer> servers;
 
         inline const wxString getPathByDirType(const wxString& dirTypeName) {
             auto f = sd_gui_utils::dirtypes_wxstr.find(dirTypeName);
@@ -463,6 +477,30 @@ namespace sd_gui_utils {
                 this->image_type = sd_gui_utils::image_types_str_reverse.at(saved_image_type);
             }
 
+            long index;
+            wxString server;
+
+            if (config->HasGroup("/servers")) {
+                wxString oldGroup = config->GetPath();
+                config->SetPath("/servers");
+                long index;
+                wxString serverKey;
+                bool hasMore = config->GetFirstGroup(serverKey, index);
+
+                while (hasMore) {
+                    config->SetPath(serverKey);
+                    wxString host;
+                    int port;
+                    config->Read("Host", &host);
+                    config->Read("Port", &port, 8191);
+                    sd_gui_utils::sdServer server(host.utf8_string(), port);
+                    this->servers.push_back(server);
+                    config->SetPath("..");
+                    hasMore = config->GetNextGroup(serverKey, index);
+                }
+                config->SetPath(oldGroup);
+            }
+
             // check if directories exists
             if (wxFileName::DirExists(datapath) == false) {
                 wxFileName(datapath).Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
@@ -548,6 +586,21 @@ namespace sd_gui_utils {
                 this->configBase->Write("/mainSashPose", this->mainSashPose);
                 this->configBase->Write("/favorite_models_only", this->favorite_models_only);
                 this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
+                this->configBase->Write("/png_compression_level", this->png_compression_level);
+
+                if (this->configBase->HasGroup("/Servers")) {
+                    this->configBase->DeleteGroup("/Servers");  // Előző bejegyzések törlése
+                }
+                wxString oldPath = this->configBase->GetPath();
+                this->configBase->SetPath("/Servers");
+
+                for (size_t i = 0; i < servers.size(); ++i) {
+                    this->configBase->SetPath(wxString::Format("Server%zu", i));
+                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i].host));
+                    this->configBase->Write("Port", servers[i].port);
+                    this->configBase->SetPath("..");
+                }
+                this->configBase->SetPath(oldPath);
             }
         }
     };

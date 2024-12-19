@@ -41,19 +41,23 @@ struct ServerConfig {
     std::string authkey;
     std::string server_name           = "";  // optional server name to display in the gui
     unsigned int unauthorized_timeout = 1;   // disconnect clients after this many seconds if not authenticated
+    std::string exprocess_binary_path;       // force to use this exprocess binary
 };
 
 inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohmann_json_t) {
-    nlohmann_json_j["host"]             = nlohmann_json_t.host;
-    nlohmann_json_j["port"]             = nlohmann_json_t.port;
-    nlohmann_json_j["max_clients"]      = nlohmann_json_t.max_clients;
-    nlohmann_json_j["max_request_size"] = nlohmann_json_t.max_request_size;
-    nlohmann_json_j["logfile"]          = nlohmann_json_t.logfile;
-    nlohmann_json_j["backend"]          = backend_type_to_str.at(nlohmann_json_t.backend);
-    nlohmann_json_j["authkey"]          = nlohmann_json_t.authkey;
+    nlohmann_json_j["host"]                 = nlohmann_json_t.host;
+    nlohmann_json_j["port"]                 = nlohmann_json_t.port;
+    nlohmann_json_j["max_clients"]          = nlohmann_json_t.max_clients;
+    nlohmann_json_j["max_request_size"]     = nlohmann_json_t.max_request_size;
+    nlohmann_json_j["logfile"]              = nlohmann_json_t.logfile;
+    nlohmann_json_j["backend"]              = backend_type_to_str.at(nlohmann_json_t.backend);
+    nlohmann_json_j["authkey"]              = nlohmann_json_t.authkey;
     nlohmann_json_j["unauthorized_timeout"] = nlohmann_json_t.unauthorized_timeout;
     if (nlohmann_json_t.server_name.empty() == false) {
         nlohmann_json_j["server_name"] = nlohmann_json_t.server_name;
+    }
+    if (nlohmann_json_t.exprocess_binary_path.empty() == false) {
+        nlohmann_json_j["exprocess_binary_path"] = nlohmann_json_t.exprocess_binary_path;
     }
 }
 inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nlohmann_json_t) {
@@ -72,6 +76,9 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
     nlohmann_json_t.authkey = nlohmann_json_j.value("authkey", nlohmann_json_default_obj.authkey);
     if (nlohmann_json_j.contains("server_name") && !nlohmann_json_j["server_name"].is_null()) {
         nlohmann_json_t.server_name = nlohmann_json_j.value("server_name", nlohmann_json_default_obj.server_name);
+    }
+    if (nlohmann_json_j.contains("exprocess_binary_path") && !nlohmann_json_j["exprocess_binary_path"].is_null()) {
+        nlohmann_json_t.exprocess_binary_path = nlohmann_json_j.value("exprocess_binary_path", nlohmann_json_default_obj.exprocess_binary_path);
     }
     nlohmann_json_t.unauthorized_timeout = nlohmann_json_j.value("unauthorized_timeout", nlohmann_json_default_obj.unauthorized_timeout);
 }

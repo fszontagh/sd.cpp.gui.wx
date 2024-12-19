@@ -1,4 +1,5 @@
 #include "TerminalApp.h"
+#include "libs/subprocess.h"
 
 bool TerminalApp::OnInit() {
     wxLog::SetTimestamp("%Y-%m-%d %H:%M:%S");
@@ -20,11 +21,10 @@ bool TerminalApp::OnInit() {
     if (file.Open(config.GetAbsolutePath())) {
         file.ReadAll(&fileData);
         file.Close();
-    }else{
+    } else {
         wxLogError("Failed to open config file: %s", config.GetAbsolutePath());
         return false;
     }
-    
 
     try {
         nlohmann::json cfg = nlohmann::json::parse(fileData.utf8_string());
@@ -45,8 +45,8 @@ bool TerminalApp::OnInit() {
             wxFile file;
             if (file.Open(config.GetAbsolutePath(), wxFile::write)) {
                 file.Write(saveJsonData.dump(4));
-                file.Close();                
-            }else{
+                file.Close();
+            } else {
                 wxLogError("Failed to open config file: %s", config.GetAbsolutePath());
             }
 
@@ -102,20 +102,32 @@ bool TerminalApp::OnInit() {
     this->timer.Start(1000);
 
     this->eventHandlerReady = true;
-    // find the external process
-    wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
-    wxFileName f(currentPath, "");
-    f.SetName(EPROCESS_BINARY_NAME);
+    // find the external process if not in the config
+    if (this->configData->exprocess_binary_path.empty() == false) {
+        this->extprocessCommand = wxFileName(this->configData->exprocess_binary_path).GetAbsolutePath();
+    } else {
+        wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
+        wxFileName f(currentPath, "");
+        f.SetName(EPROCESS_BINARY_NAME);
 
-    if (f.Exists() == false) {
-        f.AppendDir("extprocess");
-    }
-    if (f.Exists() == false) {
-        f.AppendDir("Debug");
-    }
+        if (f.Exists() == false) {
+            f.AppendDir("extprocess");
+        }
+        if (f.Exists() == false) {
+            f.AppendDir("Debug");
+        }
 
-    this->extprocessCommand = f.GetFullPath();
-    std::string dllName     = "stable-diffusion_";
+        if (f.Exists() == false) {
+            wxLogError("External process not found: %s", f.GetFullPath().utf8_string());
+            return false;
+        }
+        this->extprocessCommand = f.GetAbsolutePath();
+    }
+    if (wxFileName::Exists(this->extprocessCommand) == false) {
+        wxLogError("External process not found: %s", this->extprocessCommand.utf8_string());
+        return false;
+    }
+    std::string dllName = "stable-diffusion_";
     dllName += backend_type_to_str.at(this->configData->backend);
 
     // get the library
@@ -147,6 +159,10 @@ int TerminalApp::OnExit() {
 
     if (this->socket != nullptr) {
         this->socket->stop();
+    }
+
+    if (this->subprocess != nullptr) {
+        this->extProcessNeedToRun = false;
     }
 
     for (auto& thread : this->threads) {
@@ -187,7 +203,6 @@ int TerminalApp::OnRun() {
         } catch (std::exception& e) {
             this->sendLogEvent(e.what(), wxLOG_Error);
         }
-        
 
         while (this->socket->isRunning()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -200,5 +215,73 @@ int TerminalApp::OnRun() {
 
     this->threads.emplace_back(std::move(tr));
 
+    std::thread tr2(&TerminalApp::ExternalProcessRunner, this);
+    this->threads.emplace_back(std::move(tr2));
+
     return wxAppConsole::OnRun();
+}
+
+void TerminalApp::ExternalProcessRunner() {
+    if (this->subprocess != nullptr) {
+        this->sendLogEvent("Subprocess already running", wxLOG_Error);
+        return;
+    }
+    this->sendLogEvent(wxString::Format("Starting subprocess: %s %s", this->extprocessCommand.utf8_string().c_str(), this->extProcessParam.utf8_string().c_str()), wxLOG_Info);
+    const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
+    this->subprocess           = new subprocess_s();
+    int result                 = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+    if (this->subprocess == nullptr) {
+        this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
+        this->extprocessIsRunning = false;
+        return;
+    }
+    this->sendLogEvent(wxString::Format("Subprocess created: %d", result), wxLOG_Info);
+
+    while (this->extProcessNeedToRun == true) {
+        
+        if (subprocess_alive(this->subprocess) == 0) {
+            this->sendLogEvent("Subprocess stopped", wxLOG_Error);
+            this->extprocessIsRunning = false;
+            // restart
+            int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+            if (this->subprocess == nullptr) {
+                this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
+                this->extprocessIsRunning = false;
+                return;
+            }
+            this->extprocessIsRunning = true;
+            this->sendLogEvent(wxString::Format("Subprocess created: %d", result), wxLOG_Info);
+        }
+        // handle shared memory
+
+        std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
+
+        this->sharedMemoryManager->read(buffer.get(), SHARED_MEMORY_SIZE);
+
+        if (std::strlen(buffer.get()) > 0) {
+            bool state = this->ProcessEventHandler(std::string(buffer.get(), std::strlen(buffer.get())));
+            if (state == true) {
+                this->sharedMemoryManager->clear();
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    this->extprocessIsRunning = false;
+    subprocess_terminate(this->subprocess);
+}
+
+bool TerminalApp::ProcessEventHandler(std::string message) {
+    if (message.empty()) {
+        return false;
+    }
+    try {
+        nlohmann::json msg = nlohmann::json::parse(message);
+        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PackaetParam::INFO, message);
+        this->socket->sendMsg(0, packet);
+
+    } catch (const std::exception& e) {
+        this->sendLogEvent(e.what(), wxLOG_Error);
+    }
+
+    return false;
 }
