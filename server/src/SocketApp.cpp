@@ -205,8 +205,9 @@ void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
         this->parent->sendLogEvent("Client " + std::to_string(client) + " connected from " + ipAddr + ":" + std::to_string(port));
         {
             std::lock_guard<std::mutex> guard(m_mutex);
-            m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime()};
+            this->m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime()};
         }
+        this->sendMsg(client, sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PackaetParam::AUTH));
     }
 }
 
@@ -215,5 +216,20 @@ void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const so
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         m_clientInfo.erase(client);
+    }
+}
+
+void SocketApp::OnTimer() {
+    std::lock_guard<std::mutex> guard(m_mutex);
+
+    auto it = this->m_clientInfo.begin();
+    while (it != this->m_clientInfo.end()) {
+        if ((wxGetLocalTime() - it->second.connected_at) > this->parent->configData->unauthorized_timeout && it->second.apikey.empty()) {
+            this->parent->sendLogEvent(wxString::Format("Unauthorized client %d disconnected due to inactivity %s:%d", it->second.idx, it->second.host, it->second.port), wxLOG_Warning);
+            this->m_server.deleteClient(it->second.idx);
+            it = this->m_clientInfo.erase(it);
+        } else {
+            ++it;
+        }
     }
 }

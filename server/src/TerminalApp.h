@@ -47,7 +47,6 @@ public:
     }
     std::shared_ptr<ServerConfig> configData = nullptr;
 
-
 private:
     void ExternalProcessRunner();
     // process the messages from the shm

@@ -4,6 +4,13 @@
 #include <wx/log.h>
 #include <wx/time.h>
 #include <wx/timer.h>
+<<<<<<< HEAD
+=======
+
+#include "network/packets.h"
+#include "sockets-cpp/TcpServer.h"
+
+>>>>>>> f60ddd3 (small cleanup, added server vs. client auth, packet serialization, lib loading)
 #include "libs/json.hpp"
 #include "ver.hpp"
 

@@ -119,7 +119,7 @@ private:
     std::vector<wxStaticBitmap*> jobImagePreviews;
 
     std::vector<std::shared_ptr<sd_gui_utils::networks::TcpClient>> tcpClients;
-    
+
     wxTaskBarIcon* TaskBar;
     wxMenu* TaskBarMenu;
     wxBitmap TaskBarIcon;
