@@ -255,7 +255,20 @@ namespace sd_gui_utils {
         scanDirectory(folderPath);
         return directories;
     }
-
+    struct sdServer {
+        std::string name;  // name is get from the over tcp
+        std::string host;
+        std::string authkey;  // dummy, need to reload from the secret store
+        int port       = 0;
+        bool connected = false;  // we check if the server is connected and not needed to store it into config
+        int row;
+        bool enabled                         = false;
+        sdServer& operator=(const sdServer&) = default;
+        sdServer(const std::string& host, int port)
+            : host(host), port(port) {}
+        // copy constructor
+        sdServer(const sdServer& other) = default;
+    };
     class config {
     private:
         wxConfigBase* configBase = nullptr;
