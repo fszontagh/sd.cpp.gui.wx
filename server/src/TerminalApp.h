@@ -1,6 +1,7 @@
 #ifndef _SERVER_TERMINALAPP_H
 #define _SERVER_TERMINALAPP_H
 
+#include "libs/SharedLibrary.h"
 #include "wx/wxprec.h"
 
 #ifndef WX_PRECOMP
@@ -10,14 +11,16 @@
 #include <wx/app.h>
 #include <wx/event.h>
 #include <wx/evtloop.h>
+#include <wx/filename.h>
 #include <wx/log.h>
+#include <wx/stdpaths.h>
 #include <wx/textfile.h>
 #include <iostream>
 
 #include "ServerConfig.h"
 #include "SocketApp.h"
-#include "config.hpp"
-#include "sockets-cpp/TcpServer.h"
+#include "helpers/sslUtils.hpp"
+#include "libs/ExternalProcess.h"
 
 wxDECLARE_APP(TerminalApp);
 
@@ -40,17 +43,22 @@ public:
         evt.SetInt((int)level);
         wxTheApp->AddPendingEvent(evt);
     }
+    std::shared_ptr<ServerConfig> configData = nullptr;
 
 private:
     std::vector<std::thread> threads;
-    bool m_shouldExit = false;
-    std::shared_ptr<SharedMemoryManager> sharedMemoryManager;
-    SocketApp* socket                        = nullptr;
-    std::FILE* logfile                       = nullptr;
-    wxLogStderr* logger                      = nullptr;
-    wxLog* oldLogger                         = nullptr;
-    std::shared_ptr<ServerConfig> configData = nullptr;
-    std::atomic<bool> eventHandlerReady      = false;
+    bool m_shouldExit                                        = false;
+    std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;
+    std::shared_ptr<SharedLibrary> sharedLibrary             = nullptr;
+    SocketApp* socket                                        = nullptr;
+    std::FILE* logfile                                       = nullptr;
+    wxLogStderr* logger                                      = nullptr;
+    wxLog* oldLogger                                         = nullptr;
+    std::atomic<bool> eventHandlerReady                      = false;
+    struct subprocess_s* subprocess                          = nullptr;
+    wxString extprocessCommand                               = "";
+    wxString extProcessParam                                 = "";
+    wxTimer timer;
 };
 
 #endif  // _SERVER_TERMINALAPP_H

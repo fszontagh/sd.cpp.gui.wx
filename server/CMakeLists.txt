@@ -1,14 +1,4 @@
 set(SERVER_BINARY_NAME "${PROJECT_BINARY_NAME}_server")
-set(SERVER_EXPTORCESS_BINARY_NAME "${PROJECT_BINARY_NAME}_server_diffuser")
-
-math(EXPR SHARED_MEMORY_SIZE "1024*1024*16")
-math(EXPR STACK_SIZE "${SHARED_MEMORY_SIZE} + ((1024*1024)*4)")
-message(STATUS "SHARED_MEMORY_SIZE: ${SHARED_MEMORY_SIZE}")
-message(STATUS "STACK_SIZE: ${STACK_SIZE}")
-
-configure_file(src/config.hpp.in config.hpp)
-
-
 
 set(SOURCES src/main.cpp src/TerminalApp.cpp src/SocketApp.cpp)
 
@@ -18,7 +8,7 @@ endif()
 
 add_executable(${SERVER_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp)
 
-target_precompile_headers(${SERVER_BINARY_NAME} PRIVATE src/pch.h)
+#target_precompile_headers(${SERVER_BINARY_NAME} PRIVATE src/pch.h)
 
 if (MSVC)
     target_link_options(${SERVER_BINARY_NAME} PRIVATE /STACK:${STACK_SIZE})

@@ -292,8 +292,6 @@ private:
     void writeLog(const wxString& msg, bool writeIntoGui = true);
     void writeLog(const std::string& message);
 
-    SdSetLogCallbackFunction sd_set_log_callback;
-    SdSetProgressCallbackFunction sd_set_progress_callback;
 
     inline static wxString formatFileName(const QM::QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
         wxDateTime localTime = wxDateTime::Now();

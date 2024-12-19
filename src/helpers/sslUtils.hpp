@@ -7,6 +7,21 @@
 #include <string>
 
 namespace sd_gui_utils {
+    inline std::string sha256_string_openssl(const std::string& input) {
+        std::stringstream ss;
+        EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+        const EVP_MD* md  = EVP_sha256();
+        EVP_DigestInit_ex(mdctx, md, NULL);
+        EVP_DigestUpdate(mdctx, input.data(), input.length());
+        unsigned char hash[EVP_MAX_MD_SIZE];
+        unsigned int hashLength;
+        EVP_DigestFinal_ex(mdctx, hash, &hashLength);
+        for (unsigned int i = 0; i < hashLength; i++) {
+            ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+        }
+        EVP_MD_CTX_free(mdctx);
+        return ss.str();
+    }
 
     inline std::string sha256_file_openssl(const char* path, void* custom_pointer, void (*callback)(size_t, std::string, void* custom_pointer)) {
         std::ifstream file(path, std::ios::binary);

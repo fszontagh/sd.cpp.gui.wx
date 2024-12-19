@@ -3,8 +3,9 @@
 
 #include <wx/log.h>
 #include <wx/time.h>
+#include <wx/timer.h>
 
-
+#include "network/packets.h"
 #include "sockets-cpp/TcpServer.h"
 
 #include "libs/json.hpp"
@@ -15,7 +16,6 @@ class TerminalApp;
 
 class SocketApp {
 public:
-
     explicit SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent = nullptr);
 
     virtual ~SocketApp();
@@ -27,8 +27,10 @@ public:
     void onClientDisconnect(const sockets::ClientHandle& client, const sockets::SocketRet& ret);
 
     void sendMsg(int idx, const char* data, size_t len);
+    void sendMsg(int idx, const sd_gui_utils::networks::Packet& packet);
     inline bool isRunning() { return this->needToRun == true; }
     inline void stop() { this->needToRun = false; }
+    void OnTimer();
 
 private:
     struct clientInfo {
@@ -36,14 +38,15 @@ private:
         uint16_t port;
         int idx;
         long connected_at;
+        std::string apikey;
     };
     sockets::SocketOpt m_socketOpt;
     sockets::TcpServer<SocketApp> m_server;
     int m_clientIdx = 0;
-    std::map<int, clientInfo> m_clientInfo;
+    std::map<sockets::ClientHandle, clientInfo> m_clientInfo;
     std::mutex m_mutex;
     std::atomic<bool> needToRun = true;
-    TerminalApp* parent = nullptr;
+    TerminalApp* parent         = nullptr;
 };
 
-#endif // _SERVER_SOCKETAPP_H
+#endif  // _SERVER_SOCKETAPP_H
