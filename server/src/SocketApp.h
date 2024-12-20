@@ -4,18 +4,11 @@
 #include <wx/log.h>
 #include <wx/time.h>
 #include <wx/timer.h>
-<<<<<<< HEAD
-=======
 
 #include "network/packets.h"
 #include "sockets-cpp/TcpServer.h"
 
->>>>>>> f60ddd3 (small cleanup, added server vs. client auth, packet serialization, lib loading)
 #include "libs/json.hpp"
-#include "ver.hpp"
-
-#include "network/packets.h"
-#include "sockets-cpp/TcpServer.h"
 
 inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
 
@@ -35,8 +28,6 @@ public:
 
     void sendMsg(int idx, const char* data, size_t len);
     void sendMsg(int idx, const sd_gui_utils::networks::Packet& packet);
-    void DisconnectClient(int idx);
-    void parseMsg(sd_gui_utils::networks::Packet& packet);
     inline bool isRunning() { return this->needToRun == true; }
     inline void stop() { this->needToRun = false; }
     void OnTimer();
@@ -56,8 +47,6 @@ private:
     std::mutex m_mutex;
     std::atomic<bool> needToRun = true;
     TerminalApp* parent         = nullptr;
-    std::vector<char> buffer;
-    size_t expected_size = 0;
 };
 
 #endif  // _SERVER_SOCKETAPP_H
