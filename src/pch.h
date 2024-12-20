@@ -41,12 +41,15 @@
 #include "wx/hashmap.h"
 
 #include "libs/json.hpp"
+#include "network/packets.h"
 
 #include "extprocess/config.hpp"
 #include "exiv2/exiv2.hpp"
 
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
+#include "helpers/civitai.hpp"
+#include "helpers/sd.hpp"
 #include "libs/SharedMemoryManager.h"
 #include "libs/subprocess.h"
 

@@ -1,11 +1,7 @@
 #ifndef __MAINFRAME_HPP__UTILS
 #define __MAINFRAME_HPP__UTILS
 
-#include <filesystem>
-#include <random>
-#include "../helpers/civitai.hpp"
-#include "../helpers/sd.hpp"
-#include "../libs/bitmask_operators.h"
+
 
 namespace sd_gui_utils {
 
@@ -61,15 +57,6 @@ namespace sd_gui_utils {
         UNKNOWN          = -2,       // The unknown option
     };
 
-    template <>
-    struct enable_bitmask_operators<sd_gui_utils::DirTypes> {
-        static constexpr bool enable = true;
-    };
-
-    inline bool filterByModelType(const sd_gui_utils::DirTypes modelType,
-                                  sd_gui_utils::DirTypes filterType) {
-        return static_cast<bool>(modelType & filterType);
-    }
 
     inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
         {sd_gui_utils::DirTypes::LORA, "LORA"},
@@ -316,20 +303,7 @@ namespace sd_gui_utils {
         scanDirectory(folderPath);
         return directories;
     }
-    struct sdServer {
-        std::string name;  // name is get from the over tcp
-        std::string host;
-        std::string authkey;  // dummy, need to reload from the secret store
-        int port       = 0;
-        bool connected = false;  // we check if the server is connected and not needed to store it into config
-        int row;
-        bool enabled                         = false;
-        sdServer& operator=(const sdServer&) = default;
-        sdServer(const std::string& host, int port)
-            : host(host), port(port) {}
-        // copy constructor
-        sdServer(const sdServer& other) = default;
-    };
+
     class config {
     private:
         wxConfigBase* configBase = nullptr;
@@ -493,7 +467,9 @@ namespace sd_gui_utils {
                     int port;
                     config->Read("Host", &host);
                     config->Read("Port", &port, 8191);
+                    bool enabled = config->ReadBool("Enabled", false);
                     sd_gui_utils::sdServer server(host.utf8_string(), port);
+                    server.enabled = enabled;
                     this->servers.push_back(server);
                     config->SetPath("..");
                     hasMore = config->GetNextGroup(serverKey, index);
@@ -598,6 +574,7 @@ namespace sd_gui_utils {
                     this->configBase->SetPath(wxString::Format("Server%zu", i));
                     this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i].host));
                     this->configBase->Write("Port", servers[i].port);
+                    this->configBase->Write("Enabled", servers[i].enabled);
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);

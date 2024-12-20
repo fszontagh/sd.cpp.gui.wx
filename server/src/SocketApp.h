@@ -4,11 +4,12 @@
 #include <wx/log.h>
 #include <wx/time.h>
 #include <wx/timer.h>
+#include "libs/json.hpp"
+
 
 #include "network/packets.h"
 #include "sockets-cpp/TcpServer.h"
 
-#include "libs/json.hpp"
 
 inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
 

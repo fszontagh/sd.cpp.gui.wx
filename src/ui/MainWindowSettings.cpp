@@ -93,7 +93,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         wxSecretValue password(this->m_civitai_api_key->GetValue());
         wxSecretStore store = wxSecretStore::GetDefault();
         if (store.IsOk()) {
-            store.Save(PROJECT_NAME, username, password);
+            store.Save(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password);
         }
     }
 
@@ -126,6 +126,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         this->config->SetPath(wxString::Format("Server%zu", i));
         this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i].host));
         this->config->Write("Port", this->cfg->servers[i].port);
+        this->config->Write("Enabled", this->cfg->servers[i].enabled);
         this->config->SetPath("..");
     }
     this->config->SetPath(oldPath);
@@ -162,12 +163,12 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
 void MainWindowSettings::InitConfig() {
     this->m_staticNumberOfCores->SetLabel(wxString::Format("%d", cores()));
 
-    wxString username = "civitai_api_key";
+    wxString username;
     wxSecretValue password;
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.IsOk() && store.Load(PROJECT_NAME, username, password)) {
+    if (store.IsOk() && store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 
@@ -229,26 +230,29 @@ void MainWindowSettings::InitConfig() {
     this->m_language->SetSelection(selected);
 }
 void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer& server) {
+    this->checkboxUpdate = true;
     wxSecretStore store  = wxSecretStore::GetDefault();
-    wxString serviceName = wxString::Format(wxT("%s/%s:%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
+    wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
     wxString username;
     wxSecretValue authkey;
 
     if (store.IsOk() && store.Load(serviceName, username, authkey)) {
-        server.authkey = authkey.GetAsString().utf8_string();
+        server.authkey = true;
     }
 
+    wxString statusStr = server.enabled ? server.connected ? _("connected") : _("disconnected") : _("disabled");
+
     wxVector<wxVariant> values;
-    values.push_back(server.enabled);  // enabled
     values.push_back(wxString::FromUTF8Unchecked(server.host));
     values.push_back(wxString::Format(wxT("%d"), server.port));
     values.push_back(authkey.GetAsString());
-    values.push_back("");
+    values.push_back(statusStr);
     // get last row
     auto row   = this->m_serverList->GetItemCount();
     server.row = row;
-    this->m_serverList->InsertItem(row, values);
+    this->m_serverList->InsertItem(row, values, row);
     values.clear();
+    this->checkboxUpdate = false;
 }
 
 void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
@@ -259,7 +263,8 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
     }
 
     for (const auto item : selections) {
-        auto row = this->m_serverList->ItemToRow(item);
+        auto itemId = item.GetID();
+        auto row    = static_cast<int>(this->m_serverList->GetItemData(item));
         this->m_serverList->DeleteItem(row);
         // delete from this->cfg->server where this->cfg->server.row == row
         for (auto it = this->cfg->servers.begin(); it != this->cfg->servers.end();) {
@@ -273,51 +278,53 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
 }
 
 void MainWindowSettings::OnServerListStartEditing(wxDataViewEvent& event) {
-    std::cout << "OnServerListStartEditing" << std::endl;
+    // std::cout << "OnServerListStartEditing" << std::endl;
 };
 void MainWindowSettings::OnServerListEditingStarted(wxDataViewEvent& event) {
-    std::cout << "OnServerListEditingStarted" << std::endl;
+    // std::cout << "OnServerListEditingStarted" << std::endl;
 };
 void MainWindowSettings::OnServerListItemValueChanged(wxDataViewEvent& event) {
-    auto col  = event.GetColumn();
-    auto item = event.GetItem();
-    auto row  = this->m_serverList->ItemToRow(item);
+    /*
+        if (this->checkboxUpdate == true) {
+            event.Skip();
+            return;
+        }
+        auto col  = event.GetColumn();
+        auto item = event.GetItem();
+        auto row  = this->m_serverList->ItemToRow(item);
 
-    if (col == ServerListColumns::SERVER_LIST_COLUMN_ENABLE) {
-        auto value = event.GetValue().GetString();
-        for (auto& srv : this->cfg->servers) {
-            if (srv.row == row) {
-                if (srv.authkey.empty() || srv.host.empty() || srv.port == 0) {
-                    // show a dialog to fill all required fields
-                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
-                    return;
+        if (col == ServerListColumns::SERVER_LIST_COLUMN_ENABLE) {
+            auto value = event.GetValue().GetBool();
+            for (auto& srv : this->cfg->servers) {
+                if (srv.row == row &&  value == true) {
+                    if (srv.authkey.empty() || srv.host.empty() || srv.port == 0) {
+                        this->checkboxUpdate = true;
+                        wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
+                        this->checkboxUpdate = false;
+                        event.Skip();
+                        return;
+                    }
+                    srv.enabled = value;
                 }
-                srv.enabled = value == "1";
             }
         }
-    }
+        */
 }
 void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
     auto value = event.GetValue().GetString();
     if (value.empty()) {
         return;
     }
-    auto col  = event.GetColumn();
-    auto item = event.GetItem();
-    auto row  = this->m_serverList->ItemToRow(item);
+    auto col       = event.GetColumn();
+    auto item      = event.GetItem();
+    auto row       = this->m_serverList->ItemToRow(item);
+    auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
     for (auto& srv : this->cfg->servers) {
-        if (srv.row == row) {
-            if (col == ServerListColumns::SERVER_LIST_COLUMN_ENABLE) {
-                if (srv.host.empty() || srv.port == 0 || srv.authkey.empty()) {
-                    // show a dialog to fill all required fields
-                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
-                    return;
-                }
-                srv.enabled = value == "1";
-            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_HOST) {
+        if (srv.row == server_id) {
+            if (col == ServerListColumns::SERVER_LIST_COLUMN_HOST) {
                 // check if host exists
                 for (const auto& server : this->cfg->servers) {
-                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                    if (server.host == value.utf8_string() && server.port == srv.port && server.row != server_id) {
                         wxMessageDialog(this, _("Server already exists")).ShowModal();
                         this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
                         return;
@@ -336,7 +343,7 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
                     this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv.port), row, col);
                 }
                 for (const auto& server : this->cfg->servers) {
-                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                    if (server.host == value.utf8_string() && server.port == srv.port && server.row != server_id) {
                         wxMessageDialog(this, _("Server already exists")).ShowModal();
                         this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
                         return;
@@ -344,29 +351,78 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
                 }
             } else if (col == ServerListColumns::SERVER_LIST_COLUMN_AUTH_KEY) {
                 for (auto& server : this->cfg->servers) {
-                    if (server.host == value.utf8_string() && server.port == srv.port) {
+                    if (server.row == server_id) {
+                        if (value.Length() != 64 && value.Length() != 0) {
+                            wxMessageDialog(this, _("Authkey must be 64 characters long")).ShowModal();
+                            this->m_serverList->SetValue(wxEmptyString, row, col);
+                            return;
+                        }
                         wxSecretStore store  = wxSecretStore::GetDefault();
-                        wxString serviceName = wxString::Format(wxT("%s/%s:%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), wxString::FromUTF8Unchecked(std::to_string(server.port)));
+                        wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
                         wxString username    = "authkey";
                         wxSecretValue authkey(value);
-
-                        if (store.IsOk() && store.Save(serviceName, username, authkey)) {
-                            server.authkey = authkey.GetAsString().utf8_string();
+                        if (store.IsOk()) {
+                            if (value.Length() == 0) {
+                                store.Delete(serviceName);
+                                break;
+                            } else {
+                                if (store.Save(serviceName, username, authkey) == true) {
+                                    srv.authkey = true;
+                                    break;
+                                }
+                            }
                         }
+                        wxMessageDialog(this, _("Failed to save authkey")).ShowModal();
                         break;
                     }
                 }
             }
         }
     }
-    std::cout << "OnServerListEditingDone val: " << event.GetValue().GetString().utf8_string() << std::endl;
 };
 
 void MainWindowSettings::OnServerListSelectionChanged(wxDataViewEvent& event) {
-    std::cout << "OnServerListSelectionChanged" << std::endl;
     if (this->m_serverList->GetSelectedItemsCount() > 0) {
         this->m_deleteServer->Enable();
     } else {
         this->m_deleteServer->Disable();
     }
+
+    if (this->m_serverList->GetSelectedItemsCount() == 1) {
+        this->m_serverEnable->Enable();
+        auto item = event.GetItem();
+        auto row  = static_cast<int>(this->m_serverList->GetItemData(item));
+        for (auto& srv : this->cfg->servers) {
+            if (srv.row == row) {
+                this->m_serverEnable->SetValue(srv.enabled);
+                this->m_serverEnable->SetLabel(srv.enabled ? _("Disable") : _("Enable"));
+                break;
+            }
+        }
+    } else {
+        this->m_serverEnable->Disable();
+    }
+}
+void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
+    auto item = this->m_serverList->GetSelection();
+    if (item.IsOk()) {
+        auto row = static_cast<int>(this->m_serverList->GetItemData(item));
+        for (auto& srv : this->cfg->servers) {
+            if (srv.row == row) {
+                if ((srv.authkey == false || srv.host.empty() || srv.port == 0) && this->m_serverEnable->GetValue() == true) {
+                    this->m_serverEnable->SetValue(srv.enabled);
+                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
+                    return;
+                }
+                srv.enabled        = !srv.enabled;
+                wxString statusStr = srv.enabled ? srv.connected ? _("connected") : _("disconnected") : _("disabled");
+                ChangeRemoteServer(statusStr, ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+                this->m_serverEnable->SetLabel(srv.enabled ? _("Disable") : _("Enable"));
+                break;
+            }
+        }
+    }
+}
+void MainWindowSettings::ChangeRemoteServer(const wxString& value, ServerListColumns col, int row) {
+    this->m_serverList->SetValue(value, row, col);
 }

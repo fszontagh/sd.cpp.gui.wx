@@ -85,15 +85,25 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->m_showWidget->SetValue(true);
     }
 
-    // restore the splitter pose, the default tab is the job list
-    // this->m_notebook1302->ChangeSelection(static_cast<size_t>(sd_gui_utils::GuiMainPanels::PANEL_QUEUE));
-    // this->m_modelDetailsPanel->Hide();
-    // this->m_rightMainPanel->Hide();
-    // this->m_splitter6->SetSashInvisible(false);
-    // this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
-    // this->m_joblist_item_details->Show();
-
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
+
+    // populate server list if available
+    // this->m_server->Clear();
+    if (this->mapp->cfg->servers.empty() == false) {
+        for (auto& server : this->mapp->cfg->servers) {
+            if (server.enabled == false) {
+                continue;
+            }
+            if (server.name.empty() == false) {
+                this->m_server->Append(wxString::Format("%s", server.name), new sd_gui_utils::sdServer(server));
+            } else {
+                this->m_server->Append(wxString::Format("%s:%d", server.host, server.port), new sd_gui_utils::sdServer(server));
+            }
+            /// this->m_server->SetClientData()(this->m_server->GetCount() - 1, );
+        }
+        this->m_server->SetSelection(0);
+        this->m_server->Show();
+    }
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
 
@@ -526,6 +536,39 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
         }
         wxMenu* menu = new wxMenu();
 
+        if (this->m_joblist->GetSelectedItemsCount() > 1) {
+            bool enable = false;
+            wxDataViewItemArray sel;
+            this->m_joblist->GetSelections(sel);
+            for (const auto& item : sel) {
+                int id     = this->m_joblist->GetStore()->GetItemData(item);
+                auto qitem = this->qmanager->GetItemPtr(id);
+                if (qitem->mode == QM::GenerationMode::CONVERT) {
+                    enable = false;
+                    break;
+                }
+                if (qitem->status == QM::QueueStatus::RUNNING ||
+                    qitem->status == QM::QueueStatus::HASHING) {
+                    enable = false;
+                    break;
+                }
+
+                if (qitem->status == QM::QueueStatus::PENDING ||
+                    qitem->status == QM::QueueStatus::PAUSED ||
+                    qitem->status == QM::QueueStatus::FAILED ||
+                    qitem->status == QM::QueueStatus::DONE) {
+                    enable = true;
+                    break;
+                }
+            }
+            menu->Append(99, wxString::Format(_("Delete %d items"), this->m_joblist->GetSelectedItemsCount()));
+            menu->Enable(99, enable);
+            menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
+            PopupMenu(menu);
+            delete menu;
+            return;
+        }
+
         auto item = event.GetItem();
 
         wxDataViewListStore* store = this->m_joblist->GetStore();
@@ -868,6 +911,17 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (this->mapp->cfg->save_all_image) {
             item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
         }
+
+        if (this->m_server->GetSelection() > 0) {
+            int id = this->m_server->GetSelection();
+            if (id != wxNOT_FOUND) {
+                auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(id));
+                if (server != nullptr) {
+                    item->server = *server;
+                }
+            }
+        }
+
         this->qmanager->AddItem(item);
         return;
     }
@@ -877,6 +931,16 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->params.wtype         = static_cast<sd_type_t>(wClientData->getId());
     item->params.schedule      = static_cast<schedule_t>(sClientData->getId());
     item->params.sample_method = static_cast<sample_method_t>(smClientData->getId());
+
+    if (this->m_server->GetSelection() > 0) {
+        int id = this->m_server->GetSelection();
+        if (id != wxNOT_FOUND) {
+            auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(id));
+            if (server != nullptr) {
+                item->server = *server;
+            }
+        }
+    }
 
     auto diffusionModel = this->m_filePickerDiffusionModel->GetPath().utf8_string();
 
@@ -1398,6 +1462,9 @@ void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
         this->widget = nullptr;
     }
 }
+void MainWindowUI::OnServerSelect(wxCommandEvent& event) {
+}
+
 void MainWindowUI::cleanUpImageInformations() {
     this->m_imageinfo_preview->SetBitmap(blankimage_png_to_wx_bitmap());
     this->m_imageInfoList->SetValue(wxEmptyString);
@@ -1948,9 +2015,14 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
     data.push_back(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));  // status
     data.push_back(wxVariant(item->status_message));
 
+    wxString serverStr = item->server.IsOk() ? item->server.name.empty() ? wxString::Format("%s:%d", item->server.host, item->server.port) : item->server.name : _("local");
+    data.push_back(wxVariant(serverStr));
+
     auto store = this->m_joblist->GetStore();
 
-    // only store the queue item id... not the pointer
+    if (data.size() != (unsigned int)queueJobRows::N_COUNTER) {
+        return;
+    }
     store->PrependItem(data, wxUIntPtr(item->id));
     this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
 }
@@ -1959,8 +2031,6 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
     // update column
     auto store             = this->m_joblist->GetStore();
     wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
-    int progressCol        = this->m_joblist->GetColumnCount() - 4;
-    int speedCol           = this->m_joblist->GetColumnCount() - 3;
     float current_progress = 0.f;
 
     if (item->step > 0 && item->steps > 0) {
@@ -1976,10 +2046,10 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
-            store->SetValueByRow(speed, i, speedCol);
-            store->RowValueChanged(i, progressCol);
-            store->RowValueChanged(i, speedCol);
+            store->SetValueByRow(static_cast<int>(current_progress), i, (int)queueJobRows::PROGRESS);
+            store->SetValueByRow(speed, i, (int)queueJobRows::SPEED);
+            store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
+            store->RowValueChanged(i, (int)queueJobRows::SPEED);
             this->m_joblist->Refresh();
             this->m_joblist->Update();
             break;
@@ -2271,82 +2341,91 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
 void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
     auto tu = evt.GetId();
 
-    // 100 for queueitem list table
-    if (tu < 100) {
-        wxDataViewListStore* store = this->m_joblist->GetStore();
-        auto currentItem           = this->m_joblist->GetCurrentItem();
-        auto currentRow            = this->m_joblist->GetSelectedRow();
-        if (currentRow == wxNOT_FOUND) {
-            return;
-        }
-        int id                               = store->GetItemData(currentItem);
-        std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+    wxDataViewItemArray sel;
 
-        /*
-                1 Copy and queue
-                2 copy to text2img
-                3 copy prompts to text2image
-                4 copy prompts to img2img
-                5 Details
-                99 delete
-        */
+    if (this->m_joblist->GetSelections(sel) == 0) {
+        return;
+    }
 
-        switch (tu) {
-            case 1:
-                this->qmanager->Duplicate(qitem);
-            case 2:
-                this->ChangeGuiFromQueueItem(*qitem);
-                break;
-            case 3:
-                this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
-                this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
-                break;
-            case 4:
-                this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
-                this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
-                break;
-            case 5: {
-                if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
-                    if (std::filesystem::exists(qitem->params.diffusion_model_path)) {
-                        this->m_filePickerDiffusionModel->SetPath(qitem->params.diffusion_model_path);
-                    } else {
-                        wxMessageDialog dialog(this, _("Diffusion model not found"), _("Error"), wxOK | wxICON_ERROR);
-                        dialog.ShowModal();
-                    }
-                } else {
-                    auto model = this->ModelManager->getIntoPtr(qitem->params.model_path);
-                    this->ChangeModelByInfo(model);
-                }
-            } break;
-            case 6: {
-                this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->m_notebook1302->SetSelection(3);  // switch to the upscaler
-            } break;
-            case 7: {
-                this->m_img2imgOpen->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->m_notebook1302->SetSelection(2);  // switch to the img2img
-            } break;
-            case 8: {
-                if (qitem->status == QM::QueueStatus::PAUSED) {
-                    this->qmanager->UnPauseItem(qitem);
-                    return;
-                }
-                if (qitem->status == QM::QueueStatus::PENDING) {
-                    this->qmanager->PauseItem(qitem);
-                    return;
-                }
-            } break;
-            case 99: {
-                if (this->qmanager->DeleteJob(qitem->id)) {
-                    store->DeleteItem(currentRow);
-                    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
-                }
-            } break;
+    wxDataViewListStore* store = this->m_joblist->GetStore();
+    
+
+    if (tu == 99) {
+        this->m_joblist->GetSelections(sel);
+        for (auto& item : sel) {
+            int id                               = store->GetItemData(item);
+            std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+            if (this->qmanager->DeleteJob(qitem->id)) {
+                store->DeleteItem(this->m_joblist->ItemToRow(item));
+                this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+            }
         }
         return;
     }
+
+    auto currentItem = sel.front();
+
+    int id                               = store->GetItemData(currentItem);
+    std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+
+    /*
+            1 Copy and queue
+            2 copy to text2img
+            3 copy prompts to text2image
+            4 copy prompts to img2img
+            5 Details
+            99 delete
+    */
+
+    switch (tu) {
+        case 1:
+            this->qmanager->Duplicate(qitem);
+        case 2:
+            this->ChangeGuiFromQueueItem(*qitem);
+            break;
+        case 3:
+            this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+            this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
+            break;
+        case 4:
+            this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+            this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
+            break;
+        case 5: {
+            if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
+                if (std::filesystem::exists(qitem->params.diffusion_model_path)) {
+                    this->m_filePickerDiffusionModel->SetPath(qitem->params.diffusion_model_path);
+                } else {
+                    wxMessageDialog dialog(this, _("Diffusion model not found"), _("Error"), wxOK | wxICON_ERROR);
+                    dialog.ShowModal();
+                }
+            } else {
+                auto model = this->ModelManager->getIntoPtr(qitem->params.model_path);
+                this->ChangeModelByInfo(model);
+            }
+        } break;
+        case 6: {
+            this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+            this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+            this->m_notebook1302->SetSelection(3);  // switch to the upscaler
+        } break;
+        case 7: {
+            this->m_img2imgOpen->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+            this->m_notebook1302->SetSelection(2);  // switch to the img2img
+        } break;
+        case 8: {
+            if (qitem->status == QM::QueueStatus::PAUSED) {
+                this->qmanager->UnPauseItem(qitem);
+                return;
+            }
+            if (qitem->status == QM::QueueStatus::PENDING) {
+                this->qmanager->PauseItem(qitem);
+                return;
+            }
+        } break;
+    }
+    return;
 }
 
 void MainWindowUI::loadVaeList() {
@@ -2999,19 +3078,16 @@ void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::strin
 void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::QueueItem> item) {
     auto store = this->m_joblist->GetStore();
 
-    int statusCol     = this->m_joblist->GetColumnCount() - 2;
-    int statusTextCol = this->m_joblist->GetColumnCount() - 1;
-
     for (unsigned int i = 0; i < store->GetItemCount(); i++) {
         auto currentItem                     = store->GetItem(i);
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))), i, statusCol);
-            store->RowValueChanged(i, statusCol);
+            store->SetValueByRow(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))), i, (int)queueJobRows::STATUS);
+            store->RowValueChanged(i, (int)queueJobRows::STATUS);
 
-            store->SetValueByRow(wxVariant(item->status_message), i, statusTextCol);
-            store->RowValueChanged(i, statusTextCol);
+            store->SetValueByRow(wxVariant(item->status_message), i, (int)queueJobRows::STATUS_MESSAGE);
+            store->RowValueChanged(i, (int)queueJobRows::STATUS_MESSAGE);
 
             break;
         }
@@ -3304,10 +3380,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         }
 
         // update column
-        auto store = this->m_joblist->GetStore();
-
-        int progressCol = this->m_joblist->GetColumnCount() - 4;
-
+        auto store           = this->m_joblist->GetStore();
         size_t _x            = myjob->hash_progress_size;
         size_t _m            = myjob->hash_fullsize;
         int current_progress = 0;
@@ -3323,8 +3396,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             int id                               = store->GetItemData(currentItem);
             std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
-                store->SetValueByRow(current_progress, i, progressCol);
-                store->RowValueChanged(i, progressCol);
+                store->SetValueByRow(current_progress, i, (int)queueJobRows::PROGRESS);
+                store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
                 this->m_joblist->Refresh();
                 this->m_joblist->Update();
                 break;
@@ -3346,15 +3419,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // update column
         auto store = this->m_joblist->GetStore();
 
-        int progressCol = this->m_joblist->GetColumnCount() - 4;
-
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem                     = store->GetItem(i);
             int id                               = store->GetItemData(currentItem);
             std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
-                store->SetValueByRow(0, i, progressCol);
-                store->RowValueChanged(i, progressCol);
+                store->SetValueByRow(0, i, (int)queueJobRows::PROGRESS);
+                store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
                 this->m_joblist->Refresh();
                 this->m_joblist->Update();
                 break;
@@ -3367,10 +3438,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
 
         // update column
-        auto store             = this->m_joblist->GetStore();
-        wxString speed         = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
-        int progressCol        = this->m_joblist->GetColumnCount() - 4;
-        int speedCol           = this->m_joblist->GetColumnCount() - 3;
+        auto store     = this->m_joblist->GetStore();
+        wxString speed = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
+
         float current_progress = 100.f * (static_cast<float>(myjob->step) /
                                           static_cast<float>(myjob->steps));
 
@@ -3379,10 +3449,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             int id                               = store->GetItemData(currentItem);
             std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
-                store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
-                store->SetValueByRow(speed, i, speedCol);
-                store->RowValueChanged(i, progressCol);
-                store->RowValueChanged(i, speedCol);
+                store->SetValueByRow(static_cast<int>(current_progress), i, (int)queueJobRows::PROGRESS);
+                store->SetValueByRow(speed, i, (int)queueJobRows::SPEED);
+                store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
+                store->RowValueChanged(i, (int)queueJobRows::SPEED);
                 this->m_joblist->Refresh();
                 this->m_joblist->Update();
                 break;
@@ -3496,7 +3566,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    data.push_back(wxVariant(_("Udated at")));
+    data.push_back(wxVariant(_("Updated at")));
     if (item->updated_at == 0) {
         data.push_back(wxVariant("--"));
     } else {
@@ -3504,6 +3574,23 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     }
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
+
+    data.push_back(wxVariant(_("Server")));
+    if (item->server.IsOk()) {
+        wxString serverStr = item->server.GetName();
+        data.push_back(wxVariant(serverStr));
+    } else {
+        data.push_back(wxVariant("local"));
+    }
+    this->m_joblist_item_details->AppendItem(data);
+    data.clear();
+
+    if (item->status_message.empty() == false) {
+        data.push_back(wxVariant(_("Status")));
+        data.push_back(wxVariant(wxString(item->status_message)));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+    }
 
     data.push_back(wxVariant(_("Mode")));
     data.push_back(wxVariant(wxString(modes_str[item->mode])));
@@ -4051,7 +4138,7 @@ void MainWindowUI::threadedModelInfoDownload(wxEvtHandler* eventHandler, sd_gui_
 
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         apikey = password.GetAsString();
     }
 
@@ -4113,7 +4200,7 @@ void MainWindowUI::threadedModelInfoImageDownload(
     wxString apikey;
 
     wxSecretStore store = wxSecretStore::GetDefault();
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         apikey = password.GetAsString();
     }
 

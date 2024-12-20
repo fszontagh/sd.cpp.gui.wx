@@ -26,6 +26,7 @@ protected:
     void OnServerListEditingDone(wxDataViewEvent& event) override;
     void OnServerListSelectionChanged(wxDataViewEvent& event) override;
     void OnServerListItemValueChanged(wxDataViewEvent& event) override;
+    void OnServerEnableToggle(wxCommandEvent& event) override;
 
 public:
     /** Constructor */
@@ -33,19 +34,20 @@ public:
     ~MainWindowSettings();
     //// end generated class members
 private:
-    void InitConfig();
-    void AddRemoteServerToList(sd_gui_utils::sdServer& server);
     wxConfigBase* config;
     sd_gui_utils::config* cfg;
     std::string ini_path;
     std::map<int, std::string> locales;
+    bool checkboxUpdate = false;
     enum ServerListColumns {
-        SERVER_LIST_COLUMN_ENABLE = 0,
         SERVER_LIST_COLUMN_HOST,
         SERVER_LIST_COLUMN_PORT,
         SERVER_LIST_COLUMN_AUTH_KEY,
         SERVER_LIST_COLUMN_STATUS
     };
+    void InitConfig();
+    void AddRemoteServerToList(sd_gui_utils::sdServer& server);
+    void ChangeRemoteServer(const wxString& value, ServerListColumns col, int row);
 };
 
 #endif  // __MainWindowSettings__

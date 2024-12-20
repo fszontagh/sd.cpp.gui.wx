@@ -228,7 +228,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer79;
 	bSizer79 = new wxBoxSizer( wxVERTICAL );
 
-	m_joblist = new wxDataViewListCtrl( m_panel14, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
+	m_joblist = new wxDataViewListCtrl( m_panel14, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_MULTIPLE|wxDV_ROW_LINES|wxDV_VERT_RULES );
 	m_joblist->SetExtraStyle( wxWS_EX_VALIDATE_RECURSIVELY );
 
 	m_dataViewListColumn32 = m_joblist->AppendTextColumn( _("Id"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
@@ -240,7 +240,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_dataViewListColumn32111111 = m_joblist->AppendProgressColumn( _("Progress"), wxDATAVIEW_CELL_INERT, 80, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn321111111 = m_joblist->AppendTextColumn( _("Speed"), wxDATAVIEW_CELL_INERT, 110, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn3211111111 = m_joblist->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_ACTIVATABLE, 150, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn32111111111 = m_joblist->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32111111111 = m_joblist->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn41 = m_joblist->AppendTextColumn( _("Server"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer79->Add( m_joblist, 1, wxEXPAND, 5 );
 
 
@@ -1315,7 +1316,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_queue->SetBitmap( play_png_to_wx_bitmap() );
 	m_queue->Enable( false );
 
-	fgSizer2->Add( m_queue, 1, wxALL|wxEXPAND, 5 );
+	fgSizer2->Add( m_queue, 1, wxALL, 5 );
+
+	wxString m_serverChoices[] = { _("local") };
+	int m_serverNChoices = sizeof( m_serverChoices ) / sizeof( wxString );
+	m_server = new wxChoice( m_rightMainPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_serverNChoices, m_serverChoices, 0 );
+	m_server->SetSelection( 0 );
+	m_server->Hide();
+
+	fgSizer2->Add( m_server, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_rightMainPanel->SetSizer( fgSizer2 );
@@ -1420,6 +1429,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_sd15Res->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
 	m_sdXlres->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );
 	m_queue->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_server->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnServerSelect ), NULL, this );
 }
 
 mainUI::~mainUI()
@@ -1503,6 +1513,7 @@ mainUI::~mainUI()
 	m_sd15Res->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
 	m_sdXlres->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );
 	m_queue->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
+	m_server->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnServerSelect ), NULL, this );
 
 }
 
@@ -1995,7 +2006,6 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer891 = new wxBoxSizer( wxVERTICAL );
 
 	m_serverList = new wxDataViewListCtrl( m_panel181, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_MULTIPLE|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
-	m_dataViewListColumn361 = m_serverList->AppendToggleColumn( _("Enaled"), wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn36 = m_serverList->AppendTextColumn( _("Host"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn37 = m_serverList->AppendTextColumn( _("Port"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn38 = m_serverList->AppendTextColumn( _("Auth key"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
@@ -2005,6 +2015,11 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	wxBoxSizer* bSizer110;
 	bSizer110 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_serverEnable = new wxToggleButton( m_panel181, wxID_ANY, _("Enable"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_serverEnable->Enable( false );
+
+	bSizer110->Add( m_serverEnable, 0, wxALL, 5 );
 
 	m_addServer = new wxButton( m_panel181, wxID_ANY, _("Add server"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer110->Add( m_addServer, 0, wxALL, 5 );
@@ -2089,6 +2104,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_serverList->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_START_EDITING, wxDataViewEventHandler( Settings::OnServerListStartEditing ), NULL, this );
 	m_serverList->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_VALUE_CHANGED, wxDataViewEventHandler( Settings::OnServerListItemValueChanged ), NULL, this );
 	m_serverList->Connect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( Settings::OnServerListSelectionChanged ), NULL, this );
+	m_serverEnable->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( Settings::OnServerEnableToggle ), NULL, this );
 	m_addServer->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnAddServer ), NULL, this );
 	m_deleteServer->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnDeleteServer ), NULL, this );
 	m_save->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
@@ -2134,6 +2150,7 @@ Settings::~Settings()
 	m_serverList->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_START_EDITING, wxDataViewEventHandler( Settings::OnServerListStartEditing ), NULL, this );
 	m_serverList->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_VALUE_CHANGED, wxDataViewEventHandler( Settings::OnServerListItemValueChanged ), NULL, this );
 	m_serverList->Disconnect( wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler( Settings::OnServerListSelectionChanged ), NULL, this );
+	m_serverEnable->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( Settings::OnServerEnableToggle ), NULL, this );
 	m_addServer->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnAddServer ), NULL, this );
 	m_deleteServer->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnDeleteServer ), NULL, this );
 	m_save->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::onSave ), NULL, this );
