@@ -239,8 +239,6 @@ void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer* server) {
         server->authkey = true;
     }
 
-    wxString statusStr = server.enabled ? server.connected ? _("connected") : _("disconnected") : _("disabled");
-
     wxVector<wxVariant> values;
     values.push_back(wxString::FromUTF8Unchecked(server->host));
     values.push_back(wxString::Format(wxT("%d"), server->port));
