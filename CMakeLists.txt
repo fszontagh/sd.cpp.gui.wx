@@ -157,7 +157,7 @@ endif()
 
 include(cmake/intl.cmake)
 
-add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile)
+add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile sockets_cpp)
 
 # Include directories
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE 

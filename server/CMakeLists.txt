@@ -7,7 +7,7 @@ if (MSVC)
 endif()
 
 add_executable(${SERVER_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp)
-
+add_dependencies(${SERVER_BINARY_NAME} sockets_cpp)
 #target_precompile_headers(${SERVER_BINARY_NAME} PRIVATE src/pch.h)
 
 if (MSVC)
