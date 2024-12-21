@@ -276,7 +276,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     }
     try {
         nlohmann::json msg = nlohmann::json::parse(message);
-        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PackaetParam::INFO, message);
+        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::ERROR, message);
         this->socket->sendMsg(0, packet);
 
     } catch (const std::exception& e) {
@@ -284,4 +284,8 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     }
 
     return false;
+}
+
+void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet) {
+    
 }

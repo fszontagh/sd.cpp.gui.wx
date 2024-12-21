@@ -78,6 +78,7 @@ set(SOURCES
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
     src/libs/SharedMemoryManager.cpp
+    src/libs/TcpClient.cpp
 
 )
 
@@ -164,6 +165,7 @@ target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${stable_diffusion_SOURCE_DIR}
     ${CpuFeatures_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
+    ${sockets_cpp_SOURCE}
 )
 message(STATUS "APPDEPS: ${APPDEPENDS}")
 

@@ -73,14 +73,12 @@ void MainWindowSettings::OnAddServer(wxCommandEvent& event) {
     int port;
     if (this->m_AddServerPort->GetValue().ToInt(&port) && host.empty() == false) {
         // check if server already exists
-        for (auto& srv : this->cfg->servers) {
-            if (srv.host == host && srv.port == port) {
-                wxMessageBox("Server already exists", "Error", wxICON_ERROR);
-                return;
-            }
+        if (this->cfg->ServerExist(host.utf8_string(), port) == true) {
+            wxMessageBox(wxString::Format(_("Server %s:%d already exists"), host, port), "Error", wxICON_ERROR);
+            return;
         }
-        auto srv = sd_gui_utils::sdServer(host.utf8_string(), port);
-        this->cfg->servers.push_back(srv);
+        auto srv = new sd_gui_utils::sdServer(host.utf8_string(), port);
+        this->cfg->AddTcpServer(srv);
         this->AddRemoteServerToList(srv);
     }
 }
@@ -124,9 +122,10 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
 
     for (size_t i = 0; i < this->cfg->servers.size(); ++i) {
         this->config->SetPath(wxString::Format("Server%zu", i));
-        this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i].host));
-        this->config->Write("Port", this->cfg->servers[i].port);
-        this->config->Write("Enabled", this->cfg->servers[i].enabled);
+        this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i]->host));
+        this->config->Write("Port", this->cfg->servers[i]->port);
+        this->config->Write("Id", this->cfg->servers[i]->server_id);
+        this->config->Write("Enabled", this->cfg->servers[i]->enabled.load());
         this->config->SetPath("..");
     }
     this->config->SetPath(oldPath);
@@ -194,7 +193,7 @@ void MainWindowSettings::InitConfig() {
     this->m_autogen_hash->SetValue(this->cfg->auto_gen_hash);
     this->m_favorite_models_only->SetValue(this->cfg->favorite_models_only);
 
-    for (auto& srv : this->cfg->servers) {
+    for (auto& srv : this->cfg->ListRemoteServers()) {
         this->AddRemoteServerToList(srv);
     }
 
@@ -229,27 +228,27 @@ void MainWindowSettings::InitConfig() {
     }
     this->m_language->SetSelection(selected);
 }
-void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer& server) {
+void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer* server) {
     this->checkboxUpdate = true;
     wxSecretStore store  = wxSecretStore::GetDefault();
-    wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
+    wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server->host), server->port);
     wxString username;
     wxSecretValue authkey;
 
     if (store.IsOk() && store.Load(serviceName, username, authkey)) {
-        server.authkey = true;
+        server->authkey = true;
     }
 
-    wxString statusStr = server.enabled ? server.connected ? _("connected") : _("disconnected") : _("disabled");
-
     wxVector<wxVariant> values;
-    values.push_back(wxString::FromUTF8Unchecked(server.host));
-    values.push_back(wxString::Format(wxT("%d"), server.port));
+    values.push_back(wxString::FromUTF8Unchecked(server->host));
+    values.push_back(wxString::Format(wxT("%d"), server->port));
     values.push_back(authkey.GetAsString());
-    values.push_back(statusStr);
+    values.push_back(wxGetTranslation((server->GetStatus())));
     // get last row
-    auto row   = this->m_serverList->GetItemCount();
-    server.row = row;
+    auto row = this->m_serverList->GetItemCount();
+    if (server->server_id == -1) {
+        server->server_id = row;
+    }
     this->m_serverList->InsertItem(row, values, row);
     values.clear();
     this->checkboxUpdate = false;
@@ -263,17 +262,10 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
     }
 
     for (const auto item : selections) {
-        auto itemId = item.GetID();
-        auto row    = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto row       = this->m_serverList->ItemToRow(item);
         this->m_serverList->DeleteItem(row);
-        // delete from this->cfg->server where this->cfg->server.row == row
-        for (auto it = this->cfg->servers.begin(); it != this->cfg->servers.end();) {
-            if (it->row == row) {
-                it = this->cfg->servers.erase(it);
-            } else {
-                ++it;
-            }
-        }
+        this->cfg->RemoveTcpServer(server_id);
     }
 }
 
@@ -319,63 +311,58 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
     auto item      = event.GetItem();
     auto row       = this->m_serverList->ItemToRow(item);
     auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
-    for (auto& srv : this->cfg->servers) {
-        if (srv.row == server_id) {
-            if (col == ServerListColumns::SERVER_LIST_COLUMN_HOST) {
-                // check if host exists
-                for (const auto& server : this->cfg->servers) {
-                    if (server.host == value.utf8_string() && server.port == srv.port && server.row != server_id) {
-                        wxMessageDialog(this, _("Server already exists")).ShowModal();
-                        this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
-                        return;
-                    }
-                }
-                srv.host = value.utf8_string();
 
-            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {
-                auto oldPort = srv.port;
-                if (value.ToInt(&srv.port) == false) {
-                    srv.port = oldPort;
-                    this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv.port), row, col);
+    auto srv = this->cfg->GetTcpServer(server_id);
+    if (srv == nullptr) {
+        return;
+    }
+    if (col == ServerListColumns::SERVER_LIST_COLUMN_HOST) {
+        if (this->cfg->ServerExist(value.utf8_string(), srv->port)) {
+            wxMessageDialog(this, _("Server already exists")).ShowModal();
+            this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv->host), row, col);
+        }
+        this->cfg->ServerChangeHost(server_id, value.utf8_string());
+    }
+
+    if (col == ServerListColumns::SERVER_LIST_COLUMN_AUTH_KEY) {
+        if (value.Length() != 64 && value.Length() != 0) {
+            wxMessageDialog(this, _("Authkey must be 64 characters long")).ShowModal();
+            this->m_serverList->SetValue(wxEmptyString, row, col);
+            return;
+        }
+        wxSecretStore store  = wxSecretStore::GetDefault();
+        wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(srv->host), srv->port);
+        wxString username    = "authkey";
+        wxSecretValue authkey(value);
+        if (store.IsOk()) {
+            if (value.Length() == 0) {
+                store.Delete(serviceName);
+                return;
+            } else {
+                if (store.Save(serviceName, username, authkey) == true) {
+                    srv->authkey = true;
+                    return;
                 }
-                if (srv.port < 1 || srv.port > 65535) {
-                    srv.port = oldPort;
-                    this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv.port), row, col);
-                }
-                for (const auto& server : this->cfg->servers) {
-                    if (server.host == value.utf8_string() && server.port == srv.port && server.row != server_id) {
-                        wxMessageDialog(this, _("Server already exists")).ShowModal();
-                        this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv.host), row, col);
-                        return;
-                    }
-                }
-            } else if (col == ServerListColumns::SERVER_LIST_COLUMN_AUTH_KEY) {
-                for (auto& server : this->cfg->servers) {
-                    if (server.row == server_id) {
-                        if (value.Length() != 64 && value.Length() != 0) {
-                            wxMessageDialog(this, _("Authkey must be 64 characters long")).ShowModal();
-                            this->m_serverList->SetValue(wxEmptyString, row, col);
-                            return;
-                        }
-                        wxSecretStore store  = wxSecretStore::GetDefault();
-                        wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(server.host), server.port);
-                        wxString username    = "authkey";
-                        wxSecretValue authkey(value);
-                        if (store.IsOk()) {
-                            if (value.Length() == 0) {
-                                store.Delete(serviceName);
-                                break;
-                            } else {
-                                if (store.Save(serviceName, username, authkey) == true) {
-                                    srv.authkey = true;
-                                    break;
-                                }
-                            }
-                        }
-                        wxMessageDialog(this, _("Failed to save authkey")).ShowModal();
-                        break;
-                    }
-                }
+            }
+        }
+        wxMessageDialog(this, _("Failed to save authkey")).ShowModal();
+    }
+
+    if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {
+        auto oldPort = srv->port;
+        if (value.ToInt(&srv->port) == false) {
+            this->cfg->ServerChangePort(server_id, oldPort);
+            this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv->port), row, col);
+        }
+        if (srv->port < 1 || srv->port > 65535) {
+            this->cfg->ServerChangePort(server_id, oldPort);
+            this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv->port), row, col);
+        }
+        for (const auto& server : this->cfg->servers) {
+            if (server->host == value.utf8_string() && server->port == srv->port && server->server_id != server_id) {
+                wxMessageDialog(this, _("Server already exists")).ShowModal();
+                this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv->host), row, col);
+                return;
             }
         }
     }
@@ -390,12 +377,12 @@ void MainWindowSettings::OnServerListSelectionChanged(wxDataViewEvent& event) {
 
     if (this->m_serverList->GetSelectedItemsCount() == 1) {
         this->m_serverEnable->Enable();
-        auto item = event.GetItem();
-        auto row  = static_cast<int>(this->m_serverList->GetItemData(item));
-        for (auto& srv : this->cfg->servers) {
-            if (srv.row == row) {
-                this->m_serverEnable->SetValue(srv.enabled);
-                this->m_serverEnable->SetLabel(srv.enabled ? _("Disable") : _("Enable"));
+        auto item      = event.GetItem();
+        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
+        for (auto& srv : this->cfg->ListRemoteServers()) {
+            if (srv->server_id == server_id) {
+                this->m_serverEnable->SetValue(srv->enabled);
+                this->m_serverEnable->SetLabel(srv->enabled ? _("Disable") : _("Enable"));
                 break;
             }
         }
@@ -405,19 +392,19 @@ void MainWindowSettings::OnServerListSelectionChanged(wxDataViewEvent& event) {
 }
 void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
     auto item = this->m_serverList->GetSelection();
+    auto row  = this->m_serverList->ItemToRow(item);
     if (item.IsOk()) {
-        auto row = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
         for (auto& srv : this->cfg->servers) {
-            if (srv.row == row) {
-                if ((srv.authkey == false || srv.host.empty() || srv.port == 0) && this->m_serverEnable->GetValue() == true) {
-                    this->m_serverEnable->SetValue(srv.enabled);
+            if (srv->server_id == server_id) {
+                if ((srv->authkey == false || srv->host.empty() || srv->port == 0) && this->m_serverEnable->GetValue() == true) {
+                    this->m_serverEnable->SetValue(srv->enabled);
                     wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
                     return;
                 }
-                srv.enabled        = !srv.enabled;
-                wxString statusStr = srv.enabled ? srv.connected ? _("connected") : _("disconnected") : _("disabled");
-                ChangeRemoteServer(statusStr, ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
-                this->m_serverEnable->SetLabel(srv.enabled ? _("Disable") : _("Enable"));
+                this->cfg->ServerEnable(server_id, this->m_serverEnable->GetValue());
+                ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+                this->m_serverEnable->SetLabel(srv->enabled ? _("Disable") : _("Enable"));
                 break;
             }
         }

@@ -46,7 +46,7 @@ private:
         SERVER_LIST_COLUMN_STATUS
     };
     void InitConfig();
-    void AddRemoteServerToList(sd_gui_utils::sdServer& server);
+    void AddRemoteServerToList(sd_gui_utils::sdServer* server);
     void ChangeRemoteServer(const wxString& value, ServerListColumns col, int row);
 };
 

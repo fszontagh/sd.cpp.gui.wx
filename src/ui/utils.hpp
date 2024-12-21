@@ -1,8 +1,6 @@
 #ifndef __MAINFRAME_HPP__UTILS
 #define __MAINFRAME_HPP__UTILS
 
-
-
 namespace sd_gui_utils {
 
     /**
@@ -56,7 +54,6 @@ namespace sd_gui_utils {
         ALL              = -1,       // All options are set
         UNKNOWN          = -2,       // The unknown option
     };
-
 
     inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
         {sd_gui_utils::DirTypes::LORA, "LORA"},
@@ -307,8 +304,11 @@ namespace sd_gui_utils {
     class config {
     private:
         wxConfigBase* configBase = nullptr;
+        // mutex to protect concurrent access to tcp client config
+        std::mutex mutex;
 
     public:
+        std::vector<sd_gui_utils::sdServer*> servers;
         wxString model                     = "";
         wxString vae                       = "";
         wxString lora                      = "";
@@ -341,7 +341,121 @@ namespace sd_gui_utils {
         bool widgetVisible                 = false;
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
-        std::vector<sd_gui_utils::sdServer> servers;
+
+        inline void ServerEnable(int server_id, bool enable) {
+            std::cout << "ServerEnable " << server_id << " " << enable << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->enabled = enable;
+                    std::cout << "ServerEnable done " << server_id << " " << enable << std::endl;
+                    return;
+                }
+            }
+        }
+        inline void AddTcpServer(const sd_gui_utils::sdServer& server) {
+            std::cout << "AddTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->servers.push_back(new sd_gui_utils::sdServer(server));
+            std::cout << "AddTcpServer done" << std::endl;
+        }
+        inline sd_gui_utils::sdServer* GetTcpServer(int server_id) {
+            std::cout << "GetTcpServer id: " << server_id << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    std::cout << "GetTcpServer done" << std::endl;
+                    return *it;
+                }
+            }
+            std::cout << "GetTcpServer done nullptr" << std::endl;
+            return nullptr;
+        }
+        inline void AddTcpServer(sd_gui_utils::sdServer* server) {
+            std::cout << "AddTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->servers.push_back(server);
+            std::cout << "AddTcpServer done" << std::endl;
+        }
+        inline void RemoveTcpServer(int server_id) {
+            std::cout << "RemoveTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    delete *it;
+                    this->servers.erase(it);
+                    std::cout << "RemoveTcpServer done" << std::endl;
+                    return;
+                }
+            }
+        }
+        inline bool ServerExist(const std::string& host, int port) {
+            std::cout << "ServerExist" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->host == host && (*it)->port == port) {
+                    std::cout << "ServerExist done" << std::endl;
+                    return true;
+                }
+            }
+            std::cout << "ServerExist done" << std::endl;
+            return false;
+        }
+
+        inline void ServerChangePort(int server_id, int port) {
+            std::cout << "ServerChangePort" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->port = port;
+                    break;
+                }
+            }
+            std::cout << "ServerChangePort done" << std::endl;
+        }
+
+        inline void ServerChangeHost(int server_id, const std::string& host) {
+            std::cout << "ServerChangeHost" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->host = host;
+                    break;
+                }
+            }
+            std::cout << "ServerChangeHost done" << std::endl;
+        }
+        inline void ServerChangeName(int server_id, const std::string& name) {
+            std::cout << "ServerChangeName" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->name = name;
+                    break;
+                }
+            }
+            std::cout << "ServerChangeName done" << std::endl;
+        }
+
+        inline void ClearTcpServers() {
+            std::cout << "ClearTcpServers" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if (*it == nullptr) {
+                    continue;
+                }
+                delete *it;
+            }
+            this->servers.clear();
+            std::cout << "ClearTcpServers done" << std::endl;
+        }
+
+        inline std::vector<sd_gui_utils::sdServer*> ListRemoteServers() {
+            std::cout << "ListRemoteServers" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            return this->servers;
+            std::cout << "ListRemoteServers done" << std::endl;
+        }
 
         inline const wxString getPathByDirType(const wxString& dirTypeName) {
             auto f = sd_gui_utils::dirtypes_wxstr.find(dirTypeName);
@@ -467,10 +581,12 @@ namespace sd_gui_utils {
                     int port;
                     config->Read("Host", &host);
                     config->Read("Port", &port, 8191);
-                    bool enabled = config->ReadBool("Enabled", false);
-                    sd_gui_utils::sdServer server(host.utf8_string(), port);
-                    server.enabled = enabled;
-                    this->servers.push_back(server);
+                    bool enabled                   = config->ReadBool("Enabled", false);
+                    int id                         = config->Read("Id", -1);
+                    sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port);
+                    server->enabled                = enabled;
+                    server->server_id              = id;
+                    this->AddTcpServer(server);
                     config->SetPath("..");
                     hasMore = config->GetNextGroup(serverKey, index);
                 }
@@ -572,13 +688,15 @@ namespace sd_gui_utils {
 
                 for (size_t i = 0; i < servers.size(); ++i) {
                     this->configBase->SetPath(wxString::Format("Server%zu", i));
-                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i].host));
-                    this->configBase->Write("Port", servers[i].port);
-                    this->configBase->Write("Enabled", servers[i].enabled);
+                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->host));
+                    this->configBase->Write("Port", servers[i]->port);
+                    this->configBase->Write("Enabled", servers[i]->enabled.load());
+                    this->configBase->Write("Id", servers[i]->server_id);
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
             }
+            this->ClearTcpServers();
         }
     };
 
@@ -788,7 +906,11 @@ namespace sd_gui_utils {
         MODEL_MOVE_START,
         MODEL_MOVE_FAILED,
         MODEL_MOVE_DONE,
-        MODEL_MOVE_UPDATE
+        MODEL_MOVE_UPDATE,
+        SERVER_CONNECTED,
+        SERVER_DISCONNECTED,
+        SERVER_ERROR,
+        SERVER_MODEL_LIST_UPDATE
     };
     // sd c++
 

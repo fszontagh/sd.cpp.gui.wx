@@ -184,7 +184,7 @@ namespace QM {
         bool need_sha256                     = false;
         std::string generated_sha256         = "";
         int update_index                     = -1;
-        sd_gui_utils::sdServer server        = sd_gui_utils::sdServer();
+        int server                           = -1;
         QueueItem(const QueueItem& other)
             : id(other.id),
               created_at(other.created_at),

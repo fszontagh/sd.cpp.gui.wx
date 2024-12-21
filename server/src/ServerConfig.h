@@ -42,6 +42,13 @@ struct ServerConfig {
     std::string server_name           = "";  // optional server name to display in the gui
     unsigned int unauthorized_timeout = 1;   // disconnect clients after this many seconds if not authenticated
     std::string exprocess_binary_path;       // force to use this exprocess binary
+    std::string model_path;
+    std::string lora_path;
+    std::string vae_path;
+    std::string embedding_path;
+    std::string taesd_path;
+    std::string controlnet_path;
+    std::string esrgan_path;
 };
 
 inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohmann_json_t) {

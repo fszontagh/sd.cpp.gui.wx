@@ -90,16 +90,28 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     // populate server list if available
     // this->m_server->Clear();
     if (this->mapp->cfg->servers.empty() == false) {
-        for (auto& server : this->mapp->cfg->servers) {
-            if (server.enabled == false) {
+        for (auto& server : this->mapp->cfg->ListRemoteServers()) {
+            if (server->enabled == false) {
                 continue;
             }
-            if (server.name.empty() == false) {
-                this->m_server->Append(wxString::Format("%s", server.name), new sd_gui_utils::sdServer(server));
-            } else {
-                this->m_server->Append(wxString::Format("%s:%d", server.host, server.port), new sd_gui_utils::sdServer(server));
-            }
-            /// this->m_server->SetClientData()(this->m_server->GetCount() - 1, );
+            server->needToRun = true;
+            auto id           = this->m_server->Append(server->GetName());
+            this->m_server->SetClientData(id, (void*)server);
+
+            this->threads.emplace_back(new std::thread([this, server]() {
+                while (server->needToRun) {
+                    while (server->connected == false) {
+                        server->client = std::make_shared<sd_gui_utils::networks::TcpClient>(server, this->GetEventHandler());
+                        if (server->connected) {
+                            this->tcpClients.push_back(server->client);
+                            break;
+                        }
+                        std::this_thread::sleep_for(std::chrono::seconds(5));
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+                server->connected = false;
+            }));
         }
         this->m_server->SetSelection(0);
         this->m_server->Show();
@@ -915,9 +927,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (this->m_server->GetSelection() > 0) {
             int id = this->m_server->GetSelection();
             if (id != wxNOT_FOUND) {
-                auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(id));
+                auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
                 if (server != nullptr) {
-                    item->server = *server;
+                    item->server = server->server_id;
                 }
             }
         }
@@ -937,7 +949,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (id != wxNOT_FOUND) {
             auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(id));
             if (server != nullptr) {
-                item->server = *server;
+                item->server = server->server_id;
             }
         }
     }
@@ -2015,8 +2027,16 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
     data.push_back(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));  // status
     data.push_back(wxVariant(item->status_message));
 
-    wxString serverStr = item->server.IsOk() ? item->server.name.empty() ? wxString::Format("%s:%d", item->server.host, item->server.port) : item->server.name : _("local");
-    data.push_back(wxVariant(serverStr));
+    if (item->server > -1) {
+        auto srv = this->mapp->cfg->GetTcpServer(item->server);
+        if (srv != nullptr) {
+            data.push_back(wxVariant(srv->GetName()));
+        } else {
+            data.push_back(wxVariant(_("deleted server")));
+        }
+    } else {
+        data.push_back(wxVariant(_("local")));
+    }
 
     auto store = this->m_joblist->GetStore();
 
@@ -2072,7 +2092,7 @@ MainWindowUI::~MainWindowUI() {
         this->processCheckThread->join();
     }
 
-    if (this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
+    if (this->disableExternalProcessHandling == false && this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
         std::cout << "Terminating processs" << std::endl;
         int result = 0;
         result     = subprocess_terminate(subprocess);
@@ -2096,7 +2116,11 @@ MainWindowUI::~MainWindowUI() {
         this->processHandleOutput->join();
     }
 
-    for (auto& threadPtr : threads) {
+    for (auto it = this->tcpClients.begin(); it != this->tcpClients.end(); it++) {
+        (*it)->stop();
+    }
+
+    for (auto& threadPtr : this->threads) {
         if (threadPtr->joinable()) {
             threadPtr->join();
         }
@@ -2348,7 +2372,6 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
     }
 
     wxDataViewListStore* store = this->m_joblist->GetStore();
-    
 
     if (tu == 99) {
         this->m_joblist->GetSelections(sel);
@@ -2807,11 +2830,7 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
         this->m_civitai->Show();
     }
 
-    std::cout << "restart window with lang: " << this->mapp->cfg->language << std::endl;
-    this->mapp->ReloadMainWindow(this->mapp->cfg->language);
-
-    //        this->Thaw();
-    //        this->Show();
+    this->mapp->ReloadMainWindow(this->mapp->cfg->language, this->disableExternalProcessHandling);
 }
 void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
     this->civitwindow->Destroy();
@@ -3262,6 +3281,30 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 break;
         }
     }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_CONNECTED) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        this->writeLog(wxString::Format(_("Connected to server: %s"), server->GetName()));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->disconnect_reason));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        this->writeLog(wxString::Format(_("Server error: %s"), server->GetName(), server->disconnect_reason));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
+        // get packet
+        auto packetId                  = e.GetInt();
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        auto packet = server->client->getPacket(packetId);// parse list into 
+        //this->ModelManager->addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString basepath) -> implement remove model management
+
+        return;
+    }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_DONE) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
         this->ModelManager->UpdateInfo(modelinfo);
@@ -3576,9 +3619,13 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     data.clear();
 
     data.push_back(wxVariant(_("Server")));
-    if (item->server.IsOk()) {
-        wxString serverStr = item->server.GetName();
-        data.push_back(wxVariant(serverStr));
+    if (item->server > -1) {
+        auto srv = this->mapp->cfg->GetTcpServer(item->server);
+        if (srv != nullptr) {
+            data.push_back(wxVariant(srv->GetName()));
+        } else {
+            data.push_back(wxVariant(_("deleted server")));
+        }
     } else {
         data.push_back(wxVariant("local"));
     }

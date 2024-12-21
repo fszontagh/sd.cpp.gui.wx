@@ -32,7 +32,7 @@ public:
     virtual int OnRun() override;
     virtual int OnExit() override;
     virtual bool IsGUI() const override { return false; }
-
+    void ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet);
     inline void sendLogEvent(const wxString& strLogMsg, const wxLogLevel level = wxLOG_Info) {
         if (!this->eventHandlerReady) {
             std::cerr << "Event handler not ready. Dropping log: " << strLogMsg << std::endl;
@@ -47,7 +47,9 @@ public:
 
 private:
     void ExternalProcessRunner();
+    // process the messages from the shm
     bool ProcessEventHandler(std::string message);
+
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;

@@ -5,11 +5,10 @@
 #include <wx/time.h>
 #include <wx/timer.h>
 #include "libs/json.hpp"
-
+#include "ver.hpp"
 
 #include "network/packets.h"
 #include "sockets-cpp/TcpServer.h"
-
 
 inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
 
@@ -29,6 +28,8 @@ public:
 
     void sendMsg(int idx, const char* data, size_t len);
     void sendMsg(int idx, const sd_gui_utils::networks::Packet& packet);
+    void DisconnectClient(int idx);
+    void parseMsg(int idx, const char* data, size_t size);
     inline bool isRunning() { return this->needToRun == true; }
     inline void stop() { this->needToRun = false; }
     void OnTimer();

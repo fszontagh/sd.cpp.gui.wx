@@ -40,8 +40,11 @@
 #include "wx/txtstrm.h"
 #include "wx/hashmap.h"
 
+#include "ver.hpp"
+#include "sockets-cpp/TcpClient.h"
 #include "libs/json.hpp"
 #include "network/packets.h"
+#include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"
 #include "exiv2/exiv2.hpp"
@@ -50,13 +53,14 @@
 #include "helpers/vcardinfo.hpp"
 #include "helpers/civitai.hpp"
 #include "helpers/sd.hpp"
+
 #include "libs/SharedMemoryManager.h"
 #include "libs/subprocess.h"
 
 #include "libs/cores.h"
 #include "ui/utils.hpp"
 #include "ui/imageUtils.h"
-#include "ver.hpp"
+
 
 #include "ui/QueueManager.h"
 
