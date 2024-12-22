@@ -46,6 +46,7 @@ public:
         wxTheApp->AddPendingEvent(evt);
     }
     std::shared_ptr<ServerConfig> configData = nullptr;
+    
 
 private:
     void ExternalProcessRunner();
