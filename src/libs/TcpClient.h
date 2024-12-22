@@ -14,6 +14,8 @@ namespace sd_gui_utils::networks {
         std::atomic_int conn_counter = 0;
         void sendMsg(const sd_gui_utils::networks::Packet& packet);
         std::unordered_map<size_t, sd_gui_utils::networks::Packet> receivedPackets;
+        std::vector<char> buffer;
+        size_t expected_size = 0;
 
         template <typename T>
         void SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "") {
@@ -31,6 +33,8 @@ namespace sd_gui_utils::networks {
             e->SetPayload(payload);
             wxQueueEvent(this->evt, e);
         };
+
+        void HandlePackets(sd_gui_utils::networks::Packet& packet);
 
     public:
         TcpClient(sd_gui_utils::sdServer* server, wxEvtHandler* evt);

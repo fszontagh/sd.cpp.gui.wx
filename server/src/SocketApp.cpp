@@ -33,21 +33,40 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
     } else {
         this->parent->sendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
     }
-    this->parent->sendLogEvent("Client " + std::to_string(idx) + " sent: " + std::to_string(len), wxLOG_Debug);
+    this->parent->sendLogEvent("Sent to client id: " + std::to_string(idx) + " sent size: " + std::to_string(len), wxLOG_Debug);
 }
 void SocketApp::sendMsg(int idx, const sd_gui_utils::networks::Packet& packet) {
-    nlohmann::json j = packet;
-    std::cout << "Sending: " << j.dump(2) << std::endl;
-    std::vector<std::uint8_t> v_cbor = nlohmann::json::to_cbor(packet);
-    const char* cbor_data            = reinterpret_cast<const char*>(v_cbor.data());
-    size_t size                      = v_cbor.size();
-    this->sendMsg(idx, cbor_data, size);
+    auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
+    size_t packet_size = raw_packet.second;
+    this->sendMsg(idx, reinterpret_cast<const char*>(&packet_size), sizeof(packet_size));
+    this->sendMsg(idx, raw_packet.first, raw_packet.second);
+    delete[] raw_packet.first;
 }
 
 void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const char* data, size_t size) {
-    std::string str(reinterpret_cast<const char*>(data), size);
-    this->parent->sendLogEvent("Client " + std::to_string(client) + " Rcvd: " + str, wxLOG_Debug);
-    this->parseMsg(client, data, size);
+    if (this->expected_size == 0 && size >= sizeof(size_t)) {
+        memcpy(&this->expected_size, data, sizeof(this->expected_size));
+
+        size -= sizeof(this->expected_size);
+        data += sizeof(this->expected_size);
+
+        if (size > 0) {
+            this->buffer.insert(this->buffer.end(), data, data + size);
+        }
+        this->parent->sendLogEvent("Received packet expected size: " + std::to_string(this->expected_size), wxLOG_Debug);
+    } else if (this->expected_size > 0) {
+        this->buffer.insert(this->buffer.end(), data, data + size);
+    }
+
+    if (this->buffer.size() == this->expected_size && this->expected_size > 0) {
+        auto packet = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
+        packet.source_idx = client;
+
+        this->parseMsg(packet);
+
+        this->buffer.clear();
+        this->expected_size = 0;
+    }
 }
 
 void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
@@ -90,16 +109,15 @@ void SocketApp::OnTimer() {
     }
 }
 
-void SocketApp::parseMsg(int idx, const char* data, size_t size) {
-    std::string str(data, size);
+void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
     // parse from cbor to struct Packet
     try {
-        nlohmann::json json = nlohmann::json::from_cbor(str);
-        auto packet         = json.get<sd_gui_utils::networks::Packet>();
         if (packet.version != SD_GUI_VERSION) {
-            this->sendMsg(idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR, "Version Mismatch, server: " + std::string(SD_GUI_VERSION) + ", client: " + packet.version));
+            auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR);
+            errorPacket.SetData("Version Mismatch, server: " + std::string(SD_GUI_VERSION) + ", client: " + packet.version);
+            this->sendMsg(packet.source_idx, errorPacket);
             this->parent->sendLogEvent(wxString::Format("Version Mismatch, server: %s, client: %s", SD_GUI_VERSION, packet.version), wxLOG_Error);
-            this->DisconnectClient(idx);
+            this->DisconnectClient(packet.source_idx);
             return;
         }
         if (packet.type == sd_gui_utils::networks::PacketType::REQUEST) {
@@ -110,10 +128,17 @@ void SocketApp::parseMsg(int idx, const char* data, size_t size) {
             if (packet.param == sd_gui_utils::networks::PacketParam::AUTH) {
                 {
                     std::lock_guard<std::mutex> guard(m_mutex);
-                    if (this->parent->configData->authkey == packet.data) {
-                        this->m_clientInfo[idx].apikey = packet.data;
-                    }else{
-                        this->sendMsg(idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR, "Authentication Failed"));
+                    std::string packetData = packet.GetData<std::string>();
+                    this->parent->sendLogEvent("Got auth key: " + packetData + " our key: " + this->parent->configData->authkey, wxLOG_Debug);
+
+                    if (this->parent->configData->authkey.compare(packetData) == 0) {
+                        this->m_clientInfo[packet.source_idx].apikey = packetData;
+                        this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
+                    } else {
+                        auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR);
+                        errorPacket.SetData("Authentication Failed");
+                        this->sendMsg(packet.source_idx, errorPacket);
+                        this->parent->sendLogEvent("Authentication Failed, ip: " + this->m_clientInfo[packet.source_idx].host + " port: " + std::to_string(this->m_clientInfo[packet.source_idx].port) + " key: " + this->m_clientInfo[packet.source_idx].apikey + "", wxLOG_Error);
                     }
                 }
             }

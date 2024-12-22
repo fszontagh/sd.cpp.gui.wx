@@ -29,7 +29,7 @@ public:
     void sendMsg(int idx, const char* data, size_t len);
     void sendMsg(int idx, const sd_gui_utils::networks::Packet& packet);
     void DisconnectClient(int idx);
-    void parseMsg(int idx, const char* data, size_t size);
+    void parseMsg(sd_gui_utils::networks::Packet& packet);
     inline bool isRunning() { return this->needToRun == true; }
     inline void stop() { this->needToRun = false; }
     void OnTimer();
@@ -49,6 +49,8 @@ private:
     std::mutex m_mutex;
     std::atomic<bool> needToRun = true;
     TerminalApp* parent         = nullptr;
+    std::vector<char> buffer;
+    size_t expected_size = 0;
 };
 
 #endif  // _SERVER_SOCKETAPP_H

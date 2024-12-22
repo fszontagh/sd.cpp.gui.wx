@@ -41,8 +41,10 @@
 #include "wx/hashmap.h"
 
 #include "ver.hpp"
+#include "helpers/DirTypes.h"
 #include "sockets-cpp/TcpClient.h"
 #include "libs/json.hpp"
+#include "network/RemoteModelInfo.h"
 #include "network/packets.h"
 #include "libs/TcpClient.h"
 

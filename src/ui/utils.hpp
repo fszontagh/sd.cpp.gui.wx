@@ -37,56 +37,6 @@ namespace sd_gui_utils {
         void* p3;  // Others...
     } VoidHolder;
 
-    enum class DirTypes : int {
-        EMPTY            = 0,        // If no option is set
-        LORA             = 1 << 0,   // The LORA option represents the 0th bit
-        CHECKPOINT       = 1 << 1,   // The CHECKPOINT option represents the 1st bit
-        VAE              = 1 << 2,   // The VAE option represents the 2nd bit
-        PRESETS          = 1 << 3,   // The PRESETS option represents the 3rd bit
-        PROMPTS          = 1 << 4,   // The PROMPTS option represents the 4th bit
-        NEG_PROMPTS      = 1 << 5,   // The NEG_PROMPTS option represents the 5th bit
-        TAESD            = 1 << 6,   // The TAESD option represents the 6th bit
-        ESRGAN           = 1 << 7,   // The ESRGAN option represents the 7th bit
-        CONTROLNET       = 1 << 8,   // The CONTROLNET option represents the 8th bit
-        UPSCALER         = 1 << 9,   // The UPSCALER option represents the 9th bit
-        EMBEDDING        = 1 << 10,  // The EMBEDDING option represents the 10th bit
-        PROMPT_TEMPLATES = 1 << 11,  // The PROMPT_TEMPLATES option represents the 11th bit
-        ALL              = -1,       // All options are set
-        UNKNOWN          = -2,       // The unknown option
-    };
-
-    inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
-        {sd_gui_utils::DirTypes::LORA, "LORA"},
-        {sd_gui_utils::DirTypes::CHECKPOINT, "CHECKPOINT"},
-        {sd_gui_utils::DirTypes::VAE, "VAE"},
-        {sd_gui_utils::DirTypes::PRESETS, "PRESETS"},
-        {sd_gui_utils::DirTypes::PROMPTS, "PROMPTS"},
-        {sd_gui_utils::DirTypes::NEG_PROMPTS, "NEG_PROMPTS"},
-        {sd_gui_utils::DirTypes::TAESD, "TAESD"},
-        {sd_gui_utils::DirTypes::ESRGAN, "ESRGAN"},
-        {sd_gui_utils::DirTypes::CONTROLNET, "CONTROLNET"},
-        {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
-        {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
-        {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
-        {sd_gui_utils::DirTypes::ALL, "ALL"},
-        {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"}};
-
-    inline std::unordered_map<wxString, DirTypes> dirtypes_wxstr = {
-        {wxT("LORA"), sd_gui_utils::DirTypes::LORA},
-        {wxT("CHECKPOINT"), sd_gui_utils::DirTypes::CHECKPOINT},
-        {wxT("VAE"), sd_gui_utils::DirTypes::VAE},
-        {wxT("PRESETS"), sd_gui_utils::DirTypes::PRESETS},
-        {wxT("PROMPTS"), sd_gui_utils::DirTypes::PROMPTS},
-        {wxT("NEG_PROMPTS"), sd_gui_utils::DirTypes::NEG_PROMPTS},
-        {wxT("TAESD"), sd_gui_utils::DirTypes::TAESD},
-        {wxT("ESRGAN"), sd_gui_utils::DirTypes::ESRGAN},
-        {wxT("CONTROLNET"), sd_gui_utils::DirTypes::CONTROLNET},
-        {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER},
-        {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING},
-        {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES},
-        {wxT("ALL"), sd_gui_utils::DirTypes::ALL},
-        {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN}};
-
     enum CivitAiState { OK,
                         NOT_FOUND,
                         ERR,
@@ -97,33 +47,6 @@ namespace sd_gui_utils {
         "Parse error",
         "",
     };
-
-    enum class ModelInfoTag {
-        None      = 0,       // No specific tag
-        Deletable = 1 << 0,  // Indicates the item can be deleted
-        Favorite  = 1 << 1   // Indicates the item is marked as favorite
-    };
-
-    // Allow bitwise operations for ModelInfoTag.
-    inline ModelInfoTag operator|(ModelInfoTag lhs, ModelInfoTag rhs) {
-        return static_cast<ModelInfoTag>(static_cast<int>(lhs) | static_cast<int>(rhs));
-    }
-
-    inline ModelInfoTag& operator|=(ModelInfoTag& lhs, ModelInfoTag rhs) {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    inline ModelInfoTag operator~(ModelInfoTag tag) {
-        return static_cast<ModelInfoTag>(~static_cast<int>(tag));
-    }
-
-    inline ModelInfoTag operator&(ModelInfoTag lhs, ModelInfoTag rhs) {
-        return static_cast<ModelInfoTag>(static_cast<int>(lhs) & static_cast<int>(rhs));
-    }
-
-    inline bool HasTag(ModelInfoTag tags, ModelInfoTag tag) {
-        return (tags & tag) != ModelInfoTag::None;
-    }
 
     struct ModelFileInfo {
         std::string name;
@@ -145,8 +68,10 @@ namespace sd_gui_utils {
         std::string folderGroupName = "";
         std::string target_filename = "";
         int move_progress           = 0;
+        int server_id               = -1;
 
         ModelFileInfo() = default;
+        ModelFileInfo(const sd_gui_utils::networks::RemoteModelInfo& remote) { *this = remote; }
         ModelFileInfo(const sd_gui_utils::ModelFileInfo& other)
             : name(other.name), path(other.path), url(other.url), poster(other.poster), sha256(other.sha256), tags(other.tags), size(other.size), size_f(other.size_f), meta_file(other.meta_file), hash_progress_size(other.hash_progress_size), hash_fullsize(other.hash_fullsize), model_type(other.model_type), civitaiPlainJson(other.civitaiPlainJson), CivitAiInfo(other.CivitAiInfo), state(other.state), preview_images(other.preview_images), folderGroupName(folderGroupName) {}
         ModelFileInfo& operator=(const sd_gui_utils::ModelFileInfo& other) {
@@ -168,7 +93,33 @@ namespace sd_gui_utils {
                 state              = other.state;
                 preview_images     = other.preview_images;
                 folderGroupName    = other.folderGroupName;
+                server_id          = other.server_id;
             }
+            return *this;
+        }
+        ModelFileInfo& operator=(const sd_gui_utils::networks::RemoteModelInfo& remote) {
+            name               = remote.name;
+            path               = remote.path;
+            sha256             = remote.sha256;
+            size               = remote.size;
+            size_f             = remote.size_f;
+            hash_progress_size = remote.hash_progress_size;
+            hash_fullsize      = remote.hash_fullsize;
+            model_type         = remote.model_type;
+            server_id          = remote.server_id;
+
+            // Defaults for missing RemoteModelInfo fields
+            url              = "";
+            poster           = "";
+            tags             = sd_gui_utils::ModelInfoTag::None;
+            meta_file        = "";
+            civitaiPlainJson = "";
+            state            = sd_gui_utils::CivitAiState::NOT_CHECKED;
+            preview_images.clear();
+            folderGroupName = "";
+            target_filename = "";
+            move_progress   = 0;
+
             return *this;
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo& rh) const {
@@ -203,7 +154,8 @@ namespace sd_gui_utils {
                            {"CivitAiInfo", p.CivitAiInfo},
                            {"state", (int)p.state},
                            {"preview_images", p.preview_images},
-                           {"folderGroupName", p.folderGroupName}
+                           {"folderGroupName", p.folderGroupName},
+                           {"server_id", p.server_id}
 
         };
     }
@@ -263,6 +215,9 @@ namespace sd_gui_utils {
         }
         if (j.contains("tags")) {
             p.tags = static_cast<sd_gui_utils::ModelInfoTag>(j.at("tags").get<int>());
+        }
+        if (j.contains("server_id")) {
+            p.server_id = j.at("server_id").get<int>();
         }
     }
     enum imageTypes { JPG,

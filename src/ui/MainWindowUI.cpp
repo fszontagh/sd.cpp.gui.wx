@@ -3297,11 +3297,28 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
-        // get packet
         auto packetId                  = e.GetInt();
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
-        auto packet = server->client->getPacket(packetId);// parse list into 
-        //this->ModelManager->addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString basepath) -> implement remove model management
+        if (server == nullptr) {
+            return;
+        }
+        auto packet = server->client->getPacket(packetId);
+        try {
+            auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
+            for (const auto& item : list) {
+                if (item.path.empty() || item.name.empty()) {
+                    continue;
+                }
+                auto newItem = this->ModelManager->addRemoteModel(item);
+                if (newItem == nullptr) {
+                    continue;
+                }
+                this->treeListManager->AddItem(newItem, server);
+            }
+            this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
+        } catch (std::exception& e) {
+            this->writeLog(wxString::Format(_("Error parsing JSON: %s"), e.what()));
+        }
 
         return;
     }

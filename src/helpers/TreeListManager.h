@@ -55,19 +55,20 @@ public:
         treeListCtrl->SetItemComparator(comparator);
     }
 
-    void AppendColumn(const wxString& title, int width = wxCOL_WIDTH_AUTOSIZE, wxAlignment align = wxALIGN_LEFT, int flags = wxCOL_RESIZABLE) {
+    inline void AppendColumn(const wxString& title, int width = wxCOL_WIDTH_AUTOSIZE, wxAlignment align = wxALIGN_LEFT, int flags = wxCOL_RESIZABLE) {
         int id = treeListCtrl->AppendColumn(title, width, align, flags);
         ColumnInfo info{title, width, align, flags, id};
         columns.push_back(info);
     }
 
-    void AddItem(const sd_gui_utils::ModelFileInfo* item) {
+    inline void AddItem(const sd_gui_utils::ModelFileInfo* item, sd_gui_utils::sdServer* server = nullptr) {
         wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName);
         wxString name             = wxString::FromUTF8Unchecked(item->name);
         if (!item->folderGroupName.empty()) {
             name.Replace(item->folderGroupName, "");
             name.Replace(wxFileName::GetPathSeparator(), "");
         }
+
         if (sd_gui_utils::HasTag(item->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
             // name.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐ --> this is not working on windows
             name = wxString::Format("%s %s", _("[F] "), name);
@@ -198,7 +199,7 @@ private:
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
-        std::cout << "folderGroupName: " << folderGroupName << std::endl;
+
         std::vector<std::string> groups;
         SplitFolderGroupName(wxString::FromUTF8Unchecked(folderGroupName), groups);
 

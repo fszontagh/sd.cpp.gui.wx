@@ -1,4 +1,5 @@
 #include "TerminalApp.h"
+#include <wx/dir.h>
 #include "libs/subprocess.h"
 
 bool TerminalApp::OnInit() {
@@ -150,6 +151,12 @@ bool TerminalApp::OnInit() {
         wxLogError(e.what());
         return false;
     }
+
+    // load models
+    if (this->LoadModelFiles() == false) {
+        std::cerr << "Failed to load model files" << std::endl;
+        return false;
+    }
     return true;
     // return wxAppConsole::OnInit();  // Call the base class implementation
 }
@@ -238,7 +245,6 @@ void TerminalApp::ExternalProcessRunner() {
     this->sendLogEvent(wxString::Format("Subprocess created: %d", result), wxLOG_Info);
 
     while (this->extProcessNeedToRun == true) {
-        
         if (subprocess_alive(this->subprocess) == 0) {
             this->sendLogEvent("Subprocess stopped", wxLOG_Error);
             this->extprocessIsRunning = false;
@@ -276,7 +282,8 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     }
     try {
         nlohmann::json msg = nlohmann::json::parse(message);
-        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::ERROR, message);
+        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::ERROR);
+        packet.SetData(message);
         this->socket->sendMsg(0, packet);
 
     } catch (const std::exception& e) {
@@ -287,5 +294,63 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
 }
 
 void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet) {
-    
+    if (packet.source_idx == -1) {
+        this->sendLogEvent("Invalid source index", wxLOG_Error);
+        return;
+    }
+    if (packet.param == sd_gui_utils::networks::PacketParam::MODEL_LIST) {
+        auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::MODEL_LIST);
+        std::vector<sd_gui_utils::networks::RemoteModelInfo> list;
+        for (const auto model : this->modelFiles) {
+            list.emplace_back(model.second);
+        }
+        response.SetData(list);
+        this->socket->sendMsg(packet.source_idx, response);
+    }
+}
+
+bool TerminalApp::LoadModelFiles() {
+    // this->sendLogEvent("Loading model files", wxLOG_Info);
+    wxLogInfo("Loading model files");
+    size_t used_sizes = 0;
+    // load checkpoints
+    if (this->configData->model_path.empty() || wxDirExists(this->configData->model_path) == false) {
+        wxLogError("Model path does not exist: %s", this->configData->model_path);
+        return false;
+    }
+
+    wxArrayString checkpoint_files;
+    wxDir::GetAllFiles(this->configData->model_path, &checkpoint_files);
+    int checkpoint_count              = 0;
+    wxULongLong used_checkpoint_sizes = 0;
+    for (const auto& file : checkpoint_files) {
+        wxFileName filename(file);
+        if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), filename.GetExt()) != CHECKPOINT_FILE_EXTENSIONS.end()) {
+            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT);
+            this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
+            used_sizes += modelInfo.size;
+            used_checkpoint_sizes += modelInfo.size;
+            checkpoint_count++;
+        }
+    }
+    wxLogInfo("Loaded %d checkpoints %s", checkpoint_count, wxFileName::GetHumanReadableSize(used_checkpoint_sizes));
+
+    // load loras
+    wxArrayString lora_files;
+    wxDir::GetAllFiles(this->configData->lora_path, &lora_files);
+    int lora_count              = 0;
+    wxULongLong used_lora_sizes = 0;
+    for (const auto& file : lora_files) {
+        wxFileName filename(file);
+        if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), filename.GetExt()) != LORA_FILE_EXTENSIONS.end()) {
+            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::LORA);
+            this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
+            used_sizes += modelInfo.size;
+            used_lora_sizes += modelInfo.size;
+            lora_count++;
+        }
+    }
+    wxLogInfo("Loaded %d loras %s", lora_count, wxFileName::GetHumanReadableSize(used_lora_sizes));
+    wxLogInfo("Total size: %s", wxFileName::GetHumanReadableSize((wxULongLong)used_sizes));
+    return true;
 }

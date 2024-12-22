@@ -16,6 +16,8 @@
 #include <wx/stdpaths.h>
 #include <wx/textfile.h>
 #include <iostream>
+#include "libs/json.hpp"
+#include "network/RemoteModelInfo.h"
 
 #include "ServerConfig.h"
 #include "SocketApp.h"
@@ -44,11 +46,13 @@ public:
         wxTheApp->AddPendingEvent(evt);
     }
     std::shared_ptr<ServerConfig> configData = nullptr;
+    
 
 private:
     void ExternalProcessRunner();
     // process the messages from the shm
     bool ProcessEventHandler(std::string message);
+    bool LoadModelFiles();
 
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;
@@ -65,6 +69,7 @@ private:
     std::atomic<bool> extprocessIsRunning                    = false;
     std::atomic<bool> extProcessNeedToRun                    = true;
     wxTimer timer;
+    std::unordered_map<std::string, sd_gui_utils::networks::RemoteModelInfo> modelFiles;
 };
 
 #endif  // _SERVER_TERMINALAPP_H
