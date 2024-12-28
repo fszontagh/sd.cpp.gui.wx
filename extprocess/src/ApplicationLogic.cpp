@@ -152,7 +152,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_DONE, "", EPROCESS_SLEEP_TIME);
     }
 
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
+    this->sendStatus(QM::QueueStatus::MODEL_LOADING, QM::QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
     // on mode convert always return true, because no model loading
     if (this->loadSdModel() == false) {
         if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
@@ -306,7 +306,7 @@ void ApplicationLogic::Img2img() {
 
         unsigned char* input_image_buffer   = NULL;
         unsigned char* control_image_buffer = NULL;
-        unsigned char * mask_image_buffer  = NULL;
+        unsigned char* mask_image_buffer    = NULL;
         sd_image_t input_image;
         sd_image_t* control_image = NULL;
         sd_image_t mask_image;
@@ -334,21 +334,14 @@ void ApplicationLogic::Img2img() {
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Missing input image");
             return;
         }
-        if (this->currentItem->mask_image.length() > 0) {
-            if (std::filesystem::exists(this->currentItem->mask_image)) {
-                mask_image_buffer = stbi_load(this->currentItem->mask_image.c_str(), &input_w, &input_h, &input_c, 3);
-                mask_image        = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, mask_image_buffer};
-                std::cout << " mask image loaded: " << this->currentItem->mask_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
-            } else {
-                std::cerr << "Mask image not found: " << this->currentItem->mask_image << std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-                this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Mask image not found:" + this->currentItem->mask_image);
-                return;
-            }
-        }else{
-            // i think, this is a bug, the mask image is not required allways, so we create an empty one
-            mask_image = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, NULL};
+        if (this->currentItem->mask_image.length() > 0 && std::filesystem::exists(this->currentItem->mask_image)) {
+            mask_image_buffer = stbi_load(this->currentItem->mask_image.c_str(), &input_w, &input_h, &input_c, 1);
+            std::cout << " mask image loaded: " << this->currentItem->mask_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
+        } else {
+            std::vector<uint8_t> arr(this->currentItem->params.width * this->currentItem->params.height, 255);
+            mask_image_buffer = arr.data();
         }
+        mask_image = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, mask_image_buffer};
 
         // prepare control image, if we have one
         if (this->currentItem->params.control_image_path.length() > 0) {

@@ -130,6 +130,24 @@ namespace sd_gui_utils {
         return resizedImage;
     };
 
+    inline void CropOrFillImage(wxImage& image, int top, int right, int bottom, int left, wxColour fillColor) {
+        int originalWidth  = image.GetWidth();
+        int originalHeight = image.GetHeight();
+
+        int newWidth  = originalWidth + left + right;
+        int newHeight = originalHeight + top + bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = left + (newWidth - originalWidth - left - right) / 2;
+        int yOffset = top + (newHeight - originalHeight - top - bottom) / 2;
+
+        newImage.Paste(image, xOffset, yOffset);
+
+        image = newImage;
+    }
     static std::unordered_map<wxString, wxString> ReadMetadata(const std::string& filepath) {
         std::unordered_map<wxString, wxString, std::hash<wxString>> metadata;
 
@@ -324,16 +342,30 @@ namespace sd_gui_utils {
 
         wxBitmap newBitmap(newWidth, newHeight);
         wxMemoryDC dc(newBitmap);
-        dc.SetBackground(*wxWHITE_BRUSH);
+
+        dc.SetBackground(*wxGREY_BRUSH);
         dc.Clear();
 
-        dc.DrawBitmap(bitmap, left, top, false);
+        int xOffset = left + (newWidth - originalWidth - left - right) / 2;
+        int yOffset = top + (newHeight - originalHeight - top - bottom) / 2;
+
+        dc.DrawBitmap(bitmap, xOffset, yOffset, false);
 
         dc.SelectObject(wxNullBitmap);
-
         bitmap = newBitmap;
     }
 
+    /**
+     * Inverts white and transparent pixels in the given bitmap.
+     *
+     * For each pixel in the bitmap:
+     * - If the pixel is white (RGB = (255, 255, 255)) and has an alpha value of greater than 0, it will be made transparent (alpha = 0).
+     * - If the pixel is not white and has an alpha value of less than 255, it will be made white (RGB = (255, 255, 255)) and fully opaque (alpha = 255).
+     *
+     * The image is then converted back to a bitmap and the scale factor is set to the original value.
+     *
+     * @param bitmap The bitmap to be modified.
+     */
     inline void InvertWhiteAndTransparent(wxBitmap& bitmap) {
         auto oldScale = bitmap.GetScaleFactor();
         wxImage image = bitmap.ConvertToImage();
@@ -343,7 +375,6 @@ namespace sd_gui_utils {
 
         for (int x = 0; x < image.GetWidth(); ++x) {
             for (int y = 0; y < image.GetHeight(); ++y) {
-                // Pixel színének és alfa értékének lekérése
                 unsigned char red   = image.GetRed(x, y);
                 unsigned char green = image.GetGreen(x, y);
                 unsigned char blue  = image.GetBlue(x, y);
@@ -362,6 +393,75 @@ namespace sd_gui_utils {
 
         bitmap = wxBitmap(image);
         bitmap.SetScaleFactor(oldScale);
+    }
+    inline void convertMaskImageToTransparent(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // only convert black pixels to transparent
+                auto red   = image.GetRed(x, y);
+                auto green = image.GetGreen(x, y);
+                auto blue  = image.GetBlue(x, y);
+
+                // if not white
+                if (red == 0 && green == 0 && blue == 0) {
+                    image.SetRGB(x, y, 0, 0, 0);
+                    image.SetAlpha(x, y, 0);
+                }
+            }
+        }
+    }
+
+    inline void convertMaskImageTransparentToBlack(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // only convert transparent pixels to black
+                auto red   = image.GetRed(x, y);
+                auto green = image.GetGreen(x, y);
+                auto blue  = image.GetBlue(x, y);
+                auto alpha = image.GetAlpha(x, y);
+                if (alpha < 255) {
+                    image.SetRGB(x, y, 0, 0, 0);
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+        if (image.HasAlpha()) {
+            image.ClearAlpha();
+        }
+    }
+
+    inline void blendImageOnBlackBackground(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        wxImage blackBackground(image.GetWidth(), image.GetHeight());
+        blackBackground.SetRGB(wxRect(0, 0, image.GetWidth(), image.GetHeight()), 0, 0, 0);
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                unsigned char srcRed   = image.GetRed(x, y);
+                unsigned char srcGreen = image.GetGreen(x, y);
+                unsigned char srcBlue  = image.GetBlue(x, y);
+                unsigned char srcAlpha = image.GetAlpha(x, y);
+
+                float alphaFactor = static_cast<float>(srcAlpha) / 255.0f;
+
+                unsigned char blendedRed   = static_cast<unsigned char>(srcRed * alphaFactor);
+                unsigned char blendedGreen = static_cast<unsigned char>(srcGreen * alphaFactor);
+                unsigned char blendedBlue  = static_cast<unsigned char>(srcBlue * alphaFactor);
+
+                blackBackground.SetRGB(x, y, blendedRed, blendedGreen, blendedBlue);
+            }
+        }
+
+        image = blackBackground;
     }
 
 }

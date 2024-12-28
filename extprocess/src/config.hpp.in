@@ -14,7 +14,7 @@ inline const unsigned int SHARED_MEMORY_SIZE  = @SHARED_MEMORY_SIZE@;
 inline const unsigned int EPROCESS_SLEEP_TIME = 500;
 inline const unsigned int EPROCESS_STD_BUFFER = 10240;
 
-inline const std::vector<std::string> CHECKPOINT_FILE_EXTENSIONS = {"safetensors", "cpkt", "gguf"};
+inline const std::vector<std::string> CHECKPOINT_FILE_EXTENSIONS = {"safetensors", "cktp", "gguf"};
 inline const std::vector<std::string> EMBEDDING_FILE_EXTENSIONS  = {"safetensors", "pt"};
 inline const std::vector<std::string> LORA_FILE_EXTENSIONS       = {"safetensors", "pt", "ckpt"};
 inline const std::vector<std::string> VAE_FILE_EXTENSIONS        = {"safetensors", "pt", "ckpt", "gguf"};

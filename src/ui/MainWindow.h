@@ -37,12 +37,12 @@
 #include <wx/spinctrl.h>
 #include <wx/filepicker.h>
 #include <wx/checkbox.h>
+#include <wx/slider.h>
 #include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
-#include <wx/slider.h>
 #include <wx/dialog.h>
 #include <wx/radiobox.h>
 
@@ -140,6 +140,7 @@ class mainUI : public wxFrame
 		wxPanel* m_panel25;
 		wxPanel* m_panel26;
 		wxStaticText* m_inpaintBrushSize;
+		wxSlider* m_inpaintBrushSizeSlider;
 		wxStaticText* m_inpaintZoom;
 		wxStaticText* m_inpaintImageResolution;
 		wxBitmapButton* m_inpaintSaveMask;
@@ -284,6 +285,7 @@ class mainUI : public wxFrame
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
+		virtual void OnInpaintBrushSizeSliderScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void OnInpaintSaveMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintInvertMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintResizeImage( wxCommandEvent& event ) { event.Skip(); }

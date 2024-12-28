@@ -1047,26 +1047,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
         // get the mask if loaded
         if (this->inpaintImageLoaded == true) {
+            // load the inpainted canvas content as image
             wxImage image = this->inpaintBitMap.ConvertToImage();
-            for (int x = 0; x < image.GetWidth(); ++x) {
-                for (int y = 0; y < image.GetHeight(); ++y) {
-                    unsigned char alpha = image.GetAlpha(x, y);
-                    auto red            = image.GetRed(x, y);
-                    auto green          = image.GetGreen(x, y);
-                    auto blue           = image.GetBlue(x, y);
-                    if (alpha < 255) {
-                        image.SetRGB(x, y, 0, 0, 0);
-                        image.SetAlpha(x, y, 255);
-                    }
-                    if (red != 255 || green != 255 || blue != 255) {
-                        image.SetRGB(x, y, 0, 0, 0);
-                        image.SetAlpha(x, y, 255);
-                    }
-                }
-            }
-            if (image.HasAlpha()) {
-                image.ClearAlpha();
-            }
+            sd_gui_utils::blendImageOnBlackBackground(image);
+
             wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
             if (image.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
                 this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
@@ -1077,6 +1061,21 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             item->mask_image = file.GetAbsolutePath();
             if (this->mapp->cfg->save_all_image == true) {
                 item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK}));
+            }
+
+            if (this->inpaintOrigImage.IsOk()) {
+                // this is an 'outpaint' if the generation size and the loaded image's size differ, we need to store the larger image as initial image
+                if (this->inpaintOrigImage.GetSize().GetWidth() != this->m_width->GetValue() ||
+                    this->inpaintOrigImage.GetSize().GetHeight() != this->m_height->GetValue()) {
+                    wxFileName initial_image(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_%d", this->qmanager->GetNextId()));
+                    if (this->inpaintOrigImage.SaveFile(initial_image.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
+                        this->writeLog(wxString::Format(_("Failed to save initial image to %s"), initial_image.GetAbsolutePath()), true);
+                    } else {
+                        this->writeLog(wxString::Format(_("Saved initial image to %s"), initial_image.GetAbsolutePath()), true);
+                    }
+                    item->initial_image = initial_image.GetAbsolutePath();
+                    item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+                }
             }
         }
 
@@ -1714,6 +1713,19 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             this->slgScale->SetValue(item.params.slg_scale);
         }
     }
+    if (item.mode == QM::GenerationMode::IMG2IMG) {
+        for (const auto& img : item.images) {
+            if (wxFileExists(wxString::FromUTF8Unchecked(img.pathname)) == false) {
+                continue;
+            }
+            if (img.type == QM::QueueItemImageType::INITIAL) {
+                // TODO send image to img2img
+            }
+            if (img.type == QM::QueueItemImageType::MASK) {
+                // load mask from file
+            }
+        }
+    }
 
     if (!item.params.model_path.empty() && std::filesystem::exists(item.params.model_path)) {
         sd_gui_utils::ModelFileInfo* model = this->ModelManager->getIntoPtr(item.params.model_path);
@@ -2044,7 +2056,7 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
         static auto lastUpdate = std::chrono::steady_clock::now();
         const auto now         = std::chrono::steady_clock::now();
         const auto elapsed     = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate).count();
-        if (elapsed < 200) {
+        if (elapsed < 1000) {
             return;
         }
 
@@ -3701,10 +3713,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
-        data.push_back(wxVariant(_("Mask image")));
-        data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->mask_image.data(), item->mask_image.size())));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
+        if (item->mask_image.empty() == false) {
+            data.push_back(wxVariant(_("Mask image")));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->mask_image.data(), item->mask_image.size())));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+        }
 
         data.push_back(wxVariant(_("Strength")));
         data.push_back(wxVariant(wxString::Format("%.2f", item->params.strength)));
@@ -3923,6 +3937,14 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                 if (img.type == QM::QueueItemImageType::CONTROLNET) {
                     menu->AppendSeparator();
                     menu->Append(8, _("Send image to the controlnet image"));
+                }
+
+                if (img.type == QM::QueueItemImageType::INITIAL) {
+                    menu->Append(3, _("Send the image to img2img"));
+                }
+                if (img.type == QM::QueueItemImageType::MASK) {
+                    menu->AppendSeparator();
+                    menu->Append(9, _("Send image to img2img mask"));
                 }
 
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item](wxCommandEvent& evt) {
@@ -4738,24 +4760,9 @@ void MainWindowUI::OnInpaintSaveMask(wxCommandEvent& event) {
     }
 
     wxImage image = this->inpaintBitMap.ConvertToImage();
-    // convert alpha to black -> white where to inpaint, black is the natural, so where no white thats will be the black
-    // we convert everything to black which is not pure white without alpha
-    for (int x = 0; x < image.GetWidth(); ++x) {
-        for (int y = 0; y < image.GetHeight(); ++y) {
-            unsigned char alpha = image.GetAlpha(x, y);
-            auto red            = image.GetRed(x, y);
-            auto green          = image.GetGreen(x, y);
-            auto blue           = image.GetBlue(x, y);
-            if (alpha < 255) {
-                image.SetRGB(x, y, 0, 0, 0);
-                image.SetAlpha(x, y, 255);
-            }
-            if (red != 255 || green != 255 || blue != 255) {
-                image.SetRGB(x, y, 0, 0, 0);
-                image.SetAlpha(x, y, 255);
-            }
-        }
-    }
+
+    sd_gui_utils::blendImageOnBlackBackground(image);
+
     if (image.HasAlpha()) {
         image.ClearAlpha();
     }
@@ -4833,18 +4840,39 @@ void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
     int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
     int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
-    sd_gui_utils::ResizeWithBorder(this->inpaintCanvas, canvasTop, canvasLeft, canvasRight, canvasBottom);
 
-    // recreate the this->inapintCanvasBorder
-    wxImage inpaintCanvasBorderImage = wxImage(this->inpaintCanvas.GetWidth() + 5, this->inpaintCanvas.GetHeight() + 5);
-    inpaintCanvasBorderImage.SetMaskColour(0, 0, 0);
-    inpaintCanvasBorderImage.InitAlpha();
-    inpaintCanvasBorderImage.SetMask(false);
-    this->inpaintCanvasBorder = wxBitmap(inpaintCanvasBorderImage);
+    wxImage img = this->inpaintBitMap.ConvertToImage();
 
-    wxMemoryDC dc(this->inpaintCanvasBorder);
-    dc.SetBackground(*wxRED_BRUSH);
-    dc.Clear();
+    sd_gui_utils::CropOrFillImage(img, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
+
+    this->m_width->SetValue(img.GetWidth());
+    this->m_height->SetValue(img.GetHeight());
+    auto oldScale       = this->inpaintBitMap.GetScaleFactor();
+    this->inpaintBitMap = wxBitmap(img);
+
+    this->inpaintBitMap.SetScaleFactor(oldScale);
+    this->m_img2imPanel->Refresh();
+    this->m_inpaintClearMask->Enable();
+    wxImage canvasBorderImage(img.GetWidth() + 5, img.GetHeight() + 5);
+    this->inpaintCanvasBorder = wxBitmap(canvasBorderImage);
+    wxMemoryDC dc3(this->inpaintCanvasBorder);
+    dc3.SetBackground(*wxRED_BRUSH);
+    dc3.Clear();
+    /*
+        // recreate the this->inapintCanvasBorder
+        wxImage inpaintCanvasBorderImage = wxImage(this->inpaintBitMap.GetWidth() + 5, this->inpaintBitMap.GetHeight() + 5);
+        inpaintCanvasBorderImage.SetMaskColour(0, 0, 0);
+        inpaintCanvasBorderImage.InitAlpha();
+        inpaintCanvasBorderImage.SetMask(false);
+        this->inpaintCanvasBorder = wxBitmap(inpaintCanvasBorderImage);
+
+        wxMemoryDC dc(this->inpaintCanvasBorder);
+        dc.SetBackground(*wxRED_BRUSH);
+        dc.Clear();
+        */
+}
+void MainWindowUI::OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) {
+    this->inpaintBrushSize = event.GetPosition();
 }
 void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
     this->m_inpaintClearMask->Disable();
@@ -4908,25 +4936,13 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
 
     // convert black to transparent pixels
     wxImage image = wxImage(event.GetPath(), wxBITMAP_TYPE_PNG);
-    if (image.HasAlpha() == false) {
-        image.InitAlpha();
-    }
 
     if (this->inpaintBitMap.GetWidth() < image.GetWidth() || this->inpaintBitMap.GetHeight() < image.GetHeight()) {
         this->writeLog(wxString::Format(_("Inpaint mask open: the resolution of the mask does not match the resolution of the image: %s"), event.GetPath()), true);
     }
 
-    for (int x = 0; x < image.GetWidth(); ++x) {
-        for (int y = 0; y < image.GetHeight(); ++y) {
-            // Alfa érték lekérése
-            unsigned char alpha = image.GetAlpha(x, y);
+    sd_gui_utils::convertMaskImageToTransparent(image);
 
-            if (alpha < 255) {
-                image.SetRGB(x, y, 0, 0, 0);
-                image.SetAlpha(x, y, 255);
-            }
-        }
-    }
     auto oldScale       = this->inpaintBitMap.GetScaleFactor();
     this->inpaintBitMap = wxBitmap(image);
     this->inpaintBitMap.SetScaleFactor(oldScale);
@@ -5131,7 +5147,6 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
         int scrollUnitX, scrollUnitY;
         this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
 
-        // Számítsuk ki a görgetési eltolást a zoom középpontja alapján
         double zoomFactorRatio = oldZoomFactor / this->inpaintZoomFactor;
         wxPoint newViewStart   = viewStart;
         newViewStart.x += (mousePos.x + viewStart.x * scrollUnitX -
@@ -5141,7 +5156,6 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
                            (this->m_img2imPanel->GetClientSize().GetHeight() / 2)) *
                           (1 - zoomFactorRatio) / scrollUnitY;
 
-        // Limitáljuk a scroll pozícióját a virtuális méreten belül
         newViewStart.x = std::max(0, std::min(newViewStart.x,
                                               (this->inpaintCanvasBorder.GetWidth() - this->m_img2imPanel->GetClientSize().GetWidth()) / scrollUnitX));
         newViewStart.y = std::max(0, std::min(newViewStart.y,
@@ -5149,23 +5163,22 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
 
         this->m_img2imPanel->Scroll(newViewStart);
 
-        // Frissítsük a virtuális méretet a canvas méretéhez igazítva
         this->m_img2imPanel->SetVirtualSize(
             this->inpaintCanvasBorder.GetWidth(),
             this->inpaintCanvasBorder.GetHeight());
 
-        // Frissítsük a zoom státuszt
         this->m_img2imPanel->Refresh();
         this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintZoomFactor * 100));
     }
 
     if (event.ShiftDown()) {
         if (rotation > 0) {
-            this->inpaintBrushSize = std::min(this->inpaintBrushSize + 1, 40);
+            this->inpaintBrushSize = std::min(this->inpaintBrushSize + 1, this->m_inpaintBrushSizeSlider->GetMax());
         } else if (rotation < 0) {
-            this->inpaintBrushSize = std::max(this->inpaintBrushSize - 1, 1);
+            this->inpaintBrushSize = std::max(this->inpaintBrushSize - 1, this->m_inpaintBrushSizeSlider->GetMin());
         }
-        this->m_inpaintBrushSize->SetLabel(wxString::Format(_("Brush size: %d"), this->inpaintBrushSize));
+        // this->m_inpaintBrushSize->SetLabel(wxString::Format(_("Brush size: %d"), this->inpaintBrushSize));
+        this->m_inpaintBrushSizeSlider->SetValue(this->inpaintBrushSize);
         return;
     }
 

@@ -651,11 +651,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1030;
 	bSizer1030 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush size: 10"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush size:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintBrushSize->Wrap( -1 );
 	m_inpaintBrushSize->SetMinSize( wxSize( 100,-1 ) );
 
 	bSizer1030->Add( m_inpaintBrushSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintBrushSizeSlider = new wxSlider( m_panel26, wxID_ANY, 10, 1, 40, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
+	bSizer1030->Add( m_inpaintBrushSizeSlider, 0, wxALL, 5 );
 
 	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom: 1x"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintZoom->Wrap( -1 );
@@ -696,7 +699,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintClearMask->Enable( false );
 	m_inpaintClearMask->SetToolTip( _("Clear the mask") );
 
-	bSizer1030->Add( m_inpaintClearMask, 0, wxALL, 5 );
+	bSizer1030->Add( m_inpaintClearMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintOpenMask = new wxFilePickerCtrl( m_panel26, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL );
 	m_inpaintOpenMask->SetToolTip( _("Open a mask image from file") );
@@ -1517,6 +1520,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintSaveMask->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
@@ -1618,6 +1630,15 @@ mainUI::~mainUI()
 	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_img2imgDiffusionPreview->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintSaveMask->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
