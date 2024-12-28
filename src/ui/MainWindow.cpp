@@ -776,7 +776,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_staticText721 = new wxStaticText( m_panel25, wxID_ANY, _("Left:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText721->Wrap( -1 );
-	bSizer1027->Add( m_staticText721, 0, wxALL, 5 );
+	bSizer1027->Add( m_staticText721, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintCanvasLeft = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasLeft, 0, wxALL, 5 );
@@ -815,6 +815,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imgOpen->SetMinSize( wxSize( 470,-1 ) );
 
 	bSizer38->Add( m_img2imgOpen, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	bSizer38->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	m_staticText24 = new wxStaticText( m_image2image_panel, wxID_ANY, _("Strength:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText24->Wrap( -1 );

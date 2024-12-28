@@ -256,7 +256,8 @@ void ApplicationLogic::Txt2Img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers,
+            this->currentItem->params.skip_layers.data(),
+            this->currentItem->params.skip_layers.size(),
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
@@ -366,7 +367,8 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.style_ratio,
             this->currentItem->params.normalize_input,
             this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers,
+            this->currentItem->params.skip_layers.data(),
+            this->currentItem->params.skip_layers.size(),
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);

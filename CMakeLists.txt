@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
-project(StableDiffusionGUI 
-LANGUAGES CXX C 
+project(StableDiffusionGUI
+LANGUAGES CXX C
 VERSION 0.2.3
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
@@ -43,7 +43,7 @@ endif()
 
 find_package(exiv2 CONFIG QUIET)
 if (NOT exiv2_FOUND)
-    find_package(exiv2 REQUIRED)    
+    find_package(exiv2 REQUIRED)
 endif()
 
 
@@ -87,7 +87,7 @@ endif()
 
 add_subdirectory(extprocess)
 
-option(SD_SERVER "Build socket server" ON)
+option(SD_SERVER "Build socket server" OFF)
 
 if (SD_SERVER)
     include(cmake/sockets-cpp.cmake)
@@ -159,7 +159,7 @@ include(cmake/intl.cmake)
 add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile)
 
 # Include directories
-target_include_directories(${PROJECT_BINARY_NAME} PRIVATE 
+target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${stable_diffusion_SOURCE_DIR}
     ${CpuFeatures_SOURCE_DIR}
