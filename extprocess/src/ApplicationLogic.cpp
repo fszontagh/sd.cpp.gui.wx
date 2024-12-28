@@ -306,8 +306,10 @@ void ApplicationLogic::Img2img() {
 
         unsigned char* input_image_buffer   = NULL;
         unsigned char* control_image_buffer = NULL;
+        unsigned char * mask_image_buffer  = NULL;
         sd_image_t input_image;
         sd_image_t* control_image = NULL;
+        sd_image_t mask_image;
         sd_image_t* results;
 
         int input_w, input_h, input_c       = 0;
@@ -332,11 +334,25 @@ void ApplicationLogic::Img2img() {
             this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Missing input image");
             return;
         }
-
-        std::cout << "Checking control image: " << this->currentItem->params.control_image_path << std::endl;
+        if (this->currentItem->mask_image.length() > 0) {
+            if (std::filesystem::exists(this->currentItem->mask_image)) {
+                mask_image_buffer = stbi_load(this->currentItem->mask_image.c_str(), &input_w, &input_h, &input_c, 3);
+                mask_image        = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, mask_image_buffer};
+                std::cout << " mask image loaded: " << this->currentItem->mask_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
+            } else {
+                std::cerr << "Mask image not found: " << this->currentItem->mask_image << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+                this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Mask image not found:" + this->currentItem->mask_image);
+                return;
+            }
+        }else{
+            // i think, this is a bug, the mask image is not required allways, so we create an empty one
+            mask_image = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, NULL};
+        }
 
         // prepare control image, if we have one
         if (this->currentItem->params.control_image_path.length() > 0) {
+            std::cout << "Checking control image: " << this->currentItem->params.control_image_path << std::endl;
             if (std::filesystem::exists(this->currentItem->params.control_image_path)) {
                 control_image_buffer = stbi_load(this->currentItem->params.control_image_path.c_str(), &control_w, &control_h, &control_c, 3);
                 control_image        = new sd_image_t{(uint32_t)control_w, (uint32_t)control_h, 3, control_image_buffer};
@@ -350,6 +366,7 @@ void ApplicationLogic::Img2img() {
         results = this->img2imgFuncPtr(
             this->sd_ctx,
             input_image,
+            mask_image,
             this->currentItem->params.prompt.c_str(),
             this->currentItem->params.negative_prompt.c_str(),
             this->currentItem->params.clip_skip,
@@ -372,11 +389,11 @@ void ApplicationLogic::Img2img() {
             this->currentItem->params.slg_scale,
             this->currentItem->params.skip_layer_start,
             this->currentItem->params.skip_layer_end);
-        std::cout << "done" << std::endl;
         // free up the control image
 
         stbi_image_free(input_image_buffer);
         stbi_image_free(control_image_buffer);
+        stbi_image_free(mask_image_buffer);
 
         control_image = NULL;
         delete control_image;

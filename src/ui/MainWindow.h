@@ -160,7 +160,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText721;
 		wxTextCtrl* m_inpaintCanvasLeft;
 		wxButton* m_inpaintCanvasResizeApply;
-		wxButton* m_generate1;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
@@ -301,7 +300,6 @@ class mainUI : public wxFrame
 		virtual void OnImg2ImgRMouseDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgRMouseUp( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnInpaintCanvasResizeApply( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteInitialImage( wxCommandEvent& event ) { event.Skip(); }
@@ -336,6 +334,7 @@ class mainUI : public wxFrame
 		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:

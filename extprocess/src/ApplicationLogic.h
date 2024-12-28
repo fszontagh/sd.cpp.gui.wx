@@ -57,7 +57,7 @@ public:
 
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         instance->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_UPDATED);
-        std::cout << "[EXTPROCESS] Item: " << instance->currentItem->id << " Step: " << instance->currentItem->step << "/" << instance->currentItem->steps << " Time: " << instance->currentItem->time << "s" << std::endl;
+        //std::cout << "[EXTPROCESS] Item: " << instance->currentItem->id << " Step: " << instance->currentItem->step << "/" << instance->currentItem->steps << " Time: " << instance->currentItem->time << "s" << std::endl;
     }
 
     bool loadLibrary();

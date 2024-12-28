@@ -78,7 +78,9 @@ namespace QM {
         CONTROLNET = 1 << 1,
         /// @brief This is an itial image (eg. img2img original image, or upscaler original image)
         INITIAL = 1 << 2,
-        UNKNOWN = 1 << 3
+        /// @brief The image is a mask image on img2img
+        MASK = 1 << 3,
+        UNKNOWN
     };
 
     inline const std::unordered_map<QM::QueueEvents, std::string> QueueEvents_str = {
@@ -171,6 +173,7 @@ namespace QM {
         std::string model                    = "";
         QM::GenerationMode mode              = QM::GenerationMode::TXT2IMG;
         std::string initial_image            = "";
+        std::string mask_image               = "";
         std::string status_message           = "";
         uint32_t upscale_factor              = 4;
         std::string sha256                   = "";
@@ -178,7 +181,7 @@ namespace QM {
         std::string app_version              = SD_GUI_VERSION;
         std::string git_version              = GIT_HASH;
         std::string original_prompt          = "";
-        std::string original_negative_prompt = "";        
+        std::string original_negative_prompt = "";
         bool keep_checkpoint_in_memory       = false;
         bool keep_upscaler_in_memory         = false;
         bool need_sha256                     = false;
@@ -203,6 +206,7 @@ namespace QM {
               model(other.model),
               mode(other.mode),
               initial_image(other.initial_image),
+              mask_image(other.mask_image),
               status_message(other.status_message),
               upscale_factor(other.upscale_factor),
               sha256(other.sha256),
@@ -239,6 +243,7 @@ namespace QM {
         model,
         mode,
         initial_image,
+        mask_image,
         status_message,
         upscale_factor,
         sha256,
@@ -259,6 +264,13 @@ namespace QM {
         ~QueueManager();
         int AddItem(const QM::QueueItem& _item, bool fromFile = false);
         int AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);
+        int GetNextId() {
+            int id = this->GetCurrentUnixTimestamp(false);
+            while (id <= this->lastId) {
+                id++;
+            }
+            return id;
+        };
         void UpdateItem(const QM::QueueItem& item);
         std::shared_ptr<QM::QueueItem> GetItemPtr(int id);
         /**

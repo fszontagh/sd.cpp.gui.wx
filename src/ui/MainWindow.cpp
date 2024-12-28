@@ -781,7 +781,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintCanvasLeft = new wxTextCtrl( m_panel25, wxID_ANY, _("0"), wxDefaultPosition, wxDefaultSize, wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasLeft, 0, wxALL, 5 );
 
-	m_inpaintCanvasResizeApply = new wxButton( m_panel25, wxID_ANY, _("MyButton"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inpaintCanvasResizeApply = new wxButton( m_panel25, wxID_ANY, _("Resize"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer1027->Add( m_inpaintCanvasResizeApply, 0, wxALL, 5 );
 
 
@@ -804,26 +804,19 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer38;
 	bSizer38 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_generate1 = new wxButton( m_image2image_panel, wxID_ANY, _("Queue"), wxDefaultPosition, wxDefaultSize, 0 );
 
-	m_generate1->SetBitmap( play_png_to_wx_bitmap() );
-	m_generate1->Enable( false );
-
-	bSizer38->Add( m_generate1, 0, wxALL, 5 );
+	bSizer38->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	m_img2imgOpen = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, _("Select an image"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
 	m_img2imgOpen->SetMinSize( wxSize( 470,-1 ) );
 
 	bSizer38->Add( m_img2imgOpen, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-
-	bSizer38->Add( 0, 0, 1, wxEXPAND, 5 );
-
 	m_staticText24 = new wxStaticText( m_image2image_panel, wxID_ANY, _("Strength:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText24->Wrap( -1 );
 	bSizer38->Add( m_staticText24, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_strength = new wxSpinCtrlDouble( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0.99, 0.75, 0.1 );
+	m_strength = new wxSpinCtrlDouble( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 1, 0.75, 0.1 );
 	m_strength->SetDigits( 2 );
 	bSizer38->Add( m_strength, 0, wxALL, 5 );
 
@@ -1243,7 +1236,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText231->Wrap( 0 );
 	fgSizer2->Add( m_staticText231, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_cfg = new wxSpinCtrlDouble( m_rightMainPanel, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, 0, 15, 0, 0.1 );
+	m_cfg = new wxSpinCtrlDouble( m_rightMainPanel, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( -1,-1 ), wxSP_ARROW_KEYS, 0, 30, 0, 0.1 );
 	m_cfg->SetDigits( 1 );
 	fgSizer2->Add( m_cfg, 0, wxALL|wxEXPAND, 5 );
 
@@ -1543,7 +1536,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imPanel->Connect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
 	m_inpaintCanvasResizeApply->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
-	m_generate1->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteInitialImage ), NULL, this );
@@ -1645,7 +1637,6 @@ mainUI::~mainUI()
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
 	m_inpaintCanvasResizeApply->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
-	m_generate1->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onGenerate ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
 	m_delete_initial_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnDeleteInitialImage ), NULL, this );

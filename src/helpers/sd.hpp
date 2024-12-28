@@ -183,6 +183,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
 
 typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        sd_image_t,            // init_image
+                                       sd_image_t,            // mask_image
                                        const char*,           // prompt_c_str,
                                        const char*,           // negative_prompt_c_str,
                                        int,                   // clip_skip,

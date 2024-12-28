@@ -1044,6 +1044,43 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (type == QM::GenerationMode::IMG2IMG) {
         item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
+
+        // get the mask if loaded
+        if (this->inpaintImageLoaded == true) {
+            wxImage image = this->inpaintBitMap.ConvertToImage();
+            for (int x = 0; x < image.GetWidth(); ++x) {
+                for (int y = 0; y < image.GetHeight(); ++y) {
+                    unsigned char alpha = image.GetAlpha(x, y);
+                    auto red            = image.GetRed(x, y);
+                    auto green          = image.GetGreen(x, y);
+                    auto blue           = image.GetBlue(x, y);
+                    if (alpha < 255) {
+                        image.SetRGB(x, y, 0, 0, 0);
+                        image.SetAlpha(x, y, 255);
+                    }
+                    if (red != 255 || green != 255 || blue != 255) {
+                        image.SetRGB(x, y, 0, 0, 0);
+                        image.SetAlpha(x, y, 255);
+                    }
+                }
+            }
+            if (image.HasAlpha()) {
+                image.ClearAlpha();
+            }
+            wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
+            if (image.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
+                this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
+            } else {
+                this->writeLog(wxString::Format(_("Saved mask image to %s"), file.GetAbsolutePath()), true);
+            }
+
+            item->mask_image = file.GetAbsolutePath();
+            if (this->mapp->cfg->save_all_image == true) {
+                item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK}));
+            }
+        }
+
+        //
     }
 
     item->params.cfg_scale    = static_cast<float>(this->m_cfg->GetValue());
@@ -2002,6 +2039,17 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
 }
 
 void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> item) {
+    if (item->status == QM::QueueStatus::MODEL_LOADING || item->mode == QM::GenerationMode::CONVERT) {
+        // Statikus változó az utolsó frissítés idejének tárolására
+        static auto lastUpdate = std::chrono::steady_clock::now();
+        const auto now         = std::chrono::steady_clock::now();
+        const auto elapsed     = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate).count();
+        if (elapsed < 200) {
+            return;
+        }
+
+        lastUpdate = now;
+    }
     // update column
     auto store             = this->m_joblist->GetStore();
     wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
@@ -2942,10 +2990,6 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
 
         this->m_img2im_preview_img->Enable();
         this->m_delete_initial_img->Enable();
-        if (this->m_model->GetSelection() > 0) {
-            this->m_generate1->Enable();
-        }
-
         this->m_width->Enable();
         this->m_height->Enable();
 
@@ -3654,6 +3698,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     if (item->mode == QM::GenerationMode::IMG2IMG) {
         data.push_back(wxVariant(_("Init image")));
         data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->initial_image.data(), item->initial_image.size())));
+        this->m_joblist_item_details->AppendItem(data);
+        data.clear();
+
+        data.push_back(wxVariant(_("Mask image")));
+        data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->mask_image.data(), item->mask_image.size())));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
@@ -4683,6 +4732,10 @@ void MainWindowUI::OnInpaintSaveMask(wxCommandEvent& event) {
     if (filename.empty()) {
         return;
     }
+    wxFileName file(filename);
+    if (file.GetExt().empty()) {
+        file.SetExt("png");
+    }
 
     wxImage image = this->inpaintBitMap.ConvertToImage();
     // convert alpha to black -> white where to inpaint, black is the natural, so where no white thats will be the black
@@ -4703,10 +4756,14 @@ void MainWindowUI::OnInpaintSaveMask(wxCommandEvent& event) {
             }
         }
     }
-
+    if (image.HasAlpha()) {
+        image.ClearAlpha();
+    }
     if (!image.SaveFile(filename, wxBITMAP_TYPE_PNG)) {
         wxLogError(_("Failed to save image into %s"), filename);
+        return;
     }
+    this->m_inpaintOpenMask->SetPath(file.GetAbsolutePath());
 }
 void MainWindowUI::OnInpaintResizeImage(wxCommandEvent& event) {
     if (this->inpaintImageLoaded == false) {
