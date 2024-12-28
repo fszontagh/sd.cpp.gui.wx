@@ -29,7 +29,8 @@ namespace sd_gui_utils {
         enum class PacketParam {
             ERROR      = 0,
             AUTH       = 1,
-            MODEL_LIST = 2
+            MODEL_LIST = 2,
+            KEEPALIVE = 3
         };
 
         NLOHMANN_JSON_SERIALIZE_ENUM(PacketParam, {{PacketParam::ERROR, 0}, {PacketParam::AUTH, 1}, {PacketParam::MODEL_LIST, 2}})

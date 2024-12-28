@@ -94,27 +94,39 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             if (server->enabled == false) {
                 continue;
             }
-            server->needToRun = true;
-            auto id           = this->m_server->Append(server->GetName());
-            this->m_server->SetClientData(id, (void*)server);
 
+            auto id = this->m_server->Append(server->GetName());
+            this->m_server->SetClientData(id, (void*)server);
+        }
+        this->m_server->SetSelection(0);
+        this->m_server->Show();
+
+        for (auto& server : this->mapp->cfg->ListRemoteServers()) {
+            if (server->enabled == false) {
+                continue;
+            }
+            server->needToRun = true;
             this->threads.emplace_back(new std::thread([this, server]() {
                 while (server->needToRun) {
+                    int tries = 1;
                     while (server->connected == false) {
                         server->client = std::make_shared<sd_gui_utils::networks::TcpClient>(server, this->GetEventHandler());
                         if (server->connected) {
                             this->tcpClients.push_back(server->client);
                             break;
                         }
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+                        if (tries > 5) {
+                            server->needToRun = false;
+                        }
+                        tries++;
+                        std::this_thread::sleep_for(std::chrono::seconds(5 * tries));
                     }
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
                 server->connected = false;
             }));
         }
-        this->m_server->SetSelection(0);
-        this->m_server->Show();
     }
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
@@ -667,18 +679,19 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
         wxString name       = this->m_modelTreeList->GetItemText(item);
         wxString parentName = wxEmptyString;
         auto parentItem     = this->m_modelTreeList->GetItemParent(item);
+        if (parentItem.IsOk()) {
+            while (parentItem.IsOk()) {
+                parentName = this->m_modelTreeList->GetItemText(parentItem);
 
-        while (parentItem.IsOk()) {
-            parentName = this->m_modelTreeList->GetItemText(parentItem);
-
-            if (parentName.IsEmpty()) {
-                break;
+                if (parentName.IsEmpty()) {
+                    break;
+                }
+                name.Prepend(parentName + wxFileName::GetPathSeparators());
+                parentItem = this->m_modelTreeList->GetItemParent(parentItem);
             }
-            name.Prepend(parentName + wxFileName::GetPathSeparators());
-            parentItem = this->m_modelTreeList->GetItemParent(parentItem);
+            menu->Append(106, wxString::Format(_("Create subfolder in: '%s'"), name));
+            menu->Enable(106, false);
         }
-        menu->Append(106, wxString::Format(_("Create subfolder in: '%s'"), name));
-        menu->Enable(106, false);
     } else {
         if (modelInfo->hash_progress_size == 0) {
             if (!modelInfo->sha256.empty()) {
@@ -769,8 +782,9 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             }
         }
     }
-
-    menu->Append(311, _("Open folder"));
+    if (modelInfo->server_id == -1) {
+        menu->Append(311, _("Open folder"));
+    }
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
     PopupMenu(menu);
@@ -947,7 +961,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (this->m_server->GetSelection() > 0) {
         int id = this->m_server->GetSelection();
         if (id != wxNOT_FOUND) {
-            auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(id));
+            auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
             if (server != nullptr) {
                 item->server = server->server_id;
             }
@@ -1361,11 +1375,12 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
         wxString newName = modelInfo->name;
         // newName.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐
         newName = wxString::Format(_("%s %s"), _("[F] "), modelInfo->name);
-        this->treeListManager->ChangeText(modelInfo->path, newName, 0);
+        this->treeListManager->ChangeText(item, newName, 0);
     } else {
-        this->treeListManager->ChangeText(modelInfo->path, modelInfo->name, 0);
+        this->treeListManager->ChangeText(item, modelInfo->name, 0);
         modelInfo->tags = modelInfo->tags & ~sd_gui_utils::ModelInfoTag::Favorite;
     }
+    std::cout << "Save model info: " << modelInfo->meta_file << std::endl;
     this->ModelManager->UpdateInfo(modelInfo);
     if (this->mapp->cfg->favorite_models_only) {
         // check if in it the m_model, i = 0 is placeholder
@@ -1858,6 +1873,14 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         auto last_modified = wxFileName(modelinfo->path).GetModificationTime();
         data.push_back(wxVariant(_("Last modified")));
         data.push_back(wxVariant(wxString::Format("%s", last_modified.Format())));
+        this->m_model_details->AppendItem(data);
+        data.clear();
+    }
+
+    if (modelinfo->server_id > -1) {
+        auto srv = this->mapp->cfg->GetTcpServer(modelinfo->server_id);
+        data.push_back(wxVariant(_("Server")));
+        data.push_back(wxVariant(wxString::Format("%s", srv == nullptr ? _("deleted server") : srv->GetName())));
         this->m_model_details->AppendItem(data);
         data.clear();
     }
@@ -3289,6 +3312,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->disconnect_reason));
+        // this->treeListManager->DeleteByServerId(server);
+        this->ModelManager->UnloadModelsByServer(server);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
@@ -3309,7 +3334,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 if (item.path.empty() || item.name.empty()) {
                     continue;
                 }
-                auto newItem = this->ModelManager->addRemoteModel(item);
+                auto newItem = this->ModelManager->addRemoteModel(item, server);
                 if (newItem == nullptr) {
                     continue;
                 }
@@ -3638,11 +3663,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     data.push_back(wxVariant(_("Server")));
     if (item->server > -1) {
         auto srv = this->mapp->cfg->GetTcpServer(item->server);
-        if (srv != nullptr) {
-            data.push_back(wxVariant(srv->GetName()));
-        } else {
-            data.push_back(wxVariant(_("deleted server")));
-        }
+        data.push_back(wxVariant(wxString::Format("%s", srv == nullptr ? _("deleted server") : srv->GetName())));
     } else {
         data.push_back(wxVariant("local"));
     }

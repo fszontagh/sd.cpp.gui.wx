@@ -18,7 +18,7 @@ namespace ModelInfo {
         void WriteIntoMeta(sd_gui_utils::ModelFileInfo* modelinfo);
         void ParseCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo);
         wxString GetMetaPath(const wxString& model_path, bool remote = false);
-        wxString GetFolderName(const wxString& model_path, const wxString& name, const sd_gui_utils::DirTypes& type, const sd_gui_utils::sdServer* server = nullptr);
+        wxString GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server = nullptr);
         wxString MetaStorePath;
         std::unordered_map<sd_gui_utils::DirTypes, unsigned int> ModelCount;
         // fullpath -> wxFileName, the group name is the folder name
@@ -28,7 +28,7 @@ namespace ModelInfo {
         Manager(const wxString& meta_base_path);
         ~Manager();
         sd_gui_utils::ModelFileInfo* addModel(wxString mpath, sd_gui_utils::DirTypes type, wxString basepath);
-        sd_gui_utils::ModelFileInfo* addRemoteModel(const sd_gui_utils::networks::RemoteModelInfo& info);
+        sd_gui_utils::ModelFileInfo* addRemoteModel(const sd_gui_utils::networks::RemoteModelInfo& info, sd_gui_utils::sdServer* server);
         bool exists(std::string model_path);
         void setHash(std::string model_path, std::string hash);
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
@@ -40,6 +40,7 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
         inline void resetModels(sd_gui_utils::DirTypes type) {
+            std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
                 if (it->second->model_type == type) {
                     delete it->second;
@@ -51,6 +52,18 @@ namespace ModelInfo {
             }
             if (this->ModelCount.contains(type)) {
                 this->ModelCount[type] = 0;
+            }
+        }
+        inline void UnloadModelsByServer(sd_gui_utils::sdServer* server) {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
+                if (it->second->server_id == server->server_id) {
+                    this->ModelCount[it->second->model_type]--;
+                    delete it->second;
+                    it = this->ModelInfos.erase(it);
+                } else {
+                    it++;
+                }
             }
         }
         inline void deleteModel(std::string model_path) {

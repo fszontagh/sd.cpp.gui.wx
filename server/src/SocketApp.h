@@ -41,6 +41,7 @@ private:
         int idx;
         long connected_at;
         std::string apikey;
+        long last_keepalive = 0;
     };
     sockets::SocketOpt m_socketOpt;
     sockets::TcpServer<SocketApp> m_server;

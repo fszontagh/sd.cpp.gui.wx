@@ -61,7 +61,7 @@ public:
         columns.push_back(info);
     }
 
-    inline void AddItem(const sd_gui_utils::ModelFileInfo* item, sd_gui_utils::sdServer* server = nullptr) {
+    inline void AddItem(sd_gui_utils::ModelFileInfo* item, sd_gui_utils::sdServer* server = nullptr) {
         wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName);
         wxString name             = wxString::FromUTF8Unchecked(item->name);
         if (!item->folderGroupName.empty()) {
@@ -73,11 +73,58 @@ public:
             // name.Prepend(wxUniChar(0x2B50));  // Unicode star: ⭐ --> this is not working on windows
             name = wxString::Format("%s %s", _("[F] "), name);
         }
+
         wxTreeListItem newItem = treeListCtrl->AppendItem(parentItem, name);
+        this->dataMap[newItem] = new ModelFileInfoData(item);
         treeListCtrl->SetItemText(newItem, 1, wxString(item->size_f));
         treeListCtrl->SetItemText(newItem, 2, wxString(ConvertTypeToString(item->model_type)));
         treeListCtrl->SetItemText(newItem, 3, wxString(item->sha256).substr(0, 10));
-        treeListCtrl->SetItemData(newItem, new ModelFileInfoData(const_cast<sd_gui_utils::ModelFileInfo*>(item)));
+        treeListCtrl->SetItemData(newItem, this->dataMap[newItem]);
+        this->dataMap[newItem] = new ModelFileInfoData(item);
+    }
+
+    void DeleteByServerId(const sd_gui_utils::sdServer* server) {
+        for (auto it = dataMap.begin(); it != dataMap.end();) {
+            if (it->second != nullptr && it->second->GetFileInfo() != nullptr && it->second->GetFileInfo()->server_id == server->server_id) {
+                this->treeListCtrl->DeleteItem(it->first);
+                it = dataMap.erase(it);
+            } else {
+                it++;
+            }
+        }
+    }
+
+    void TraverseAndDelete(const wxTreeListItem& parentItem, std::function<bool(void*)> condition) {
+        wxTreeListItem child = treeListCtrl->GetFirstChild(parentItem);
+        while (child.IsOk()) {
+            wxTreeListItem nextSibling = treeListCtrl->GetNextSibling(child);
+
+            // Bejárás: gyerekek rekurzív ellenőrzése
+            TraverseAndDelete(child, condition);
+
+            // Feltétel ellenőrzése és törlés
+            void* data = treeListCtrl->GetItemData(child);
+            if (data && condition(data)) {
+                auto it = std::find_if(parentMap.begin(), parentMap.end(),
+                                       [&](const auto& pair) { return pair.second == child; });
+                if (it != parentMap.end()) {
+                    parentMap.erase(it);
+                }
+                treeListCtrl->DeleteItem(child);
+            }
+
+            child = nextSibling;
+        }
+
+        // Szülő törlése, ha nincs gyerek
+        if (treeListCtrl->GetFirstChild(parentItem).IsOk() == false && parentItem != treeListCtrl->GetRootItem()) {
+            auto it = std::find_if(parentMap.begin(), parentMap.end(),
+                                   [&](const auto& pair) { return pair.second == parentItem; });
+            if (it != parentMap.end()) {
+                parentMap.erase(it);
+            }
+            treeListCtrl->DeleteItem(parentItem);
+        }
     }
 
     template <typename T>
@@ -121,6 +168,11 @@ public:
             treeListCtrl->SetItemText(item, col, wxString::FromUTF8(text));
         }
     }
+    void ChangeText(wxTreeListItem item, const wxString& text, unsigned int col = 0) {
+        if (item.IsOk()) {
+            treeListCtrl->SetItemText(item, col, text);
+        }
+    }
 
     sd_gui_utils::ModelFileInfo* FindItem(const std::string& path) {
         wxTreeListItem root = treeListCtrl->GetRootItem();
@@ -134,7 +186,11 @@ public:
 
     sd_gui_utils::ModelFileInfo* FindItem(const wxTreeListItem& item) {
         ModelFileInfoData* data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(item));
-        return data ? data->GetFileInfo() : nullptr;
+        if (data == NULL) {
+            return nullptr;
+        }
+        auto mdl = data->GetFileInfo();
+        return mdl;
     }
 
     wxTreeListItem GetOrCreateParent(const wxString& folderGroupName) {
@@ -180,6 +236,7 @@ private:
     wxTreeListCtrl* treeListCtrl;
     wxVector<TreeListManager::ColumnInfo> columns;
     std::map<wxString, wxTreeListItem> parentMap;
+    std::map<wxTreeListItem, ModelFileInfoData*> dataMap;
 
     /**
      * Retrieves or creates the parent wxTreeListItem for a given folder group name.

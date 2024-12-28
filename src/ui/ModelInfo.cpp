@@ -34,7 +34,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
 
     auto model_path = wxFileName(mpath);
 
-    auto folderGroupName = this->GetFolderName(mpath, name, type);
+    auto folderGroupName = this->GetFolderName(mpath, type, basepath);
 
     if (meta_path.FileExists()) {
         wxFile input;
@@ -81,15 +81,46 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
     return nullptr;
 }
 
-sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addRemoteModel(const sd_gui_utils::networks::RemoteModelInfo& info) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addRemoteModel(const sd_gui_utils::networks::RemoteModelInfo& info, sd_gui_utils::sdServer* server) {
     std::unique_lock<std::mutex> lock(mutex);
-    sd_gui_utils::ModelFileInfo* meta = new sd_gui_utils::ModelFileInfo(info);
-    meta->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.name, info.model_type);
-    auto meta_file                    = this->GetMetaPath(info.path, true);
 
-    if (wxFileExists(meta_file) == false) {
-        this->WriteIntoMeta(meta);
+    auto meta_file = this->GetMetaPath(info.path, true);
+    if (wxFileExists(meta_file)) {
+        wxFile input(meta_file, wxFile::read);
+        wxString meta_content;
+        if (input.ReadAll(&meta_content)) {
+            try {
+                nlohmann::json data             = nlohmann::json::parse(meta_content.utf8_string());
+                sd_gui_utils::ModelFileInfo* _z = new sd_gui_utils::ModelFileInfo(data.get<sd_gui_utils::ModelFileInfo>());
+                _z->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
+                _z->meta_file                   = meta_file.utf8_string();
+                _z->server_id                   = server->server_id;
+                if (_z->sha256.empty()) {
+                    auto localVer = this->findInfoByName(info.name);
+                    if (localVer != nullptr && localVer->sha256.empty() == false) {
+                        _z->sha256 = localVer->sha256;
+                        this->WriteIntoMeta(_z);
+                    }
+                }
+                this->ModelInfos[info.path] = _z;
+                this->ModelCount[info.model_type]++;
+                return _z;
+            } catch (const std::exception& e) {
+                wxLogError("Exception: %s file: %s", e.what(), meta_file);
+            }
+        }
     }
+    sd_gui_utils::ModelFileInfo* meta = new sd_gui_utils::ModelFileInfo(info);
+    meta->meta_file                   = meta_file.utf8_string();
+    meta->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
+
+    auto localVer = this->findInfoByName(info.name);
+    if (localVer != nullptr && localVer->sha256.empty() == false) {
+        meta->sha256 = localVer->sha256;
+    }
+    meta->server_id = server->server_id;
+
+    this->WriteIntoMeta(meta);
 
     this->ModelCount[info.model_type]++;
     this->ModelInfos[info.path] = meta;
@@ -239,10 +270,9 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::GenerateMeta(const wxFileName& 
     mi->hash_progress_size = 0;
     mi->model_type         = type;
 
-    mi->meta_file       = this->GetMetaPath(model_path.GetAbsolutePath());
-    mi->name            = model_path.GetFullName();
-    mi->path            = path;
-    mi->folderGroupName = this->GetFolderName(model_path.GetAbsolutePath(), name, type);
+    mi->meta_file = this->GetMetaPath(model_path.GetAbsolutePath());
+    mi->name      = model_path.GetFullName();
+    mi->path      = path;
     return mi;
 }
 
@@ -302,28 +332,31 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
     path.SetExt("json");
     wxFileName meta_path(this->MetaStorePath, path.GetFullName());
 
-    if (!wxDirExists(meta_path.GetPath())) {
-        return wxEmptyString;
-    }
-
     if (!wxFileName::DirExists(meta_path.GetPath())) {
         return wxEmptyString;
     }
+    if (remote) {
+        // add _remote suffix
+        meta_path.SetName(meta_path.GetName() + "_remote");
+    }
 
-    return meta_path.GetFullPath(wxPATH_UNIX);
+    return meta_path.GetAbsolutePath();
 }
 
-wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const wxString& name, const sd_gui_utils::DirTypes& type, const sd_gui_utils::sdServer* server) {
+wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server) {
+    auto folderGroupName = wxFileName(model_path).GetPath();
 
-    auto folderGroupName = name;
-    folderGroupName.Replace(model_path, "");
+    folderGroupName.Replace(root_path, "", false);
+    if (folderGroupName.StartsWith(wxFileName::GetPathSeparator())) {
+        folderGroupName = folderGroupName.SubString(1, folderGroupName.Length());
+    }
 
     if (!folderGroupName.empty() && !this->folderGroupExists(folderGroupName)) {
-        wxFileName group_full_path(model_path);
+        wxFileName group_full_path(wxFileName(model_path).GetPath());
         if (!group_full_path.DirExists()) {
             group_full_path.AssignDir(wxFileName(model_path).GetPath());
         }
-        // Hozzáadjuk a folderGroups-hoz
+        // Add to folderGroups
         this->folderGroups[group_full_path.GetFullPath()] = group_full_path;
     }
 
@@ -331,7 +364,7 @@ wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const wxS
     if (server != nullptr) {
         folderGroupName.Prepend(server->GetName() + wxFileName::GetPathSeparator());
     } else {
-        folderGroupName.Prepend(_("local") + wxFileName::GetPathSeparator());
+        folderGroupName.Prepend(wxString("local") + wxFileName::GetPathSeparator());
     }
 
     return folderGroupName;

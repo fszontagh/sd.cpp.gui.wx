@@ -12,6 +12,7 @@ namespace sd_gui_utils::networks {
         int server_id = -1;  // deleted server id
         std::string name;
         std::string path;
+        std::string root_path;
         std::string sha256;
         size_t size;
         std::string size_f;
@@ -20,17 +21,18 @@ namespace sd_gui_utils::networks {
         sd_gui_utils::DirTypes model_type = sd_gui_utils::DirTypes::UNKNOWN;
 
         RemoteModelInfo() = default;
-        RemoteModelInfo(const wxFileName &path, sd_gui_utils::DirTypes type) {
+        RemoteModelInfo(const wxFileName &path, sd_gui_utils::DirTypes type, const wxString &root_path) {
             this->model_type = type;
             this->name = path.GetFullName();
             this->size = path.GetSize().GetValue();
-            this->size_f = path.GetHumanReadableSize().ToStdString();
+            this->size_f = path.GetHumanReadableSize().utf8_string();
             this->hash_fullsize = 0;
             this->hash_progress_size = 0;
-            this->path = path.GetAbsolutePath().ToStdString();
+            this->path = path.GetAbsolutePath().utf8_string();
+            this->root_path = root_path.utf8_string();
         }
         ~RemoteModelInfo() {}
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(RemoteModelInfo, server_id, name, path, sha256, size, size_f, hash_progress_size, hash_fullsize, model_type)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(RemoteModelInfo, server_id, name, path, root_path, sha256, size, size_f, hash_progress_size, hash_fullsize, model_type)
     };
 
     typedef std::vector<RemoteModelInfo> RemoteModelList;

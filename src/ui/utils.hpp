@@ -123,19 +123,16 @@ namespace sd_gui_utils {
             return *this;
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo& rh) const {
-            return path == rh.path;
+            return (path == rh.path && server_id == rh.server_id);
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo rh) const {
-            return path == rh.path;
+            return (path == rh.path && server_id == rh.server_id);
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo* rh) const {
             if (rh == nullptr) {
                 return false;
             }
-            return path == rh->path;
-        }
-        inline bool operator==(const std::string& otherPath) const {
-            return path == otherPath;
+            return (path == rh->path && server_id == rh->server_id);
         }
     };
 

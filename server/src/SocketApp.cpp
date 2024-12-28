@@ -59,7 +59,7 @@ void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const c
     }
 
     if (this->buffer.size() == this->expected_size && this->expected_size > 0) {
-        auto packet = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
+        auto packet       = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
         packet.source_idx = client;
 
         this->parseMsg(packet);
@@ -95,15 +95,20 @@ void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const so
 }
 
 void SocketApp::OnTimer() {
-    std::lock_guard<std::mutex> guard(m_mutex);
-
     auto it = this->m_clientInfo.begin();
     while (it != this->m_clientInfo.end()) {
         if ((wxGetLocalTime() - it->second.connected_at) > this->parent->configData->unauthorized_timeout && it->second.apikey.empty()) {
-            this->parent->sendLogEvent(wxString::Format("Unauthorized client %d disconnected due to inactivity %s:%d", it->second.idx, it->second.host, it->second.port), wxLOG_Warning);
-            this->m_server.deleteClient(it->second.idx);
-            it = this->m_clientInfo.erase(it);
+            {
+                std::lock_guard<std::mutex> guard(m_mutex);
+                this->parent->sendLogEvent(wxString::Format("Unauthorized client %d disconnected due to inactivity %s:%d", it->second.idx, it->second.host, it->second.port), wxLOG_Warning);
+                this->m_server.deleteClient(it->second.idx);
+                it = this->m_clientInfo.erase(it);
+            }
         } else {
+            if (it->second.last_keepalive == 0 || (wxGetLocalTime() - it->second.last_keepalive) > this->parent->configData->tcp_keepalive) {
+                it->second.last_keepalive = wxGetLocalTime();
+                this->sendMsg(it->second.idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::KEEPALIVE));
+            }
             ++it;
         }
     }

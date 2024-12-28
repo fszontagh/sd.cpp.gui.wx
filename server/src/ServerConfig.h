@@ -32,10 +32,11 @@ inline const std::map<backend_type, std::string> backend_type_to_str = {
     {backend_type::VULKAN, "vulkan"}};
 
 struct ServerConfig {
-    std::string host        = "127.0.0.1";
-    uint16_t port           = 8191;
-    int max_clients         = 10;
-    size_t max_request_size = 1024 * 1024 * 1024;
+    std::string host           = "127.0.0.1";
+    uint16_t port              = 8191;
+    int max_clients            = 10;
+    size_t max_request_size    = 1024 * 1024 * 1024;
+    unsigned int tcp_keepalive = 60;  // kep alive period
     std::string logfile;
     backend_type backend = backend_type::AVX;
     std::string authkey;

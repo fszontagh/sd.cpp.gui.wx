@@ -326,7 +326,7 @@ bool TerminalApp::LoadModelFiles() {
     for (const auto& file : checkpoint_files) {
         wxFileName filename(file);
         if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), filename.GetExt()) != CHECKPOINT_FILE_EXTENSIONS.end()) {
-            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT);
+            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT, this->configData->model_path);
             this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
             used_sizes += modelInfo.size;
             used_checkpoint_sizes += modelInfo.size;
@@ -343,7 +343,7 @@ bool TerminalApp::LoadModelFiles() {
     for (const auto& file : lora_files) {
         wxFileName filename(file);
         if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), filename.GetExt()) != LORA_FILE_EXTENSIONS.end()) {
-            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::LORA);
+            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::LORA, this->configData->lora_path);
             this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
             used_sizes += modelInfo.size;
             used_lora_sizes += modelInfo.size;
