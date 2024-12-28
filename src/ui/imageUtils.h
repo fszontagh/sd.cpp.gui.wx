@@ -311,6 +311,58 @@ namespace sd_gui_utils {
             free(rowPointers[y]);
         }
     }
+    inline void ResizeWithBorder(wxBitmap& bitmap, int top, int right, int bottom, int left) {
+        if (top < 0 || right < 0 || bottom < 0 || left < 0) {
+            return;
+        }
+
+        int originalWidth  = bitmap.GetWidth();
+        int originalHeight = bitmap.GetHeight();
+
+        int newWidth  = originalWidth + left + right;
+        int newHeight = originalHeight + top + bottom;
+
+        wxBitmap newBitmap(newWidth, newHeight);
+        wxMemoryDC dc(newBitmap);
+        dc.SetBackground(*wxWHITE_BRUSH);
+        dc.Clear();
+
+        dc.DrawBitmap(bitmap, left, top, false);
+
+        dc.SelectObject(wxNullBitmap);
+
+        bitmap = newBitmap;
+    }
+
+    inline void InvertWhiteAndTransparent(wxBitmap& bitmap) {
+        auto oldScale = bitmap.GetScaleFactor();
+        wxImage image = bitmap.ConvertToImage();
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // Pixel színének és alfa értékének lekérése
+                unsigned char red   = image.GetRed(x, y);
+                unsigned char green = image.GetGreen(x, y);
+                unsigned char blue  = image.GetBlue(x, y);
+                unsigned char alpha = image.GetAlpha(x, y);
+
+                if (red == 255 && green == 255 && blue == 255 && alpha > 0) {
+                    image.SetAlpha(x, y, 0);  // make it transparent
+                }
+
+                else if (alpha < 255) {
+                    image.SetRGB(x, y, 255, 255, 255);  // make it white
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+
+        bitmap = wxBitmap(image);
+        bitmap.SetScaleFactor(oldScale);
+    }
 
 }
 #endif  // SRC_UI_IMAGEUTILS_H

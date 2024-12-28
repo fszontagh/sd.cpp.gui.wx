@@ -39,6 +39,7 @@
 #include "wx/sstream.h"
 #include "wx/txtstrm.h"
 #include "wx/hashmap.h"
+#include <wx/dcbuffer.h>
 
 #include "ver.hpp"
 #include "helpers/DirTypes.h"
