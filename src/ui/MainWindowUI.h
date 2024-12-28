@@ -81,6 +81,23 @@ protected:
     void OnImageInfoCopyPrompt(wxCommandEvent& event) override;
     void OnImageInfoTryFindModel(wxCommandEvent& event) override;
     void OnShowWidget(wxCommandEvent& event) override;
+    // painting on img2img
+    void OnImg2ImgMouseDown(wxMouseEvent& event) override;
+    void OnImg2ImgRMouseDown(wxMouseEvent& event) override;
+    void OnImg2ImgRMouseUp(wxMouseEvent& event) override;
+    void OnImg2ImgMouseUp(wxMouseEvent& event) override;
+    void OnImg2ImgMouseMotion(wxMouseEvent& event) override;
+    void OnImg2ImgPaint(wxPaintEvent& event) override;
+    // void OnImg2ImgMouseEnter(wxMouseEvent& event) override;
+    void OnImg2ImgMouseLeave(wxMouseEvent& event) override;
+    void OnImg2ImgMouseWheel(wxMouseEvent& event) override;
+    void OnInpaintSaveMask(wxCommandEvent& event) override;
+    void OnInpaintResizeImage(wxCommandEvent& event) override;
+    void OnInpaintInvertMask(wxCommandEvent& event) override;
+    void OnInpaintMaskOpen(wxFileDirPickerEvent& event) override;
+    void OnInPaintBrushStyleToggle(wxCommandEvent& event) override;
+    void OnInpaintCleanMask(wxCommandEvent& event) override;
+    void OnInpaintCanvasResizeApply(wxCommandEvent& event) override;
 public:
     /** Constructor */
     MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
@@ -135,6 +152,18 @@ private:
     wxString extProcessParam;
     wxString extprocessLastError;
 
+    sd_gui_utils::wxPosition onImg2ImgPaintLastPos;
+    bool onImg2ImgPaintIsDrawing;
+    bool inpaintImageLoaded = false;
+    wxBitmap inpaintBitMap;
+    wxBitmap inpaintCanvas;
+    wxBitmap inpaintCanvasBorder;
+    wxImage inpaintOrigImage;
+    wxImage inpaintZoomedImage;
+    double inpaintZoomFactor           = 1.0;
+    const double inpaintZoomFactorStep = 0.1;
+    int inpaintBrushSize               = 10;
+
     // std::ofstream logfile;
     wxFile logfile;
     std::unordered_map<wxString, wxString> lastImageInfoParams;
@@ -174,6 +203,8 @@ private:
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
+    sd_gui_utils::wxPosition InPaintCalcMousePose(wxMouseEvent& event);
+
     inline void CheckQueueButton() {
         auto current_tab = (sd_gui_utils::GuiMainPanels)this->m_notebook1302->GetSelection();
         switch (current_tab) {
