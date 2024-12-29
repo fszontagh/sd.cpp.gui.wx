@@ -106,6 +106,17 @@ public:
         }
     }
 
+    void SelectItemByModelPath(const std::string& path) {
+        if (path.empty()) {
+            return;
+        }
+        wxTreeListItem root = treeListCtrl->GetRootItem();
+        wxTreeListItem item = FindItemByPath(root, path);
+        if (item.IsOk()) {
+            treeListCtrl->Select(item);
+        }
+    }
+
     void UpdateItem(const sd_gui_utils::ModelFileInfo* updatedItem) {
         wxTreeListItem root = treeListCtrl->GetRootItem();
         wxTreeListItem item = FindItemByPath(root, updatedItem->path);

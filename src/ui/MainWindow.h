@@ -34,13 +34,14 @@
 #include <wx/scrolwin.h>
 #include <wx/notebook.h>
 #include <wx/textctrl.h>
-#include <wx/spinctrl.h>
 #include <wx/filepicker.h>
 #include <wx/checkbox.h>
+#include <wx/spinctrl.h>
 #include <wx/slider.h>
 #include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
+#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -102,29 +103,9 @@ class mainUI : public wxFrame
 		wxStaticBitmap* m_txt2txtDeiffusionPreview;
 		wxPanel* m_controlnetPreviewTab;
 		wxStaticBitmap* m_controlnetImagePreview;
+		wxScrolledWindow* m_openPoseWindow;
 		wxTextCtrl* m_prompt;
 		wxTextCtrl* m_neg_prompt;
-		wxBitmapButton* m_bpButton25;
-		wxStaticText* m_staticText70;
-		wxStaticText* m_staticText522;
-		wxSpinCtrlDouble* slgScale;
-		wxStaticText* m_staticText5221;
-		wxTextCtrl* m_skipLayers;
-		wxStaticText* m_staticText52211;
-		wxSpinCtrlDouble* skipLayerStart;
-		wxStaticText* m_staticText522111;
-		wxSpinCtrlDouble* skipLayerEnd;
-		wxStaticLine* m_staticline41;
-		wxStaticText* m_staticText52111;
-		wxFilePickerCtrl* m_filePickerDiffusionModel;
-		wxCheckBox* diffusionFlashAttn;
-		wxBitmapButton* m_cleanDiffusionModel;
-		wxStaticText* m_staticText52;
-		wxFilePickerCtrl* m_filePickerClipL;
-		wxStaticText* m_staticText521;
-		wxFilePickerCtrl* m_filePickerClipG;
-		wxStaticText* m_staticText5211;
-		wxFilePickerCtrl* m_filePickerT5XXL;
 		wxFilePickerCtrl* m_controlnetImageOpen;
 		wxCheckBox* cnOnCpu;
 		wxChoice* m_controlnetModels;
@@ -205,8 +186,8 @@ class mainUI : public wxFrame
 		wxTreeListCtrl* m_modelTreeList;
 		wxScrolledWindow* m_modelDetailsImageList;
 		wxStaticText* m_staticText641;
-		wxHyperlinkCtrl* m_model_info_link;
 		wxCheckBox* m_ModelFavorite;
+		wxHyperlinkCtrl* m_model_info_link;
 		wxDataViewListCtrl* m_model_details;
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
@@ -251,6 +232,25 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText49;
 		wxChoice* m_promptPresets;
 		wxButton* m_queue;
+		wxBitmapButton* m_bpButton25;
+		wxBitmapButton* m_cleanDiffusionModel;
+		wxStaticText* m_staticText522;
+		wxSpinCtrlDouble* slgScale;
+		wxStaticText* m_staticText5221;
+		wxTextCtrl* m_skipLayers;
+		wxStaticText* m_staticText52211;
+		wxSpinCtrlDouble* skipLayerStart;
+		wxStaticText* m_staticText522111;
+		wxSpinCtrlDouble* skipLayerEnd;
+		wxStaticText* m_staticText52111;
+		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxCheckBox* diffusionFlashAttn;
+		wxStaticText* m_staticText52;
+		wxFilePickerCtrl* m_filePickerClipL;
+		wxStaticText* m_staticText521;
+		wxFilePickerCtrl* m_filePickerClipG;
+		wxStaticText* m_staticText5211;
+		wxFilePickerCtrl* m_filePickerT5XXL;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -274,13 +274,6 @@ class mainUI : public wxFrame
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onCnOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -319,8 +312,11 @@ class mainUI : public wxFrame
 		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnCleanImageInfo( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeColSorted( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeActivated( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeContextMenu( wxTreeListEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeExpanded( wxTreeListEvent& event ) { event.Skip(); }
+		virtual void OnDataModelTreeExpanding( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeSelected( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnModelFavoriteChange( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
@@ -338,6 +334,13 @@ class mainUI : public wxFrame
 		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 
 
 	public:
@@ -352,6 +355,7 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer119;
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
+		wxCollapsiblePane* m_collapsableFluxModel;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 

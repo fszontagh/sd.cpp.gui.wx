@@ -42,6 +42,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->treeListManager->AppendColumn(_("Type"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
     this->treeListManager->AppendColumn(_("Hash"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
 
+    this->m_modelTreeList->SetSortColumn(0, true);
+
     this->initLog();
 
     // load
@@ -88,7 +90,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     // restore the splitter pose, the default tab is the job list
     // this->m_notebook1302->ChangeSelection(static_cast<size_t>(sd_gui_utils::GuiMainPanels::PANEL_QUEUE));
     // this->m_modelDetailsPanel->Hide();
-    // this->m_rightMainPanel->Hide();
+    this->m_rightMainPanel->Hide();
     // this->m_splitter6->SetSashInvisible(false);
     // this->m_splitter6->SetSashPosition(this->mapp->cfg->mainSashPose);
     // this->m_joblist_item_details->Show();
@@ -404,6 +406,20 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG:
         case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER: {
             this->m_rightMainPanel->Show();
+            this->bSizer138->Layout();
+        } break;
+    }
+    switch (selected) {
+        case sd_gui_utils::GuiMainPanels::PANEL_QUEUE:
+        case sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO:
+        case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER:
+        case sd_gui_utils::GuiMainPanels::PANEL_MODELS: {
+            this->m_collapsableFluxModel->Hide();
+            this->bSizer138->Layout();
+        } break;
+        case sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG:
+        case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG: {
+            this->m_collapsableFluxModel->Show();
             this->bSizer138->Layout();
         } break;
     }
@@ -831,6 +847,14 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
     delete menu;
 }
 
+void MainWindowUI::OnDataModelTreeColSorted(wxTreeListEvent& event) {
+}
+
+void MainWindowUI::OnDataModelTreeExpanded(wxTreeListEvent& event) {
+    auto item = event.GetItem();
+    std::cout << "Expanded: " << this->m_modelTreeList->GetItemText(item, 0) << std::endl;
+}
+
 void MainWindowUI::OnJobListItemSelection(wxDataViewEvent& event) {
     if (this->m_joblist->GetSelectedItemsCount() == 0) {
         return;
@@ -1026,9 +1050,55 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     item->model = this->m_model->GetStringSelection().utf8_string();
 
-    if (type == QM::GenerationMode::TXT2IMG) {
+    if (type == QM::GenerationMode::TXT2IMG || type == QM::GenerationMode::IMG2IMG) {
         if (diffusionModel.empty() == false) {
             item->model = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
+        }
+
+        auto slgscale = this->slgScale->GetValue();
+
+        if (slgscale > 0.f) {
+            item->params.slg_scale = slgscale;
+        }
+
+        auto gui_skip_layers = this->m_skipLayers->GetValue();
+
+        auto skip_layers = sd_gui_utils::splitStr2int(gui_skip_layers.utf8_string(), ',');
+
+        if (skip_layers != item->params.skip_layers) {
+            item->params.skip_layers = skip_layers;
+        }
+
+        auto skip_layer_start = this->skipLayerStart->GetValue();
+        auto skip_layer_end   = this->skipLayerEnd->GetValue();
+
+        // TODO: there is no better validation for now
+        // but we need to check if skip_layer_start is less than skip_layer_end and if skip_layer_end is greater than skip_layer_start etc...
+        if (skip_layer_start != item->params.skip_layer_start) {
+            item->params.skip_layer_start = skip_layer_start;
+        }
+
+        if (skip_layer_end != item->params.skip_layer_end) {
+            item->params.skip_layer_end = skip_layer_end;
+        }
+
+        // TODO: need more validation, but no model inspection for now so it's ok for now
+        auto clipLPath = this->m_filePickerClipL->GetPath();
+
+        if (clipLPath.length() > 0) {
+            item->params.clip_l_path = clipLPath.utf8_string();
+        }
+
+        auto clipGPath = this->m_filePickerClipG->GetPath();
+
+        if (clipGPath.length() > 0) {
+            item->params.clip_g_path = clipGPath.utf8_string();
+        }
+
+        auto t5xxlPath = this->m_filePickerT5XXL->GetPath();
+
+        if (t5xxlPath.length() > 0) {
+            item->params.t5xxl_path = t5xxlPath.utf8_string();
         }
     }
 
@@ -1076,52 +1146,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
         if (this->m_controlnetModels->GetSelection() > 0) {
             item->params.control_net_cpu = this->cnOnCpu->GetValue();
-        }
-
-        auto slgscale = this->slgScale->GetValue();
-
-        if (slgscale > 0.f) {
-            item->params.slg_scale = slgscale;
-        }
-
-        auto gui_skip_layers = this->m_skipLayers->GetValue();
-
-        auto skip_layers = sd_gui_utils::splitStr2int(gui_skip_layers.utf8_string(), ',');
-
-        if (skip_layers != item->params.skip_layers) {
-            item->params.skip_layers = skip_layers;
-        }
-
-        auto skip_layer_start = this->skipLayerStart->GetValue();
-        auto skip_layer_end   = this->skipLayerEnd->GetValue();
-
-        // TODO: there is no better validation for now
-        // but we need to check if skip_layer_start is less than skip_layer_end and if skip_layer_end is greater than skip_layer_start etc...
-        if (skip_layer_start != item->params.skip_layer_start) {
-            item->params.skip_layer_start = skip_layer_start;
-        }
-
-        if (skip_layer_end != item->params.skip_layer_end) {
-            item->params.skip_layer_end = skip_layer_end;
-        }
-
-        // TODO: need more validation, but no model inspection for now so it's ok for now
-        auto clipLPath = this->m_filePickerClipL->GetPath();
-
-        if (clipLPath.length() > 0) {
-            item->params.clip_l_path = clipLPath.utf8_string();
-        }
-
-        auto clipGPath = this->m_filePickerClipG->GetPath();
-
-        if (clipGPath.length() > 0) {
-            item->params.clip_g_path = clipGPath.utf8_string();
-        }
-
-        auto t5xxlPath = this->m_filePickerT5XXL->GetPath();
-
-        if (t5xxlPath.length() > 0) {
-            item->params.t5xxl_path = t5xxlPath.utf8_string();
         }
     }
     if (type == QM::GenerationMode::IMG2IMG) {
@@ -1462,6 +1486,7 @@ void MainWindowUI::OnDataModelTreeSelected(wxTreeListEvent& event) {
 
     this->m_ModelFavorite->SetValue(sd_gui_utils::HasTag(modelInfo->tags, sd_gui_utils::ModelInfoTag::Favorite));
     this->UpdateModelInfoDetailsFromModelList(modelInfo);
+    this->mapp->config->Write("/model_list/last_selected_model", wxString::FromUTF8Unchecked(modelInfo->path));
 }
 
 void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
@@ -2279,10 +2304,14 @@ MainWindowUI::~MainWindowUI() {
 
 void MainWindowUI::loadControlnetList() {
     this->LoadFileList(sd_gui_utils::DirTypes::CONTROLNET);
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadEmbeddingList() {
     this->LoadFileList(sd_gui_utils::DirTypes::EMBEDDING);
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
@@ -2575,14 +2604,20 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
 void MainWindowUI::loadVaeList() {
     this->LoadFileList(sd_gui_utils::DirTypes::VAE);
     this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadEsrganList() {
     this->LoadFileList(sd_gui_utils::DirTypes::ESRGAN);
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadTaesdList() {
     this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 wxString MainWindowUI::paramsToImageComment(const QM::QueueItem& myItem) {
@@ -2936,6 +2971,8 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
 }
 void MainWindowUI::loadLoraList() {
     this->LoadFileList(sd_gui_utils::DirTypes::LORA);
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
@@ -4354,15 +4391,10 @@ void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
 }
 
 void MainWindowUI::loadModelList() {
-    auto oldSelection = this->m_model->GetStringSelection();
-
     this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
 
-    auto found = this->m_model->FindString(oldSelection, false);
-
-    if (found != wxNOT_FOUND) {
-        this->m_model->SetSelection(found);
-    }
+    auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnExit(wxEvent& event) {
@@ -4584,7 +4616,11 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
 }
 
 void MainWindowUI::OnHtmlLinkClicked(wxHtmlLinkEvent& event) {
-    wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+    // show a dialog with warning
+    wxMessageDialog dialog(this, event.GetLinkInfo().GetHref(), _("Open Link?"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+    if (dialog.ShowModal() == wxID_YES) {
+        wxLaunchDefaultBrowser(event.GetLinkInfo().GetHref());
+    }
 }
 void MainWindowUI::onWhatIsThis(wxCommandEvent& event) {
     wxLaunchDefaultBrowser("https://github.com/fszontagh/sd.cpp.gui.wx/wiki/LCM-&-SD3.5-&-FLUX-howtos");

@@ -47,6 +47,8 @@ protected:
     void OnJobListItemKeyDown(wxKeyEvent& event) override;
     void onContextMenu(wxDataViewEvent& event) override;
     void OnDataModelTreeContextMenu(wxTreeListEvent& event) override;
+    void OnDataModelTreeColSorted(wxTreeListEvent& event) override;
+    void OnDataModelTreeExpanded(wxTreeListEvent& event) override;
     void OnJobListItemSelection(wxDataViewEvent& event) override;
     void onTxt2ImgFileDrop(wxDropFilesEvent& event) override;
     void OnPromptText(wxCommandEvent& event) override;
