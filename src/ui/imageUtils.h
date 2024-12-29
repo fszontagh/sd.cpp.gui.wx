@@ -84,7 +84,7 @@ namespace sd_gui_utils {
         return fn;
     }
 
-    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
+    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor = wxColour(51, 51, 51, wxALPHA_TRANSPARENT), const wxString& cache_path = "") {
         wxFileName cache_name;
         if (!cache_path.empty()) {
             cache_name = sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight, image_path, cache_path);

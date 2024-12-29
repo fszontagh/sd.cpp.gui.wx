@@ -891,6 +891,22 @@ namespace sd_gui_utils {
         return fileName.GetFullPath();
     }
 
+/**
+ * Creates a unique file path by combining the given filename, extension, and folder path.
+ * If a file with the same name already exists, appends a counter to generate a unique filename.
+ * Optionally appends a suffix to the filename.
+ *
+ * @param filename The base name of the file.
+ * @param extension The file extension.
+ * @param folderPath The path to the folder where the file will be located.
+ * @param suffix An optional suffix to append to the filename.
+ * @return The full path of the unique file as a wxString.
+ *
+ * If the specified directory does not exist, it is created recursively.
+ * Handles different path separators based on the operating system.
+ * Logs an error message if the directory cannot be created.
+ */
+
     inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "") {
         // Normalize path separator for the current OS
         wxString normalizedFilename = folderPath + wxFileName::GetPathSeparator() + filename + extension;

@@ -44,6 +44,7 @@ protected:
     void onJobsPause(wxCommandEvent& event) override;
     void onJobsDelete(wxCommandEvent& event) override;
     void OnJobListItemActivated(wxDataViewEvent& event) override;
+    void OnJobListItemKeyDown(wxKeyEvent& event) override;
     void onContextMenu(wxDataViewEvent& event) override;
     void OnDataModelTreeContextMenu(wxTreeListEvent& event) override;
     void OnJobListItemSelection(wxDataViewEvent& event) override;
@@ -165,7 +166,7 @@ private:
     wxBitmap inpaintCanvasBorder;
     // the original image which is loaded
     wxImage inpaintOrigImage;
-    // the original image which is zoomed
+    // the original image which is zoomed, only this showed to the user
     wxImage inpaintZoomedImage;
     // the current zoom factor
     double inpaintZoomFactor = 1.0;
@@ -173,6 +174,12 @@ private:
     const double inpaintZoomFactorStep = 0.1;
     // the brush size
     int inpaintBrushSize = 10;
+    // the size of the original image
+    wxSize inpaintOrigImageSize;
+    // the size of the outpainted image
+    wxSize inpaintOutPaintSize;
+    // check if the user is painted into the canvas
+    bool inpaintEmpty = true;
 
     // std::ofstream logfile;
     wxFile logfile;
@@ -294,7 +301,7 @@ private:
     wxString paramsToImageComment(const QM::QueueItem& myItem);
     std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode);
-    void onimg2ImgImageOpen(const wxString& file);
+    void onimg2ImgImageOpen(const wxString& file, bool forceResolutions = false);
     void onUpscaleImageOpen(const wxString& file);
     void onControlnetImageOpen(const wxString& file);
 

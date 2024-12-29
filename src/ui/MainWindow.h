@@ -270,6 +270,7 @@ class mainUI : public wxFrame
 		virtual void OnJobListItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemSelection( wxDataViewEvent& event ) { event.Skip(); }
+		virtual void OnJobListItemKeyDown( wxKeyEvent& event ) { event.Skip(); }
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }

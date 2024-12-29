@@ -198,7 +198,7 @@ private:
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
-        std::cout << "folderGroupName: " << folderGroupName << std::endl;
+        //std::cout << "folderGroupName: " << folderGroupName << std::endl;
         std::vector<std::string> groups;
         SplitFolderGroupName(wxString::FromUTF8Unchecked(folderGroupName), groups);
 

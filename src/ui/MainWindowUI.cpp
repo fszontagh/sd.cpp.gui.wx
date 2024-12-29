@@ -532,6 +532,36 @@ void MainWindowUI::OnJobListItemActivated(wxDataViewEvent& event) {
     // implemented in OnJobListItemSelection
 }
 
+void MainWindowUI::OnJobListItemKeyDown(wxKeyEvent& event) {
+    if (event.GetKeyCode() == WXK_DELETE)  // Delete
+    {
+        wxDataViewListCtrl* dataView = static_cast<wxDataViewListCtrl*>(event.GetEventObject());
+        wxDataViewItemArray itemsToDelete;
+
+        dataView->GetSelections(itemsToDelete);
+        wxDataViewListStore* store = dataView->GetStore();
+
+        for (const auto& item : itemsToDelete) {
+            int row = dataView->ItemToRow(item);
+
+            int id     = store->GetItemData(item);
+            auto qitem = this->qmanager->GetItemPtr(id);
+            if (qitem->status == QM::QueueStatus::RUNNING ||
+                qitem->status == QM::QueueStatus::MODEL_LOADING ||
+                qitem->status == QM::QueueStatus::HASHING ||
+                qitem->status == QM::QueueStatus::HASHING_DONE) {
+                continue;
+            }
+            if (this->qmanager->DeleteJob(id) && row != wxNOT_FOUND) {
+                dataView->DeleteItem(row);
+            }
+        }
+        this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+    } else {
+        event.Skip();
+    }
+}
+
 /**
  * Handles the context menu event for the job and data model lists.
  *
@@ -556,70 +586,118 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
             return;
         }
         wxMenu* menu = new wxMenu();
+        if (this->m_joblist->GetSelectedItemsCount() > 1) {
+            wxDataViewItemArray selections;
+            this->m_joblist->GetSelections(selections);
+            wxDataViewListStore* store = this->m_joblist->GetStore();
+            std::vector<int> items_to_del;
+            std::vector<wxDataViewItem> rows_to_del;
+            for (const auto item : selections) {
+                int id     = store->GetItemData(item);
+                auto qitem = this->qmanager->GetItemPtr(id);
+                if (qitem == nullptr) {
+                    continue;
+                }
+                if (qitem->status == QM::QueueStatus::RUNNING ||
+                    qitem->status == QM::QueueStatus::MODEL_LOADING ||
+                    qitem->status == QM::QueueStatus::HASHING ||
+                    qitem->status == QM::QueueStatus::HASHING_DONE) {
+                    continue;
+                }
+                rows_to_del.emplace_back(item);
+                items_to_del.emplace_back(qitem->id);
+            }
+            if (rows_to_del.size() != items_to_del.size()) {
+                this->writeLog(_("Error: rows_to_del.size() != items_to_del.size()"));
+                items_to_del.clear();
+                rows_to_del.clear();
+            }
+            if (items_to_del.size() > 0) {
+                menu->Append(99, wxString::Format(_("Delete %d items"), (int)rows_to_del.size()));
+                // menu->Enable(99, false);
+                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, rows_to_del, items_to_del](wxCommandEvent& event) {
+                    // unselect all before delete
+                    this->m_joblist->SetSelections(wxDataViewItemArray());
+                    for (int i = 0; i < items_to_del.size(); i++) {
+                        this->qmanager->DeleteJob(items_to_del[i]);
+                        auto row = this->m_joblist->ItemToRow(rows_to_del[i]);
+                        if (row != wxNOT_FOUND) {
+                            this->m_joblist->DeleteItem(row);
+                        }
+                    }
+                    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+                });
+            }
 
-        auto item = event.GetItem();
+        } else {
+            auto item = event.GetItem();
 
-        wxDataViewListStore* store = this->m_joblist->GetStore();
+            wxDataViewListStore* store = this->m_joblist->GetStore();
 
-        int id     = store->GetItemData(item);
-        auto qitem = this->qmanager->GetItemPtr(id);
+            int id     = store->GetItemData(item);
+            auto qitem = this->qmanager->GetItemPtr(id);
+            if (qitem == nullptr) {
+                delete menu;
+                return;
+            }
 
-        if (qitem->mode != QM::GenerationMode::CONVERT) {
-            menu->Append(1, _("Requeue"));
-            if (qitem->mode == QM::GenerationMode::IMG2IMG ||
-                qitem->mode == QM::GenerationMode::UPSCALE) {
-                if (!std::filesystem::exists(qitem->initial_image)) {
-                    menu->Enable(1, false);
+            if (qitem->mode != QM::GenerationMode::CONVERT) {
+                menu->Append(1, _("Requeue"));
+                if (qitem->mode == QM::GenerationMode::IMG2IMG ||
+                    qitem->mode == QM::GenerationMode::UPSCALE) {
+                    if (!std::filesystem::exists(qitem->initial_image)) {
+                        menu->Enable(1, false);
+                    }
                 }
             }
-        }
 
-        if (qitem->params.controlnet_path.length() > 0 &&
-            qitem->params.control_image_path.length() > 0 &&
-            !std::filesystem::exists(qitem->params.control_image_path)) {
-            menu->Enable(1, false);
-        }
-
-        if (qitem->mode != QM::GenerationMode::UPSCALE &&
-            qitem->mode != QM::GenerationMode::CONVERT) {
-            menu->Append(2, _("Load parameters"));
-            menu->Append(3, _("Copy prompts to text2img"));
-            menu->Append(4, _("Copy prompts to img2img"));
-            menu->Append(5, wxString::Format(_("Select model %s"), qitem->model));
-
-            if (qitem->images.size() > 0) {
-                menu->Append(6, _("Send the last image to the Upscale tab"));
-                menu->Append(7, _("Send the last image to the img2img tab"));
+            if (qitem->params.controlnet_path.length() > 0 &&
+                qitem->params.control_image_path.length() > 0 &&
+                !std::filesystem::exists(qitem->params.control_image_path)) {
+                menu->Enable(1, false);
             }
-        }
-        if (qitem->mode == QM::GenerationMode::UPSCALE) {
-            if (qitem->images.size() > 0) {
-                menu->Append(6, wxString::Format(_("Upscale again")));
-            }
-        }
 
-        if (qitem->status == QM::QueueStatus::PAUSED ||
-            qitem->status == QM::QueueStatus::PENDING) {
+            if (qitem->mode != QM::GenerationMode::UPSCALE &&
+                qitem->mode != QM::GenerationMode::CONVERT) {
+                menu->Append(2, _("Load parameters"));
+                menu->Append(3, _("Copy prompts to text2img"));
+                menu->Append(4, _("Copy prompts to img2img"));
+                menu->Append(5, wxString::Format(_("Select model %s"), qitem->model));
+
+                if (qitem->images.size() > 0) {
+                    menu->Append(6, _("Send the last image to the Upscale tab"));
+                    menu->Append(7, _("Send the last image to the img2img tab"));
+                }
+            }
+            if (qitem->mode == QM::GenerationMode::UPSCALE) {
+                if (qitem->images.size() > 0) {
+                    menu->Append(6, wxString::Format(_("Upscale again")));
+                }
+            }
+
+            if (qitem->status == QM::QueueStatus::PAUSED ||
+                qitem->status == QM::QueueStatus::PENDING) {
+                menu->AppendSeparator();
+                menu->Append(8, qitem->status == QM::QueueStatus::PENDING ? _("Pause") : _("Resume"));
+            }
+
             menu->AppendSeparator();
-            menu->Append(8, qitem->status == QM::QueueStatus::PENDING ? _("Pause") : _("Resume"));
-        }
+            menu->Append(99, _("Delete"));
+            menu->Enable(99, false);
 
-        menu->AppendSeparator();
-        menu->Append(99, _("Delete"));
-        menu->Enable(99, false);
+            if (qitem->status == QM::QueueStatus::RUNNING ||
+                qitem->status == QM::QueueStatus::HASHING) {
+                menu->Enable(1, false);
+            }
 
-        if (qitem->status == QM::QueueStatus::RUNNING ||
-            qitem->status == QM::QueueStatus::HASHING) {
-            menu->Enable(1, false);
+            if (qitem->status == QM::QueueStatus::PENDING ||
+                qitem->status == QM::QueueStatus::PAUSED ||
+                qitem->status == QM::QueueStatus::FAILED ||
+                qitem->status == QM::QueueStatus::DONE) {
+                menu->Enable(99, true);
+            }
+            menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
         }
-
-        if (qitem->status == QM::QueueStatus::PENDING ||
-            qitem->status == QM::QueueStatus::PAUSED ||
-            qitem->status == QM::QueueStatus::FAILED ||
-            qitem->status == QM::QueueStatus::DONE) {
-            menu->Enable(99, true);
-        }
-        menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
         PopupMenu(menu);
         delete menu;
     }
@@ -754,10 +832,15 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
 }
 
 void MainWindowUI::OnJobListItemSelection(wxDataViewEvent& event) {
+    if (this->m_joblist->GetSelectedItemsCount() == 0) {
+        return;
+    }
+
     auto row = this->m_joblist->GetSelectedRow();
     if (row == wxNOT_FOUND) {
         return;
     }
+
     auto store = this->m_joblist->GetStore();
     auto ditem = store->GetItem(row);
     int itemid = store->GetItemData(ditem);
@@ -896,9 +979,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.wtype    = static_cast<sd_type_t>(wClientData->getId());
         item->params.schedule = static_cast<schedule_t>(sClientData->getId());
 
-        if (this->mapp->cfg->save_all_image) {
-            item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
-        }
+        // if (this->mapp->cfg->save_all_image) {
+        item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+        //}
         this->qmanager->AddItem(item);
         return;
     }
@@ -1044,37 +1127,68 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     if (type == QM::GenerationMode::IMG2IMG) {
         item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
-
+        wxImage maskImage            = this->inpaintBitMap.ConvertToImage();
         // get the mask if loaded
         if (this->inpaintImageLoaded == true) {
-            // load the inpainted canvas content as image
-            wxImage image = this->inpaintBitMap.ConvertToImage();
-            sd_gui_utils::blendImageOnBlackBackground(image);
+            // if the canvas is painted, we need to send to the extprocess otherwise exptrocess create an empty image
+            // if the image is not outpainted, we save the painted canvas withour resize
+            if (this->inpaintEmpty == false && this->inpaintOrigImage.GetSize() == this->inpaintZoomedImage.GetSize()) {
+                // load the inpainted canvas content as image
+                sd_gui_utils::blendImageOnBlackBackground(maskImage);
 
-            wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
-            if (image.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
-                this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
-            } else {
-                this->writeLog(wxString::Format(_("Saved mask image to %s"), file.GetAbsolutePath()), true);
+                wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
+                if (maskImage.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
+                    this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
+                } else {
+                    this->writeLog(wxString::Format(_("Saved mask image to %s"), file.GetAbsolutePath()), true);
+                }
+
+                item->mask_image = file.GetAbsolutePath();
+                // if (this->mapp->cfg->save_all_image == true) {
+                item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK | QM::QueueItemImageType::TMP}));
+                //}
             }
-
-            item->mask_image = file.GetAbsolutePath();
-            if (this->mapp->cfg->save_all_image == true) {
-                item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK}));
-            }
-
             if (this->inpaintOrigImage.IsOk()) {
                 // this is an 'outpaint' if the generation size and the loaded image's size differ, we need to store the larger image as initial image
-                if (this->inpaintOrigImage.GetSize().GetWidth() != this->m_width->GetValue() ||
-                    this->inpaintOrigImage.GetSize().GetHeight() != this->m_height->GetValue()) {
-                    wxFileName initial_image(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_%d", this->qmanager->GetNextId()));
-                    if (this->inpaintOrigImage.SaveFile(initial_image.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
+                if (this->inpaintOrigImage.GetSize() != this->inpaintZoomedImage.GetSize()) {
+                    wxFileName initial_image(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_%d_%dx%d", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+                    initial_image.SetExt("png");
+                    wxImage resized  = wxImage(this->inpaintOrigImage);
+                    int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
+                    int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
+                    int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
+                    int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
+                    sd_gui_utils::CropOrFillImage(resized, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
+
+                    if (resized.SaveFile(initial_image.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
                         this->writeLog(wxString::Format(_("Failed to save initial image to %s"), initial_image.GetAbsolutePath()), true);
                     } else {
-                        this->writeLog(wxString::Format(_("Saved initial image to %s"), initial_image.GetAbsolutePath()), true);
+                        this->writeLog(wxString::Format(_("Saved initial tmp image to %s %dx%d"), initial_image.GetAbsolutePath(), resized.GetWidth(), resized.GetHeight()), true);
                     }
                     item->initial_image = initial_image.GetAbsolutePath();
-                    item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+                    item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
+                    // resize and save the mask
+                    sd_gui_utils::blendImageOnBlackBackground(maskImage);
+                    sd_gui_utils::CropOrFillImage(maskImage, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(255, 255, 255));
+
+                    wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
+                    if (maskImage.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
+                        this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
+                    } else {
+                        this->writeLog(wxString::Format(_("Saved mask tmp image to %s %dx%d"), file.GetAbsolutePath(), maskImage.GetWidth(), maskImage.GetHeight()), true);
+                    }
+
+                    item->mask_image = file.GetAbsolutePath();
+                    // if (this->mapp->cfg->save_all_image == true) {
+                    item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK | QM::QueueItemImageType::TMP}));
+                    auto openedImagePath = this->m_img2imgOpen->GetPath();
+                    if (openedImagePath.empty() == false) {
+                        auto openedImage = wxFileName(openedImagePath);
+                        if (openedImage.FileExists()) {
+                            item->images.emplace_back(QM::QueueItemImage({openedImage.GetAbsolutePath(), QM::QueueItemImageType::ORIGINAL | QM::QueueItemImageType::TMP}));
+                        }
+                    }
+                    //}
                 }
             }
         }
@@ -1124,11 +1238,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->mode = type;
 
     if (type == QM::GenerationMode::IMG2IMG) {
-        if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists()) {
+        if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists() && item->initial_image.empty()) {
             item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
-            if (this->mapp->cfg->save_all_image) {
-                item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
-            }
+            // if (this->mapp->cfg->save_all_image) {
+            item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+            //}
         }
     }
 
@@ -1228,7 +1342,6 @@ void MainWindowUI::onCleanDiffusionModel(wxCommandEvent& event) {
     this->m_neg_prompt->Enable();
     this->m_filePickerClipL->SetPath("");
     this->m_filePickerT5XXL->SetPath("");
-
     this->EnableControlNet();
 }
 
@@ -1265,6 +1378,7 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     this->m_inpaintResizeToSdSize->Disable();
     this->m_inpaintSaveMask->Disable();
     this->inpaintImageLoaded = false;
+    this->inpaintEmpty       = true;
 
     wxImage inpaintImage(512, 512);
     inpaintImage.SetMaskColour(0, 0, 0);
@@ -1917,7 +2031,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
             continue;
         }
         if (std::filesystem::exists(img.local_path)) {
-            wxImage resized        = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.local_path), 256, 256, wxColour(0, 0, 0, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
+            wxImage resized        = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.local_path), 256, 256, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
             wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_modelDetailsImageList, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(resized.GetSize()), 0);
             bitmap->Hide();
             bitmap->SetBitmap(resized);
@@ -1963,7 +2077,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                             this->m_neg_prompt2->SetValue(img.meta.negativePrompt);
                         } break;
                         case 2: {
-                            this->onimg2ImgImageOpen(img.local_path);
+                            this->onimg2ImgImageOpen(img.local_path, true);
                             this->m_prompt2->SetValue(img.meta.prompt);
                             this->m_neg_prompt2->SetValue(img.meta.negativePrompt);
                         } break;
@@ -2063,8 +2177,14 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
         lastUpdate = now;
     }
     // update column
-    auto store             = this->m_joblist->GetStore();
-    wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
+    auto store     = this->m_joblist->GetStore();
+    wxString speed = "";
+    if (item->status == QM::QueueStatus::MODEL_LOADING || item->mode == QM::GenerationMode::CONVERT) {
+        int progress = (item->step / item->steps) * 100;
+        speed        = wxString::Format(item->time > 1.0f ? "%.2fs/it" : "%.2fit/s", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time));
+    } else {
+        speed = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
+    }
     int progressCol        = this->m_joblist->GetColumnCount() - 4;
     int speedCol           = this->m_joblist->GetColumnCount() - 3;
     float current_progress = 0.f;
@@ -2430,9 +2550,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 this->m_notebook1302->SetSelection(3);  // switch to the upscaler
             } break;
             case 7: {
-                this->m_img2imgOpen->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->m_notebook1302->SetSelection(2);  // switch to the img2img
+                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname), true);
             } break;
             case 8: {
                 if (qitem->status == QM::QueueStatus::PAUSED) {
@@ -2939,27 +3057,41 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
     }
 }
 
-void MainWindowUI::onimg2ImgImageOpen(const wxString& file) {
+void MainWindowUI::onimg2ImgImageOpen(const wxString& file, bool forceResolutions) {
+    this->m_inpaintCanvasTop->SetValue(wxString("0"));
+    this->m_inpaintCanvasRight->SetValue(wxString("0"));
+    this->m_inpaintCanvasBottom->SetValue(wxString("0"));
+    this->m_inpaintCanvasLeft->SetValue(wxString("0"));
+
     if (file.length() < 1) {
         std::cerr << __FILE__ << ":" << __LINE__ << " onimg2ImgImageOpen: file is empty" << std::endl;
         return;
     }
     wxImage img;
     if (img.LoadFile(file)) {
-        auto origWidth  = this->m_width->GetValue();
-        auto origHeight = this->m_height->GetValue();
+        this->inpaintOrigImageSize = img.GetSize();
+        auto origWidth             = this->m_width->GetValue();
+        auto origHeight            = this->m_height->GetValue();
+
+        if (forceResolutions) {
+            this->m_width->SetValue(img.GetWidth());
+            this->m_height->SetValue(img.GetHeight());
+        }
 
         if (img.GetWidth() > origWidth || img.GetHeight() > origHeight) {
             this->m_inpaintResizeToSdSize->Enable();
         } else {
-            if (img.GetWidth() < origWidth || img.GetHeight() < origHeight) {
-                this->m_inpaintResizeToSdSize->Disable();
-                this->m_inpaintSaveMask->Disable();
-                this->inpaintImageLoaded = false;
-                wxString msg             = wxString::Format(_("Image size (%d x %d) is smaller than the original size (%d x %d). Please increase the size to at least (%d x %d)."), img.GetWidth(), img.GetHeight(), origWidth, origHeight, origWidth, origHeight);
-                wxMessageDialog dialog(this, msg, "Error", wxOK | wxICON_ERROR);
-                dialog.ShowModal();
-                return;
+            if (forceResolutions == false) {
+                if (img.GetWidth() < origWidth || img.GetHeight() < origHeight) {
+                    this->m_inpaintResizeToSdSize->Disable();
+                    this->m_inpaintSaveMask->Disable();
+                    this->inpaintImageLoaded = false;
+                    wxString msg             = wxString::Format(_("Image size (%d x %d) is smaller than the original size (%d x %d). Please increase the size to at least (%d x %d)."), img.GetWidth(), img.GetHeight(), origWidth, origHeight, origWidth, origHeight);
+                    wxMessageDialog dialog(this, msg, "Error", wxOK | wxICON_ERROR);
+                    this->inpaintEmpty = true;
+                    dialog.ShowModal();
+                    return;
+                }
             }
         }
 
@@ -3594,7 +3726,11 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
 void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::QueueItem> item) {
     if (item == nullptr) {
         this->m_joblist_item_details->DeleteAllItems();
-        this->previewImageList->Destroy();
+        if (this->previewImageList != nullptr && this->previewImageList->RemoveAll()) {
+            this->previewImageList->Destroy();
+            this->previewImageList = nullptr;
+        }
+        this->previewImageList = std::make_shared<wxImageList>(256, 256);
         this->previewImageList->Create(256, 256);
         for (auto _t : this->jobImagePreviews) {
             _t->Destroy();
@@ -3908,7 +4044,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     int index = 0;
     for (auto img : item->images) {
         if (std::filesystem::exists(img.pathname)) {
-            auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.pathname), 256, 256, wxColour(0, 0, 0, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
+            auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.pathname), 256, 256, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
             img.id       = index;
 
             wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
@@ -3926,7 +4062,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                 // menu->Enable(99,false);
                 menu->Append(6, _("Open image"));
                 menu->Append(7, _("Open parent folder"));
-                if (img.type == QM::QueueItemImageType::GENERATED) {
+                if (QM::hasType(img.type, QM::QueueItemImageType::GENERATED)) {
                     menu->AppendSeparator();
                     menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img.id));
                     menu->Append(1, _("Copy prompts to text2img"));
@@ -3934,15 +4070,16 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                     menu->Append(3, _("Send the image to img2img"));
                     menu->Append(5, _("Upscale"));
                 }
-                if (img.type == QM::QueueItemImageType::CONTROLNET) {
+                if (QM::hasType(img.type, QM::QueueItemImageType::CONTROLNET)) {
                     menu->AppendSeparator();
                     menu->Append(8, _("Send image to the controlnet image"));
                 }
 
-                if (img.type == QM::QueueItemImageType::INITIAL) {
+                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL) ||
+                    QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
                     menu->Append(3, _("Send the image to img2img"));
                 }
-                if (img.type == QM::QueueItemImageType::MASK) {
+                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
                     menu->AppendSeparator();
                     menu->Append(9, _("Send image to img2img mask"));
                 }
@@ -3962,7 +4099,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                             this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
                         } break;
                         case 3: {
-                            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.pathname));
+                            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.pathname), true);
                         } break;
                         case 5: {
                             this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.pathname));
@@ -3976,6 +4113,13 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                         } break;
                         case 8: {
                             this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.pathname));
+                        } break;
+                        case 9: {
+                            this->m_inpaintOpenMask->SetPath(wxString::FromUTF8Unchecked(img.pathname));
+                            // i never used like this, but trigger the event:
+                            wxFileDirPickerEvent event(wxEVT_FILEPICKER_CHANGED, this->m_inpaintOpenMask, this->m_inpaintOpenMask->GetId(), this->m_inpaintOpenMask->GetPath());
+                            event.SetEventObject(this->m_inpaintOpenMask);
+                            this->m_inpaintOpenMask->GetEventHandler()->ProcessEvent(event);
                         } break;
                         default: {
                             return;
@@ -4041,11 +4185,43 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tm
 
         itemPtr->images.emplace_back(QM::QueueItemImage(filename, QM::QueueItemImageType::GENERATED));
 
-        if (itemPtr->params.control_image_path.length() > 0 && this->mapp->cfg->save_all_image) {
+        if (itemPtr->params.control_image_path.length() > 0) {
             wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(filename, "control");
             wxImage _ctrlimg(itemPtr->params.control_image_path);
             _ctrlimg.SaveFile(ctrlFilename);
             itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
+        }
+        // move tmp images to the output dir
+        for (auto& img : itemPtr->images) {
+            if (QM::hasType(img.type, QM::QueueItemImageType::TMP)) {
+                wxString nameSuffix = "";
+                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+                    nameSuffix = "_mask";
+                }
+                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+                    nameSuffix = "_initial";
+                }
+                if (QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
+                    nameSuffix = "_original";
+                }
+                if (nameSuffix.empty()) {
+                    continue;
+                }
+                wxFileName newImage(filename);
+                wxFileName origName(img.pathname);
+                newImage.SetExt(origName.GetExt());
+                newImage.SetName(newImage.GetName() + nameSuffix);
+                wxCopyFile(img.pathname, newImage.GetAbsolutePath());
+                img.pathname = newImage.GetAbsolutePath();
+                // update the item's paths too
+                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+                    itemPtr->mask_image = newImage.GetAbsolutePath();
+                }
+                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+                    itemPtr->initial_image = newImage.GetAbsolutePath();
+                }
+                this->qmanager->UpdateItem(itemPtr);
+            }
         }
 
         // add generation parameters into the image meta
@@ -4817,11 +4993,12 @@ void MainWindowUI::OnImg2ImgMouseDown(wxMouseEvent& event) {
     }
     this->onImg2ImgPaintIsDrawing = true;
     this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
+    this->inpaintEmpty            = false;
 }
 
 void MainWindowUI::OnImg2ImgMouseUp(wxMouseEvent& event) {
     this->onImg2ImgPaintIsDrawing = false;
-    // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
+    this->inpaintEmpty            = false;
 }
 void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
     if (this->inpaintImageLoaded == false) {
@@ -4836,40 +5013,68 @@ void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
     // this->onImg2ImgPaintLastPos   = this->InPaintCalcMousePose(event);
 }
 void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
+    if (this->inpaintImageLoaded == false) {
+        this->m_inpaintCanvasTop->SetValue("0");
+        this->m_inpaintCanvasLeft->SetValue("0");
+        this->m_inpaintCanvasRight->SetValue("0");
+        this->m_inpaintCanvasBottom->SetValue("0");
+        event.Skip();
+        return;
+    }
     int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
     int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
     int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
 
-    wxImage img = this->inpaintBitMap.ConvertToImage();
+    wxImage img = wxImage(this->inpaintOrigImage);
+
+    if (canvasTop < 0 && img.GetHeight() + canvasTop < 0) {
+        this->m_inpaintCanvasTop->SetValue("0");
+        canvasTop = 0;
+    }
+    if (canvasLeft < 0 && img.GetWidth() + canvasLeft < 0) {
+        this->m_inpaintCanvasLeft->SetValue("0");
+        canvasLeft = 0;
+    }
+    if (canvasRight < 0 && img.GetWidth() + canvasRight < 0) {
+        this->m_inpaintCanvasRight->SetValue("0");
+        canvasRight = 0;
+    }
+    if (canvasBottom < 0 && img.GetHeight() + canvasBottom < 0) {
+        this->m_inpaintCanvasBottom->SetValue("0");
+        canvasBottom = 0;
+    }
 
     sd_gui_utils::CropOrFillImage(img, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
+    //  change the image
+    this->inpaintZoomedImage  = img;
+    this->inpaintOutPaintSize = img.GetSize();
 
+    // reset the zoom factor
+    this->inpaintZoomFactor = 1;
+    this->m_inpaintZoom->SetLabel(_("Zoom: 1x"));
+
+    // set generated image size to the target image size
     this->m_width->SetValue(img.GetWidth());
     this->m_height->SetValue(img.GetHeight());
-    auto oldScale       = this->inpaintBitMap.GetScaleFactor();
-    this->inpaintBitMap = wxBitmap(img);
 
-    this->inpaintBitMap.SetScaleFactor(oldScale);
-    this->m_img2imPanel->Refresh();
-    this->m_inpaintClearMask->Enable();
+    // update the border
     wxImage canvasBorderImage(img.GetWidth() + 5, img.GetHeight() + 5);
     this->inpaintCanvasBorder = wxBitmap(canvasBorderImage);
     wxMemoryDC dc3(this->inpaintCanvasBorder);
     dc3.SetBackground(*wxRED_BRUSH);
     dc3.Clear();
-    /*
-        // recreate the this->inapintCanvasBorder
-        wxImage inpaintCanvasBorderImage = wxImage(this->inpaintBitMap.GetWidth() + 5, this->inpaintBitMap.GetHeight() + 5);
-        inpaintCanvasBorderImage.SetMaskColour(0, 0, 0);
-        inpaintCanvasBorderImage.InitAlpha();
-        inpaintCanvasBorderImage.SetMask(false);
-        this->inpaintCanvasBorder = wxBitmap(inpaintCanvasBorderImage);
 
-        wxMemoryDC dc(this->inpaintCanvasBorder);
-        dc.SetBackground(*wxRED_BRUSH);
-        dc.Clear();
-        */
+    // refresh the display
+
+    this->m_inpaintClearMask->Enable();
+    if (this->inpaintOrigImage.IsOk()) {
+        this->m_img2imPanel->SetVirtualSize(this->inpaintZoomedImage.GetWidth(), this->inpaintZoomedImage.GetHeight());
+    }
+
+    this->m_img2imPanel->SetScrollRate(10, 10);
+    this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
+    this->m_img2imPanel->Refresh();
 }
 void MainWindowUI::OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) {
     this->inpaintBrushSize = event.GetPosition();
@@ -4894,11 +5099,12 @@ void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
     this->inpaintBitMap.SetScaleFactor(oldScale);
 
     if (this->inpaintOrigImage.IsOk()) {
-        this->m_img2imPanel->SetVirtualSize(this->inpaintOrigImage.GetWidth(), this->inpaintOrigImage.GetHeight());
+        this->m_img2imPanel->SetVirtualSize(this->inpaintZoomedImage.GetWidth(), this->inpaintZoomedImage.GetHeight());
     }
 
     this->m_img2imPanel->SetScrollRate(10, 10);
     this->m_img2imPanel->SetScrollPos(wxBOTH, 0, true);
+    this->inpaintEmpty = true;
 }
 void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
     auto object = dynamic_cast<wxToggleButton*>(event.GetEventObject());
@@ -4934,11 +5140,19 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
         return;
     }
 
+    this->m_inpaintCanvasTop->SetValue(wxString("0"));
+    this->m_inpaintCanvasRight->SetValue(wxString("0"));
+    this->m_inpaintCanvasBottom->SetValue(wxString("0"));
+    this->m_inpaintCanvasLeft->SetValue(wxString("0"));
+
     // convert black to transparent pixels
     wxImage image = wxImage(event.GetPath(), wxBITMAP_TYPE_PNG);
 
     if (this->inpaintBitMap.GetWidth() < image.GetWidth() || this->inpaintBitMap.GetHeight() < image.GetHeight()) {
         this->writeLog(wxString::Format(_("Inpaint mask open: the resolution of the mask does not match the resolution of the image: %s"), event.GetPath()), true);
+        // show an error message
+        wxMessageBox(_("The resolution of the mask does not match the resolution of the image"), _("Error"), wxOK | wxICON_ERROR);
+        return;
     }
 
     sd_gui_utils::convertMaskImageToTransparent(image);
@@ -4948,6 +5162,7 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
     this->inpaintBitMap.SetScaleFactor(oldScale);
     this->m_img2imPanel->Refresh();
     this->m_inpaintClearMask->Enable();
+    this->inpaintEmpty = false;
 }
 
 void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
@@ -4963,11 +5178,10 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
 
         if (event.ControlDown()) {
             if (fabs(dx) > fabs(dy)) {
-                currentPos.pos.y = lastPos.pos.y;  // Csak vízszintes mozgás
+                currentPos.pos.y = lastPos.pos.y;
             } else {
-                currentPos.pos.x = lastPos.pos.x;  // Csak függőleges mozgás
+                currentPos.pos.x = lastPos.pos.x;
             }
-            // Újranyerjük dx és dy értékeket
             dx = currentPos.pos.x - lastPos.pos.x;
             dy = currentPos.pos.y - lastPos.pos.y;
         }
@@ -4991,6 +5205,7 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
                     double interpolatedX = lastPos.pos.x + t * dx;
                     double interpolatedY = lastPos.pos.y + t * dy;
                     dc.DrawCircle(wxPoint(interpolatedX, interpolatedY), this->inpaintBrushSize);
+                    this->inpaintEmpty = false;
                 }
             } else if (this->m_inPaintBrushStyleSquare->GetValue() == true) {
                 for (int i = 1; i <= steps; ++i) {
@@ -4998,6 +5213,7 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
                     double interpolatedX = lastPos.pos.x + t * dx;
                     double interpolatedY = lastPos.pos.y + t * dy;
                     dc.DrawRectangle(wxPoint(interpolatedX - this->inpaintBrushSize / 2, interpolatedY - this->inpaintBrushSize / 2), wxSize(this->inpaintBrushSize * 2, this->inpaintBrushSize * 2));
+                    this->inpaintEmpty = false;
                 }
 
             } else if (this->m_inPaintBrushStyleTriangle->GetValue() == true) {
@@ -5011,6 +5227,7 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
                     points[1] = wxPoint(interpolatedX + this->inpaintBrushSize / 2, interpolatedY - this->inpaintBrushSize / 2);
                     points[2] = wxPoint(interpolatedX, interpolatedY + this->inpaintBrushSize / 2);
                     dc.DrawPolygon(3, points);
+                    this->inpaintEmpty = false;
                 }
             }
         }
@@ -5066,6 +5283,9 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     int borderWidth  = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledWidth() : 0;
     int borderHeight = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledHeight() : 0;
 
+    int inpaintBitMapWidth  = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledWidth() : 0;
+    int inpaintBitMapHeight = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledHeight() : 0;
+
     wxPoint viewStart = this->m_img2imPanel->GetViewStart();
     int scrollUnitX, scrollUnitY;
     this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
@@ -5081,33 +5301,29 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
 
     if (this->inpaintCanvasBorder.IsOk()) {
         dc.DrawBitmap(this->inpaintCanvasBorder, offsetX, offsetY, false);
-        std::cout << "Border: " << offsetX << ", " << offsetY << std::endl;
     }
 
     if (this->inpaintCanvas.IsOk()) {
-        int canvasOffsetX = offsetX + (borderWidth - canvasWidth) / 2;
-        int canvasOffsetY = offsetY + (borderHeight - canvasHeight) / 2;
+        int canvasOffsetX = offsetX + (borderWidth - imageWidth) / 2;
+        int canvasOffsetY = offsetY + (borderHeight - imageHeight) / 2;
         dc.DrawBitmap(this->inpaintCanvas, canvasOffsetX, canvasOffsetY, false);
-        std::cout << "Canvas: " << canvasOffsetX << ", " << canvasOffsetY << std::endl;
     }
 
     if (this->inpaintZoomedImage.IsOk()) {
         int imageOffsetX = offsetX + (borderWidth - imageWidth) / 2;
         int imageOffsetY = offsetY + (borderHeight - imageHeight) / 2;
         dc.DrawBitmap(this->inpaintZoomedImage, imageOffsetX, imageOffsetY, false);
-        std::cout << "Image: " << imageOffsetX << ", " << imageOffsetY << std::endl;
     }
 
     if (this->inpaintBitMap.IsOk()) {
-        int bitmapOffsetX = offsetX + (borderWidth - imageWidth) / 2;
-        int bitmapOffsetY = offsetY + (borderHeight - imageHeight) / 2;
+        int bitmapOffsetX = offsetX + (borderWidth - inpaintBitMapWidth) / 2;
+        int bitmapOffsetY = offsetY + (borderHeight - inpaintBitMapHeight) / 2;
 
         if (!this->m_inpaintClearMask->IsThisEnabled()) {
             this->m_inpaintClearMask->Enable();
         }
 
         dc.DrawBitmap(this->inpaintBitMap, bitmapOffsetX, bitmapOffsetY, true);
-        std::cout << "Bitmap: " << bitmapOffsetX << ", " << bitmapOffsetY << std::endl;
     }
 }
 
@@ -5120,8 +5336,11 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     int rotation = event.GetWheelRotation();
 
     if (event.ControlDown() && this->inpaintOrigImage.IsOk()) {
-        if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0 ||
-            this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1) {
+        if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0 && rotation > 0) {
+            return;
+        }
+
+        if (this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1 && rotation < 0) {
             return;
         }
 
@@ -5137,6 +5356,13 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
             this->inpaintOrigImage.GetWidth() * this->inpaintZoomFactor,
             this->inpaintOrigImage.GetHeight() * this->inpaintZoomFactor,
             wxIMAGE_QUALITY_HIGH);
+        if (this->inpaintOrigImageSize != this->inpaintOutPaintSize) {
+            int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
+            int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
+            int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
+            int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
+            sd_gui_utils::CropOrFillImage(this->inpaintZoomedImage, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
+        }
 
         this->inpaintBitMap.SetScaleFactor(1.0 / this->inpaintZoomFactor);
         this->inpaintCanvas.SetScaleFactor(1.0 / this->inpaintZoomFactor);
@@ -5164,8 +5390,8 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
         this->m_img2imPanel->Scroll(newViewStart);
 
         this->m_img2imPanel->SetVirtualSize(
-            this->inpaintCanvasBorder.GetWidth(),
-            this->inpaintCanvasBorder.GetHeight());
+            this->inpaintZoomedImage.GetWidth(),
+            this->inpaintZoomedImage.GetHeight());
 
         this->m_img2imPanel->Refresh();
         this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintZoomFactor * 100));
@@ -5177,7 +5403,6 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
         } else if (rotation < 0) {
             this->inpaintBrushSize = std::max(this->inpaintBrushSize - 1, this->m_inpaintBrushSizeSlider->GetMin());
         }
-        // this->m_inpaintBrushSize->SetLabel(wxString::Format(_("Brush size: %d"), this->inpaintBrushSize));
         this->m_inpaintBrushSizeSlider->SetValue(this->inpaintBrushSize);
         return;
     }
@@ -5200,8 +5425,9 @@ sd_gui_utils::wxPosition MainWindowUI::InPaintCalcMousePose(wxMouseEvent& event)
     int panelWidth, panelHeight;
     this->m_img2imPanel->GetClientSize(&panelWidth, &panelHeight);
 
-    int imageWidth  = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetWidth() : 0;
-    int imageHeight = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetHeight() : 0;
+    int imageWidth  = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledWidth() : 0;
+    int imageHeight = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledHeight() : 0;
+
 
     // centered image pos
     int offsetX = 0;
