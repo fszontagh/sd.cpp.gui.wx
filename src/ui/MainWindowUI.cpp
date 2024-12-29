@@ -2166,11 +2166,10 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
 
 void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> item) {
     if (item->status == QM::QueueStatus::MODEL_LOADING || item->mode == QM::GenerationMode::CONVERT) {
-        // Statikus változó az utolsó frissítés idejének tárolására
         static auto lastUpdate = std::chrono::steady_clock::now();
         const auto now         = std::chrono::steady_clock::now();
         const auto elapsed     = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate).count();
-        if (elapsed < 1000) {
+        if (elapsed < 1000 && (item->step + 1) < item->steps) {
             return;
         }
 
@@ -3407,7 +3406,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 } else if (item->mode == QM::GenerationMode::CONVERT) {
                     title   = _("Conversion done");
                     message = wxString::Format(_("Conversion the model is done: \n%s\nModel: %s"), item->model, item->params.output_path);
-                    this->loadModelList();
+                    if (wxFileExists(item->params.output_path)) {
+                        auto newModel = this->ModelManager->addModel(item->params.output_path, sd_gui_utils::DirTypes::CHECKPOINT, this->mapp->cfg->model);
+                        if (newModel) {
+                            this->treeListManager->AddItem(newModel, true);
+                        }
+                    }
                 } else {
                     if (item->params.batch_count > 1) {
                         title = wxString::Format(_("%d images generation done"), item->params.batch_count);
@@ -4518,29 +4522,29 @@ void MainWindowUI::threadedModelInfoImageDownload(
 }
 
 void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
-    // sd convert params:
-    // bool success = convert(params.model_path.c_str(), params.vae_path.c_str(), params.output_path.c_str(), params.wtype);
-    std::filesystem::path modelIn(modelInfo->path);
-    std::string name     = modelIn.filename().replace_extension("").generic_string();
-    std::string newType  = this->m_type->GetStringSelection().utf8_string();
-    std::string usingVae = "";
-    name                 = name + "_" + newType + ".gguf";
+    std::string usingVae;
+    const wxFileName modelIn(modelInfo->path);
+    wxFileName modelOut(modelInfo->path);
+    modelOut.SetExt("gguf");
 
-    std::string modelOutName = modelIn.replace_filename(name).generic_string();
-    std::cout << "Old name: " << modelInfo->path << " converted name: " << modelOutName << std::endl;
+    std::string newType = this->m_type->GetStringSelection().utf8_string();
+
+    modelOut.SetName(modelOut.GetName() + "_" + newType);
+    this->writeLog(wxString::Format(_("Converting model %s to %s"), modelIn.GetFullName(), modelOut.GetFullName()));
 
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
     item->model                         = modelInfo->name;
     item->mode                          = QM::GenerationMode::CONVERT;
     item->params.mode                   = SDMode::CONVERT;
     item->params.n_threads              = this->mapp->cfg->n_threads;
-    item->params.output_path            = modelOutName;
-    item->params.model_path             = modelInfo->path;
+    item->params.output_path            = modelOut.GetAbsolutePath().utf8_string();
+    item->params.model_path             = modelIn.GetAbsolutePath().utf8_string();
 
     auto selectedwType = this->m_type->GetStringSelection();
     for (auto types : sd_gui_utils::sd_type_gui_names) {
         if (types.second == selectedwType) {
             item->params.wtype = (sd_type_t)types.first;
+            break;
         }
     }
 
@@ -4560,16 +4564,16 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
         }
     }
 
-    wxString question = wxString::Format(_("Do you want to convert model %s with quantation %s to gguf format?"), modelInfo->name, newType);
+    wxString question = wxString::Format(_("Do you want to convert model %s with quantation %s to gguf format?"), modelIn.GetFullName(), newType);
 
-    if (usingVae != "") {
-        question = wxString::Format(_("Do you want to convert model %s with quantation %s and vae %s to gguf format?"), modelInfo->name, newType, usingVae);
+    if (usingVae.empty() == false) {
+        question = wxString::Format(_("Do you want to convert model %s with quantation %s and vae %s to gguf format?"), modelIn.GetFullName(), newType, usingVae);
     }
 
-    wxMessageDialog dialog(this, question, wxString::Format(_("Convert model %s?"), modelInfo->name), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+    wxMessageDialog dialog(this, question, wxString::Format(_("Convert model %s?"), modelIn.GetFullName()), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
     if (dialog.ShowModal() == wxID_YES) {
-        if (std::filesystem::exists(modelOutName)) {
-            wxString overwriteQuestion = wxString::Format(_("The file %s already exists. Do you want to overwrite it?"), modelOutName);
+        if (modelOut.FileExists()) {
+            wxString overwriteQuestion = wxString::Format(_("The file %s already exists. Do you want to overwrite it?"), modelOut.GetFullName());
             wxMessageDialog overwriteDialog(this, overwriteQuestion, _("Overwrite File?"), wxYES_NO | wxNO_DEFAULT | wxICON_WARNING);
             if (overwriteDialog.ShowModal() != wxID_YES) {
                 return;
@@ -5427,7 +5431,6 @@ sd_gui_utils::wxPosition MainWindowUI::InPaintCalcMousePose(wxMouseEvent& event)
 
     int imageWidth  = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledWidth() : 0;
     int imageHeight = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledHeight() : 0;
-
 
     // centered image pos
     int offsetX = 0;

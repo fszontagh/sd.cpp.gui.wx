@@ -61,7 +61,7 @@ public:
         columns.push_back(info);
     }
 
-    void AddItem(const sd_gui_utils::ModelFileInfo* item) {
+    void AddItem(const sd_gui_utils::ModelFileInfo* item, bool select = false) {
         wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName);
         wxString name             = wxString::FromUTF8Unchecked(item->name);
         if (!item->folderGroupName.empty()) {
@@ -77,6 +77,9 @@ public:
         treeListCtrl->SetItemText(newItem, 2, wxString(ConvertTypeToString(item->model_type)));
         treeListCtrl->SetItemText(newItem, 3, wxString(item->sha256).substr(0, 10));
         treeListCtrl->SetItemData(newItem, new ModelFileInfoData(const_cast<sd_gui_utils::ModelFileInfo*>(item)));
+        if (select) {
+            treeListCtrl->Select(newItem);
+        }
     }
 
     template <typename T>
@@ -198,7 +201,7 @@ private:
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
-        //std::cout << "folderGroupName: " << folderGroupName << std::endl;
+        // std::cout << "folderGroupName: " << folderGroupName << std::endl;
         std::vector<std::string> groups;
         SplitFolderGroupName(wxString::FromUTF8Unchecked(folderGroupName), groups);
 

@@ -132,8 +132,6 @@ class mainUI : public wxFrame
 		wxButton* m_controlnetImagePreviewButton;
 		wxBitmapButton* m_controlnetImageDelete;
 		wxPanel* m_image2image_panel;
-		wxTextCtrl* m_prompt2;
-		wxTextCtrl* m_neg_prompt2;
 		wxNotebook* m_notebook4;
 		wxPanel* m_panel23;
 		wxStaticBitmap* m_img2imgDiffusionPreview;
@@ -161,6 +159,8 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText721;
 		wxTextCtrl* m_inpaintCanvasLeft;
 		wxButton* m_inpaintCanvasResizeApply;
+		wxTextCtrl* m_prompt2;
+		wxTextCtrl* m_neg_prompt2;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
