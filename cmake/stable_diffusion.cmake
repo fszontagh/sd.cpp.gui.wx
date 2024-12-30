@@ -72,13 +72,16 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
 
 if (NOT SD_HIPBLAS)
 
+file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
+
 if (WIN32)
-    set(PATH_VALUE "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin;%PATH%")
+    list(APPEND ${_BINPATH} $ENV{PATH})
 else ()
-    set(PATH_VALUE "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin:$ENV{PATH}")
+    set(_BINPATH "${_BINPATH}:$ENV{PATH}")
 endif ()
 
 
+message(STATUS "PATH_VALUE: ${_BINPATH}")
 
     ExternalProject_Add(
         stable_diffusion_cpp_${variant_name}
@@ -101,8 +104,7 @@ endif ()
             -DSD_CUDA=${SD_CUDA}
             -DSD_HIPBLAS=${SD_HIPBLAS}
             -DSD_VULKAN=${SD_VULKAN}
-        BUILD_COMMAND
-            ${CMAKE_COMMAND} -E env PATH=${PATH_VALUE} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
     )
