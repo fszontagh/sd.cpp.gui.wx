@@ -1,0 +1,453 @@
+name: Test on Windows22
+
+on:
+  workflow_dispatch:
+jobs:
+
+  prepare-conan-cache:
+    name: Prepare Conan cache for Windows
+    runs-on: windows-2022
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.conan2
+            build\generators
+            CMakeUserPresets.json
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-conan
+
+      - name: Install Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+
+      - name: Set up Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          New-Item -ItemType Directory -Force -Path build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=never
+
+  build-windows:
+    name: Build on Windows
+    needs: [prepare-conan-cache]
+    runs-on: windows-2022
+    env:
+      VULKAN_VERSION: 1.3.261.1
+    strategy:
+      matrix:
+        variant:
+          - name: CPU avx
+            cmake_flags: "-DSD_AVX=ON"
+            targets: "stable_diffusion_cpp_avx"
+            cache-key: windows-avx
+
+          - name: CPU avx2
+            cmake_flags: "-DSD_AVX2=ON"
+            targets: "stable_diffusion_cpp_avx2"
+            cache-key: windows-avx2
+
+          - name: CPU avx512
+            cmake_flags: "-DSD_AVX512=ON"
+            targets: "stable_diffusion_cpp_avx512"
+            cache-key: windows-avx512
+
+          - name: CUDA
+            cmake_flags: "-DSD_CUDA=ON"
+            targets: "stable_diffusion_cpp_cuda"
+            cache-key: windows-cuda
+
+          - name: VULKAN
+            cmake_flags: "-DSD_VULKAN=ON"
+            targets: "stable_diffusion_cpp_vulkan"
+            cache-key: windows-vulkan
+
+#          - name: HIPBLAS
+#            cmake_flags: "-DSD_HIPBLAS=ON"
+#            targets: "stable_diffusion_cpp_hipblas"
+#            cache-key: windows-hipblas
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Cache build outputs
+        id: cache-build
+        uses: actions/cache@v4
+        with:
+          path: build/Release/*.dll
+          key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: ${{ matrix.variant.cache-key }}-
+
+      - name: Cache Conan
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: |
+           ~/.conan2
+           build\generators
+           CMakeUserPresets.json
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-conan
+
+      - name: Install Conan
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+
+      - name: Install CUDA Toolkit
+        if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
+        id: cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.19
+        with:
+          cuda: "12.6.1"
+          sub-packages: '["nvcc", "visual_studio_integration"]'
+          method: "network"
+
+      - name: Print cuda version
+        if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
+        run: |
+          echo "Installed cuda version is: ${{steps.cuda-toolkit.outputs.cuda}}"
+
+      - name: Install ROCm Toolkit
+        if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
+        uses: Cyberhan123/rocm-toolkit@v0.1.0
+        with:
+          rocm: "5.5.0"
+
+      - name: Install Ninja
+        if: ${{ matrix.variant.name == 'HIPBLAS' && steps.cache-build.outputs.cache-hit != 'true' }}
+        uses: urkle/action-get-ninja@v1
+        with:
+          version: 1.11.1
+
+      - name: Install Vulkan SDK
+        id: get_vulkan
+        if: ${{ matrix.variant.name == 'VULKAN' && steps.cache-build.outputs.cache-hit != 'true' }}
+        run: |
+          curl.exe -o $env:RUNNER_TEMP/VulkanSDK-Installer.exe -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/VulkanSDK-${env:VULKAN_VERSION}-Installer.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
+
+      - name: Set up Conan
+        if: steps.cache-build.outputs.cache-hit != 'true' && steps.cache-conan.outputs.cache-hit != 'true'
+        run: |
+          New-Item -ItemType Directory -Force -Path build
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=never
+
+      - name: Configure CMake
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          New-Item -ItemType Directory -Force -Path build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release ${{ matrix.variant.cmake_flags }} --preset conan-default
+
+      - name: Build Targets
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          cd build
+          cmake --build . --config Release --target ${{ matrix.variant.targets }}
+
+      - name: Upload Build Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.variant.cache-key }}
+          path: build/Release/*.dll
+          compression-level: 0
+          overwrite: true
+
+  package-installer:
+    name: Build main Application
+    runs-on: windows-2022
+    needs: [build-windows]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Restore builds
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+          pattern: windows-*
+          merge-multiple: true
+
+      - name: Cache Conan
+        id: cache-conan
+        uses: actions/cache@v4
+        with:
+          path: |
+           ~/.conan2
+           build\generators
+           CMakeUserPresets.json
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-conan
+
+      - name: Install Conan
+        run: |
+          python -m pip install --upgrade pip
+          pip install conan
+
+      - name: Set up Conan
+        run: |
+          cd build
+          conan profile detect
+          conan install .. -s compiler.cppstd=17 --build=never
+
+      - name: Compile main application
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default
+          cmake --build . --config Release --target po-compile
+          cmake --build . --config Release --target stablediffusiongui_diffuser
+          cmake --build . --config Release --target stablediffusiongui
+
+
+      - name: Generate installer
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+
+      - name: Upload Release Outputs
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuild-packages-windows
+          path: |
+            build/*.exe
+            build/*.7z
+            build/*.sha256
+          compression-level: 0
+          overwrite: true
+
+  build-ubuntu:
+    name: Build on Ubuntu
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        # variant: [CPU, HIPBLAS, CUDA, VULKAN]
+        variant: [CPU, CUDA, VULKAN]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up build environment
+        run: |
+          echo "Running on OS: ${{ matrix.os }}, Variant: ${{ matrix.variant }}"
+        env:
+          DEBIAN_FRONTEND: noninteractive
+
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Cache builds
+        uses: actions/cache@v3
+        id: sd-cpp-cache
+        with:
+          path: build/*.so
+          key: ${{ matrix.os }}-build-${{ matrix.variant }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
+
+      - name: Maximize build space
+        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.variant == 'VULKAN' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        uses: AdityaGarg8/remove-unwanted-software@v4.1
+        with:
+          remove-android: 'true'
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+          remove-large-packages: 'true'
+          remove-swapfile: 'true'
+
+
+      - name: Install base dependencies
+        if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update
+          sudo apt install -y fuse3 cmake gettext git build-essential ninja-build libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev >/dev/null
+
+      - name: CACHE ROCM installer
+        if: ${{ matrix.variant == 'HIPBLAS' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache@v3
+        id: ubuntu-rocm-installer
+        with:
+          path: /tmp/amdgpu-install.deb
+          key: amdgpu-install-ubuntu-${{ matrix.os }}
+
+      - name: Download ROCM installer
+        if: ${{ matrix.variant == 'HIPBLAS' && steps.ubuntu-rocm-installer.outputs.cache-hit != 'true' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt install -y wget >/dev/null
+          source /etc/lsb-release
+          wget https://repo.radeon.com/amdgpu-install/6.2.2/ubuntu/${DISTRIB_CODENAME}/amdgpu-install_6.2.60202-1_all.deb -O /tmp/amdgpu-install.deb
+
+      - name: Install ROCm toolkit
+        if: ${{ matrix.variant == 'HIPBLAS' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update >/dev/null
+          sudo apt install -y "linux-headers-$(uname -r)" "linux-modules-extra-$(uname -r)" >/dev/null
+          sudo dpkg -i /tmp/amdgpu-install.deb
+          sudo apt update >/dev/null
+          sudo apt install -y rocm-openmp-sdk rocm-cmake hip-dev rocm-hip-runtime-dev clang-tools lld hipblas-dev
+          sudo tee --append /etc/ld.so.conf.d/rocm.conf <<EOF
+          /opt/rocm/lib
+          /opt/rocm/lib64
+          EOF
+          sudo ldconfig
+
+      - name: Install Vulkan SDK
+        if: ${{ matrix.variant == 'VULKAN' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          source /etc/lsb-release
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
+          echo "deb https://packages.lunarg.com/vulkan ${DISTRIB_CODENAME} main" | sudo tee /etc/apt/sources.list.d/lunarg-vulkan-${DISTRIB_CODENAME}.list
+          sudo apt update
+          sudo apt install -y vulkan-sdk
+
+      - name: Install CUDA toolkit
+        if: ${{ matrix.variant == 'CUDA' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update
+          sudo apt install -y nvidia-cuda-toolkit
+
+      - name: Configure & Build
+        if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p build
+          cd build
+          if [ "${{ matrix.variant }}" = "CPU" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
+            cmake --build . --config Release --target stable_diffusion_cpp_avx
+            cmake --build . --config Release --target stable_diffusion_cpp_avx2
+            cmake --build . --config Release --target stable_diffusion_cpp_avx512
+          elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
+            cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+          elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
+            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
+          elif [ "${{ matrix.variant }}" = "CUDA" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
+            cmake --build . --config Release --target stable_diffusion_cpp_cuda
+          fi
+
+
+      - name: Upload Build Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.variant }}
+          path: build/*.so
+          compression-level: 0
+          overwrite: true
+
+  package-ubuntu:
+    name: Build main Application
+    needs: [build-ubuntu]
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Install base dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y fuse3 cmake gettext git build-essential ninja-build libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev >/dev/null
+
+      - name: Cache wxWidgets
+        id: cache-wxwidgets
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/_deps/wxwidgets-src
+            build/_deps/wxwidgets-build
+            build/_deps/wxwidgets-subbuild
+          key: ${{ matrix.os }}-wxwidgets-${{ hashFiles('cmake/wxWidgets_version.cmake') }}
+          restore-keys: ${{ matrix.os }}-wxwidgets
+
+      - name: Restore builds
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+          pattern: ${{ matrix.os }}-*
+          merge-multiple: true
+
+      - name: Configure & Compile main application
+        run: |
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --target po-compile
+          cmake --build . --config Release --target stablediffusiongui
+          cmake --build . --config Release --target stablediffusiongui_diffuser
+
+      - name: Package main application
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+        run: |
+          cd build
+          cmake --build . --config Release --target package
+          mkdir -p AppImageSource/usr/lib
+          cp -pP /usr/lib/x86_64-linux-gnu/libexiv2* AppImageSource/usr/lib
+          cp -pP /usr/lib/x86_64-linux-gnu/libjpeg* AppImageSource/usr/lib
+          cp -pP /usr/lib/x86_64-linux-gnu/libpng* AppImageSource/usr/lib
+          cp -pP /usr/lib/x86_64-linux-gnu/libcurl* AppImageSource/usr/lib
+          cmake --build . --config Release --target AppImage
+
+      - name: Upload Release Outputs
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuild-packages-${{ matrix.os }}
+          path: |
+            build/*.deb
+            build/*.tar.gz
+            build/out/*.AppImage
+            build/*.sha256
+          compression-level: 0
+          overwrite: true
+
+  merge-packages:
+    name: Merge packages
+    runs-on: ubuntu-latest
+    needs: [package-ubuntu, package-installer]
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+    steps:
+      - name: Create directories
+        run: |
+          mkdir -p build
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        id: download-packages
+        with:
+          path: build
+          pattern: prebuild-packages-*
+          merge-multiple: true
+
+      - name: Release Linux packages
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ""
+          draft: true
+          prerelease: true
+          files: |
+            build/*.deb
+            build/out/*.AppImage
+            build/*.tar.gz
+            build/*.sha256
+            build/*.exe
+            build/*.7z
