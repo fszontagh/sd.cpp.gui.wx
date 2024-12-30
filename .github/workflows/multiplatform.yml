@@ -340,7 +340,7 @@ jobs:
             cmake --build . --config Release --target stable_diffusion_cpp_hipblas
           elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
+            PATH=$PATH:./build/bin cmake --build . --config Release --target stable_diffusion_cpp_vulkan
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
             cmake --build . --config Release --target stable_diffusion_cpp_cuda
