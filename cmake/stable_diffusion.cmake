@@ -104,7 +104,7 @@ endif()
 if(SD_VULKAN)
 
     file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
-
+    message(STATUS "Bin path: ${_BINPATH}")
     if (WIN32)
         list(APPEND ${_BINPATH} $ENV{PATH})
     else ()
