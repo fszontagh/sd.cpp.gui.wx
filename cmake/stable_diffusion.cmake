@@ -72,44 +72,72 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
 
 if (NOT SD_HIPBLAS)
 
-file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
+        ExternalProject_Add(
+            stable_diffusion_cpp_${variant_name}
+            GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
+            GIT_TAG ${SD_GIT_TAG}
+            EXCLUDE_FROM_ALL
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+            BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+            CMAKE_ARGS
+                -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+                -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}
+                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                -DGGML_CCACHE=OFF
+                -DGGML_BUILD_TESTS=OFF
+                -DGGML_ALL_WARNINGS=OFF
+                -DGGML_NATIVE=OFF
+                -DGGML_STATIC=ON
+                -DSD_BUILD_EXAMPLES=OFF
+                -DSD_BUILD_SHARED_LIBS=ON
+                -DGGML_AVX=${SD_AVX}
+                -DGGML_AVX2=${SD_AVX2}
+                -DGGML_AVX512=${SD_AVX512}
+                -DSD_CUDA=${SD_CUDA}
+                -DSD_HIPBLAS=${SD_HIPBLAS}
+                -DSD_VULKAN=${SD_VULKAN}
+            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+            INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        )
+    elseif(SD_VULKAN)
 
-if (WIN32)
-    list(APPEND ${_BINPATH} $ENV{PATH})
-else ()
-    set(_BINPATH "${_BINPATH}:$ENV{PATH}")
-endif ()
+    file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
 
+    if (WIN32)
+        list(APPEND ${_BINPATH} $ENV{PATH})
+    else ()
+        set(_BINPATH "${_BINPATH}:$ENV{PATH}")
+    endif ()
 
-message(STATUS "PATH_VALUE: ${_BINPATH}")
-
-    ExternalProject_Add(
-        stable_diffusion_cpp_${variant_name}
-        GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
-        GIT_TAG ${SD_GIT_TAG}
-        EXCLUDE_FROM_ALL
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-        BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-	    CMAKE_ARGS
-            -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
-            -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -DGGML_CCACHE=OFF
-            -DSD_BUILD_EXAMPLES=OFF
-            -DGGML_NATIVE=OFF
-            -DSD_BUILD_SHARED_LIBS=ON
-            -DGGML_AVX=${SD_AVX}
-            -DGGML_AVX2=${SD_AVX2}
-            -DGGML_AVX512=${SD_AVX512}
-            -DSD_CUDA=${SD_CUDA}
-            -DSD_HIPBLAS=${SD_HIPBLAS}
-            -DSD_VULKAN=${SD_VULKAN}
-        BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-        INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-    )
-
-    else(NOT SD_HIPBLAS)
+        ExternalProject_Add(
+            stable_diffusion_cpp_${variant_name}
+            GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
+            GIT_TAG ${SD_GIT_TAG}
+            EXCLUDE_FROM_ALL
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+            BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+            CMAKE_ARGS
+                -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+                -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}
+                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                -DGGML_CCACHE=OFF
+                -DGGML_BUILD_TESTS=OFF
+                -DGGML_ALL_WARNINGS=OFF
+                -DGGML_NATIVE=OFF
+                -DGGML_STATIC=ON
+                -DSD_BUILD_EXAMPLES=OFF
+                -DSD_BUILD_SHARED_LIBS=ON
+                -DGGML_AVX=${SD_AVX}
+                -DGGML_AVX2=${SD_AVX2}
+                -DGGML_AVX512=${SD_AVX512}
+                -DSD_CUDA=${SD_CUDA}
+                -DSD_HIPBLAS=${SD_HIPBLAS}
+                -DSD_VULKAN=${SD_VULKAN}
+            BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
+            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+            INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        )
+    else()
 
     ExternalProject_Add(
         stable_diffusion_cpp_${variant_name}

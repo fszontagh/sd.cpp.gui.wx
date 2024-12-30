@@ -394,7 +394,10 @@ void QM::QueueManager::LoadJobListFromDir() {
         try {
             nlohmann::json data                 = nlohmann::json::parse(f);
             std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(data.get<QM::QueueItem>());
-            if (item->status == QM::QueueStatus::RUNNING || item->status == QM::QueueStatus::MODEL_LOADING) {
+            if (item->status == QM::QueueStatus::RUNNING ||
+                item->status == QM::QueueStatus::MODEL_LOADING ||
+                item->status == QM::QueueStatus::HASHING ||
+                item->status == QM::QueueStatus::HASHING_DONE) {
                 item->status = QM::QueueStatus::PAUSED;
             }
 
