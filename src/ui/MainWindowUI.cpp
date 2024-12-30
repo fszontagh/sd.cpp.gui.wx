@@ -2201,33 +2201,17 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
         lastUpdate = now;
     }
     // update column
-    auto store     = this->m_joblist->GetStore();
-    wxString speed = "";
-    if (item->status == QM::QueueStatus::MODEL_LOADING || item->mode == QM::GenerationMode::CONVERT) {
-        int progress = (item->step / item->steps) * 100;
-        speed        = wxString::Format(item->time > 1.0f ? "%.2fs/it" : "%.2fit/s", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time));
-    } else {
-        speed = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
-    }
-    int progressCol        = this->m_joblist->GetColumnCount() - 4;
-    int speedCol           = this->m_joblist->GetColumnCount() - 3;
-    float current_progress = 0.f;
-
-    if (item->step > 0 && item->steps > 0) {
-        current_progress = 100.f * (static_cast<float>(item->step) /
-                                    static_cast<float>(item->steps));
-    }
-    if (item->step == item->steps) {
-        current_progress = 100.f;
-    }
+    auto store      = this->m_joblist->GetStore();
+    int progressCol = this->m_joblist->GetColumnCount() - 4;
+    int speedCol    = this->m_joblist->GetColumnCount() - 3;
 
     for (unsigned int i = 0; i < store->GetItemCount(); i++) {
         auto currentItem                     = store->GetItem(i);
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
-            store->SetValueByRow(speed, i, speedCol);
+            store->SetValueByRow(item->GetActualProgress(), i, progressCol);
+            store->SetValueByRow(item->GetActualSpeed(), i, speedCol);
             store->RowValueChanged(i, progressCol);
             store->RowValueChanged(i, speedCol);
             this->m_joblist->Refresh();
@@ -3697,20 +3681,17 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
 
         // update column
-        auto store             = this->m_joblist->GetStore();
-        wxString speed         = wxString::Format(myjob->time > 1.0f ? "%.2fs/it" : "%.2fit/s", myjob->time > 1.0f || myjob->time == 0 ? myjob->time : (1.0f / myjob->time));
-        int progressCol        = this->m_joblist->GetColumnCount() - 4;
-        int speedCol           = this->m_joblist->GetColumnCount() - 3;
-        float current_progress = 100.f * (static_cast<float>(myjob->step) /
-                                          static_cast<float>(myjob->steps));
+        auto store      = this->m_joblist->GetStore();
+        int progressCol = this->m_joblist->GetColumnCount() - 4;
+        int speedCol    = this->m_joblist->GetColumnCount() - 3;
 
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem                     = store->GetItem(i);
             int id                               = store->GetItemData(currentItem);
             std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
-                store->SetValueByRow(static_cast<int>(current_progress), i, progressCol);
-                store->SetValueByRow(speed, i, speedCol);
+                store->SetValueByRow(qitem->GetActualProgress(), i, progressCol);
+                store->SetValueByRow(qitem->GetActualSpeed(), i, speedCol);
                 store->RowValueChanged(i, progressCol);
                 store->RowValueChanged(i, speedCol);
                 this->m_joblist->Refresh();

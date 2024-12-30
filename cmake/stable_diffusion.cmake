@@ -69,7 +69,16 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
     message(STATUS "Building sd.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUDA} ${SD_HIPBLAS} ${SD_VULKAN} EPREFIX: ${EPREFIX} Generator: ${CMAKE_GENERATOR}")
 
 
+
 if (NOT SD_HIPBLAS)
+
+if (WIN32)
+    set(PATH_VALUE "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin;%PATH%")
+else ()
+    set(PATH_VALUE "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin:$ENV{PATH}")
+endif ()
+
+
 
     ExternalProject_Add(
         stable_diffusion_cpp_${variant_name}
@@ -78,8 +87,22 @@ if (NOT SD_HIPBLAS)
         EXCLUDE_FROM_ALL
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
         BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-	    CMAKE_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME} -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DGGML_NATIVE=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUDA=${SD_CUDA} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
-        BUILD_COMMAND env PATH=${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin:$ENV{PATH} cmake --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+	    CMAKE_ARGS
+            -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}
+            -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DGGML_CCACHE=OFF
+            -DSD_BUILD_EXAMPLES=OFF
+            -DGGML_NATIVE=OFF
+            -DSD_BUILD_SHARED_LIBS=ON
+            -DGGML_AVX=${SD_AVX}
+            -DGGML_AVX2=${SD_AVX2}
+            -DGGML_AVX512=${SD_AVX512}
+            -DSD_CUDA=${SD_CUDA}
+            -DSD_HIPBLAS=${SD_HIPBLAS}
+            -DSD_VULKAN=${SD_VULKAN}
+        BUILD_COMMAND
+            ${CMAKE_COMMAND} -E env PATH=${PATH_VALUE} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
     )

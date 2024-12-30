@@ -205,6 +205,28 @@ namespace QM {
         bool need_sha256                     = false;
         std::string generated_sha256         = "";
         int update_index                     = -1;
+        inline wxString GetActualSpeed() {
+            wxString speed = "";
+            if (this->status == QM::QueueStatus::MODEL_LOADING || this->mode == QM::GenerationMode::CONVERT) {
+                int progress = (this->step / this->steps) * 100;
+                speed        = wxString::Format(this->time > 1.0f ? "%.2fs/it" : "%.2fit/s", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time));
+            } else {
+                speed = wxString::Format(this->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time), this->step, this->steps);
+            }
+            return speed;
+        }
+        inline int GetActualProgress() {
+            float current_progress = 0.f;
+
+            if (this->step > 0 && this->steps > 0) {
+                current_progress = 100.f * (static_cast<float>(this->step) /
+                                            static_cast<float>(this->steps));
+            }
+            if (this->step == this->steps) {
+                current_progress = 100.f;
+            }
+            return static_cast<int>(current_progress);
+        }
         QueueItem(const QueueItem& other)
             : id(other.id),
               created_at(other.created_at),
