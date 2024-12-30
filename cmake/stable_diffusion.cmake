@@ -140,7 +140,8 @@ if(SD_VULKAN)
             INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         )
 endif()
-    if(SD_HIPBLAS)
+
+if(SD_HIPBLAS)
 
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
@@ -162,26 +163,25 @@ endmacro()
 
 
 if (SDGUI_AVX)
-build_stable_diffusion("avx" ON OFF OFF OFF OFF OFF)
+    build_stable_diffusion("avx" ON OFF OFF OFF OFF OFF)
 endif()
 
 if (SDGUI_AVX2)
-build_stable_diffusion("avx2" OFF ON OFF OFF OFF OFF)
+    build_stable_diffusion("avx2" OFF ON OFF OFF OFF OFF)
 endif()
 
 if (SDGUI_AVX512)
-build_stable_diffusion("avx512" OFF OFF ON OFF OFF OFF)
+    build_stable_diffusion("avx512" OFF OFF ON OFF OFF OFF)
 endif()
 
 if(SDGUI_CUBLAS)
-build_stable_diffusion("cuda" OFF OFF OFF ON OFF OFF)
+    build_stable_diffusion("cuda" OFF OFF OFF ON OFF OFF)
 endif(SDGUI_CUBLAS)
 
-
 if (SDGUI_HIPBLAS)
-build_stable_diffusion("hipblas" OFF OFF OFF OFF ON OFF)
+    build_stable_diffusion("hipblas" OFF OFF OFF OFF ON OFF)
 endif(SDGUI_HIPBLAS)
 
 if (SDGUI_VULKAN)
-build_stable_diffusion("vulkan" OFF OFF OFF OFF OFF ON)
+    build_stable_diffusion("vulkan" OFF OFF OFF OFF OFF ON)
 endif(SDGUI_VULKAN)
