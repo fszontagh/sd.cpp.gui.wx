@@ -4158,130 +4158,138 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     this->m_scrolledWindow41->FitInside();
 }
 
-std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImage(const std::string& tmpImagePath, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler) {
-    wxImage* img = new wxImage(0, 0);
-    img->SetLoadFlags(img->GetLoadFlags() & ~wxImage::Load_Verbose);
-
-    if (!img->LoadFile(wxString::FromUTF8Unchecked(tmpImagePath))) {
-        itemPtr->status_message = _("Invalid image from diffusion: ") + tmpImagePath;
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
-        delete img;
-        return itemPtr;
-    }
-
-    std::string extension = ".jpg";
-    auto imgHandler       = wxBITMAP_TYPE_JPEG;
-    // image quality only works with jpg, png ignores it
-    img->SetOption(wxIMAGE_OPTION_QUALITY, this->mapp->cfg->image_quality);
-
+std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler) {
+    wxString extension = ".jpg";
+    auto imgHandler    = wxBITMAP_TYPE_JPEG;
     if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
         extension  = ".png";
         imgHandler = wxBITMAP_TYPE_PNG;
-        img->SetOption(wxIMAGE_OPTION_COMPRESSION, this->mapp->cfg->png_compression_level);  // set the compression from the settings
     }
     if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG) {
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
 
-    const auto fname  = this->formatFileName(*itemPtr, this->mapp->cfg->output_filename_format);
-    wxString filename = sd_gui_utils::CreateFilePath(fname, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+    const auto baseFileName = this->formatFileName(*itemPtr, this->mapp->cfg->output_filename_format);
+    wxString baseFullName   = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+    // the raw images are the generated images. Only presents when the generation is done without errors
+    for (auto rimage : itemPtr->rawImages) {
+        // regenerate name, if multiple image generated, this check if exists
+        wxString fullName   = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+        wxImage* rawImage = new wxImage(0, 0);
 
-    img->SetOption(wxIMAGE_OPTION_FILENAME, filename);
-    img->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
-
-    if (!img->SaveFile(filename, imgHandler)) {
-        itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), filename).utf8_string();
-        MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
-        delete img;
-        if (BUILD_TYPE == "Debug") {
-            std::cerr << __FILE__ << " " << __LINE__ << " " << itemPtr->status_message.c_str() << std::endl;
-        } else {
-            std::filesystem::remove(tmpImagePath);
+        if (imgHandler == wxBITMAP_TYPE_PNG) {
+            rawImage->SetOption(wxIMAGE_OPTION_COMPRESSION, this->mapp->cfg->png_compression_level);  // set the compression from the settings
         }
-        return itemPtr;
-    } else {
-        if (BUILD_TYPE != "Debug") {
-            std::filesystem::remove(tmpImagePath);
+        if (imgHandler == wxBITMAP_TYPE_JPEG) {
+            rawImage->SetOption(wxIMAGE_OPTION_QUALITY, this->mapp->cfg->image_quality);
         }
 
-        itemPtr->images.emplace_back(QM::QueueItemImage(filename, QM::QueueItemImageType::GENERATED));
-
-        if (itemPtr->params.control_image_path.length() > 0) {
-            wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(filename, "control");
-            wxImage _ctrlimg(itemPtr->params.control_image_path);
-            _ctrlimg.SaveFile(ctrlFilename);
-            itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
+        rawImage->SetLoadFlags(rawImage->GetLoadFlags() & ~wxImage::Load_Verbose);
+        if (!rawImage->LoadFile(wxString::FromUTF8Unchecked(rimage))) {
+            itemPtr->status_message = _("Invalid image from diffusion: ") + rimage;
+            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+            delete rawImage;
+            return itemPtr;
         }
-        // move tmp images to the output dir
-        for (auto& img : itemPtr->images) {
-            if (QM::hasType(img.type, QM::QueueItemImageType::TMP)) {
-                wxString nameSuffix = "";
-                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
-                    nameSuffix = "_mask";
-                }
-                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
-                    nameSuffix = "_initial";
-                }
-                if (QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
-                    nameSuffix = "_original";
-                }
-                if (nameSuffix.empty()) {
-                    continue;
-                }
-                wxFileName newImage(filename);
-                wxFileName origName(img.pathname);
-                newImage.SetExt(origName.GetExt());
-                newImage.SetName(newImage.GetName() + nameSuffix);
-                wxCopyFile(img.pathname, newImage.GetAbsolutePath());
-                img.pathname = newImage.GetAbsolutePath();
-                // update the item's paths too
-                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
-                    itemPtr->mask_image = newImage.GetAbsolutePath();
-                }
-                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
-                    itemPtr->initial_image = newImage.GetAbsolutePath();
-                }
-                this->qmanager->UpdateItem(itemPtr);
+
+        rawImage->SetOption(wxIMAGE_OPTION_FILENAME, baseFileName);
+        rawImage->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
+        if (!rawImage->SaveFile(fullName, imgHandler)) {
+            itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), fullName).utf8_string();
+            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+            delete rawImage;
+            return itemPtr;
+        }
+        // add the generated image to the job
+        itemPtr->images.emplace_back(QM::QueueItemImage(fullName, QM::QueueItemImageType::GENERATED));
+    }
+
+    // handle other images too
+
+    // save controlnet image if present and save_all_image is enabled
+    if (itemPtr->params.control_image_path.length() > 0 && this->mapp->cfg->save_all_image) {
+        wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(baseFullName, "control");
+        wxImage _ctrlimg(itemPtr->params.control_image_path);
+        _ctrlimg.SaveFile(ctrlFilename);
+        itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
+    }
+
+    // handle other images, this images come from the img2img
+    for (auto& img : itemPtr->images) {
+        if (QM::hasType(img.type, QM::QueueItemImageType::TMP)) {
+            wxString nameSuffix = "";
+            if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+                nameSuffix = "_mask";
+            }
+            if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+                nameSuffix = "_initial";
+            }
+            if (QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
+                nameSuffix = "_original";
+            }
+            if (nameSuffix.empty()) {
+                continue;
+            }
+            wxFileName newImage(baseFullName);
+            wxFileName origName(img.pathname);
+            newImage.SetExt(origName.GetExt());
+            newImage.SetName(newImage.GetName() + nameSuffix);
+            // move the tmp file into the base path
+            wxRenameFile(img.pathname, newImage.GetAbsolutePath());
+            img.pathname = newImage.GetAbsolutePath();
+            // update the item's paths too
+            if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+                itemPtr->mask_image = newImage.GetAbsolutePath();
+            }
+            if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+                itemPtr->initial_image = newImage.GetAbsolutePath();
             }
         }
+    }
+    this->qmanager->UpdateItem(itemPtr);
 
-        // add generation parameters into the image meta
-        if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
-            std::string comment = this->paramsToImageComment(*itemPtr).utf8_string();
+    // iterate over agan, save meta data
+    for (auto& img : itemPtr->images) {
+        if (QM::hasType(img.type, QM::QueueItemImageType::GENERATED)) {
+            //
+            if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
+                std::string comment = this->paramsToImageComment(*itemPtr).utf8_string();
 
-            if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
-                std::unordered_map<wxString, wxString> _pngData = {
-                    {"parameters", comment},
-                    {"Software", EXIF_SOFTWARE}};
-                sd_gui_utils::WriteMetadata(filename.utf8_string(), _pngData, true);
-                return itemPtr;
-            }
-            try {
-                auto image = Exiv2::ImageFactory::open(filename.utf8_string());
-                image->readMetadata();
-                Exiv2::ExifData& exifData          = image->exifData();
-                exifData["Exif.Photo.UserComment"] = comment.c_str();
-                exifData["Exif.Image.Software"]    = EXIF_SOFTWARE;
-                exifData["Exif.Image.ImageWidth"]  = img->GetWidth();
-                exifData["Exif.Image.ImageLength"] = img->GetHeight();
-
-                if (itemPtr->finished_at > 0) {
-                    time_t finishedAt = itemPtr->finished_at;
-                    std::tm* timeinfo = std::localtime(&finishedAt);
-                    char dtimeBuffer[20];
-                    std::strftime(dtimeBuffer, sizeof(dtimeBuffer), "%Y:%m:%d %H:%M:%S", timeinfo);
-                    exifData["Exif.Image.DateTime"] = dtimeBuffer;
+                if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
+                    std::unordered_map<wxString, wxString> _pngData = {
+                        {"parameters", comment},
+                        {"Software", EXIF_SOFTWARE}};
+                    sd_gui_utils::WriteMetadata(img.pathname, _pngData, true);
+                    return itemPtr;
                 }
-                Exiv2::XmpData& xmpData       = image->xmpData();
-                xmpData["Xmp.dc.description"] = comment.c_str();
+                try {
+                    auto image = Exiv2::ImageFactory::open(img.pathname);
+                    image->readMetadata();
+                    Exiv2::ExifData& exifData          = image->exifData();
+                    exifData["Exif.Photo.UserComment"] = comment.c_str();
+                    exifData["Exif.Image.Software"]    = EXIF_SOFTWARE;
+                    exifData["Exif.Image.ImageWidth"]  = image->pixelWidth();
+                    exifData["Exif.Image.ImageLength"] = image->pixelHeight();
 
-                image->setExifData(exifData);
-                image->setXmpData(xmpData);
-                image->writeMetadata();
-            } catch (Exiv2::Error& e) {
-                std::cerr << "Err: " << e.what() << std::endl;
+                    if (itemPtr->finished_at > 0) {
+                        time_t finishedAt = itemPtr->finished_at;
+                        std::tm* timeinfo = std::localtime(&finishedAt);
+                        char dtimeBuffer[20];
+                        std::strftime(dtimeBuffer, sizeof(dtimeBuffer), "%Y:%m:%d %H:%M:%S", timeinfo);
+                        exifData["Exif.Image.DateTime"] = dtimeBuffer;
+                    }
+                    Exiv2::XmpData& xmpData       = image->xmpData();
+                    xmpData["Xmp.dc.description"] = comment.c_str();
+
+                    image->setExifData(exifData);
+                    image->setXmpData(xmpData);
+                    image->writeMetadata();
+                } catch (Exiv2::Error& e) {
+                    std::cerr << "Err: " << e.what() << std::endl;
+                }
             }
+            //
         }
     }
     return itemPtr;
@@ -4637,19 +4645,16 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             *itemPtr = item;
 
             if (!itemPtr->rawImages.empty()) {
-                for (unsigned int i = 0; i < itemPtr->rawImages.size(); i++) {
-                    this->handleSdImage(itemPtr->rawImages[i], itemPtr, this->GetEventHandler());
-                }
-                itemPtr->rawImages.clear();
+                this->handleSdImages(itemPtr, this->GetEventHandler());
             }
-            if (item.event == QM::QueueEvents::ITEM_FAILED) {
+            if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
                 if (this->extprocessLastError.empty() == true && this->extprocessLastError.empty() == false) {
                     itemPtr->status_message   = this->extprocessLastError;
                     this->extprocessLastError = "";
                 }
             }
 
-            this->qmanager->SendEventToMainWindow(item.event, itemPtr);
+            this->qmanager->SendEventToMainWindow(itemPtr->event, itemPtr);
             return true;
         }
 

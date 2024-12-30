@@ -298,7 +298,7 @@ private:
     static void ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
 
     // std::shared_ptr<QM::QueueItem> handleSdImage(std::string result, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
-    std::shared_ptr<QM::QueueItem> handleSdImage(const std::string& tmpImagePath, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
+    std::shared_ptr<QM::QueueItem> handleSdImages(std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
 
     wxString paramsToImageComment(const QM::QueueItem& myItem);
     std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);

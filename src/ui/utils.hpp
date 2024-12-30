@@ -877,7 +877,6 @@ namespace sd_gui_utils {
     }
 
     inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
-        // Ellenőrizzük, hogy a fájl létezik-e
         if (!wxFileExists(filePath)) {
             std::cerr << "File does not exist: " << filePath << std::endl;
             return "";
