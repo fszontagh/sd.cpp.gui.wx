@@ -19,8 +19,8 @@ jobs:
             ~/.conan2
             build\generators
             CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -95,8 +95,8 @@ jobs:
            ~/.conan2
            build\generators
            CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -191,8 +191,8 @@ jobs:
            ~/.conan2
            build\generators
            CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         run: |
