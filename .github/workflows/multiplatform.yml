@@ -67,10 +67,15 @@ jobs:
             targets: "stable_diffusion_cpp_cuda"
             cache-key: windows-cuda
 
-          - name: HIPBLAS
-            cmake_flags: "-DSD_HIPBLAS=ON"
-            targets: "stable_diffusion_cpp_hipblas"
-            cache-key: windows-hipblas
+          - name: VULKAN
+            cmake_flags: "-DSD_VULKAN=ON"
+            targets: "stable_diffusion_cpp_vulkan"
+            cache-key: windows-vulkan
+
+#          - name: HIPBLAS
+#            cmake_flags: "-DSD_HIPBLAS=ON"
+#            targets: "stable_diffusion_cpp_hipblas"
+#            cache-key: windows-hipblas
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -126,6 +131,15 @@ jobs:
         uses: urkle/action-get-ninja@v1
         with:
           version: 1.11.1
+
+      - name: Install Vulkan SDK
+        id: get_vulkan
+        if: ${{ matrix.variant.name == 'VULKAN' && steps.cache-build.outputs.cache-hit != 'true' }}
+        run: |
+          curl.exe -o $env:RUNNER_TEMP/VulkanSDK-Installer.exe -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/VulkanSDK-${env:VULKAN_VERSION}-Installer.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
 
       - name: Set up Conan
         if: steps.cache-build.outputs.cache-hit != 'true' && steps.cache-conan.outputs.cache-hit != 'true'
@@ -221,11 +235,12 @@ jobs:
           overwrite: true
 
   build-ubuntu:
-    name: Build Ubuntu Releases
+    name: Build on Ubuntu
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        variant: [CPU, HIPBLAS, CUDA]
+        # variant: [CPU, HIPBLAS, CUDA, VULKAN]
+        variant: [CPU, CUDA, VULKAN]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Set up build environment
@@ -246,7 +261,7 @@ jobs:
           restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
 
       - name: Maximize build space
-        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA') && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.variant == 'VULKAN' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: AdityaGarg8/remove-unwanted-software@v4.1
         with:
           remove-android: 'true'
@@ -293,6 +308,15 @@ jobs:
           EOF
           sudo ldconfig
 
+      - name: Install Vulkan SDK
+        if: ${{ matrix.variant == 'VULKAN' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          source /etc/lsb-release
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-${DISTRIB_CODENAME}.list http://packages.lunarg.com/vulkan/lunarg-vulkan-noble.list
+          sudo apt update
+          sudo apt install -y vulkan-sdk
+
       - name: Install CUDA toolkit
         if: ${{ matrix.variant == 'CUDA' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
@@ -312,6 +336,9 @@ jobs:
           elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
             cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+          elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
+            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
             cmake --build . --config Release --target stable_diffusion_cpp_cuda
