@@ -94,16 +94,13 @@ jobs:
           conan profile detect
           conan install .. -s compiler.cppstd=17 --build=never
 
-      - name: Configure CMake
+      - name: Configure and build
         run: |
-          New-Item -ItemType Directory -Force -Path build
-          cmake -B ${{ env.build }} -DCMAKE_BUILD_TYPE=Debug --preset conan-default
-
-      - name: Build stablediffusiongui_diffuser
-        run: cmake --build ${{ env.build }} --config Debug --target stablediffusiongui_diffuser
-
-      - name: Build stablediffusiongui
-        run: cmake --build ${{ env.build }} --config Debug --target stablediffusiongui
+          New-Item -ItemType Directory -Force -Path ${{ env.build }}
+          cd ${{ env.build }}
+          cmake .. -DCMAKE_BUILD_TYPE=Debug --preset conan-default
+          cmake --build . --config Debug --target stablediffusiongui_diffuser
+          cmake --build . --config Debug --target stablediffusiongui
 
       - name: Initialize MSVC Code Analysis
         uses: microsoft/msvc-code-analysis-action@04825f6d9e00f87422d6bf04e1a38b1f3ed60d99

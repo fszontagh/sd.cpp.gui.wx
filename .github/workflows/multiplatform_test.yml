@@ -112,6 +112,7 @@ jobs:
           cuda: "12.6.1"
           sub-packages: '["nvcc", "visual_studio_integration"]'
           method: "network"
+          linux-local-args: '["--toolkit"]'
 
       - name: Print cuda version
         if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
