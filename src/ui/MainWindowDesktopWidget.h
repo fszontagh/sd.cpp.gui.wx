@@ -32,10 +32,9 @@ public:
 
 private:
     bool dragging = false;
-    int x, y;
     wxPoint m_delta;
     wxBitmap m_background;
-    wxEvtHandler* pEvents;
+    wxEvtHandler* pEvents = nullptr;
     void OnThreadMessage(wxThreadEvent& e);
 };
 

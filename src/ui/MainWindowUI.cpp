@@ -4648,7 +4648,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
                 this->handleSdImages(itemPtr, this->GetEventHandler());
             }
             if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
-                if (this->extprocessLastError.empty() == true && this->extprocessLastError.empty() == false) {
+                if (this->extprocessLastError.empty() == false) {
                     itemPtr->status_message   = this->extprocessLastError;
                     this->extprocessLastError = "";
                 }

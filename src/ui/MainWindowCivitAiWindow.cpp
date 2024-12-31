@@ -71,7 +71,7 @@ void MainWindowCivitAiWindow::m_model_detailsOnDataViewListCtrlSelectionChanged(
     auto item = this->m_model_details->GetCurrentItem();
 
     nlohmann::json* data = reinterpret_cast<nlohmann::json*>(this->m_model_details->GetItemData(item));
-    if (data == nullptr || data == NULL) {
+    if (data == nullptr) {
         return;
     }
     nlohmann::json js(*data);
@@ -87,7 +87,7 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
     }
     auto item             = this->m_model_filelist->RowToItem(selection);
     nlohmann::json* jsptr = reinterpret_cast<nlohmann::json*>(this->m_model_filelist->GetItemData(item));
-    if (jsptr == NULL || jsptr == nullptr) {
+    if (jsptr == nullptr) {
         return;
     }
     nlohmann::json js(*jsptr);

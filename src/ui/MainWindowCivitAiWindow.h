@@ -47,7 +47,7 @@ public:
 private:
     bool isLoading = false;
     std::string current_json_text;
-    sd_gui_utils::config* config;
+    sd_gui_utils::config* config = nullptr;
     std::vector<std::thread*> modelDownloadThreads;
     std::vector<std::thread*> infoDownloadThread;
     std::vector<std::thread*> imgDownloadThreads;
