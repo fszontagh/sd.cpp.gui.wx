@@ -70,7 +70,7 @@ macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_
 
 
 
-if(NOT SD_HIPBLAS AND NOT SD_VULKAN)
+if(NOT SD_HIPBLAS AND NOT SD_VULKAN AND NOT SD_CUDA)
 
 ExternalProject_Add(
     stable_diffusion_cpp_${variant_name}
@@ -85,6 +85,19 @@ ExternalProject_Add(
 )
 
 endif()
+if (SD_CUDA)
+ExternalProject_Add(
+    stable_diffusion_cpp_${variant_name}
+    GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
+    GIT_TAG ${SD_GIT_TAG}
+    EXCLUDE_FROM_ALL
+    LOG_OUTPUT_ON_FAILURE ON
+    BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DSD_BUILD_EXAMPLES=OFF -DSD_BUILD_SHARED_LIBS=ON -DGGML_AVX=${SD_AVX} -DGGML_AVX2=${SD_AVX2} -DGGML_AVX512=${SD_AVX512} -DSD_CUDA=${SD_CUDA} -DSD_HIPBLAS=${SD_HIPBLAS} -DSD_VULKAN=${SD_VULKAN}
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+)
+endif(SD_CUDA)
 
 if(SD_VULKAN)
 
