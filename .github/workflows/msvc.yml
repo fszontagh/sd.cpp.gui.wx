@@ -44,6 +44,7 @@ jobs:
           restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
             python -m pip install --upgrade pip
             pip install conan
@@ -81,12 +82,12 @@ jobs:
           restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
-        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
           pip install conan
 
       - name: Set up Conan
+        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           New-Item -ItemType Directory -Force -Path build
           cd build
