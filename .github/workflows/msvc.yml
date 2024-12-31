@@ -40,8 +40,8 @@ jobs:
             ~/.conan2
             build\generators
             CMakeUserPresets.json
-          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-win22-conan
+          key: ${{ runner.os }}-win22-debug-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-debug-conan
 
       - name: Install Conan
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -55,7 +55,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path build
           cd build
           conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=never
+          conan install .. -s compiler.cppstd=17 -s build_type=Debug --build=missing
 
   analyze:
     permissions:
@@ -78,8 +78,8 @@ jobs:
            ~/.conan2
            build\generators
            CMakeUserPresets.json
-          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-win22-conan
+          key: ${{ runner.os }}-win22-debug-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-debug-conan
 
       - name: Install Conan
         run: |
@@ -92,7 +92,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path build
           cd build
           conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=never
+          conan install .. -s compiler.cppstd=17 -s build_type=Debug --build=missing
 
       - name: Configure and build
         run: |
