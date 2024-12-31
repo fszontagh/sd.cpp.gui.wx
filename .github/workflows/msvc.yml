@@ -95,7 +95,9 @@ jobs:
           conan install .. -s compiler.cppstd=17 --build=never
 
       - name: Configure CMake
-        run: cmake -B ${{ env.build }}
+        run: |
+          New-Item -ItemType Directory -Force -Path build
+          cmake -B build -DCMAKE_BUILD_TYPE=Release --preset conan-default
 
       # Build is not required unless generated source files are used
       # - name: Build CMake
