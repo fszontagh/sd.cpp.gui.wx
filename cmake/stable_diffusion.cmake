@@ -13,6 +13,13 @@ else()
 endif()
 
 
+option(SD_AVX "Enable AVX library build" OFF)
+option(SD_AVX2 "Enable AVX2 library build" OFF)
+option(SD_AVX512 "Enable AVX512 library build" OFF)
+option(SD_CUDA "Enable CUDA library build" OFF)
+option(SD_HIPBLAS "Enable HIPBLAS library build" OFF)
+option(SD_VULKAN "Enable Vulkan library build" OFF)
+
 set(SDGUI_AVX OFF)
 set(SDGUI_AVX2 OFF)
 set(SDGUI_AVX512 OFF)
@@ -20,29 +27,35 @@ set(SDGUI_CUBLAS OFF)
 set(SDGUI_HIPBLAS OFF)
 set(SDGUI_VULKAN OFF)
 
+option(SDGUI_AVX "Enable AVX support" OFF)
 if (SD_AVX)
     set(SDGUI_AVX ON)
 endif()
 
-if(SD_AVX2)
+option(SDGUI_AVX2 "Enable AVX2 support" OFF)
+if (SD_AVX2)
     set(SDGUI_AVX2 ON)
-endif(SD_AVX2)
+endif()
 
-if(SD_AVX512)
+option(SDGUI_AVX512 "Enable AVX512 support" OFF)
+if (SD_AVX512)
     set(SDGUI_AVX512 ON)
-endif(SD_AVX512)
+endif()
 
-if(SD_CUDA)
+option(SDGUI_CUBLAS "Enable CUDA support" OFF)
+if (SD_CUDA)
     set(SDGUI_CUBLAS ON)
-endif(SD_CUDA)
+endif()
 
+option(SDGUI_HIPBLAS "Enable HIPBLAS support" OFF)
 if (SD_HIPBLAS)
     set(SDGUI_HIPBLAS ON)
-endif(SD_HIPBLAS)
+endif()
+
 
 if (SD_VULKAN)
     set(SDGUI_VULKAN ON)
-endif(SD_VULKAN)
+endif()
 
 # Helper macro to build stable diffusion with different settings
 macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag hipblas_flag vulkan_flag)
