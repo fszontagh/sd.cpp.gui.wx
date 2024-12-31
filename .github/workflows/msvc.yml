@@ -87,7 +87,6 @@ jobs:
           pip install conan
 
       - name: Set up Conan
-        if: steps.cache-conan.outputs.cache-hit != 'true'
         run: |
           New-Item -ItemType Directory -Force -Path build
           cd build
