@@ -97,13 +97,13 @@ jobs:
       - name: Configure CMake
         run: |
           New-Item -ItemType Directory -Force -Path build
-          cmake -B build -DCMAKE_BUILD_TYPE=Release --preset conan-default
-          cmake --build build --config Release --target stablediffusiongui_diffuser
-          cmake --build build --config Release --target stablediffusiongui
+          cmake -B ${{ env.build }} -DCMAKE_BUILD_TYPE=Debug --preset conan-default
 
-      # Build is not required unless generated source files are used
-      # - name: Build CMake
-      #   run: cmake --build ${{ env.build }}
+      - name: Build stablediffusiongui_diffuser
+        run: cmake --build ${{ env.build }} --config Debug --target stablediffusiongui_diffuser
+
+      - name: Build stablediffusiongui
+        run: cmake --build ${{ env.build }} --config Debug --target stablediffusiongui
 
       - name: Initialize MSVC Code Analysis
         uses: microsoft/msvc-code-analysis-action@04825f6d9e00f87422d6bf04e1a38b1f3ed60d99
@@ -121,8 +121,8 @@ jobs:
           sarif_file: ${{ steps.run-analysis.outputs.sarif }}
 
       # Upload SARIF file as an Artifact to download and view
-      # - name: Upload SARIF as an Artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: sarif-file
-      #     path: ${{ steps.run-analysis.outputs.sarif }}
+      - name: Upload SARIF as an Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sarif-file
+          path: ${{ steps.run-analysis.outputs.sarif }}
