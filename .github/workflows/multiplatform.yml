@@ -156,7 +156,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release ${{ matrix.variant.cmake_flags }} --preset conan-default -G "Ninja"
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_TOOLKIT_ROOT_DIR=${{steps.cuda-toolkit.outputs.CUDA_PATH}} ${{ matrix.variant.cmake_flags }} --preset conan-default
 
       - name: Build Targets
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -212,7 +212,7 @@ jobs:
       - name: Compile main application
         run: |
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default -G "Ninja"
+          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default
           cmake --build . --config Release --target po-compile
           cmake --build . --config Release --target stablediffusiongui_diffuser
           cmake --build . --config Release --target stablediffusiongui
