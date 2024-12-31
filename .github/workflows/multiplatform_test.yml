@@ -109,7 +109,7 @@ jobs:
         id: cuda-toolkit
         uses: Jimver/cuda-toolkit@v0.2.19
         with:
-          cuda: "12.6.1"
+          cuda: "12.4.1"
           sub-packages: '["nvcc", "visual_studio_integration"]'
           method: "network"
           linux-local-args: '["--toolkit"]'
