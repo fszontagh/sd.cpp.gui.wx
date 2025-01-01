@@ -928,8 +928,10 @@ std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const 
                 wxString wxValue = wxString::FromUTF8Unchecked(value.c_str(), value.size());
 
                 if (wxKey == "Exif.Photo.UserComment" || wxKey == "Exif.Image.UserComment" || wxKey == "Exif.Photo.Parameters") {
-                    auto comment = dynamic_cast<const Exiv2::CommentValue*>(&it->value());
-                    wxValue      = wxString::FromUTF8Unchecked(comment->toString().c_str(), comment->toString().size());
+                    auto comment    = dynamic_cast<const Exiv2::CommentValue*>(&it->value());
+                    auto commentStr = comment->comment("WINDOWS-1256");
+                    commentStr.erase(std::remove(commentStr.begin(), commentStr.end(), '\0'), commentStr.end());
+                    wxValue = wxString::FromAscii(commentStr.c_str(), commentStr.size());
                     if (!wxValue.empty()) {
                         results = sd_gui_utils::parseExifPrompts(wxValue);
                         break;
