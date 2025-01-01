@@ -920,17 +920,22 @@ std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const 
         if (!exifData.empty()) {
             std::string ex;
             Exiv2::ExifData::iterator it;
-            std::string usercomment;
             for (it = exifData.begin(); it != exifData.end(); ++it) {
-                if (BUILD_TYPE == "Debug") {
-                    std::cout << "Found key: " << it->key() << " val: " << it->getValue()->toString() << std::endl;
-                }
-                if (it->key() == "Exif.Photo.UserComment" || it->key() == "Exif.Image.UserComment" || it->key() == "Exif.Photo.Parameters") {
-                    usercomment = it->getValue()->toString();
-                    if (!usercomment.empty()) {
-                        results = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(usercomment));
+                std::string key   = it->key();
+                std::string value = it->getValue()->toString();
+
+                wxString wxKey   = wxString::FromUTF8(key.c_str());
+                wxString wxValue = wxString::FromUTF8Unchecked(value.c_str(), value.size());
+
+                if (wxKey == "Exif.Photo.UserComment" || wxKey == "Exif.Image.UserComment" || wxKey == "Exif.Photo.Parameters") {
+                    auto comment = dynamic_cast<const Exiv2::CommentValue*>(&it->value());
+                    wxValue      = wxString::FromUTF8Unchecked(comment->toString().c_str(), comment->toString().size());
+                    if (!wxValue.empty()) {
+                        results = sd_gui_utils::parseExifPrompts(wxValue);
                         break;
                     }
+                } else {
+                    std::cout << "Key: " << wxKey.ToStdString() << " Value: " << wxValue.ToStdString() << std::endl;
                 }
             }
         }
@@ -1595,7 +1600,6 @@ void MainWindowUI::OnImageInfoTryFindModel(wxCommandEvent& event) {
         return;
     }
 
-    bool found = false;
     auto model = this->ModelManager->findModelByImageParams(this->lastImageInfoParams);
     if (model == nullptr) {
         return;
@@ -1629,79 +1633,7 @@ void MainWindowUI::cleanUpImageInformations() {
 }
 
 void MainWindowUI::OnImageInfoOpen(wxFileDirPickerEvent& event) {
-    this->cleanUpImageInformations();
-    if (event.GetPath().empty()) {
-        this->m_imageInfoOpen->SetPath(this->mapp->cfg->lastImageInfoPath);
-        return;
-    }
-
-    if (!wxFile::Exists(event.GetPath())) {
-        this->m_imageInfoOpen->SetPath(this->mapp->cfg->lastImageInfoPath);
-        return;
-    }
-
-    wxFileName imagePath(event.GetPath());
-
-    wxImage image(imagePath.GetFullPath());
-    auto origSize = this->m_imageinfo_preview->GetSize();
-    auto preview  = sd_gui_utils::ResizeImageToMaxSize(image, origSize.GetWidth(), origSize.GetHeight());
-    this->m_imageinfo_preview->SetBitmap(preview);
-    this->m_imageinfo_preview->SetSize(origSize);
-
-    this->bSizer117->Layout();
-
-    if (image.IsOk()) {
-        this->mapp->cfg->lastImageInfoPath = imagePath.GetPath().utf8_string();
-        this->mapp->config->Write("/lastImageInfoPath", imagePath.GetPath());
-        this->mapp->config->Flush(true);
-
-        std::unordered_map<wxString, wxString> metadata;
-
-        if (image.GetType() == wxBITMAP_TYPE_PNG) {
-            const auto meta = sd_gui_utils::ReadMetadata(event.GetPath().utf8_string());
-            if (BUILD_TYPE == "Debug") {
-                for (const auto& [key, value] : meta) {
-                    std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
-                }
-            }
-            if (meta.contains("Parameters")) {
-                metadata = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(meta.at("Parameters")));
-            }
-            if (meta.contains("parameters")) {
-                metadata = sd_gui_utils::parseExifPrompts(wxString::FromUTF8Unchecked(meta.at("parameters")));
-            }
-        }
-
-        if (metadata.empty()) {
-            metadata = this->getMetaDataFromImage(event.GetPath());
-        }
-
-        if (metadata.empty()) {
-            return;
-        }
-
-        if (metadata.contains("prompt")) {
-            this->m_imageInfoPrompt->SetValue(metadata.at("prompt"));
-        }
-
-        if (metadata.contains("negative_prompt")) {
-            this->m_imageInfoNegPrompt->SetValue(metadata.at("negative_prompt"));
-        }
-        wxString meta;
-        for (const auto& [key, value] : metadata) {
-            if (key == "prompt" || key == "negative_prompt") {
-                continue;
-            }
-            meta += key + ": " + value + "\n";
-        }
-        if (meta.empty()) {
-            return;
-        }
-        this->m_imageInfoList->SetValue(meta);
-        this->m_imageInfoLoadTotxt->Enable();
-        this->m_imageInfoLoadToimg2img->Enable();
-        this->lastImageInfoParams = metadata;
-    }
+    this->onimgInfoOpen(event.GetPath());
 }
 
 void MainWindowUI::onSamplerSelect(wxCommandEvent& event) {
@@ -2069,26 +2001,29 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                 wxMenu* menu = new wxMenu();
                 menu->Append(99, tooltip);
                 menu->Enable(99, false);
-                if (!img.meta.prompt.empty()) {
-                    menu->Append(0, "Copy prompts to text2img");
-                    menu->Append(1, "Copy prompts to img2img");
-                    menu->Append(2, "Send to img2img");
-                    menu->Enable(1, false);
-                    menu->Enable(2, false);
-                    menu->Append(3, "Load available parameters");
-                }
-                menu->Append(10, _("Open Image on CivitAi.com"));
-                menu->Enable(10, false);
+
+                menu->Append(0, _("Copy prompts to text2img"));
+                menu->Append(1, _("Copy prompts to img2img"));
+                menu->Append(2, _("Send to img2img"));
+
+                menu->Enable(0, !img.meta.prompt.empty());
+                menu->Enable(1, !img.meta.negativePrompt.empty());
+                menu->Enable(2, wxFileExists(img.local_path));
+
+                menu->Append(3, _("Load available parameters"));
+                menu->Append(10, _("Open the original image in the web browser"));
+
+                menu->Enable(10, !img.url.empty());
 
                 if (!img.meta.hashes.model.empty()) {
                     auto imgsModel = this->ModelManager->getIntoPtrByHash(img.meta.hashes.model);
                     if (imgsModel != nullptr && !imgsModel->civitaiPlainJson.empty()) {
-                        menu->Append(4, wxString::Format("Select model %s", imgsModel->name));
-                    } else {
-                        menu->Append(4, wxString::Format("Image's model not found: %s", img.meta.hashes.model));
-                        menu->Enable(4, false);
+                        menu->Append(4, wxString::Format(_("Select model %s"), imgsModel->name));
                     }
                 }
+
+                menu->Append(11, _("Send to Image Info tab"));
+                menu->Enable(11, wxFileExists(img.local_path));
 
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, modelinfo](wxCommandEvent& evt) {
                     auto id = evt.GetId();
@@ -2136,9 +2071,14 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                             this->ChangeModelByInfo(modelinfo);
                         } break;
                         case 10: {
-                            // wxString url =
-                            // wxString::Format("https://civitai.com/images/%d",img.i);
-                            //  TODO: missing img ID from the json...
+                            // dialog to ask user to open the image
+                            wxMessageDialog dialog(this, wxString::Format(_("Open the original image in the web browser?\n %s"), img.url), _("Open original image"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+                            if (dialog.ShowModal() == wxID_YES) {
+                                wxLaunchDefaultBrowser(img.url);
+                            }
+                        } break;
+                        case 11: {
+                            this->onimgInfoOpen(wxString::FromUTF8Unchecked(img.local_path));
                         } break;
                         default: {
                             return;
@@ -2559,7 +2499,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
             case 6: {
                 this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
                 this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->m_notebook1302->SetSelection(3);  // switch to the upscaler
+                this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);  // switch to the upscaler
             } break;
             case 7: {
                 this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname), true);
@@ -2984,7 +2924,6 @@ void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
 }
 
 void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode) {
-    bool modelFound = false;
     for (auto item : params) {
         // try to find a sampler
         if (item.first.Lower().Contains("sampler")) {
@@ -3169,6 +3108,91 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file, bool forceResolution
         wxMessageBox(_("Can not open image!"));
         this->inpaintOrigImage   = wxImage();
         this->inpaintZoomedImage = wxImage();
+    }
+}
+
+void MainWindowUI::onimgInfoOpen(const wxString& file) {
+    this->cleanUpImageInformations();
+    if (file.empty()) {
+        this->m_imageInfoOpen->SetPath(this->mapp->cfg->lastImageInfoPath);
+        return;
+    }
+
+    if (!wxFile::Exists(file)) {
+        this->m_imageInfoOpen->SetPath(this->mapp->cfg->lastImageInfoPath);
+        return;
+    }
+
+    wxFileName imagePath(file);
+
+    wxImage image(imagePath.GetFullPath());
+    auto origSize = this->m_imageinfo_preview->GetSize();
+    auto preview  = sd_gui_utils::ResizeImageToMaxSize(image, origSize.GetWidth(), origSize.GetHeight());
+    this->m_imageinfo_preview->SetBitmap(preview);
+    this->m_imageinfo_preview->SetSize(origSize);
+
+    this->bSizer117->Layout();
+
+    if (image.IsOk()) {
+        this->m_imageInfoOpen->SetPath(imagePath.GetAbsolutePath());
+        this->mapp->cfg->lastImageInfoPath = imagePath.GetAbsolutePath().utf8_string();
+        this->mapp->config->Write("/lastImageInfoPath", imagePath.GetPath());
+        this->mapp->config->Flush(true);
+
+        std::unordered_map<wxString, wxString> metadata;
+
+        if (image.GetType() == wxBITMAP_TYPE_PNG) {
+            try {
+                const auto meta = sd_gui_utils::ReadMetadata(imagePath.GetAbsolutePath().utf8_string());
+                if (BUILD_TYPE == "Debug") {
+                    for (const auto& [key, value] : meta) {
+                        std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
+                    }
+                }
+                if (meta.contains("Parameters")) {
+                    metadata = sd_gui_utils::parseExifPrompts(meta.at("Parameters").ToStdString());
+                }
+                if (meta.contains("parameters")) {
+                    metadata = sd_gui_utils::parseExifPrompts(meta.at("parameters").ToStdString());
+                }
+            } catch (const std::exception& e) {
+                this->writeLog(wxString::Format("Error reading metadata: %s File: %s", e.what(), imagePath.GetAbsolutePath().utf8_string()));
+            }
+        }
+
+        if (image.GetType() == wxBITMAP_TYPE_JPEG) {
+            metadata = this->getMetaDataFromImage(imagePath);
+        }
+
+        if (metadata.empty()) {
+            this->writeLog(wxString::Format(_("No metadata found in image: %s"), imagePath.GetAbsolutePath().utf8_string()), true);
+            return;
+        }
+
+        if (metadata.contains("prompt")) {
+            this->m_imageInfoPrompt->SetValue(metadata.at("prompt"));
+        }
+
+        if (metadata.contains("negative_prompt")) {
+            this->m_imageInfoNegPrompt->SetValue(metadata.at("negative_prompt"));
+        }
+        wxString meta;
+        for (const auto& [key, value] : metadata) {
+            if (key == "prompt" || key == "negative_prompt") {
+                continue;
+            }
+            meta += key + ": " + value + "\n";
+        }
+        if (meta.empty()) {
+            return;
+        }
+        this->m_imageInfoList->SetValue(meta);
+        this->m_imageInfoLoadTotxt->Enable();
+        this->m_imageInfoLoadToimg2img->Enable();
+        this->lastImageInfoParams = metadata;
+        if (this->m_notebook1302->GetSelection() != sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO) {
+            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO);
+        }
     }
 }
 
@@ -4122,10 +4146,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                         } break;
                         case 3: {
                             this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.pathname), true);
+                            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG);
                         } break;
                         case 5: {
                             this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.pathname));
-                            this->m_notebook1302->SetSelection(3);
+                            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
                         } break;
                         case 6: {
                             wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.pathname));
@@ -4175,7 +4200,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
     // the raw images are the generated images. Only presents when the generation is done without errors
     for (auto rimage : itemPtr->rawImages) {
         // regenerate name, if multiple image generated, this check if exists
-        wxString fullName   = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+        wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
         wxImage* rawImage = new wxImage(0, 0);
 
         if (imgHandler == wxBITMAP_TYPE_PNG) {
@@ -4874,9 +4899,14 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
         return;
     }
 
-    if (event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE) {
-        this->m_currentProgress->SetRange(item->hash_fullsize);
-        this->m_currentProgress->SetValue(item->hash_progress_size > item->hash_fullsize ? item->hash_fullsize : item->hash_progress_size);
+    if (event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE || event == QM::QueueEvents::ITEM_MODEL_HASH_START) {
+        auto current = item->hash_progress_size;
+        auto total   = item->hash_fullsize;
+        if (current > total) {
+            current = total;
+        }
+        this->m_currentProgress->SetRange(total);
+        this->m_currentProgress->SetValue(current);
         return;
     }
 
@@ -5303,8 +5333,8 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     int imageWidth  = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetWidth() : 0;
     int imageHeight = this->inpaintZoomedImage.IsOk() ? this->inpaintZoomedImage.GetHeight() : 0;
 
-    int canvasWidth  = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledWidth() : 0;
-    int canvasHeight = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledHeight() : 0;
+    // int canvasWidth  = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledWidth() : 0;
+    // int canvasHeight = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledHeight() : 0;
 
     int borderWidth  = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledWidth() : 0;
     int borderHeight = this->inpaintCanvasBorder.IsOk() ? this->inpaintCanvasBorder.GetScaledHeight() : 0;

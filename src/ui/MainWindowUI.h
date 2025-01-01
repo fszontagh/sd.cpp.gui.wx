@@ -304,6 +304,7 @@ private:
     std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode);
     void onimg2ImgImageOpen(const wxString& file, bool forceResolutions = false);
+    void onimgInfoOpen(const wxString& file);
     void onUpscaleImageOpen(const wxString& file);
     void onControlnetImageOpen(const wxString& file);
 

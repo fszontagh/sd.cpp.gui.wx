@@ -114,7 +114,7 @@ jobs:
         uses: Jimver/cuda-toolkit@v0.2.11
         with:
           cuda: "12.2.0"
-          sub-packages: '["nvcc", "visual_studio_integration"]'
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust", "visual_studio_integration"]'
           method: "network"
 
       - name: Print cuda version
