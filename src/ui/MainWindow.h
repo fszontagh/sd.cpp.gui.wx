@@ -41,7 +41,6 @@
 #include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
-#include <wx/collpane.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -127,10 +126,11 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_inpaintResizeToSdSize;
 		wxBitmapButton* m_inpaintClearMask;
 		wxFilePickerCtrl* m_inpaintOpenMask;
-		wxStaticText* m_staticText69;
 		wxBitmapToggleButton* m_inPaintBrushStyleCircle;
 		wxBitmapToggleButton* m_inPaintBrushStyleSquare;
 		wxBitmapToggleButton* m_inPaintBrushStyleTriangle;
+		wxStaticText* m_staticText69;
+		wxPanel* m_panel231;
 		wxStaticText* m_staticText691;
 		wxTextCtrl* m_inpaintCanvasTop;
 		wxStaticText* m_staticText701;
@@ -193,6 +193,7 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
 		wxScrolledWindow* m_rightMainPanel;
+		wxPanel* m_panel24;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
 		wxCheckBox* vaeOnCpu;
@@ -233,7 +234,6 @@ class mainUI : public wxFrame
 		wxChoice* m_promptPresets;
 		wxButton* m_queue;
 		wxBitmapButton* m_bpButton25;
-		wxBitmapButton* m_cleanDiffusionModel;
 		wxStaticText* m_staticText522;
 		wxSpinCtrlDouble* slgScale;
 		wxStaticText* m_staticText5221;
@@ -244,6 +244,7 @@ class mainUI : public wxFrame
 		wxSpinCtrlDouble* skipLayerEnd;
 		wxStaticText* m_staticText52111;
 		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxBitmapButton* m_cleanDiffusionModel;
 		wxCheckBox* diffusionFlashAttn;
 		wxStaticText* m_staticText52;
 		wxFilePickerCtrl* m_filePickerClipL;
@@ -335,8 +336,8 @@ class mainUI : public wxFrame
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
@@ -355,7 +356,8 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer119;
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
-		wxCollapsiblePane* m_collapsableFluxModel;
+		wxBoxSizer* bSizer1108;
+		wxPanel* m_fluxPanel;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 

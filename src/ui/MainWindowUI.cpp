@@ -414,12 +414,12 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
         case sd_gui_utils::GuiMainPanels::PANEL_IMAGEINFO:
         case sd_gui_utils::GuiMainPanels::PANEL_UPSCALER:
         case sd_gui_utils::GuiMainPanels::PANEL_MODELS: {
-            this->m_collapsableFluxModel->Hide();
+            this->m_fluxPanel->Hide();
             this->bSizer138->Layout();
         } break;
         case sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG:
         case sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG: {
-            this->m_collapsableFluxModel->Show();
+            this->m_fluxPanel->Show();
             this->bSizer138->Layout();
         } break;
     }
@@ -5288,8 +5288,7 @@ void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
                     this->inpaintEmpty = false;
                 }
             }
-        }
-        if (event.RightIsDown()) {
+        } else if (event.RightIsDown()) {
             wxImage img = this->inpaintBitMap.ConvertToImage().Scale(this->inpaintBitMap.GetScaledWidth(), this->inpaintBitMap.GetScaledHeight(), wxIMAGE_QUALITY_HIGH);
 
             if (!img.HasAlpha()) {
