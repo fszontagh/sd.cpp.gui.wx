@@ -5077,7 +5077,7 @@ void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
     int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
     sd_gui_utils::wxEnlargeImageSizes enlragedSizes{canvasTop, canvasRight, canvasBottom, canvasLeft};
-    this->inpaintHelper->OnOutPaintResize(sd_gui_utils::wxEnlargeImageSizes);
+    this->inpaintHelper->OnOutPaintResize(enlragedSizes);
 
     this->m_inpaintCanvasTop->SetValue(wxString::FromDouble(enlragedSizes.top));
     this->m_inpaintCanvasRight->SetValue(wxString::FromDouble(enlragedSizes.right));
@@ -5206,38 +5206,4 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     this->inpaintHelper->OnMouseWheel(event, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
     this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
-}
-
-sd_gui_utils::wxPosition MainWindowUI::InPaintCalcMousePose(wxMouseEvent& event) {
-    wxPoint pos    = event.GetPosition();
-    wxPoint offset = this->m_img2imPanel->GetViewStart();
-
-    int scrollUnitX, scrollUnitY;
-    this->m_img2imPanel->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
-    offset.x *= scrollUnitX;
-    offset.y *= scrollUnitY;
-
-    double x = (pos.x + offset.x);
-    double y = (pos.y + offset.y);
-
-    int panelWidth, panelHeight;
-    this->m_img2imPanel->GetClientSize(&panelWidth, &panelHeight);
-
-    int imageWidth  = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledWidth() : 0;
-    int imageHeight = this->inpaintBitMap.IsOk() ? this->inpaintBitMap.GetScaledHeight() : 0;
-
-    // centered image pos
-    int offsetX = 0;
-    int offsetY = 0;
-    if (panelWidth > imageWidth) {
-        offsetX = (panelWidth - imageWidth) / 2;
-    }
-    if (panelHeight > imageHeight) {
-        offsetY = (panelHeight - imageHeight) / 2;
-    }
-
-    x -= offsetX;
-    y -= offsetY;
-
-    return {{x, y}, {offset.x, offset.y}, event.GetPosition()};
 }

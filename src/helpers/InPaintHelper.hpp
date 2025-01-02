@@ -42,13 +42,25 @@ namespace sd_gui_utils {
         // event checkers
         // if painting is in progress
         bool isDrawing = false;
+        // the image is loaded or manually created
+        bool imageLoaded = false;
         // event checkers
 
         void resetPaintArea(int width = 512, int height = 512) {
-            if (this->zoomedImage != nullptr) {
+            if (this->originalImage == nullptr) {
+                this->originalImage = std::make_shared<wxImage>(width, height);
+                this->imageLoaded   = false;
+            }
+
+            if (this->zoomedImage == nullptr) {
+                this->zoomedImage = std::make_shared<wxImage>(*this->originalImage);
+                width             = this->zoomedImage->GetWidth();
+                height            = this->zoomedImage->GetHeight();
+            } else {
                 width  = this->zoomedImage->GetWidth();
                 height = this->zoomedImage->GetHeight();
             }
+
             wxImage inpaintImage(width, height);
             inpaintImage.InitAlpha();
 
@@ -144,7 +156,7 @@ namespace sd_gui_utils {
             this->resetPaintArea(image.GetWidth(), image.GetHeight());
             this->originalSize = image.GetSize();
         }
-        bool inPaintImageLoaded() { return this->originalImage != nullptr; }
+        bool inPaintImageLoaded() { return this->imageLoaded; }
         bool inPaintCnvasEmpty() { return this->painted == false; }
         bool GetIsDrawing() { return this->isDrawing; }
         wxSize GetOriginalSize() { return this->originalSize; }
@@ -190,9 +202,8 @@ namespace sd_gui_utils {
             this->InitBorder(this->zoomedImage->GetWidth(), this->zoomedImage->GetHeight());
 
             // refresh the display
-            if (this->originalImage.IsOk()) {
-                this->parent->SetVirtualSize(this->paintAreaBorder->GetSize());
-            }
+
+            this->parent->SetVirtualSize(this->paintAreaBorder->GetSize());
 
             this->parent->SetScrollRate(10, 10);
             this->parent->SetScrollPos(wxBOTH, 0, true);
