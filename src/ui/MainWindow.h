@@ -33,14 +33,15 @@
 #include <wx/statbmp.h>
 #include <wx/scrolwin.h>
 #include <wx/notebook.h>
-#include <wx/textctrl.h>
 #include <wx/filepicker.h>
 #include <wx/checkbox.h>
 #include <wx/spinctrl.h>
 #include <wx/slider.h>
+#include <wx/textctrl.h>
 #include <wx/html/htmlwin.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
+#include <wx/imaglist.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -103,8 +104,6 @@ class mainUI : public wxFrame
 		wxPanel* m_controlnetPreviewTab;
 		wxStaticBitmap* m_controlnetImagePreview;
 		wxScrolledWindow* m_openPoseWindow;
-		wxTextCtrl* m_prompt;
-		wxTextCtrl* m_neg_prompt;
 		wxFilePickerCtrl* m_controlnetImageOpen;
 		wxCheckBox* cnOnCpu;
 		wxChoice* m_controlnetModels;
@@ -120,7 +119,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_inpaintBrushSize;
 		wxSlider* m_inpaintBrushSizeSlider;
 		wxStaticText* m_inpaintZoom;
-		wxStaticText* m_inpaintImageResolution;
 		wxBitmapButton* m_inpaintSaveMask;
 		wxBitmapButton* m_inpaintInvert;
 		wxBitmapButton* m_inpaintResizeToSdSize;
@@ -129,6 +127,7 @@ class mainUI : public wxFrame
 		wxBitmapToggleButton* m_inPaintBrushStyleCircle;
 		wxBitmapToggleButton* m_inPaintBrushStyleSquare;
 		wxBitmapToggleButton* m_inPaintBrushStyleTriangle;
+		wxStaticText* m_inpaintImageResolution;
 		wxStaticText* m_staticText69;
 		wxPanel* m_panel231;
 		wxStaticText* m_staticText691;
@@ -140,8 +139,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText721;
 		wxTextCtrl* m_inpaintCanvasLeft;
 		wxButton* m_inpaintCanvasResizeApply;
-		wxTextCtrl* m_prompt2;
-		wxTextCtrl* m_neg_prompt2;
 		wxFilePickerCtrl* m_img2imgOpen;
 		wxStaticText* m_staticText24;
 		wxSpinCtrlDouble* m_strength;
@@ -192,6 +189,35 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
+		wxScrolledWindow* m_promptAndFluxPanel;
+		wxPanel* m_promptPanel;
+		wxStaticText* m_staticText73;
+		wxTextCtrl* m_prompt;
+		wxTextCtrl* m_prompt2;
+		wxStaticText* m_staticText74;
+		wxTextCtrl* m_neg_prompt2;
+		wxTextCtrl* m_neg_prompt;
+		wxStaticText* m_staticText49;
+		wxChoice* m_promptPresets;
+		wxBitmapButton* m_bpButton25;
+		wxStaticText* m_staticText522;
+		wxSpinCtrlDouble* slgScale;
+		wxStaticText* m_staticText5221;
+		wxTextCtrl* m_skipLayers;
+		wxStaticText* m_staticText52211;
+		wxSpinCtrlDouble* skipLayerStart;
+		wxStaticText* m_staticText522111;
+		wxSpinCtrlDouble* skipLayerEnd;
+		wxStaticText* m_staticText52111;
+		wxFilePickerCtrl* m_filePickerDiffusionModel;
+		wxBitmapButton* m_cleanDiffusionModel;
+		wxCheckBox* diffusionFlashAttn;
+		wxStaticText* m_staticText52;
+		wxFilePickerCtrl* m_filePickerClipL;
+		wxStaticText* m_staticText521;
+		wxFilePickerCtrl* m_filePickerClipG;
+		wxStaticText* m_staticText5211;
+		wxFilePickerCtrl* m_filePickerT5XXL;
 		wxScrolledWindow* m_rightMainPanel;
 		wxPanel* m_panel24;
 		wxStaticText* m_staticText161;
@@ -230,28 +256,7 @@ class mainUI : public wxFrame
 		wxChoice* m_sd15Res;
 		wxStaticText* m_staticText461;
 		wxChoice* m_sdXlres;
-		wxStaticText* m_staticText49;
-		wxChoice* m_promptPresets;
 		wxButton* m_queue;
-		wxBitmapButton* m_bpButton25;
-		wxStaticText* m_staticText522;
-		wxSpinCtrlDouble* slgScale;
-		wxStaticText* m_staticText5221;
-		wxTextCtrl* m_skipLayers;
-		wxStaticText* m_staticText52211;
-		wxSpinCtrlDouble* skipLayerStart;
-		wxStaticText* m_staticText522111;
-		wxSpinCtrlDouble* skipLayerEnd;
-		wxStaticText* m_staticText52111;
-		wxFilePickerCtrl* m_filePickerDiffusionModel;
-		wxBitmapButton* m_cleanDiffusionModel;
-		wxCheckBox* diffusionFlashAttn;
-		wxStaticText* m_staticText52;
-		wxFilePickerCtrl* m_filePickerClipL;
-		wxStaticText* m_staticText521;
-		wxFilePickerCtrl* m_filePickerClipG;
-		wxStaticText* m_staticText5211;
-		wxFilePickerCtrl* m_filePickerT5XXL;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
@@ -273,8 +278,6 @@ class mainUI : public wxFrame
 		virtual void OnJobListItemSelection( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemKeyDown( wxKeyEvent& event ) { event.Skip(); }
 		virtual void onTxt2ImgFileDrop( wxDropFilesEvent& event ) { event.Skip(); }
-		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImageOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onCnOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnControlnetImagePreviewButton( wxCommandEvent& event ) { event.Skip(); }
@@ -320,6 +323,15 @@ class mainUI : public wxFrame
 		virtual void OnDataModelTreeExpanding( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeSelected( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnModelFavoriteChange( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
+		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
@@ -335,13 +347,6 @@ class mainUI : public wxFrame
 		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onDiffusionFlashAttn( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onFilePickerClipL( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onFilePickerClipG( wxFileDirPickerEvent& event ) { event.Skip(); }
-		virtual void onFilePickerT5XXL( wxFileDirPickerEvent& event ) { event.Skip(); }
 
 
 	public:
@@ -356,8 +361,8 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer119;
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
-		wxBoxSizer* bSizer1108;
 		wxPanel* m_fluxPanel;
+		wxBoxSizer* bSizer1108;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 

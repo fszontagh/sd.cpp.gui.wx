@@ -129,6 +129,33 @@ namespace sd_gui_utils {
         resizedImage.SaveFile(cache_name.GetAbsolutePath());
         return resizedImage;
     };
+    struct wxEnlargeImageSizes {
+        int top;
+        int right;
+        int bottom;
+        int left;
+    };
+    inline void CropOrFillImage(std::shared_ptr<wxImage> image, const wxEnlargeImageSizes& enlargeSizes, wxColour fillColor) {
+        if (image == nullptr) {
+            return;
+        }
+        int originalWidth  = image->GetWidth();
+        int originalHeight = image->GetHeight();
+
+        int newWidth  = originalWidth + enlargeSizes.left + enlargeSizes.right;
+        int newHeight = originalHeight + enlargeSizes.top + enlargeSizes.bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = enlargeSizes.left + (newWidth - originalWidth - enlargeSizes.left - enlargeSizes.right) / 2;
+        int yOffset = enlargeSizes.top + (newHeight - originalHeight - enlargeSizes.top - enlargeSizes.bottom) / 2;
+
+        newImage.Paste(*image, xOffset, yOffset);
+
+        *image = newImage;
+    }
 
     inline void CropOrFillImage(wxImage& image, int top, int right, int bottom, int left, wxColour fillColor) {
         int originalWidth  = image.GetWidth();
