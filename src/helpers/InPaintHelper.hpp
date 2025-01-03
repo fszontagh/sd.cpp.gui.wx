@@ -25,25 +25,31 @@ namespace sd_gui_utils {
         std::shared_ptr<wxBitmap> paintArea                = nullptr;
         std::shared_ptr<wxBitmap> paintAreaBorder          = nullptr;
         std::shared_ptr<wxBitmap> outPaintArea             = nullptr;
+        std::shared_ptr<wxBitmap> overlay                  = nullptr;
         std::shared_ptr<wxImage> originalImage             = nullptr;
         std::shared_ptr<wxImage> zoomedImage               = nullptr;
         bool painted                                       = false;
+        bool outpainted                                    = false;
         BrushSize inpaintBrushSize                         = BrushSize{1, 20, 5};
         double inpaintZoomFactor                           = 1;
         double inpaintZoomFactorStep                       = 0.1;
         sd_gui_utils::InPaintHelper::BrushStyle brushStyle = sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_CIRCLE;
+        const int BITMAP_DEPTH                             = 32;
 
         // store the original image size
         wxSize originalSize;
         // store if the image is resized to larger than the original
         wxSize outPaintSize;
 
-        wxPosition lastPosition;
+        wxPoint lastPosition;
         // event checkers
         // if painting is in progress
         bool isDrawing = false;
         // the image is loaded or manually created
         bool imageLoaded = false;
+
+        // border size in px
+        int borderSize = 2;
         // event checkers
 
         void resetPaintArea(int width = 512, int height = 512) {
@@ -61,31 +67,17 @@ namespace sd_gui_utils {
                 height = this->zoomedImage->GetHeight();
             }
 
-            wxImage inpaintImage(width, height);
-            inpaintImage.InitAlpha();
-
-            unsigned char* alpha = inpaintImage.GetAlpha();
-            unsigned char* data  = inpaintImage.GetData();
-            for (int i = 0; i < inpaintImage.GetWidth() * inpaintImage.GetHeight(); ++i) {
-                alpha[i]        = 0;    // Fully transparent
-                data[i * 3]     = 255;  // R White
-                data[i * 3 + 1] = 255;  // G
-                data[i * 3 + 2] = 255;  // B
-            }
-            inpaintImage.SetMask(false);
-            this->paintArea = std::make_shared<wxBitmap>(inpaintImage);
-            wxMemoryDC dc(*this->paintArea.get());
-            dc.SetBackground(*wxTRANSPARENT_BRUSH);
-            dc.Clear();
-            dc.SelectObject(wxNullBitmap);
-
             this->InitBorder(width, height);
+            this->InitOutPaintArea(width, height);
+            this->InitOverLay(width, height);
+            this->InitPaintArea(width, height);
 
             this->painted      = false;
             this->originalSize = wxSize(width, height);
             this->outPaintSize = wxSize(width, height);
             this->inpaintBrushSize.ResetSize();
             this->SetZoomFactor(1);
+            this->UpdateParent();
         }
 
         wxPosition GetMousePosition(wxMouseEvent& event) {
@@ -125,7 +117,9 @@ namespace sd_gui_utils {
     public:
         InPaintHelper(wxScrolledWindow* parent)
             : parent(parent) {
-            resetPaintArea();
+            // @see https://wiki.wxwidgets.org/Drawing_on_a_panel_with_a_DC
+            this->parent->SetDoubleBuffered(true);
+            this->parent->SetBackgroundStyle(wxBG_STYLE_PAINT);
         }
         void Reset() {
             this->originalImage = nullptr;
@@ -134,13 +128,78 @@ namespace sd_gui_utils {
             this->resetPaintArea();
         }
 
+        void CleanMask() {
+            if (this->painted == false) {
+                return;
+            }
+            if (this->paintArea == nullptr) {
+                return;
+            }
+
+            this->InitPaintArea(this->GetOriginalSize());
+            this->paintArea->SetScaleFactor(this->inpaintZoomFactor);
+            this->painted = false;
+            this->UpdateParent();
+        }
+
         void InitBorder(const wxSize& size) { this->InitBorder(size.x, size.y); }
         void InitBorder(int width, int height) {
-            this->paintAreaBorder = std::make_shared<wxBitmap>(width + 2, height + 2);
-            wxMemoryDC dc2(*this->paintAreaBorder.get());
+            this->paintAreaBorder = std::make_shared<wxBitmap>(width + 2, height + 2, BITMAP_DEPTH);
+            this->paintAreaBorder->UseAlpha();
+            wxMemoryDC dc2(*this->paintAreaBorder);
             dc2.SetBackground(*wxRED_BRUSH);
             dc2.Clear();
             dc2.SelectObject(wxNullBitmap);
+        }
+
+        void InitOverLay(const wxSize& size) { this->InitOverLay(size.x, size.y); }
+        void InitOverLay(int width, int height) {
+            wxBitmap buf(width, height, BITMAP_DEPTH);
+            buf.UseAlpha();
+
+            wxMemoryDC memDC(buf);
+            wxGraphicsContext* gc = wxGraphicsContext::Create(memDC);
+            if (gc) {
+                gc->SetBrush(*wxTRANSPARENT_BRUSH);
+                gc->SetPen(*wxTRANSPARENT_PEN);
+                gc->DrawRectangle(0, 0, width, height);
+            }
+            delete gc;
+            memDC.SelectObject(wxNullBitmap);
+            this->overlay = std::make_shared<wxBitmap>(buf);
+        }
+        void InitOutPaintArea(const wxSize& size) { this->InitOutPaintArea(size.x, size.y); }
+        void InitOutPaintArea(int width, int height) {
+            wxBitmap buf(width, height, BITMAP_DEPTH);
+            buf.UseAlpha();
+
+            wxMemoryDC memDC(buf);
+            wxGraphicsContext* gc = wxGraphicsContext::Create(memDC);
+            if (gc) {
+                gc->SetBrush(*wxTRANSPARENT_BRUSH);
+                gc->SetPen(*wxTRANSPARENT_PEN);
+                gc->DrawRectangle(0, 0, width, height);
+            }
+            delete gc;
+            memDC.SelectObject(wxNullBitmap);
+            this->outPaintArea = std::make_shared<wxBitmap>(buf);
+        }
+
+        void InitPaintArea(const wxSize& size) { this->InitPaintArea(size.x, size.y); }
+        void InitPaintArea(int width, int height) {
+            wxBitmap buf(width, height, BITMAP_DEPTH);
+            buf.UseAlpha();
+
+            wxMemoryDC memDC(buf);
+            wxGraphicsContext* gc = wxGraphicsContext::Create(memDC);
+            if (gc) {
+                gc->SetBrush(*wxTRANSPARENT_BRUSH);
+                gc->SetPen(*wxTRANSPARENT_PEN);
+                gc->DrawRectangle(0, 0, width, height);
+            }
+            delete gc;
+            memDC.SelectObject(wxNullBitmap);
+            this->paintArea = std::make_shared<wxBitmap>(buf);
         }
         BrushSize GetBrushSize() { return this->inpaintBrushSize; }
         unsigned int GetCurrentBrushSize() { return this->inpaintBrushSize.current; }
@@ -150,30 +209,61 @@ namespace sd_gui_utils {
         void SetBrushStyle(sd_gui_utils::InPaintHelper::BrushStyle style) { this->brushStyle = style; }
         double GetZoomFactor() { return this->inpaintZoomFactor; }
         void SetZoomFactor(double factor) { this->inpaintZoomFactor = factor; }
+        bool isOutPainted() { return this->outpainted; }
 
-        void SetImage(const wxImage& image) {
-            this->originalImage = std::make_shared<wxImage>(image);
+        bool SetImage(const wxImage& image) noexcept {
+            this->originalImage   = std::make_shared<wxImage>(image);
+            this->zoomedImage     = nullptr;
+            this->outPaintArea    = nullptr;
+            this->paintAreaBorder = nullptr;
+            this->originalSize    = image.GetSize();
             this->resetPaintArea(image.GetWidth(), image.GetHeight());
-            this->originalSize = image.GetSize();
+
+            if (this->originalImage->IsOk()) {
+                this->imageLoaded = true;
+            }
+
+            return this->imageLoaded;
         }
+        // the current used original image is a user loaded image
         bool inPaintImageLoaded() { return this->imageLoaded; }
-        bool inPaintCnvasEmpty() { return this->painted == false; }
+        // return true if user is painted to the canvas
+        bool inPaintCanvasEmpty() { return this->painted == false; }
+        // return true if user is currently drawing
         bool GetIsDrawing() { return this->isDrawing; }
+        // get the original size of the initial image (return the resized image if resized to sdsizes)
         wxSize GetOriginalSize() { return this->originalSize; }
+        // return the size of the image original size + outpaint size
         wxSize GetOutPaintedSize() { return this->outPaintSize; }
+        void UpdateParent() {
+            this->parent->SetVirtualSize(this->paintAreaBorder->GetSize() * this->inpaintZoomFactor);
+            this->parent->SetScrollRate(10, 10);
+            this->parent->SetScrollPos(wxBOTH, 0, true);
+        }
+        void UpdateParent(const wxPoint& scrollPos) {
+            this->parent->Scroll(scrollPos);
+            this->parent->SetVirtualSize(this->paintAreaBorder->GetSize() * this->inpaintZoomFactor);
+            this->parent->Refresh();
+        }
         // handle events
 
         void OnDeleteInitialImage() {
             this->originalImage = nullptr;
             this->zoomedImage   = nullptr;
             this->resetPaintArea();
-
-            // set the size to the border. This will cause the parent window to resize
-            this->parent->SetVirtualSize(this->paintAreaBorder->GetWidth(), this->paintAreaBorder->GetHeight());
-            this->parent->SetScrollRate(10, 10);
-            this->parent->SetScrollPos(wxBOTH, 0, true);
+            this->UpdateParent();
         }
 
+        bool OnInvertMask(wxCommandEvent& event) {
+            if (this->imageLoaded) {
+                sd_gui_utils::InvertWhiteAndTransparent(this->paintArea);
+                this->UpdateParent();
+                return true;
+            }
+            return false;
+        }
+
+        // enlarge the image to bigger size, and fill the rest with gray
         void OnOutPaintResize(sd_gui_utils::wxEnlargeImageSizes& enlargeSize) {
             if (enlargeSize.top < 0 && this->originalImage->GetHeight() + enlargeSize.top < 0) {
                 enlargeSize.top = 0;
@@ -187,46 +277,61 @@ namespace sd_gui_utils {
             if (enlargeSize.bottom < 0 && this->originalImage->GetHeight() + enlargeSize.bottom < 0) {
                 enlargeSize.bottom = 0;
             }
+            if (enlargeSize.top == 0 &&
+                enlargeSize.left == 0 &&
+                enlargeSize.right == 0 &&
+                enlargeSize.bottom == 0) {
+                this->outpainted = false;
+            } else {
+                this->outpainted = true;
+            }
+
             this->zoomedImage = std::make_shared<wxImage>(*this->originalImage);
 
             sd_gui_utils::CropOrFillImage(this->zoomedImage, enlargeSize, wxColour(128, 128, 128));
             this->outPaintSize      = this->zoomedImage->GetSize();
             this->inpaintZoomFactor = 1;
-            // this->m_inpaintZoom->SetLabel(_("Zoom: 1x"));
-
-            // set generated image size to the target image size
-            // this->m_width->SetValue(img.GetWidth());
-            // this->m_height->SetValue(img.GetHeight());
-
-            // update the border
             this->InitBorder(this->zoomedImage->GetWidth(), this->zoomedImage->GetHeight());
-
-            // refresh the display
-
-            this->parent->SetVirtualSize(this->paintAreaBorder->GetSize());
-
-            this->parent->SetScrollRate(10, 10);
-            this->parent->SetScrollPos(wxBOTH, 0, true);
-            this->parent->Refresh();
+            this->InitOverLay(this->zoomedImage->GetWidth(), this->zoomedImage->GetHeight());
+            this->UpdateParent();
         }
+
+        wxImage OnSaveMask(wxCommandEvent& event) {
+            auto img = this->paintArea->ConvertToImage();
+            sd_gui_utils::blendImageOnBlackBackground(img);
+            return img;
+        }
+
+        wxImage GetMaskImage(bool blend = true) {
+            if (blend) {
+                wxImage img = this->paintArea->ConvertToImage();
+                sd_gui_utils::blendImageOnBlackBackground(img);
+                return img;
+            }
+            return this->paintArea->ConvertToImage();
+        }
+        wxImage OnResizeOriginalImage(int targetWidth, int targetHeight) {
+            sd_gui_utils::ResizeImageToMaxSize(this->originalImage, targetWidth, targetHeight);
+            this->originalSize    = this->originalImage->GetSize();
+            this->zoomedImage     = nullptr;
+            this->paintAreaBorder = nullptr;
+            this->outPaintArea    = nullptr;
+            this->resetPaintArea();
+            return *this->originalImage;
+        }
+
+        void OnEraseBackground(wxEraseEvent& event) {}
 
         void OnDcPaint(wxPaintEvent& event) {
             wxAutoBufferedPaintDC dc(this->parent);
+            dc.SetUserScale(this->inpaintZoomFactor, this->inpaintZoomFactor);
 
+            // Panel méretének lekérdezése
             int panelWidth, panelHeight;
             this->parent->GetClientSize(&panelWidth, &panelHeight);
 
-            int imageWidth  = this->zoomedImage->IsOk() ? this->zoomedImage->GetWidth() : 0;
-            int imageHeight = this->zoomedImage->IsOk() ? this->zoomedImage->GetHeight() : 0;
-
-            // int canvasWidth  = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledWidth() : 0;
-            // int canvasHeight = this->inpaintCanvas.IsOk() ? this->inpaintCanvas.GetScaledHeight() : 0;
-
-            int borderWidth  = this->paintAreaBorder->IsOk() ? this->paintAreaBorder->GetScaledWidth() : 0;
-            int borderHeight = this->paintAreaBorder->IsOk() ? this->paintAreaBorder->GetScaledHeight() : 0;
-
-            int inpaintBitMapWidth  = this->paintArea->IsOk() ? this->paintArea->GetScaledWidth() : 0;
-            int inpaintBitMapHeight = this->paintArea->IsOk() ? this->paintArea->GetScaledHeight() : 0;
+            dc.SetBackground(wxBrush(wxColour(51, 51, 51, 255)));
+            dc.Clear();
 
             wxPoint viewStart = this->parent->GetViewStart();
             int scrollUnitX, scrollUnitY;
@@ -234,176 +339,132 @@ namespace sd_gui_utils {
             int scrollOffsetX = viewStart.x * scrollUnitX;
             int scrollOffsetY = viewStart.y * scrollUnitY;
 
-            int offsetX = (panelWidth > borderWidth ? (panelWidth - borderWidth) / 2 : 0) - scrollOffsetX;
-            int offsetY = (panelHeight > borderHeight ? (panelHeight - borderHeight) / 2 : 0) - scrollOffsetY;
+            int offsetX = scrollOffsetX / this->inpaintZoomFactor + this->borderSize;
+            int offsetY = scrollOffsetY / this->inpaintZoomFactor + this->borderSize;
 
-            wxBrush background(wxColour(33, 33, 33));
-            dc.SetBackground(background);
-            dc.Clear();
-
-            if (this->paintAreaBorder->IsOk()) {
-                dc.DrawBitmap(*this->paintAreaBorder, offsetX, offsetY, false);
+            // Border méret figyelembevétele
+            if (this->paintAreaBorder != nullptr && this->paintAreaBorder->IsOk()) {
+                int offsetX2 = offsetX + (this->paintAreaBorder->GetWidth() - this->zoomedImage->GetWidth()) / 2;
+                int offsetY2 = offsetY + (this->paintAreaBorder->GetHeight() - this->zoomedImage->GetHeight()) / 2;
+                dc.DrawBitmap(*this->paintAreaBorder, offsetX2, offsetY2, false);
             }
 
-            if (this->outPaintArea->IsOk()) {
-                int canvasOffsetX = offsetX + (borderWidth - imageWidth) / 2;
-                int canvasOffsetY = offsetY + (borderHeight - imageHeight) / 2;
-                dc.DrawBitmap(*this->outPaintArea, canvasOffsetX, canvasOffsetY, false);
+            // Az outPaintArea és a zoomedImage a legnagyobb bitmapot követi
+            if (this->outPaintArea != nullptr && this->outPaintArea->IsOk() && this->outpainted) {
+                dc.DrawBitmap(*this->outPaintArea, offsetX, offsetY, false);
             }
 
-            if (this->zoomedImage->IsOk()) {
-                int imageOffsetX = offsetX + (borderWidth - imageWidth) / 2;
-                int imageOffsetY = offsetY + (borderHeight - imageHeight) / 2;
-                dc.DrawBitmap(*this->zoomedImage, imageOffsetX, imageOffsetY, false);
+            // ZoomedImage méretének figyelembevételével
+            if (this->zoomedImage != nullptr && this->zoomedImage->IsOk()) {
+                dc.DrawBitmap(*this->zoomedImage, offsetX, offsetY, false);
             }
 
-            if (this->paintArea->IsOk()) {
-                int bitmapOffsetX = offsetX + (borderWidth - inpaintBitMapWidth) / 2;
-                int bitmapOffsetY = offsetY + (borderHeight - inpaintBitMapHeight) / 2;
-                dc.DrawBitmap(*this->paintArea, bitmapOffsetX, bitmapOffsetY, true);
+            // A paintArea és az overlay a zoomedImage méretéhez igazodnak
+            if (this->paintArea != nullptr && this->paintArea->IsOk()) {
+                dc.DrawBitmap(*this->paintArea, offsetX, offsetY, false);
+            }
+
+            if (this->overlay != nullptr && this->overlay->IsOk()) {
+                dc.DrawBitmap(*this->overlay, offsetX, offsetY, false);
             }
         }
 
         void OnMouseRightDown(wxMouseEvent& event) {
-            this->isDrawing    = true;
-            this->lastPosition = this->GetMousePosition(event);
+            this->isDrawing = true;
+            // this->lastPosition = this->GetMousePosition(event);
+            this->lastPosition = event.GetPosition();
         }
         void OnMouseRightUp(wxMouseEvent& event) { this->isDrawing = false; }
         void OnMouseLeftDown(wxMouseEvent& event) {
             this->isDrawing    = true;
-            this->lastPosition = this->GetMousePosition(event);
+            this->lastPosition = event.GetPosition();  // this->GetMousePosition(event);
         }
         void OnMouseLeftUp(wxMouseEvent& event) { this->isDrawing = false; }
+        void OnMouseLeave(wxMouseEvent& event) { this->isDrawing = false; }
 
         void OnMouseMotion(wxMouseEvent& event) {
-            if (this->isDrawing && event.Dragging() && (event.LeftIsDown() || event.RightIsDown())) {
-                auto currentPos = this->GetMousePosition(event);
-                auto lastPos    = this->lastPosition;
-                double dx       = currentPos.pos.x - lastPos.pos.x;
-                double dy       = currentPos.pos.y - lastPos.pos.y;
-
-                if (event.ControlDown()) {
-                    if (fabs(dx) > fabs(dy)) {
-                        currentPos.pos.y = lastPos.pos.y;
-                    } else {
-                        currentPos.pos.x = lastPos.pos.x;
-                    }
-                    dx = currentPos.pos.x - lastPos.pos.x;
-                    dy = currentPos.pos.y - lastPos.pos.y;
-                }
-
-                // interpolate
-
-                double distance = sqrt(dx * dx + dy * dy);
-
-                int steps = static_cast<int>(distance / (this->inpaintBrushSize.current));
-                if (steps == 0) {
-                    steps = 1;
-                }
-
-                wxMemoryDC dc(*this->paintArea);
-                if (event.LeftIsDown()) {
-                    dc.SetBrush(*wxWHITE_BRUSH);
-                    dc.SetPen(*wxWHITE_PEN);
-                    if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_CIRCLE) {
-                        for (int i = 1; i <= steps; ++i) {
-                            double t             = static_cast<double>(i) / steps;
-                            double interpolatedX = lastPos.pos.x + t * dx;
-                            double interpolatedY = lastPos.pos.y + t * dy;
-                            dc.DrawCircle(wxPoint(interpolatedX, interpolatedY), this->inpaintBrushSize.current);
-                            this->painted = true;
-                        }
-                    } else if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_SQUARE) {
-                        for (int i = 1; i <= steps; ++i) {
-                            double t             = static_cast<double>(i) / steps;
-                            double interpolatedX = lastPos.pos.x + t * dx;
-                            double interpolatedY = lastPos.pos.y + t * dy;
-                            dc.DrawRectangle(wxPoint(interpolatedX - this->inpaintBrushSize.current / 2, interpolatedY - this->inpaintBrushSize.current / 2), wxSize(this->inpaintBrushSize.current * 2, this->inpaintBrushSize.current * 2));
-                            this->painted = true;
-                        }
-
-                    } else if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_TRIANGLE) {
-                        for (int i = 1; i <= steps; ++i) {
-                            double t             = static_cast<double>(i) / steps;
-                            double interpolatedX = lastPos.pos.x + t * dx;
-                            double interpolatedY = lastPos.pos.y + t * dy;
-
-                            wxPoint points[3];
-                            points[0] = wxPoint(interpolatedX - this->inpaintBrushSize.current / 2, interpolatedY - this->inpaintBrushSize.current / 2);
-                            points[1] = wxPoint(interpolatedX + this->inpaintBrushSize.current / 2, interpolatedY - this->inpaintBrushSize.current / 2);
-                            points[2] = wxPoint(interpolatedX, interpolatedY + this->inpaintBrushSize.current / 2);
-                            dc.DrawPolygon(3, points);
-                            this->painted = true;
-                        }
-                    }
-                } else if (event.RightIsDown()) {
-                    wxImage img = this->paintArea->ConvertToImage().Scale(this->paintArea->GetScaledWidth(), this->paintArea->GetScaledHeight(), wxIMAGE_QUALITY_HIGH);
-
-                    if (!img.HasAlpha()) {
-                        img.InitAlpha();
-                    }
-
-                    for (int i = 1; i <= steps; ++i) {
-                        double t             = static_cast<double>(i) / steps;
-                        double interpolatedX = lastPos.pos.x + t * dx;
-                        double interpolatedY = lastPos.pos.y + t * dy;
-
-                        int startX = std::max(0, static_cast<int>(interpolatedX - this->inpaintBrushSize.current));
-                        int startY = std::max(0, static_cast<int>(interpolatedY - this->inpaintBrushSize.current));
-                        int endX   = std::min(img.GetWidth(), static_cast<int>(interpolatedX + this->inpaintBrushSize.current));
-                        int endY   = std::min(img.GetHeight(), static_cast<int>(interpolatedY + this->inpaintBrushSize.current));
-
-                        for (int y = startY; y < endY; ++y) {
-                            for (int x = startX; x < endX; ++x) {
-                                double distance = sqrt(pow(x - interpolatedX, 2) + pow(y - interpolatedY, 2));
-                                if (distance <= this->inpaintBrushSize.current) {
-                                    img.SetAlpha(x, y, 0);
-                                }
-                            }
-                        }
-                    }
-                    this->paintArea = std::make_shared<wxBitmap>(img);
-                }
-
-                dc.SelectObject(wxNullBitmap);
-
-                this->parent->Refresh();
-                this->lastPosition = currentPos;
+            if (!this->isDrawing || (!event.LeftIsDown() && !event.RightIsDown())) {
+                return;
             }
+
+            auto currentPos = event.GetPosition();  // this->GetMousePosition(event);
+            auto lastPos    = this->lastPosition;
+            double dx       = currentPos.x - lastPos.x;
+            double dy       = currentPos.y - lastPos.y;
+
+            if (event.ControlDown()) {
+                if (fabs(dx) > fabs(dy)) {
+                    currentPos.y = lastPos.y;
+                } else {
+                    currentPos.x = lastPos.x;
+                }
+                dx = currentPos.x - lastPos.x;
+                dy = currentPos.y - lastPos.y;
+            }
+
+            double distance = sqrt(dx * dx + dy * dy);
+            int steps       = static_cast<int>(distance / (this->inpaintBrushSize.current));
+            steps           = (steps == 0) ? 1 : steps;
+
+            wxPoint viewStart = this->parent->GetViewStart();
+            int scrollUnitX, scrollUnitY;
+            this->parent->GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
+            int scrollOffsetX = viewStart.x * scrollUnitX;
+            int scrollOffsetY = viewStart.y * scrollUnitY;
+
+            wxMemoryDC dc(*this->paintArea);
+            if (!dc.IsOk()) {
+                return;
+            }
+
+            dc.SetLogicalFunction(event.LeftIsDown() ? wxCOPY : wxCLEAR);
+            dc.SetBrush(wxBrush(wxColour(255, 255, 255), wxBRUSHSTYLE_SOLID));
+            dc.SetPen(wxPen(wxColour(255, 255, 255), this->inpaintBrushSize.current, wxPENSTYLE_SOLID));
+
+            for (int i = 1; i <= steps; ++i) {
+                double t             = static_cast<double>(i) / steps;
+                double interpolatedX = lastPos.x + t * dx - scrollOffsetX;
+                double interpolatedY = lastPos.y + t * dy - scrollOffsetY;
+
+                if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_CIRCLE) {
+                    dc.DrawCircle(wxPoint(interpolatedX, interpolatedY), this->inpaintBrushSize.current);
+                    this->parent->Refresh();
+                } else if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_SQUARE) {
+                    dc.DrawRectangle(wxPoint(interpolatedX - this->inpaintBrushSize.current / 2, interpolatedY - this->inpaintBrushSize.current / 2),
+                                     wxSize(this->inpaintBrushSize.current * 2, this->inpaintBrushSize.current * 2));
+                    this->parent->Refresh();
+                } else if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_TRIANGLE) {
+                    wxPoint points[3];
+                    points[0] = wxPoint(interpolatedX - this->inpaintBrushSize.current, interpolatedY - this->inpaintBrushSize.current);
+                    points[1] = wxPoint(interpolatedX + this->inpaintBrushSize.current, interpolatedY - this->inpaintBrushSize.current);
+                    points[2] = wxPoint(interpolatedX, interpolatedY + this->inpaintBrushSize.current);
+                    dc.DrawPolygon(3, points);
+                    this->parent->Refresh();
+                }
+                this->painted = true;
+            }
+
+            dc.SelectObject(wxNullBitmap);
+            this->lastPosition = currentPos;
         }
 
         void OnMouseWheel(wxMouseEvent& event, const wxEnlargeImageSizes& enlargeSizes) {
             int rotation = event.GetWheelRotation();
 
+            // Csak akkor, ha az Ctrl lenyomva van és van eredeti kép
             if (event.ControlDown() && this->originalImage->IsOk()) {
-                if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0 && rotation > 0) {
-                    return;
-                }
-
-                if (this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1 && rotation < 0) {
-                    return;
-                }
-
                 double oldZoomFactor = this->inpaintZoomFactor;
 
+                // Kontrolláljuk a zoom faktor változtatást
                 if (rotation > 0) {
+                    if (this->inpaintZoomFactor + this->inpaintZoomFactorStep > 2.0)
+                        return;
                     this->inpaintZoomFactor += this->inpaintZoomFactorStep;
                 } else if (rotation < 0) {
+                    if (this->inpaintZoomFactor - this->inpaintZoomFactorStep < 0.1)
+                        return;
                     this->inpaintZoomFactor -= this->inpaintZoomFactorStep;
                 }
-
-                auto tmpImg       = this->originalImage->Scale(this->originalImage->GetWidth() * this->inpaintZoomFactor, this->originalImage->GetHeight() * this->inpaintZoomFactor, wxIMAGE_QUALITY_HIGH);
-                this->zoomedImage = std::make_shared<wxImage>(tmpImg);
-
-                if (this->originalSize != this->outPaintSize) {
-                    sd_gui_utils::CropOrFillImage(this->zoomedImage, enlargeSizes, wxColour(128, 128, 128));
-                }
-
-                this->paintArea->SetScaleFactor(1.0 / this->inpaintZoomFactor);
-                this->outPaintArea->SetScaleFactor(1.0 / this->inpaintZoomFactor);
-                this->paintAreaBorder->SetScaleFactor(1.0 / this->inpaintZoomFactor);
-
-                // this->InitBorder(this->outPaintArea->GetScaledSize());
 
                 wxPoint mousePos  = event.GetPosition();
                 wxPoint viewStart = this->parent->GetViewStart();
@@ -412,23 +473,13 @@ namespace sd_gui_utils {
 
                 double zoomFactorRatio = oldZoomFactor / this->inpaintZoomFactor;
                 wxPoint newViewStart   = viewStart;
-                newViewStart.x += (mousePos.x + viewStart.x * scrollUnitX -
-                                   (this->parent->GetClientSize().GetWidth() / 2)) *
-                                  (1 - zoomFactorRatio) / scrollUnitX;
-                newViewStart.y += (mousePos.y + viewStart.y * scrollUnitY -
-                                   (this->parent->GetClientSize().GetHeight() / 2)) *
-                                  (1 - zoomFactorRatio) / scrollUnitY;
+                newViewStart.x += (mousePos.x + viewStart.x * scrollUnitX - (this->parent->GetClientSize().GetWidth() / 2)) * (1 - zoomFactorRatio) / scrollUnitX;
+                newViewStart.y += (mousePos.y + viewStart.y * scrollUnitY - (this->parent->GetClientSize().GetHeight() / 2)) * (1 - zoomFactorRatio) / scrollUnitY;
 
-                newViewStart.x = std::max(0, std::min(newViewStart.x,
-                                                      (this->paintAreaBorder->GetWidth() - this->parent->GetClientSize().GetWidth()) / scrollUnitX));
-                newViewStart.y = std::max(0, std::min(newViewStart.y,
-                                                      (this->paintAreaBorder->GetHeight() - this->parent->GetClientSize().GetHeight()) / scrollUnitY));
+                newViewStart.x = std::max(0, std::min(newViewStart.x, (this->paintAreaBorder->GetWidth() - this->parent->GetClientSize().GetWidth()) / scrollUnitX));
+                newViewStart.y = std::max(0, std::min(newViewStart.y, (this->paintAreaBorder->GetHeight() - this->parent->GetClientSize().GetHeight()) / scrollUnitY));
 
-                this->parent->Scroll(newViewStart);
-
-                this->parent->SetVirtualSize(this->paintAreaBorder->GetScaledSize());
-
-                this->parent->Refresh();
+                this->UpdateParent(newViewStart);
             }
 
             if (event.ShiftDown()) {
@@ -439,7 +490,6 @@ namespace sd_gui_utils {
                 }
                 return;
             }
-
             event.Skip();
         }
     };

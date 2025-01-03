@@ -4284,7 +4284,7 @@
                                       </object>
                                       <object class="sizeritem" expanded="false">
                                         <property name="border">5</property>
-                                        <property name="flag">wxALL|wxEXPAND</property>
+                                        <property name="flag">wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN</property>
                                         <property name="proportion">1</property>
                                         <object class="wxScrolledWindow" expanded="false">
                                           <property name="BottomDockable">1</property>
@@ -4339,9 +4339,10 @@
                                           <property name="tooltip"></property>
                                           <property name="window_extra_style">wxWS_EX_BLOCK_EVENTS</property>
                                           <property name="window_name">inpaintEditor</property>
-                                          <property name="window_style">wxBORDER_THEME|wxHSCROLL|wxVSCROLL</property>
+                                          <property name="window_style">wxBORDER_THEME|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL</property>
                                           <event name="OnDropFiles">Onimg2imgDropFile</event>
                                           <event name="OnEnterWindow">OnImg2ImgMouseEnter</event>
+                                          <event name="OnEraseBackground">OnImg2ImgEraseBackground</event>
                                           <event name="OnLeaveWindow">OnImg2ImgMouseLeave</event>
                                           <event name="OnLeftDown">OnImg2ImgMouseDown</event>
                                           <event name="OnLeftUp">OnImg2ImgMouseUp</event>

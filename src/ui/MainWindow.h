@@ -291,6 +291,7 @@ class mainUI : public wxFrame
 		virtual void OnInpaintMaskOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnInPaintBrushStyleToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseEnter( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgEraseBackground( wxEraseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseLeave( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgMouseUp( wxMouseEvent& event ) { event.Skip(); }

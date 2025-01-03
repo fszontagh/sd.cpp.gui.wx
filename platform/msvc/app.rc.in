@@ -1,0 +1,41 @@
+#include <windows.h>
+#include <winver.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@
+PRODUCTVERSION @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@
+
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0" // English (US)
+        BEGIN
+            VALUE "FileDescription", "{COMPONENT_NAME}\0"
+            VALUE "InternalName", "${PROJECT_NAME}\0"
+            VALUE "OriginalFilename", "${BNAME}.exe\0"
+            VALUE "ProductName", "${COMPONENT_NAME}\0"
+            VALUE "ProductVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@\0"
+            VALUE "Author", "Ferenc Szontágh\0"
+            VALUE "LegalCopyright", "MIT License - Copyright 2024,2025 Ferenc Szontágh\0"
+            VALUE "SpecialBuild", "using stable-diffusion.cpp @SDCPP_VERSION@ git tag, the binary is compiled from @GIT_HASH@ git hash"
+        END
+
+        BLOCK "040e04b0" // Hungarian (Hungary)
+        BEGIN
+            VALUE "FileDescription", "{COMPONENT_NAME}\0"
+            VALUE "InternalName", "${PROJECT_NAME}\0"
+            VALUE "OriginalFilename", "${BNAME}.exe\0"
+            VALUE "ProductName", "${COMPONENT_NAME}\0"
+            VALUE "ProductVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@\0"
+            VALUE "Author", "Szontágh Ferenc\0"
+            VALUE "LegalCopyright", "MIT Licensz - Copyright 2024,2025 Szontágh Ferenc\0"
+            VALUE "SpecialBuild", "stable-diffusion.cpp @SDCPP_VERSION@ git tag-et használ, bináris forgatva a(z) @GIT_HASH@ git hashből"
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200 // English
+        VALUE "Translation", 0x040E, 1200 // Hungarian
+    END
+END

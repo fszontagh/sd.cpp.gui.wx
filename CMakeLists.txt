@@ -84,7 +84,12 @@ set(SOURCES
 )
 
 if (WIN32)
-    list(APPEND SOURCES minimal.rc)
+    set(BNAME ${PROJECT_BINARY_NAME})
+    set(COMPONENT_NAME ${PROJECT_DISPLAY_NAME})
+    configure_file(platform/msvc/app.rc.in app.rc)
+    configure_file(platform/msvc/minimal.rc.in minimal.rc)
+    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/app.rc)
+    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/minimal.rc)
 endif()
 
 add_subdirectory(extprocess)

@@ -563,13 +563,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1028->Fit( m_panel26 );
 	bSizer1026->Add( m_panel26, 0, wxALL|wxEXPAND, 5 );
 
-	m_img2imPanel = new wxScrolledWindow( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxHSCROLL|wxVSCROLL, wxT("inpaintEditor") );
+	m_img2imPanel = new wxScrolledWindow( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL, wxT("inpaintEditor") );
 	m_img2imPanel->SetScrollRate( 5, 5 );
 	m_img2imPanel->SetExtraStyle( wxWS_EX_BLOCK_EVENTS );
 	m_img2imPanel->DragAcceptFiles( true );
 	m_img2imPanel->SetMinSize( wxSize( 256,256 ) );
 
-	bSizer1026->Add( m_img2imPanel, 1, wxALL|wxEXPAND, 5 );
+	bSizer1026->Add( m_img2imPanel, 1, wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
 
 	m_panel231 = new wxPanel( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer1027;
@@ -1546,6 +1546,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inPaintBrushStyleTriangle->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
+	m_img2imPanel->Connect( wxEVT_ERASE_BACKGROUND, wxEraseEventHandler( mainUI::OnImg2ImgEraseBackground ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_LEFT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgMouseDown ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_LEFT_UP, wxMouseEventHandler( mainUI::OnImg2ImgMouseUp ), NULL, this );
@@ -1660,6 +1661,7 @@ mainUI::~mainUI()
 	m_inPaintBrushStyleTriangle->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInPaintBrushStyleToggle ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::Onimg2imgDropFile ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_ENTER_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseEnter ), NULL, this );
+	m_img2imPanel->Disconnect( wxEVT_ERASE_BACKGROUND, wxEraseEventHandler( mainUI::OnImg2ImgEraseBackground ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_LEAVE_WINDOW, wxMouseEventHandler( mainUI::OnImg2ImgMouseLeave ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_LEFT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgMouseDown ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_LEFT_UP, wxMouseEventHandler( mainUI::OnImg2ImgMouseUp ), NULL, this );

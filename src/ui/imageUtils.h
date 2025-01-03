@@ -32,6 +32,24 @@ namespace sd_gui_utils {
         return image.Scale(newWidth, newHeight);
     };
 
+    inline void ResizeImageToMaxSize(std::shared_ptr<wxImage> image, int maxWidth, int maxHeight) {
+        int newWidth  = image->GetWidth();
+        int newHeight = image->GetHeight();
+
+        if (newWidth > maxWidth || newHeight > maxHeight) {
+            double aspectRatio = static_cast<double>(newWidth) / static_cast<double>(newHeight);
+            if (aspectRatio > 1.0) {
+                newWidth  = maxWidth;
+                newHeight = static_cast<int>(maxWidth / aspectRatio);
+            } else {
+                newHeight = maxHeight;
+                newWidth  = static_cast<int>(maxHeight * aspectRatio);
+            }
+        }
+        wxImage tmpImage = image->Scale(newWidth, newHeight);
+        *image           = tmpImage;
+    };
+
     /**
      * Resize the given image to fit within the specified maximum width and
      * height while maintaining the image's aspect ratio. If the resized image
@@ -421,6 +439,38 @@ namespace sd_gui_utils {
         bitmap = wxBitmap(image);
         bitmap.SetScaleFactor(oldScale);
     }
+
+    inline void InvertWhiteAndTransparent(std::shared_ptr<wxBitmap> bitmap) {
+        if (!bitmap)
+            return;
+
+        auto oldScale = bitmap->GetScaleFactor();
+        wxImage image = bitmap->ConvertToImage();
+
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                unsigned char red   = image.GetRed(x, y);
+                unsigned char green = image.GetGreen(x, y);
+                unsigned char blue  = image.GetBlue(x, y);
+                unsigned char alpha = image.GetAlpha(x, y);
+
+                if (red == 255 && green == 255 && blue == 255 && alpha > 0) {
+                    image.SetAlpha(x, y, 0);  // Make it transparent
+                } else if (alpha < 255) {
+                    image.SetRGB(x, y, 255, 255, 255);  // Make it white
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+
+        *bitmap = wxBitmap(image);
+        bitmap->SetScaleFactor(oldScale);
+    }
+
     inline void convertMaskImageToTransparent(wxImage& image) {
         if (!image.HasAlpha()) {
             image.InitAlpha();

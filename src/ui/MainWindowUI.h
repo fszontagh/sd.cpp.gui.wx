@@ -92,6 +92,7 @@ protected:
     void OnImg2ImgMouseUp(wxMouseEvent& event) override;
     void OnImg2ImgMouseMotion(wxMouseEvent& event) override;
     void OnImg2ImgPaint(wxPaintEvent& event) override;
+    void OnImg2ImgEraseBackground(wxEraseEvent& event) override;
     // void OnImg2ImgMouseEnter(wxMouseEvent& event) override;
     void OnImg2ImgMouseLeave(wxMouseEvent& event) override;
     void OnImg2ImgMouseWheel(wxMouseEvent& event) override;
