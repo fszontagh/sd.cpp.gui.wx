@@ -10,7 +10,7 @@ BEGIN
     BEGIN
         BLOCK "040904b0" // English (US)
         BEGIN
-            VALUE "FileDescription", "{COMPONENT_NAME}\0"
+            VALUE "FileDescription", "${COMPONENT_NAME}\0"
             VALUE "InternalName", "${PROJECT_NAME}\0"
             VALUE "OriginalFilename", "${BNAME}.exe\0"
             VALUE "ProductName", "${COMPONENT_NAME}\0"
@@ -22,7 +22,7 @@ BEGIN
 
         BLOCK "040e04b0" // Hungarian (Hungary)
         BEGIN
-            VALUE "FileDescription", "{COMPONENT_NAME}\0"
+            VALUE "FileDescription", "${COMPONENT_NAME}\0"
             VALUE "InternalName", "${PROJECT_NAME}\0"
             VALUE "OriginalFilename", "${BNAME}.exe\0"
             VALUE "ProductName", "${COMPONENT_NAME}\0"

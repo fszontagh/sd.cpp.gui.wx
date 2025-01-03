@@ -1,9 +1,0 @@
-{
-    "version": 4,
-    "vendor": {
-        "conan": {}
-    },
-    "include": [
-        "C:\\sdbuild\\build\\generators\\CMakePresets.json"
-    ]
-}
