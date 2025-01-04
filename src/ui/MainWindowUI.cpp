@@ -972,7 +972,7 @@ std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const 
 
                 if (wxKey == "Exif.Photo.UserComment" || wxKey == "Exif.Image.UserComment" || wxKey == "Exif.Photo.Parameters") {
                     auto comment    = dynamic_cast<const Exiv2::CommentValue*>(&it->value());
-                    auto commentStr = comment->comment("WINDOWS-1256");
+                    auto commentStr = comment->comment("UTF-8");
                     commentStr.erase(std::remove(commentStr.begin(), commentStr.end(), '\0'), commentStr.end());
                     wxValue = wxString::FromAscii(commentStr.c_str(), commentStr.size());
                     if (!wxValue.empty()) {
@@ -5173,7 +5173,7 @@ void MainWindowUI::OnImg2ImgPaint(wxPaintEvent& event) {
     this->inpaintHelper->OnDcPaint(event);
 }
 void MainWindowUI::OnImg2ImgEraseBackground(wxEraseEvent& event) {
-        // do nothing, see https://wiki.wxwidgets.org/Flicker-Free_Drawing
+    // do nothing, see https://wiki.wxwidgets.org/Flicker-Free_Drawing
     this->inpaintHelper->OnEraseBackground(event);
 }
 

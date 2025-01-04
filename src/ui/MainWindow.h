@@ -218,44 +218,46 @@ class mainUI : public wxFrame
 		wxFilePickerCtrl* m_filePickerClipG;
 		wxStaticText* m_staticText5211;
 		wxFilePickerCtrl* m_filePickerT5XXL;
-		wxScrolledWindow* m_rightMainPanel;
-		wxPanel* m_panel24;
+		wxPanel* m_rightMainPanel;
+		wxScrolledWindow* m_rightMainPanelScroll;
 		wxStaticText* m_staticText161;
 		wxChoice* m_vae;
 		wxCheckBox* vaeOnCpu;
 		wxCheckBox* m_vae_tiling;
 		wxCheckBox* m_vae_decode_only;
-		wxStaticText* m_staticText231;
-		wxSpinCtrlDouble* m_cfg;
+		wxStaticLine* m_staticline7;
 		wxStaticText* m_staticText234;
-		wxSpinCtrl* m_clip_skip;
 		wxCheckBox* clipOnCpu;
+		wxSpinCtrl* m_clip_skip;
+		wxStaticLine* m_staticline9;
 		wxStaticText* m_staticText20;
 		wxChoice* m_taesd;
-		wxStaticText* m_staticText15;
-		wxSpinCtrl* m_batch_count;
-		wxStaticText* m_staticText163;
-		wxChoice* m_sampler;
-		wxStaticText* m_schedulertext;
-		wxChoice* m_scheduler;
+		wxStaticLine* m_staticline8;
 		wxStaticText* m_staticText233;
 		wxSpinCtrl* m_seed;
 		wxBitmapButton* m_random_seed;
-		wxStaticText* m_staticText14;
-		wxSpinCtrl* m_steps;
-		wxStaticText* m_staticText237;
-		wxSpinCtrl* m_width;
-		wxStaticText* m_staticText239;
-		wxSpinCtrl* m_height;
+		wxStaticText* m_staticText75;
 		wxBitmapButton* m_button7;
-		wxBitmapButton* m_save_preset;
-		wxBitmapButton* m_load_preset;
-		wxChoice* m_preset_list;
-		wxBitmapButton* m_delete_preset;
+		wxSpinCtrl* m_width;
+		wxSpinCtrl* m_height;
 		wxStaticText* m_staticText46;
 		wxChoice* m_sd15Res;
 		wxStaticText* m_staticText461;
 		wxChoice* m_sdXlres;
+		wxStaticLine* m_staticline31;
+		wxChoice* m_preset_list;
+		wxBitmapButton* m_load_preset;
+		wxBitmapButton* m_save_preset;
+		wxBitmapButton* m_delete_preset;
+		wxStaticLine* m_staticline3;
+		wxChoice* m_sampler;
+		wxChoice* m_scheduler;
+		wxStaticText* m_staticText14;
+		wxSpinCtrl* m_steps;
+		wxStaticText* m_staticText15;
+		wxSpinCtrl* m_batch_count;
+		wxStaticText* m_staticText231;
+		wxSpinCtrlDouble* m_cfg;
 		wxButton* m_queue;
 		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
@@ -336,17 +338,17 @@ class mainUI : public wxFrame
 		virtual void onVaeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onVAEOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnWHChange( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSelectPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onLoadPreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSavePreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onDeletePreset( wxCommandEvent& event ) { event.Skip(); }
+		virtual void onSamplerSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onGenerate( wxCommandEvent& event ) { event.Skip(); }
 
 
@@ -363,7 +365,6 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
 		wxPanel* m_fluxPanel;
-		wxBoxSizer* bSizer1108;
 
 		mainUI( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("sd.cpp.gui"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1024,768 ), long style = wxDEFAULT_FRAME_STYLE|wxBORDER_DEFAULT, const wxString& name = wxT("sd.cpp.gui") );
 
