@@ -34,7 +34,7 @@ protected:
     void onRandomGenerateButton(wxCommandEvent& event) override;
     void onSd15ResSelect(wxCommandEvent& event) override;
     void onSdXLResSelect(wxCommandEvent& event) override;
-    void OnWHChange(wxSpinEvent& event) override;
+    void OnWHChange(wxCommandEvent& event) override;
     void onResolutionSwap(wxCommandEvent& event) override;
     void onSavePreset(wxCommandEvent& event) override;
     void onLoadPreset(wxCommandEvent& event) override;
@@ -104,6 +104,7 @@ protected:
     void OnInpaintCleanMask(wxCommandEvent& event) override;
     void OnInpaintCanvasResizeApply(wxCommandEvent& event) override;
     void OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) override;
+    void OnInpaintZoomSliderScroll(wxScrollEvent& event) override;
 
 public:
     /** Constructor */

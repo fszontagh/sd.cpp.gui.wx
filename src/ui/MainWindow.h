@@ -42,6 +42,7 @@
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
+#include <wx/valgen.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -119,6 +120,7 @@ class mainUI : public wxFrame
 		wxStaticText* m_inpaintBrushSize;
 		wxSlider* m_inpaintBrushSizeSlider;
 		wxStaticText* m_inpaintZoom;
+		wxSlider* m_inpaintZoomSlider;
 		wxBitmapButton* m_inpaintSaveMask;
 		wxBitmapButton* m_inpaintInvert;
 		wxBitmapButton* m_inpaintResizeToSdSize;
@@ -238,11 +240,9 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_random_seed;
 		wxStaticText* m_staticText75;
 		wxBitmapButton* m_button7;
-		wxSpinCtrl* m_width;
-		wxSpinCtrl* m_height;
-		wxStaticText* m_staticText46;
+		wxTextCtrl* m_width;
+		wxTextCtrl* m_height;
 		wxChoice* m_sd15Res;
-		wxStaticText* m_staticText461;
 		wxChoice* m_sdXlres;
 		wxStaticLine* m_staticline31;
 		wxChoice* m_preset_list;
@@ -286,6 +286,7 @@ class mainUI : public wxFrame
 		virtual void OnControlnetImageDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void Onimg2imgDropFile( wxDropFilesEvent& event ) { event.Skip(); }
 		virtual void OnInpaintBrushSizeSliderScroll( wxScrollEvent& event ) { event.Skip(); }
+		virtual void OnInpaintZoomSliderScroll( wxScrollEvent& event ) { event.Skip(); }
 		virtual void OnInpaintSaveMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintInvertMask( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnInpaintResizeImage( wxCommandEvent& event ) { event.Skip(); }
@@ -340,7 +341,6 @@ class mainUI : public wxFrame
 		virtual void onClipOnCpu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onRandomGenerateButton( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onResolutionSwap( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnWHChange( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnWHChange( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSd15ResSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSdXLResSelect( wxCommandEvent& event ) { event.Skip(); }

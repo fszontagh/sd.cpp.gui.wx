@@ -469,7 +469,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1030;
 	bSizer1030 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush size:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintBrushSize->Wrap( -1 );
 	m_inpaintBrushSize->SetMinSize( wxSize( 100,-1 ) );
 
@@ -478,11 +478,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintBrushSizeSlider = new wxSlider( m_panel26, wxID_ANY, 10, 1, 40, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
 	bSizer1030->Add( m_inpaintBrushSizeSlider, 0, wxALL, 5 );
 
-	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom: 1x"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintZoom->Wrap( -1 );
 	m_inpaintZoom->SetMinSize( wxSize( 100,-1 ) );
 
 	bSizer1030->Add( m_inpaintZoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_inpaintZoomSlider = new wxSlider( m_panel26, wxID_ANY, 100, 10, 190, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
+	bSizer1030->Add( m_inpaintZoomSlider, 0, wxALL, 5 );
 
 	m_inpaintSaveMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
 
@@ -1301,8 +1304,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer1031->Add( m_staticText20, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	wxArrayString m_taesdChoices;
-	m_taesd = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), m_taesdChoices, 0 );
+	wxString m_taesdChoices[] = { _("Not selected") };
+	int m_taesdNChoices = sizeof( m_taesdChoices ) / sizeof( wxString );
+	m_taesd = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), m_taesdNChoices, m_taesdChoices, 0 );
 	m_taesd->SetSelection( 0 );
 	m_taesd->Enable( false );
 
@@ -1352,22 +1356,32 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer10011;
 	bSizer10011 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_width = new wxSpinCtrl( m_rightMainPanelScroll, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_RIGHT|wxBORDER_DEFAULT, 256, 2048, 512 );
-	bSizer10011->Add( m_width, 1, wxEXPAND|wxALL, 1 );
+	m_width = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_DONTWRAP|wxTE_NO_VSCROLL );
+	#ifdef __WXGTK__
+	if ( !m_width->HasFlag( wxTE_MULTILINE ) )
+	{
+	m_width->SetMaxLength( 6 );
+	}
+	#else
+	m_width->SetMaxLength( 6 );
+	#endif
+	bSizer10011->Add( m_width, 1, wxALL|wxEXPAND, 5 );
 
-	m_height = new wxSpinCtrl( m_rightMainPanelScroll, wxID_ANY, wxT("512"), wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_RIGHT|wxBORDER_DEFAULT, 256, 2048, 512 );
-	bSizer10011->Add( m_height, 1, wxEXPAND|wxALL, 1 );
+	m_height = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_DONTWRAP|wxTE_NO_VSCROLL );
+	#ifdef __WXGTK__
+	if ( !m_height->HasFlag( wxTE_MULTILINE ) )
+	{
+	m_height->SetMaxLength( 6 );
+	}
+	#else
+	m_height->SetMaxLength( 6 );
+	#endif
+	bSizer10011->Add( m_height, 1, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer10011, 0, wxEXPAND|wxALL, 2 );
 
-	m_staticText46 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("Low res.:"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	m_staticText46->Wrap( -1 );
-	m_staticText46->SetToolTip( _("Lower resolutions for SD1.x") );
-
-	bSizer1041->Add( m_staticText46, 0, wxALL|wxEXPAND, 5 );
-
-	wxString m_sd15ResChoices[] = { _("Select one"), _("640x384"), _("512x512"), _("512x768") };
+	wxString m_sd15ResChoices[] = { _("Small resolutions"), _("640x384"), _("512x512"), _("512x768") };
 	int m_sd15ResNChoices = sizeof( m_sd15ResChoices ) / sizeof( wxString );
 	m_sd15Res = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxSize( 160,-1 ), m_sd15ResNChoices, m_sd15ResChoices, 0 );
 	m_sd15Res->SetSelection( 0 );
@@ -1375,13 +1389,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer1041->Add( m_sd15Res, 0, wxALL|wxEXPAND, 5 );
 
-	m_staticText461 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("High Res.:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
-	m_staticText461->Wrap( -1 );
-	m_staticText461->SetToolTip( _("Higher resolutions for FLUX/SDXL/SD3.5") );
-
-	bSizer1041->Add( m_staticText461, 0, wxALL|wxEXPAND, 5 );
-
-	wxString m_sdXlresChoices[] = { _("Select one"), _("1024x1024"), _("1152x896"), _("1216x832"), _("1344x768"), _("1536x640") };
+	wxString m_sdXlresChoices[] = { _("Large resolutions"), _("1024x1024"), _("1152x896"), _("1216x832"), _("1344x768"), _("1536x640") };
 	int m_sdXlresNChoices = sizeof( m_sdXlresChoices ) / sizeof( wxString );
 	m_sdXlres = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxSize( 160,-1 ), m_sdXlresNChoices, m_sdXlresChoices, 0 );
 	m_sdXlres->SetSelection( 0 );
@@ -1392,8 +1400,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticline31 = new wxStaticLine( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	bSizer1041->Add( m_staticline31, 0, wxEXPAND | wxALL, 5 );
 
-	wxArrayString m_preset_listChoices;
-	m_preset_list = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_preset_listChoices, 0 );
+	wxString m_preset_listChoices[] = { _("No presets") };
+	int m_preset_listNChoices = sizeof( m_preset_listChoices ) / sizeof( wxString );
+	m_preset_list = new wxChoice( m_rightMainPanelScroll, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_preset_listNChoices, m_preset_listChoices, 0 );
 	m_preset_list->SetSelection( 0 );
 	m_preset_list->Enable( false );
 
@@ -1569,6 +1578,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintBrushSizeSlider->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_TOP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Connect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
 	m_inpaintSaveMask->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
@@ -1634,9 +1652,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	clipOnCpu->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );
 	m_random_seed->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
 	m_button7->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onResolutionSwap ), NULL, this );
-	m_width->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_width->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
-	m_height->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_height->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_sd15Res->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
 	m_sdXlres->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );
@@ -1684,6 +1700,15 @@ mainUI::~mainUI()
 	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
 	m_inpaintBrushSizeSlider->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintBrushSizeSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_TOP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_BOTTOM, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_LINEUP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_LINEDOWN, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_PAGEUP, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_PAGEDOWN, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_THUMBTRACK, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_THUMBRELEASE, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
+	m_inpaintZoomSlider->Disconnect( wxEVT_SCROLL_CHANGED, wxScrollEventHandler( mainUI::OnInpaintZoomSliderScroll ), NULL, this );
 	m_inpaintSaveMask->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintSaveMask ), NULL, this );
 	m_inpaintInvert->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintInvertMask ), NULL, this );
 	m_inpaintResizeToSdSize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintResizeImage ), NULL, this );
@@ -1749,9 +1774,7 @@ mainUI::~mainUI()
 	clipOnCpu->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( mainUI::onClipOnCpu ), NULL, this );
 	m_random_seed->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onRandomGenerateButton ), NULL, this );
 	m_button7->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onResolutionSwap ), NULL, this );
-	m_width->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_width->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
-	m_height->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_height->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnWHChange ), NULL, this );
 	m_sd15Res->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSd15ResSelect ), NULL, this );
 	m_sdXlres->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::onSdXLResSelect ), NULL, this );

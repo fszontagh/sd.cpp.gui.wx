@@ -349,10 +349,10 @@ void MainWindowUI::onSd15ResSelect(wxCommandEvent& event) {
     if (index < 1) {
         return;
     }
-    const auto text = this->m_sd15Res->GetString(index).utf8_string();
+    const auto text = this->m_sd15Res->GetString(index);
     size_t pos      = text.find('x');
-    int w           = std::stoi(text.substr(0, pos));
-    int h           = std::stoi(text.substr(pos + 1));
+    auto w          = text.substr(0, pos);
+    auto h          = text.substr(pos + 1);
     this->m_width->SetValue(w);
     this->m_height->SetValue(h);
 }
@@ -362,17 +362,18 @@ void MainWindowUI::onSdXLResSelect(wxCommandEvent& event) {
     if (index < 1) {
         return;
     }
-    const auto text = this->m_sdXlres->GetString(index).utf8_string();
+    const auto text = this->m_sdXlres->GetString(index);
     size_t pos      = text.find('x');
-    int w           = std::stoi(text.substr(0, pos));
-    int h           = std::stoi(text.substr(pos + 1));
+    auto w          = text.substr(0, pos);
+    auto h          = text.substr(pos + 1);
     this->m_width->SetValue(w);
     this->m_height->SetValue(h);
 }
 
-void MainWindowUI::OnWHChange(wxSpinEvent& event) {
-    int w = this->m_width->GetValue();
-    int h = this->m_height->GetValue();
+void MainWindowUI::OnWHChange(wxCommandEvent& event) {
+    int w, h;
+    this->m_width->GetValue().ToInt(&w);
+    this->m_height->GetValue().ToInt(&h);
 
     this->init_width  = w;
     this->init_height = h;
@@ -1300,9 +1301,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     }
 
     item->params.batch_count = this->m_batch_count->GetValue();
-    item->params.width       = this->m_width->GetValue();
-    item->params.height      = this->m_height->GetValue();
-    item->params.vae_tiling  = this->m_vae_tiling->GetValue();
+    this->m_width->GetValue().ToInt(&item->params.width);
+    this->m_height->GetValue().ToInt(&item->params.height);
+    item->params.vae_tiling = this->m_vae_tiling->GetValue();
 
     item->mode = type;
 
@@ -1676,8 +1677,8 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
         // preset.seed = this->m_seed->GetValue();
         preset.clip_skip = this->m_clip_skip->GetValue();
         preset.steps     = this->m_steps->GetValue();
-        preset.width     = this->m_width->GetValue();
-        preset.height    = this->m_height->GetValue();
+        this->m_width->GetValue().ToInt(&preset.width);
+        this->m_height->GetValue().ToInt(&preset.height);
 
         for (auto sampler : sd_gui_utils::samplerUiName) {
             if (this->m_sampler->GetStringSelection() == sampler.second) {
@@ -1725,8 +1726,8 @@ void MainWindowUI::onLoadPreset(wxCommandEvent& event) {
             // when the width || height input is disabled, do not modify it (eg.:
             // controlnet works...)
             if (this->m_width->IsEnabled() || this->m_height->IsEnabled()) {
-                this->m_width->SetValue(preset.second.width);
-                this->m_height->SetValue(preset.second.height);
+                this->m_width->SetValue(wxString::Format(wxT("%i"), preset.second.width));
+                this->m_height->SetValue(wxString::Format(wxT("%i"), preset.second.height));
             }
             this->SetSamplerByType(preset.second.sampler);
             this->SetSchedulerByType(preset.second.scheduler);
@@ -1770,8 +1771,8 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
         return;
     }
     this->m_seed->SetValue(item.params.seed);
-    this->m_width->SetValue(item.params.width);
-    this->m_height->SetValue(item.params.height);
+    this->m_width->SetValue(wxString::Format(wxT("%i"), item.params.width));
+    this->m_height->SetValue(wxString::Format(wxT("%i"), item.params.height));
     this->m_steps->SetValue(item.params.sample_steps);
     this->m_clip_skip->SetValue(item.params.clip_skip);
     this->m_controlnetStrength->SetValue(item.params.control_strength);
@@ -2087,8 +2088,8 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                                     int width, height;
                                     std::istringstream(part1) >> width;
                                     std::istringstream(part2) >> height;
-                                    this->m_width->SetValue(width);
-                                    this->m_height->SetValue(height);
+                                    this->m_width->SetValue(wxString::Format(wxT("%i"), width));
+                                    this->m_height->SetValue(wxString::Format(wxT("%i"), height));
                                 }
                             }
                         } break;
@@ -2711,7 +2712,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
     switch (type) {
         case sd_gui_utils::DirTypes::VAE: {
             this->m_vae->Clear();
-            this->m_vae->Append(_("-none-"));
+            this->m_vae->Append(_("Select one"));
             this->m_vae->Select(0);
             basepath = this->mapp->cfg->vae;
         } break;
@@ -2720,27 +2721,27 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         } break;
         case sd_gui_utils::DirTypes::CHECKPOINT: {
             this->m_model->Clear();
-            this->m_model->Append(_("-none-"));
+            this->m_model->Append(_("Select one"));
             this->m_model->Select(0);
             basepath = this->mapp->cfg->model;
         } break;
         case sd_gui_utils::DirTypes::PRESETS: {
             this->Presets.clear();
             this->m_preset_list->Clear();
-            this->m_preset_list->Append(_("-none-"));
+            this->m_preset_list->Append(_("Not selected"));
             this->m_preset_list->Select(0);
             basepath = this->mapp->cfg->presets;
         } break;
         case sd_gui_utils::DirTypes::PROMPT_TEMPLATES: {
             this->PromptTemplates.clear();
             this->m_promptPresets->Clear();
-            this->m_promptPresets->Append(_("-none-"));
+            this->m_promptPresets->Append(_("Not selected"));
             this->m_promptPresets->Select(0);
             basepath = this->mapp->cfg->prompt_templates;
         } break;
         case sd_gui_utils::DirTypes::TAESD: {
             this->m_taesd->Clear();
-            this->m_taesd->Append(_("-none-"));
+            this->m_taesd->Append(_("Select one"));
             this->m_taesd->Select(0);
             basepath = this->mapp->cfg->taesd;
         } break;
@@ -2749,13 +2750,13 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         } break;
         case sd_gui_utils::DirTypes::CONTROLNET: {
             this->m_controlnetModels->Clear();
-            this->m_controlnetModels->Append(_("-none-"));
+            this->m_controlnetModels->Append(_("Not selected"));
             this->m_controlnetModels->Select(0);
             basepath = this->mapp->cfg->controlnet;
         } break;
         case sd_gui_utils::DirTypes::ESRGAN: {
             this->m_upscaler_model->Clear();
-            this->m_upscaler_model->Append(_("-none-"));
+            this->m_upscaler_model->Append(_("Not selected"));
             this->m_upscaler_model->Select(0);
             basepath = this->mapp->cfg->esrgan;
         } break;
@@ -2975,11 +2976,11 @@ void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString
         // get the image resolution
         if (item.first.Lower().Contains("size")) {
             size_t pos = item.second.find("x");
-            std::string w, h;
+            wxString w, h;
             w = item.second.substr(0, pos);
             h = item.second.substr(pos + 1);
-            this->m_width->SetValue(std::atoi(w.c_str()));
-            this->m_height->SetValue(std::atoi(h.c_str()));
+            this->m_width->SetValue(w);
+            this->m_height->SetValue(h);
         }
 
         if (item.first == "steps") {
@@ -3056,12 +3057,13 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file, bool forceResolution
     }
     wxImage img;
     if (img.LoadFile(file)) {
-        auto origWidth  = this->m_width->GetValue();
-        auto origHeight = this->m_height->GetValue();
+        int origWidth = 512, origHeight = 512;
+        this->m_width->GetValue().ToInt(&origWidth);
+        this->m_height->GetValue().ToInt(&origHeight);
 
         if (forceResolutions) {
-            this->m_width->SetValue(img.GetWidth());
-            this->m_height->SetValue(img.GetHeight());
+            this->m_width->SetValue(wxString::Format(wxT("%i"), img.GetWidth()));
+            this->m_height->SetValue(wxString::Format(wxT("%i"), img.GetHeight()));
         }
 
         if (img.GetWidth() > origWidth || img.GetHeight() > origHeight) {
@@ -4355,8 +4357,8 @@ void MainWindowUI::onControlnetImageOpen(const wxString& file) {
         this->m_controlnetImagePreview->SetSize(origSize);
         this->m_controlnetImagePreviewButton->Enable();
         this->m_controlnetImageDelete->Enable();
-        this->m_width->SetValue(img.GetWidth());
-        this->m_height->SetValue(img.GetHeight());
+        this->m_width->SetValue(wxString::Format(wxT("%i"), img.GetWidth()));
+        this->m_height->SetValue(wxString::Format(wxT("%i"), img.GetHeight()));
         // can not change the outpt images resolution
         this->m_width->Disable();
         this->m_height->Disable();
@@ -5006,14 +5008,22 @@ void MainWindowUI::OnInpaintResizeImage(wxCommandEvent& event) {
         return;
     }
 
-    int targetWidth  = this->m_width->GetValue();
-    int targetHeight = this->m_height->GetValue();
-    auto resized     = this->inpaintHelper->OnResizeOriginalImage(targetWidth, targetHeight);
+    int targetWidth, targetHeight;
+
+    this->m_width->GetValue().ToInt(&targetWidth);
+    this->m_height->GetValue().ToInt(&targetHeight);
+    auto resized = this->inpaintHelper->OnResizeOriginalImage(targetWidth, targetHeight);
     this->m_inpaintImageResolution->SetLabel(wxString::Format("%d x %d", resized.GetWidth(), resized.GetHeight()));
-    this->m_width->SetValue(resized.GetWidth());
-    this->m_height->SetValue(resized.GetHeight());
+    this->m_width->SetValue(wxString::Format(wxT("%i"), resized.GetWidth()));
+    this->m_height->SetValue(wxString::Format(wxT("%i"), resized.GetHeight()));
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
-    this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
+    this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
+
+    if (this->inpaintHelper->inPaintCanvasEmpty()) {
+        this->m_inpaintClearMask->Disable();
+    } else {
+        this->m_inpaintClearMask->Enable();
+    }
 }
 
 void MainWindowUI::OnInpaintInvertMask(wxCommandEvent& event) {
@@ -5022,6 +5032,11 @@ void MainWindowUI::OnInpaintInvertMask(wxCommandEvent& event) {
         return;
     }
     this->inpaintHelper->OnInvertMask(event);
+    if (this->inpaintHelper->inPaintCanvasEmpty()) {
+        this->m_inpaintClearMask->Disable();
+    } else {
+        this->m_inpaintClearMask->Enable();
+    }
 }
 void MainWindowUI::OnImg2ImgMouseDown(wxMouseEvent& event) {
     if (!this->inpaintHelper->inPaintImageLoaded()) {
@@ -5029,7 +5044,6 @@ void MainWindowUI::OnImg2ImgMouseDown(wxMouseEvent& event) {
         return;
     }
     this->inpaintHelper->OnMouseLeftDown(event);
-    this->writeLog("Left mouse down", true, true);
 }
 
 void MainWindowUI::OnImg2ImgMouseUp(wxMouseEvent& event) {
@@ -5038,7 +5052,6 @@ void MainWindowUI::OnImg2ImgMouseUp(wxMouseEvent& event) {
         return;
     }
     this->inpaintHelper->OnMouseLeftUp(event);
-    this->writeLog("Left mouse Up", true, true);
 }
 void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
     if (!this->inpaintHelper->inPaintImageLoaded()) {
@@ -5046,7 +5059,6 @@ void MainWindowUI::OnImg2ImgRMouseDown(wxMouseEvent& event) {
         return;
     }
     this->inpaintHelper->OnMouseRightDown(event);
-    this->writeLog("Right mouse down", true, true);
 }
 void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
     if (!this->inpaintHelper->inPaintImageLoaded()) {
@@ -5054,7 +5066,6 @@ void MainWindowUI::OnImg2ImgRMouseUp(wxMouseEvent& event) {
         return;
     }
     this->inpaintHelper->OnMouseRightUp(event);
-    this->writeLog("Right mouse up", true, true);
 }
 void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
     if (this->inpaintHelper->inPaintImageLoaded() == false) {
@@ -5077,13 +5088,16 @@ void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
     this->m_inpaintCanvasBottom->SetValue(wxString::FromDouble(enlragedSizes.bottom));
     this->m_inpaintCanvasLeft->SetValue(wxString::FromDouble(enlragedSizes.left));
 
-    this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
+    this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
-    this->m_width->SetValue(this->inpaintHelper->GetOutPaintedSize().GetWidth());
-    this->m_height->SetValue(this->inpaintHelper->GetOutPaintedSize().GetHeight());
+    this->m_width->SetValue(wxString::Format(wxT("%i"), this->inpaintHelper->GetOutPaintedSize().GetWidth()));
+    this->m_height->SetValue(wxString::Format(wxT("%i"), this->inpaintHelper->GetOutPaintedSize().GetHeight()));
 }
 void MainWindowUI::OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) {
     this->inpaintHelper->SetCurrentBrushSize(event.GetPosition());
+}
+void MainWindowUI::OnInpaintZoomSliderScroll(wxScrollEvent& event) {
+    this->inpaintHelper->SetZoomFactor(event.GetPosition() / 100.0);
 }
 void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
     this->m_inpaintClearMask->Disable();
@@ -5146,13 +5160,7 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
     }
 
     sd_gui_utils::convertMaskImageToTransparent(image);
-
-    auto oldScale       = this->inpaintBitMap.GetScaleFactor();
-    this->inpaintBitMap = wxBitmap(image);
-    this->inpaintBitMap.SetScaleFactor(oldScale);
-    this->m_img2imPanel->Refresh();
-    this->m_inpaintClearMask->Enable();
-    this->inpaintEmpty = false;
+    this->inpaintHelper->OnMaskFileOpen(image);
 }
 
 void MainWindowUI::OnImg2ImgMouseMotion(wxMouseEvent& event) {
@@ -5190,6 +5198,7 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
 
     this->inpaintHelper->OnMouseWheel(event, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
-    this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
+    // this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
+    this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
 }
