@@ -485,6 +485,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1030->Add( m_inpaintZoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintZoomSlider = new wxSlider( m_panel26, wxID_ANY, 100, 25, 200, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
+	m_inpaintZoomSlider->Enable( false );
+
 	bSizer1030->Add( m_inpaintZoomSlider, 0, wxALL, 5 );
 
 	m_inpaintSaveMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
