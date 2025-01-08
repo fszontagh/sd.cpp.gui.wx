@@ -1066,7 +1066,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     if (type == QM::GenerationMode::TXT2IMG || type == QM::GenerationMode::IMG2IMG) {
         if (diffusionModel.empty() == false) {
-            item->model = this->m_filePickerDiffusionModel->GetFileName().GetName().utf8_string();
+            item->model = wxFileName(item->params.diffusion_model_path).GetFullName();
         }
 
         auto slgscale = this->slgScale->GetValue();
@@ -1498,6 +1498,7 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
         this->treeListManager->ChangeText(modelInfo->path, modelInfo->name, 0);
         modelInfo->tags = modelInfo->tags & ~sd_gui_utils::ModelInfoTag::Favorite;
     }
+    this->treeListManager->SelectItemByModelPath(modelInfo->path);
     this->ModelManager->UpdateInfo(modelInfo);
     if (this->mapp->cfg->favorite_models_only) {
         // check if in it the m_model, i = 0 is placeholder
