@@ -148,11 +148,46 @@ namespace sd_gui_utils {
         return resizedImage;
     };
     struct wxEnlargeImageSizes {
-        int top;
-        int right;
-        int bottom;
-        int left;
+        int top    = 0;
+        int right  = 0;
+        int bottom = 0;
+        int left   = 0;
+        void ResetSizes() {
+            top    = 0;
+            right  = 0;
+            bottom = 0;
+            left   = 0;
+        }
     };
+
+    inline void CropOrFillBitmap(std::shared_ptr<wxBitmap> bitmap, const wxEnlargeImageSizes& enlargeSizes, wxColour fillColor) {
+        if (bitmap == nullptr || !bitmap->IsOk()) {
+            return;
+        }
+
+        // Convert wxBitmap to wxImage for manipulation
+        wxImage image = bitmap->ConvertToImage();
+
+        int originalWidth  = image.GetWidth();
+        int originalHeight = image.GetHeight();
+
+        int newWidth  = originalWidth + enlargeSizes.left + enlargeSizes.right;
+        int newHeight = originalHeight + enlargeSizes.top + enlargeSizes.bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        // Fill the new image with the fill color
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = enlargeSizes.left + (newWidth - originalWidth - enlargeSizes.left - enlargeSizes.right) / 2;
+        int yOffset = enlargeSizes.top + (newHeight - originalHeight - enlargeSizes.top - enlargeSizes.bottom) / 2;
+
+        // Paste the original image onto the new image
+        newImage.Paste(image, xOffset, yOffset);
+
+        // Convert the modified wxImage back to wxBitmap
+        *bitmap = wxBitmap(newImage);
+    }
     inline void CropOrFillImage(std::shared_ptr<wxImage> image, const wxEnlargeImageSizes& enlargeSizes, wxColour fillColor) {
         if (image == nullptr) {
             return;

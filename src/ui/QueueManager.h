@@ -99,7 +99,10 @@ namespace QM {
         /// @brief The image is a tmp image, deletable
         TMP = 1 << 4,
         /// @brief The original image, if in img2img the initial image is resized to outpaint
-        ORIGINAL = 1 << 5,
+        ORIGINAL      = 1 << 5,
+        MASK_OUTPAINT = 1 << 6,
+        MASK_INPAINT  = 1 << 7,
+        MASK_USED     = 1 << 8,
         UNKNOWN
     };
     inline QM::QueueItemImageType operator|(QM::QueueItemImageType lhs, QM::QueueItemImageType rhs) {

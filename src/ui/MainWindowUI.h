@@ -97,6 +97,7 @@ protected:
     void OnImg2ImgMouseLeave(wxMouseEvent& event) override;
     void OnImg2ImgMouseWheel(wxMouseEvent& event) override;
     void OnInpaintSaveMask(wxCommandEvent& event) override;
+    void OnImg2ImgSize(wxSizeEvent& event) override;
     void OnInpaintResizeImage(wxCommandEvent& event) override;
     void OnInpaintInvertMask(wxCommandEvent& event) override;
     void OnInpaintMaskOpen(wxFileDirPickerEvent& event) override;
@@ -161,32 +162,6 @@ private:
     wxString extprocessCommand;
     wxString extProcessParam;
     wxString extprocessLastError;
-
-    sd_gui_utils::wxPosition onImg2ImgPaintLastPos;
-    bool onImg2ImgPaintIsDrawing;
-    bool inpaintImageLoaded = false;
-    // the bitmap which is painted by user
-    wxBitmap inpaintBitMap;
-    // this is a simple canvas which store the image and the painter canvas too
-    wxBitmap inpaintCanvas;
-    // this is a displayed red bordered canvas
-    wxBitmap inpaintCanvasBorder;
-    // the original image which is loaded
-    wxImage inpaintOrigImage;
-    // the original image which is zoomed, only this showed to the user
-    wxImage inpaintZoomedImage;
-    // the current zoom factor
-    double inpaintZoomFactor = 1.0;
-    // the zoom factor step
-    const double inpaintZoomFactorStep = 0.1;
-    // the brush size
-    int inpaintBrushSize = 10;
-    // the size of the original image
-    wxSize inpaintOrigImageSize;
-    // the size of the outpainted image
-    wxSize inpaintOutPaintSize;
-    // check if the user is painted into the canvas
-    bool inpaintEmpty = true;
 
     // std::ofstream logfile;
     wxFile logfile;

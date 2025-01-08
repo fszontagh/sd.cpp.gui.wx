@@ -60,6 +60,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->loadSchedulerList();
     this->loadSamplerList();
     this->loadTypeList();
+
     // reload config, set up checkboxes from it
     const auto diffusion_flash_attn = this->mapp->config->ReadBool("/diffusion_flash_attn", this->diffusionFlashAttn->GetValue());
     const auto clip_on_cpu          = this->mapp->config->ReadBool("/clip_on_cpu", this->clipOnCpu->GetValue());
@@ -94,49 +95,11 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
                                                                              this->m_inpaintBrushSizeSlider->GetMax(),
                                                                              this->m_inpaintBrushSizeSlider->GetValue()));
 
+    this->m_inpaintZoomSlider->SetLineSize(this->inpaintHelper->GetZoomStep());
+
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
-
-    // prepare paint
-    this->m_img2imPanel->SetBackgroundStyle(wxBG_STYLE_PAINT);
-
-    wxImage inpaintImage(512, 512);
-    inpaintImage.InitAlpha();
-
-    unsigned char* alpha = inpaintImage.GetAlpha();
-    unsigned char* data  = inpaintImage.GetData();
-    for (int i = 0; i < 512 * 512; ++i) {
-        alpha[i]        = 0;    // fully transparent
-        data[i * 3]     = 255;  // R (white)
-        data[i * 3 + 1] = 255;  // G
-        data[i * 3 + 2] = 255;  // B
-    }
-    inpaintImage.SetMask(false);
-
-    this->inpaintBitMap = wxBitmap(inpaintImage);
-    wxMemoryDC dc(this->inpaintBitMap);
-    dc.SetBackground(*wxTRANSPARENT_BRUSH);
-    dc.Clear();
-
-    this->inpaintCanvas = wxBitmap(inpaintImage);
-    wxMemoryDC dc2(this->inpaintCanvas);
-    dc2.SetBackground(*wxWHITE_BRUSH);
-    dc2.Clear();
-
-    wxImage canvasBorder = wxImage(this->inpaintCanvas.GetWidth() + 5, this->inpaintCanvas.GetHeight() + 5);
-    canvasBorder.SetMaskColour(0, 0, 0);
-    canvasBorder.InitAlpha();
-    canvasBorder.SetMask(false);
-    this->inpaintCanvasBorder = wxBitmap(canvasBorder);
-
-    wxMemoryDC dc3(this->inpaintCanvasBorder);
-    dc3.SetBackground(*wxRED_BRUSH);
-    dc3.Clear();
-
-    this->inpaintOrigImage   = wxImage(this->m_width->GetValue(), this->m_height->GetValue());
-    this->inpaintZoomedImage = wxImage(this->m_width->GetValue(), this->m_height->GetValue());
-    // prepare paint
 
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
@@ -1167,102 +1130,87 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.prompt          = this->m_prompt->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt->GetValue().utf8_string();
 
-        if (this->m_promptPresets->GetSelection() > 0) {
-            for (const auto& preset : this->PromptTemplates) {
-                if (preset.second.name == this->m_promptPresets->GetStringSelection().utf8_string()) {
-                    if (preset.second.prompt.empty() == false) {
-                        wxString _prompt      = wxString::FromUTF8Unchecked(preset.second.prompt);
-                        item->original_prompt = item->params.prompt;
-                        if (_prompt.Contains("{prompt}")) {
-                            _prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.prompt));
-                            item->params.prompt = _prompt.utf8_string();
-                        } else {
-                            item->params.prompt = item->params.prompt + " " + preset.second.prompt;
-                        }
-                    }
-
-                    if (preset.second.negative_prompt.empty() == false) {
-                        wxString _neg_prompt           = wxString::FromUTF8Unchecked(preset.second.negative_prompt);
-                        item->original_negative_prompt = item->params.negative_prompt;
-                        if (_neg_prompt.Contains("{prompt}")) {
-                            _neg_prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.negative_prompt));
-                            item->params.negative_prompt = _neg_prompt.utf8_string();
-                        } else {
-                            item->params.negative_prompt = item->params.negative_prompt + " " + preset.second.negative_prompt;
-                        }
-                    }
-                }
-            }
-        }
-
         if (this->m_controlnetModels->GetSelection() > 0) {
             item->params.control_net_cpu = this->cnOnCpu->GetValue();
         }
     }
-    if (type == QM::GenerationMode::IMG2IMG) {
-        item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
-        item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
-        auto maskImage               = this->inpaintHelper->GetMaskImage();
-        // get the mask if loaded
-        if (this->inpaintHelper->inPaintImageLoaded() == true) {
-            // if the canvas is painted, we need to send to the extprocess otherwise exptrocess create an empty image
-            // if the image is not outpainted, we save the painted canvas withour resize
-            if (this->inpaintHelper->inPaintCanvasEmpty() == false && this->inpaintHelper->isOutPainted() == false) {
-                // load the inpainted canvas content as image
-
-                wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
-                if (maskImage.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
-                    this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
-                } else {
-                    this->writeLog(wxString::Format(_("Saved mask image to %s"), file.GetAbsolutePath()), true);
+    // prompt template into txt2img and img2img too
+    if (this->m_promptPresets->GetSelection() > 0) {
+        for (const auto& preset : this->PromptTemplates) {
+            if (preset.second.name == this->m_promptPresets->GetStringSelection().utf8_string()) {
+                if (preset.second.prompt.empty() == false) {
+                    wxString _prompt      = wxString::FromUTF8Unchecked(preset.second.prompt);
+                    item->original_prompt = item->params.prompt;
+                    if (_prompt.Contains("{prompt}")) {
+                        _prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.prompt));
+                        item->params.prompt = _prompt.utf8_string();
+                    } else {
+                        item->params.prompt = item->params.prompt + " " + preset.second.prompt;
+                    }
                 }
 
-                item->mask_image = file.GetAbsolutePath();
-                // if (this->mapp->cfg->save_all_image == true) {
-                item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK | QM::QueueItemImageType::TMP}));
-                //}
-            }
-
-            // this is an 'outpaint' if the generation size and the loaded image's size differ, we need to store the larger image as initial image
-            if (this->inpaintHelper->isOutPainted() == true) {
-                wxFileName initial_image(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_%d_%dx%d", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
-                initial_image.SetExt("png");
-                wxImage resized  = wxImage(this->inpaintOrigImage);
-                int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
-                int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
-                int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
-                int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
-                sd_gui_utils::CropOrFillImage(resized, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
-
-                if (resized.SaveFile(initial_image.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
-                    this->writeLog(wxString::Format(_("Failed to save initial image to %s"), initial_image.GetAbsolutePath()), true);
-                } else {
-                    this->writeLog(wxString::Format(_("Saved initial tmp image to %s %dx%d"), initial_image.GetAbsolutePath(), resized.GetWidth(), resized.GetHeight()), true);
-                }
-                item->initial_image = initial_image.GetAbsolutePath();
-                item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
-                // resize and save the mask
-                sd_gui_utils::blendImageOnBlackBackground(maskImage);
-                sd_gui_utils::CropOrFillImage(maskImage, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(255, 255, 255));
-
-                wxFileName file(this->mapp->cfg->tmppath + wxFileName::GetPathSeparator() + wxString::Format("mask_%d.png", this->qmanager->GetNextId()));
-                if (maskImage.SaveFile(file.GetAbsolutePath(), wxBITMAP_TYPE_PNG) == false) {
-                    this->writeLog(wxString::Format(_("Failed to save mask image to %s"), file.GetAbsolutePath()), true);
-                } else {
-                    this->writeLog(wxString::Format(_("Saved mask tmp image to %s %dx%d"), file.GetAbsolutePath(), maskImage.GetWidth(), maskImage.GetHeight()), true);
-                }
-
-                item->mask_image = file.GetAbsolutePath();
-                // if (this->mapp->cfg->save_all_image == true) {
-                item->images.emplace_back(QM::QueueItemImage({file.GetAbsolutePath(), QM::QueueItemImageType::MASK | QM::QueueItemImageType::TMP}));
-                auto openedImagePath = this->m_img2imgOpen->GetPath();
-                if (openedImagePath.empty() == false) {
-                    auto openedImage = wxFileName(openedImagePath);
-                    if (openedImage.FileExists()) {
-                        item->images.emplace_back(QM::QueueItemImage({openedImage.GetAbsolutePath(), QM::QueueItemImageType::ORIGINAL | QM::QueueItemImageType::TMP}));
+                if (preset.second.negative_prompt.empty() == false) {
+                    wxString _neg_prompt           = wxString::FromUTF8Unchecked(preset.second.negative_prompt);
+                    item->original_negative_prompt = item->params.negative_prompt;
+                    if (_neg_prompt.Contains("{prompt}")) {
+                        _neg_prompt.Replace("{prompt}", wxString::FromUTF8Unchecked(item->params.negative_prompt));
+                        item->params.negative_prompt = _neg_prompt.utf8_string();
+                    } else {
+                        item->params.negative_prompt = item->params.negative_prompt + " " + preset.second.negative_prompt;
                     }
                 }
             }
+        }
+    }
+
+    if (type == QM::GenerationMode::IMG2IMG) {
+        item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
+        item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
+        wxImage originalImage        = this->inpaintHelper->GetOriginalImage();
+        wxImage initialImage         = this->inpaintHelper->GetOriginalImage();
+        wxFileName initialImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_%d_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        initialImageName.SetExt("png");
+        wxFileName originalImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("original_image_%d_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        originalImageName.SetExt("png");
+        wxFileName maskImagename(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("inpaint_mask_image_%d_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        maskImagename.SetExt("png");
+        wxFileName outpaintMaskImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("outpaint_mask_image_%d_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        outpaintMaskImageName.SetExt("png");
+
+        if (this->inpaintHelper->inPaintImageLoaded() == true) {
+            auto maskImage = this->inpaintHelper->GetMaskImage();
+            if (this->inpaintHelper->inPaintCanvasEmpty() == false) {
+                maskImage.SaveFile(maskImagename.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+                QM::QueueItemImageType _type = QM::QueueItemImageType::MASK_INPAINT | QM::QueueItemImageType::TMP | QM::QueueItemImageType::MASK;
+                if (this->inpaintHelper->isOutPainted() == false) {
+                    _type |= QM::QueueItemImageType::MASK_USED;
+                }
+                item->images.emplace_back(QM::QueueItemImage({maskImagename.GetAbsolutePath(), _type}));
+                item->mask_image = maskImagename.GetAbsolutePath();
+            }
+            if (this->inpaintHelper->isOutPainted()) {
+                wxImage outPaintedArea      = originalImage;
+                wxImage outPaintedMaskImage = maskImage;
+                int canvasTop               = wxAtoi(this->m_inpaintCanvasTop->GetValue());
+                int canvasLeft              = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
+                int canvasRight             = wxAtoi(this->m_inpaintCanvasRight->GetValue());
+                int canvasBottom            = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
+                sd_gui_utils::CropOrFillImage(outPaintedArea, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(128, 128, 128));
+                outPaintedArea.SaveFile(initialImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+
+                sd_gui_utils::CropOrFillImage(outPaintedMaskImage, canvasTop, canvasRight, canvasBottom, canvasLeft, wxColour(255, 255, 255));
+                outPaintedMaskImage.SaveFile(outpaintMaskImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+
+                originalImage.SaveFile(originalImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+                item->images.emplace_back(QM::QueueItemImage({initialImageName.GetAbsolutePath(), QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
+                item->images.emplace_back(QM::QueueItemImage({originalImageName.GetAbsolutePath(), QM::QueueItemImageType::ORIGINAL | QM::QueueItemImageType::TMP}));
+                item->images.emplace_back(QM::QueueItemImage({outpaintMaskImageName.GetAbsolutePath(), QM::QueueItemImageType::MASK_OUTPAINT | QM::QueueItemImageType::MASK | QM::QueueItemImageType::MASK_USED | QM::QueueItemImageType::TMP}));
+                item->mask_image = outpaintMaskImageName.GetAbsolutePath();
+            } else {
+                originalImage.SaveFile(initialImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+                item->images.emplace_back(QM::QueueItemImage({initialImageName.GetAbsolutePath(), QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
+            }
+            item->initial_image = initialImageName.GetAbsolutePath();
         }
     }
 
@@ -1446,10 +1394,18 @@ void MainWindowUI::OnDeleteInitialImage(wxCommandEvent& event) {
     this->m_inpaintResizeToSdSize->Disable();
     this->m_inpaintSaveMask->Disable();
 
+    this->m_inpaintCanvasTop->SetValue("0");
+    this->m_inpaintCanvasBottom->SetValue("0");
+    this->m_inpaintCanvasLeft->SetValue("0");
+    this->m_inpaintCanvasRight->SetValue("0");
+
     this->inpaintHelper->OnDeleteInitialImage();
 
     this->m_img2im_preview_img->Disable();
     this->m_delete_initial_img->Disable();
+    this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
+    this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
+    this->m_inpaintClearMask->Disable();
 
     this->mapp->cfg->lastImg2ImgPath = this->m_img2imgOpen->GetPath();
     this->CheckQueueButton();
@@ -4234,12 +4190,15 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
         itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
     }
 
-    // handle other images, this images come from the img2img
+    // handle other images, this images come from the img2img or upscale
     for (auto& img : itemPtr->images) {
         if (QM::hasType(img.type, QM::QueueItemImageType::TMP)) {
             wxString nameSuffix = "";
-            if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
-                nameSuffix = "_mask";
+            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_INPAINT)) {
+                nameSuffix = "_inpaint_mask";
+            }
+            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_OUTPAINT)) {
+                nameSuffix = "_outpaint_mask";
             }
             if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
                 nameSuffix = "_initial";
@@ -4258,7 +4217,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
             wxRenameFile(img.pathname, newImage.GetAbsolutePath());
             img.pathname = newImage.GetAbsolutePath();
             // update the item's paths too
-            if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_USED)) {
                 itemPtr->mask_image = newImage.GetAbsolutePath();
             }
             if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
@@ -5002,6 +4961,12 @@ void MainWindowUI::OnInpaintSaveMask(wxCommandEvent& event) {
     }
     this->m_inpaintOpenMask->SetPath(file.GetAbsolutePath());
 }
+void MainWindowUI::OnImg2ImgSize(wxSizeEvent& event) {
+    if (this->inpaintHelper != nullptr) {
+        this->inpaintHelper->OnSize(event);
+    }
+    event.Skip();
+}
 void MainWindowUI::OnInpaintResizeImage(wxCommandEvent& event) {
     if (!this->inpaintHelper->inPaintImageLoaded()) {
         event.Skip();
@@ -5080,13 +5045,13 @@ void MainWindowUI::OnInpaintCanvasResizeApply(wxCommandEvent& event) {
     int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
     int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
-    sd_gui_utils::wxEnlargeImageSizes enlragedSizes{canvasTop, canvasRight, canvasBottom, canvasLeft};
-    this->inpaintHelper->OnOutPaintResize(enlragedSizes);
+    sd_gui_utils::wxEnlargeImageSizes enlargedSizes{canvasTop, canvasRight, canvasBottom, canvasLeft};
+    this->inpaintHelper->OnOutPaintResize(enlargedSizes);
 
-    this->m_inpaintCanvasTop->SetValue(wxString::FromDouble(enlragedSizes.top));
-    this->m_inpaintCanvasRight->SetValue(wxString::FromDouble(enlragedSizes.right));
-    this->m_inpaintCanvasBottom->SetValue(wxString::FromDouble(enlragedSizes.bottom));
-    this->m_inpaintCanvasLeft->SetValue(wxString::FromDouble(enlragedSizes.left));
+    this->m_inpaintCanvasTop->SetValue(wxString::FromDouble(enlargedSizes.top));
+    this->m_inpaintCanvasRight->SetValue(wxString::FromDouble(enlargedSizes.right));
+    this->m_inpaintCanvasBottom->SetValue(wxString::FromDouble(enlargedSizes.bottom));
+    this->m_inpaintCanvasLeft->SetValue(wxString::FromDouble(enlargedSizes.left));
 
     this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
@@ -5097,7 +5062,33 @@ void MainWindowUI::OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) {
     this->inpaintHelper->SetCurrentBrushSize(event.GetPosition());
 }
 void MainWindowUI::OnInpaintZoomSliderScroll(wxScrollEvent& event) {
-    this->inpaintHelper->SetZoomFactor(event.GetPosition() / 100.0);
+    if (this->inpaintHelper->inPaintImageLoaded() == false) {
+        event.Skip();
+        return;
+    }
+    // get the enlarge values
+    int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
+    int canvasLeft   = wxAtoi(this->m_inpaintCanvasLeft->GetValue());
+    int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
+    int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
+
+    this->inpaintHelper->SetZoomFactor(this->m_inpaintZoomSlider->GetValue() / 100.0);
+
+    int rotation = this->inpaintHelper->GetZoomFactor() > (event.GetPosition() / 100.0) ? 1 : -1;
+
+    this->inpaintHelper->OnMouseWheel(rotation, true, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
+
+    this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
+    this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
+    if (this->inpaintHelper->GetZoomFactor() == 1.0) {
+        this->m_inpaintImageResolution->SetLabel(wxString::Format(_("%i x %i"), this->inpaintHelper->GetOriginalSize().GetWidth(), this->inpaintHelper->GetOriginalSize().GetHeight()));
+    } else {
+        this->m_inpaintImageResolution->SetLabel(wxString::Format(_("%i x %i (%i x %i)"),
+                                                                  this->inpaintHelper->GetOriginalSize().GetWidth(),
+                                                                  this->inpaintHelper->GetOriginalSize().GetHeight(),
+                                                                  static_cast<int>(this->inpaintHelper->GetOriginalSize().GetWidth() * this->inpaintHelper->GetZoomFactor()),
+                                                                  static_cast<int>(this->inpaintHelper->GetOriginalSize().GetHeight() * this->inpaintHelper->GetZoomFactor())));
+    }
 }
 void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
     this->m_inpaintClearMask->Disable();
@@ -5134,7 +5125,7 @@ void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
 }
 
 void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
-    if (this->inpaintImageLoaded == false) {
+    if (this->inpaintHelper->inPaintImageLoaded() == false) {
         event.Skip();
         return;
     }
@@ -5148,11 +5139,15 @@ void MainWindowUI::OnInpaintMaskOpen(wxFileDirPickerEvent& event) {
     this->m_inpaintCanvasRight->SetValue(wxString("0"));
     this->m_inpaintCanvasBottom->SetValue(wxString("0"));
     this->m_inpaintCanvasLeft->SetValue(wxString("0"));
-
+    if (this->inpaintHelper->inPaintImageLoaded() == false) {
+        wxMessageBox(_("No image loaded into the img2img, please load a base image before open the mask!"), _("Error"), wxOK | wxICON_ERROR);
+        event.Skip();
+        return;
+    }
     // convert black to transparent pixels
     wxImage image = wxImage(event.GetPath(), wxBITMAP_TYPE_PNG);
 
-    if (this->inpaintBitMap.GetWidth() < image.GetWidth() || this->inpaintBitMap.GetHeight() < image.GetHeight()) {
+    if (this->inpaintHelper->GetOriginalImage().GetWidth() < image.GetWidth() || this->inpaintHelper->GetOriginalImage().GetHeight() < image.GetHeight()) {
         this->writeLog(wxString::Format(_("Inpaint mask open: the resolution of the mask does not match the resolution of the image: %s"), event.GetPath()), true);
         // show an error message
         wxMessageBox(_("The resolution of the mask does not match the resolution of the image"), _("Error"), wxOK | wxICON_ERROR);
@@ -5190,6 +5185,10 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
         event.Skip();
         return;
     }
+    if (event.ControlDown() == false && event.ShiftDown() == false) {
+        event.Skip();
+        return;
+    }
 
     // get the enlarge values
     int canvasTop    = wxAtoi(this->m_inpaintCanvasTop->GetValue());
@@ -5197,8 +5196,26 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     int canvasRight  = wxAtoi(this->m_inpaintCanvasRight->GetValue());
     int canvasBottom = wxAtoi(this->m_inpaintCanvasBottom->GetValue());
 
-    this->inpaintHelper->OnMouseWheel(event, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
+    int rotation = event.GetWheelRotation();
+
+    if (event.ControlDown()) {
+        this->inpaintHelper->OnMouseWheel(rotation, true, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
+    }
+
+    if (event.ShiftDown()) {
+        this->inpaintHelper->OnMouseWheel(rotation, false, sd_gui_utils::wxEnlargeImageSizes{canvasTop, canvasRight, canvasBottom, canvasLeft});
+    }
+
     // this->m_inpaintZoom->SetLabel(wxString::Format(_("Zoom: %.0f%%"), this->inpaintHelper->GetZoomFactor() * 100));
     this->m_inpaintZoomSlider->SetValue(this->inpaintHelper->GetZoomFactor() * 100);
     this->m_inpaintBrushSizeSlider->SetValue(this->inpaintHelper->GetCurrentBrushSize());
+    if (this->inpaintHelper->GetZoomFactor() == 1.0) {
+        this->m_inpaintImageResolution->SetLabel(wxString::Format(_("%i x %i"), this->inpaintHelper->GetOriginalSize().GetWidth(), this->inpaintHelper->GetOriginalSize().GetHeight()));
+    } else {
+        this->m_inpaintImageResolution->SetLabel(wxString::Format(_("%i x %i (%i x %i)"),
+                                                                  this->inpaintHelper->GetOriginalSize().GetWidth(),
+                                                                  this->inpaintHelper->GetOriginalSize().GetHeight(),
+                                                                  static_cast<int>(this->inpaintHelper->GetOriginalSize().GetWidth() * this->inpaintHelper->GetZoomFactor()),
+                                                                  static_cast<int>(this->inpaintHelper->GetOriginalSize().GetHeight() * this->inpaintHelper->GetZoomFactor())));
+    }
 }

@@ -170,6 +170,10 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
         return;
     }
 
+    // set the steps
+    this->currentItem->step = 0;
+    this->currentItem->steps = 1;
+
     this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
 
     // handle the convert differently

@@ -471,7 +471,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_inpaintBrushSize = new wxStaticText( m_panel26, wxID_ANY, _("Brush"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintBrushSize->Wrap( -1 );
-	m_inpaintBrushSize->SetMinSize( wxSize( 100,-1 ) );
+	m_inpaintBrushSize->SetMinSize( wxSize( 50,-1 ) );
 
 	bSizer1030->Add( m_inpaintBrushSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
@@ -480,11 +480,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintZoom->Wrap( -1 );
-	m_inpaintZoom->SetMinSize( wxSize( 100,-1 ) );
+	m_inpaintZoom->SetMinSize( wxSize( 40,-1 ) );
 
 	bSizer1030->Add( m_inpaintZoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintZoomSlider = new wxSlider( m_panel26, wxID_ANY, 100, 10, 190, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
+	m_inpaintZoomSlider = new wxSlider( m_panel26, wxID_ANY, 100, 25, 200, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
 	bSizer1030->Add( m_inpaintZoomSlider, 0, wxALL, 5 );
 
 	m_inpaintSaveMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
@@ -568,12 +568,22 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1028->Fit( m_panel26 );
 	bSizer1026->Add( m_panel26, 0, wxALL|wxEXPAND, 5 );
 
-	m_img2imPanel = new wxScrolledWindow( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL, wxT("inpaintEditor") );
+	m_panel261 = new wxPanel( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer1022;
+	bSizer1022 = new wxBoxSizer( wxVERTICAL );
+
+	m_img2imPanel = new wxScrolledWindow( m_panel261, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxALWAYS_SHOW_SB|wxBORDER_THEME|wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL, wxT("inpaintEditor") );
 	m_img2imPanel->SetScrollRate( 5, 5 );
 	m_img2imPanel->DragAcceptFiles( true );
 	m_img2imPanel->SetMinSize( wxSize( 256,256 ) );
 
-	bSizer1026->Add( m_img2imPanel, 1, wxALL|wxEXPAND|wxRESERVE_SPACE_EVEN_IF_HIDDEN, 5 );
+	bSizer1022->Add( m_img2imPanel, 1, wxRESERVE_SPACE_EVEN_IF_HIDDEN|wxEXPAND, 0 );
+
+
+	m_panel261->SetSizer( bSizer1022 );
+	m_panel261->Layout();
+	bSizer1022->Fit( m_panel261 );
+	bSizer1026->Add( m_panel261, 1, wxEXPAND | wxALL, 5 );
 
 	m_panel231 = new wxPanel( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer1027;
@@ -583,28 +593,28 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText691->Wrap( -1 );
 	bSizer1027->Add( m_staticText691, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintCanvasTop = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_RIGHT );
+	m_inpaintCanvasTop = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_PROCESS_ENTER|wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasTop, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText701 = new wxStaticText( m_panel231, wxID_ANY, _("Right:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText701->Wrap( -1 );
 	bSizer1027->Add( m_staticText701, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintCanvasRight = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_RIGHT );
+	m_inpaintCanvasRight = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_PROCESS_ENTER|wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasRight, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText71 = new wxStaticText( m_panel231, wxID_ANY, _("Bottom:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText71->Wrap( -1 );
 	bSizer1027->Add( m_staticText71, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintCanvasBottom = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_RIGHT );
+	m_inpaintCanvasBottom = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_PROCESS_ENTER|wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasBottom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText721 = new wxStaticText( m_panel231, wxID_ANY, _("Left:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText721->Wrap( -1 );
 	bSizer1027->Add( m_staticText721, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_inpaintCanvasLeft = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_RIGHT );
+	m_inpaintCanvasLeft = new wxTextCtrl( m_panel231, wxID_ANY, _("0"), wxDefaultPosition, wxSize( 40,-1 ), wxTE_PROCESS_ENTER|wxTE_RIGHT );
 	bSizer1027->Add( m_inpaintCanvasLeft, 0, wxALL, 5 );
 
 	m_inpaintCanvasResizeApply = new wxButton( m_panel231, wxID_ANY, _("Resize"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -631,8 +641,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer33 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_img2imgOpen = new wxFilePickerCtrl( m_image2image_panel, wxID_ANY, wxEmptyString, _("Select an image"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
-	m_img2imgOpen->SetMinSize( wxSize( 470,-1 ) );
-
 	bSizer33->Add( m_img2imgOpen, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_staticText24 = new wxStaticText( m_image2image_panel, wxID_ANY, _("Strength:"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -641,7 +649,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_strength = new wxSpinCtrlDouble( m_image2image_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 1, 0.75, 0.1 );
 	m_strength->SetDigits( 2 );
-	bSizer33->Add( m_strength, 0, wxALL, 5 );
+	bSizer33->Add( m_strength, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_img2im_preview_img = new wxButton( m_image2image_panel, wxID_ANY, _("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_img2im_preview_img->Enable( false );
@@ -651,7 +659,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_delete_initial_img = new wxBitmapButton( m_image2image_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
 	m_delete_initial_img->SetBitmap( trash_png_to_wx_bitmap() );
-	bSizer33->Add( m_delete_initial_img, 0, wxALL, 5 );
+	bSizer33->Add( m_delete_initial_img, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer10099->Add( bSizer33, 0, wxEXPAND, 5 );
@@ -1219,14 +1227,12 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer103->Fit( m_promptAndFluxPanel );
 	bSizer138->Add( m_promptAndFluxPanel, 1, wxALL|wxEXPAND, 0 );
 
-	m_rightMainPanel = new wxPanel( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( 220,-1 ), wxBORDER_NONE|wxTAB_TRAVERSAL );
+	m_rightMainPanel = new wxPanel( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( 280,-1 ), wxBORDER_NONE|wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer1121;
 	bSizer1121 = new wxBoxSizer( wxVERTICAL );
 
 	m_rightMainPanelScroll = new wxScrolledWindow( m_rightMainPanel, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxBORDER_THEME|wxVSCROLL );
 	m_rightMainPanelScroll->SetScrollRate( 5, 5 );
-	m_rightMainPanelScroll->SetMinSize( wxSize( 210,-1 ) );
-
 	wxBoxSizer* bSizer1041;
 	bSizer1041 = new wxBoxSizer( wxVERTICAL );
 
@@ -1356,7 +1362,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer10011;
 	bSizer10011 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_width = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_DONTWRAP|wxTE_NO_VSCROLL );
+	m_width = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_NO_VSCROLL );
 	#ifdef __WXGTK__
 	if ( !m_width->HasFlag( wxTE_MULTILINE ) )
 	{
@@ -1367,7 +1373,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#endif
 	bSizer10011->Add( m_width, 1, wxALL|wxEXPAND, 5 );
 
-	m_height = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_DONTWRAP|wxTE_NO_VSCROLL );
+	m_height = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_NO_VSCROLL );
 	#ifdef __WXGTK__
 	if ( !m_height->HasFlag( wxTE_MULTILINE ) )
 	{
@@ -1606,6 +1612,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_img2imPanel->Connect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Connect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
+	m_img2imPanel->Connect( wxEVT_SIZE, wxSizeEventHandler( mainUI::OnImg2ImgSize ), NULL, this );
+	m_inpaintCanvasTop->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasRight->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasBottom->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasLeft->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_inpaintCanvasResizeApply->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_img2imgOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );
@@ -1728,6 +1739,11 @@ mainUI::~mainUI()
 	m_img2imPanel->Disconnect( wxEVT_PAINT, wxPaintEventHandler( mainUI::OnImg2ImgPaint ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_DOWN, wxMouseEventHandler( mainUI::OnImg2ImgRMouseDown ), NULL, this );
 	m_img2imPanel->Disconnect( wxEVT_RIGHT_UP, wxMouseEventHandler( mainUI::OnImg2ImgRMouseUp ), NULL, this );
+	m_img2imPanel->Disconnect( wxEVT_SIZE, wxSizeEventHandler( mainUI::OnImg2ImgSize ), NULL, this );
+	m_inpaintCanvasTop->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasRight->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasBottom->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
+	m_inpaintCanvasLeft->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_inpaintCanvasResizeApply->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnInpaintCanvasResizeApply ), NULL, this );
 	m_img2imgOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageOpenFileChanged ), NULL, this );
 	m_img2im_preview_img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImg2ImgPreviewButton ), NULL, this );

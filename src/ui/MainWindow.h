@@ -42,7 +42,6 @@
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
-#include <wx/valgen.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -131,6 +130,7 @@ class mainUI : public wxFrame
 		wxBitmapToggleButton* m_inPaintBrushStyleTriangle;
 		wxStaticText* m_inpaintImageResolution;
 		wxStaticText* m_staticText69;
+		wxPanel* m_panel261;
 		wxPanel* m_panel231;
 		wxStaticText* m_staticText691;
 		wxTextCtrl* m_inpaintCanvasTop;
@@ -303,6 +303,7 @@ class mainUI : public wxFrame
 		virtual void OnImg2ImgPaint( wxPaintEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgRMouseDown( wxMouseEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgRMouseUp( wxMouseEvent& event ) { event.Skip(); }
+		virtual void OnImg2ImgSize( wxSizeEvent& event ) { event.Skip(); }
 		virtual void OnInpaintCanvasResizeApply( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageOpenFileChanged( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnImg2ImgPreviewButton( wxCommandEvent& event ) { event.Skip(); }
