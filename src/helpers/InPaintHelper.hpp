@@ -209,10 +209,6 @@ namespace sd_gui_utils {
             wxSize s = {static_cast<int>(this->outPaintArea->GetWidth() * this->zoomFactor.GetCurrent()), static_cast<int>(this->outPaintArea->GetHeight() * this->zoomFactor.GetCurrent())};
             wxSize c = this->parent->GetClientSize();
             auto r   = wxSize(s.x < c.x ? c.x : s.x, s.y < c.y ? c.y : s.y);
-            std::cout << "CalcVirtualSize: " << r.x << ", " << r.y << std::endl;
-            std::cout << "OutpaintArea: " << this->outPaintArea->GetWidth() << ", " << this->outPaintArea->GetHeight() << std::endl;
-            std::cout << "Client size: " << c.x << ", " << c.y << std::endl;
-            std::cout << "ZoomFactor: " << this->zoomFactor.GetCurrent() << std::endl;
             return r;
         }
         void SetZoomFactor(double factor) {
@@ -538,7 +534,7 @@ namespace sd_gui_utils {
 
                 int width  = this->inpaintBrushSize.current * 2;
                 int height = this->inpaintBrushSize.current * 2;
-                startX     = startY < 0 ? 0 : startX;
+                startX     = startX < 0 ? 0 : startX;
                 startY     = startY < 0 ? 0 : startY;
                 if (startX + width > maxBoundaryX) {
                     startX = maxBoundaryX - width;
@@ -548,6 +544,7 @@ namespace sd_gui_utils {
                 }
                 gc->DrawRectangle(startX, startY, width, height);
                 this->parent->Refresh();
+
             } else if (this->brushStyle == sd_gui_utils::InPaintHelper::BrushStyle::BRUSH_TRIANGLE) {
                 // TODO: fix boundaries here too
                 wxPoint2DDouble points[3];
