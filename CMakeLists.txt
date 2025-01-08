@@ -80,6 +80,7 @@ set(SOURCES
     src/ui/QueueManager.cpp
     src/ui/ModelInfo.cpp
     src/libs/SharedMemoryManager.cpp
+    src/libs/TcpClient.cpp
 
 )
 
@@ -165,7 +166,7 @@ endif()
 
 include(cmake/intl.cmake)
 
-add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile)
+add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile sockets_cpp)
 
 # Include directories
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
@@ -173,6 +174,7 @@ target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${stable_diffusion_SOURCE_DIR}
     ${CpuFeatures_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
+    ${sockets_cpp_SOURCE}
 )
 message(STATUS "APPDEPS: ${APPDEPENDS}")
 

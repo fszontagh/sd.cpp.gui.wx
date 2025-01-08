@@ -491,7 +491,7 @@ void MainWindowCivitAiWindow::imgDownloadThread(std::shared_ptr<CivitAi::Preview
     wxString apikey;
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         apikey = password.GetAsString();
     }
 
@@ -547,7 +547,7 @@ void MainWindowCivitAiWindow::modelDownloadThread(CivitAi::DownloadItem* item) {
     wxString apikey;
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         apikey = password.GetAsString();
     }
 
@@ -775,7 +775,7 @@ void MainWindowCivitAiWindow::civitSearchThread(const std::string& query) {
     wxString apikey;
     wxSecretStore store = wxSecretStore::GetDefault();
 
-    if (store.Load(PROJECT_NAME, username, password)) {
+    if (store.Load(wxString::Format(wxT("%s/CivitAiApiKey"), PROJECT_NAME), username, password)) {
         apikey = password.GetAsString();
     }
 

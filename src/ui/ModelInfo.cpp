@@ -25,24 +25,16 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
 
     wxString name = mpath;
     name.Replace(basepath + wxFileName::GetPathSeparator(), "");
-    
+
     if (name.SubString(name.Length() - 1, name.Length()) == wxFileName::GetPathSeparator()) {
-        name = name.SubString(0 , name.Length() - 1);
+        name = name.SubString(0, name.Length() - 1);
     }
 
     wxFileName meta_path = wxFileName(_meta);
 
     auto model_path = wxFileName(mpath);
 
-    // remove the model path from the folder group name
-    auto folderGroupName = name;
-    folderGroupName.Replace(model_path.GetFullName(), "");
-
-    if (folderGroupName.empty() == false && this->folderGroupExists(folderGroupName) == false) {
-        auto group_full_path                = wxFileName(mpath).GetPath();
-        this->folderGroups[group_full_path] = wxFileName(group_full_path);
-    }
-    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + wxFileName::GetPathSeparator());
+    auto folderGroupName = this->GetFolderName(mpath, type, basepath);
 
     if (meta_path.FileExists()) {
         wxFile input;
@@ -89,6 +81,52 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addModel(wxString mpath, sd_gui
     return nullptr;
 }
 
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addRemoteModel(const sd_gui_utils::networks::RemoteModelInfo& info, sd_gui_utils::sdServer* server) {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    auto meta_file = this->GetMetaPath(info.path, true);
+    if (wxFileExists(meta_file)) {
+        wxFile input(meta_file, wxFile::read);
+        wxString meta_content;
+        if (input.ReadAll(&meta_content)) {
+            try {
+                nlohmann::json data             = nlohmann::json::parse(meta_content.utf8_string());
+                sd_gui_utils::ModelFileInfo* _z = new sd_gui_utils::ModelFileInfo(data.get<sd_gui_utils::ModelFileInfo>());
+                _z->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
+                _z->meta_file                   = meta_file.utf8_string();
+                _z->server_id                   = server->server_id;
+                if (_z->sha256.empty()) {
+                    auto localVer = this->findInfoByName(info.name);
+                    if (localVer != nullptr && localVer->sha256.empty() == false) {
+                        _z->sha256 = localVer->sha256;
+                        this->WriteIntoMeta(_z);
+                    }
+                }
+                this->ModelInfos[info.path] = _z;
+                this->ModelCount[info.model_type]++;
+                return _z;
+            } catch (const std::exception& e) {
+                wxLogError("Exception: %s file: %s", e.what(), meta_file);
+            }
+        }
+    }
+    sd_gui_utils::ModelFileInfo* meta = new sd_gui_utils::ModelFileInfo(info);
+    meta->meta_file                   = meta_file.utf8_string();
+    meta->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
+
+    auto localVer = this->findInfoByName(info.name);
+    if (localVer != nullptr && localVer->sha256.empty() == false) {
+        meta->sha256 = localVer->sha256;
+    }
+    meta->server_id = server->server_id;
+
+    this->WriteIntoMeta(meta);
+
+    this->ModelCount[info.model_type]++;
+    this->ModelInfos[info.path] = meta;
+    return meta;
+}
+
 bool ModelInfo::Manager::exists(std::string model_path) {
     std::unique_lock<std::mutex> lock(mutex);
     if (this->ModelInfos.find(model_path) != this->ModelInfos.end()) {
@@ -97,38 +135,12 @@ bool ModelInfo::Manager::exists(std::string model_path) {
     return false;
 }
 
-std::string ModelInfo::Manager::pathByName(std::string model_name) {
-    auto obj = this->getInfoByName(model_name);
-    if (obj == nullptr) {
-        return std::string();
-    }
-    return obj->path;
-}
-
 void ModelInfo::Manager::setHash(std::string model_path, std::string hash) {
     std::unique_lock<std::mutex> lock(mutex);
     if (this->ModelInfos.contains(model_path)) {
         this->ModelInfos[model_path]->sha256 = hash;
         this->WriteIntoMeta(this->ModelInfos[model_path]);
     }
-}
-
-sd_gui_utils::ModelFileInfo ModelInfo::Manager::getByHash(std::string hash) {
-    if (hash.length() == 10) {
-        for (auto model : this->ModelInfos) {
-            if (model.second->sha256.substr(0, 10) == hash) {
-                return *model.second;
-            }
-        }
-        return sd_gui_utils::ModelFileInfo();
-    }
-    for (auto model : this->ModelInfos) {
-        if (model.second->sha256 == hash) {
-            return *model.second;
-        }
-    }
-
-    return sd_gui_utils::ModelFileInfo();
 }
 
 sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfo(std::string path) {
@@ -253,8 +265,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::GenerateMeta(const wxFileName& 
     sd_gui_utils::ModelFileInfo* mi = new sd_gui_utils::ModelFileInfo();
 
     mi->size               = model_path.GetSize().GetValue();
-    auto s                 = sd_gui_utils::humanReadableFileSize(mi->size);
-    mi->size_f             = wxString::Format("%.1f%s", s.first, s.second);
+    mi->size_f             = model_path.GetHumanReadableSize().ToStdString();
     mi->hash_fullsize      = 0;
     mi->hash_progress_size = 0;
     mi->model_type         = type;
@@ -307,26 +318,54 @@ void ModelInfo::Manager::ParseCivitAiInfo(sd_gui_utils::ModelFileInfo* modelinfo
     }
 }
 
-wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path) {
+wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote) {
     if (model_path.IsEmpty()) {
         return wxEmptyString;
     }
 
     wxFileName path(model_path);
-    if (!path.Exists()) {
+
+    if (!path.Exists() && !remote) {
         return wxEmptyString;
     }
 
     path.SetExt("json");
     wxFileName meta_path(this->MetaStorePath, path.GetFullName());
 
-    if (!wxDirExists(meta_path.GetPath())) {
-        return wxEmptyString;
-    }
-
     if (!wxFileName::DirExists(meta_path.GetPath())) {
         return wxEmptyString;
     }
+    if (remote) {
+        // add _remote suffix
+        meta_path.SetName(meta_path.GetName() + "_remote");
+    }
 
-    return meta_path.GetFullPath(wxPATH_UNIX);
+    return meta_path.GetAbsolutePath();
+}
+
+wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server) {
+    auto folderGroupName = wxFileName(model_path).GetPath();
+
+    folderGroupName.Replace(root_path, "", false);
+    if (folderGroupName.StartsWith(wxFileName::GetPathSeparator())) {
+        folderGroupName = folderGroupName.SubString(1, folderGroupName.Length());
+    }
+
+    if (!folderGroupName.empty() && !this->folderGroupExists(folderGroupName)) {
+        wxFileName group_full_path(wxFileName(model_path).GetPath());
+        if (!group_full_path.DirExists()) {
+            group_full_path.AssignDir(wxFileName(model_path).GetPath());
+        }
+        // Add to folderGroups
+        this->folderGroups[group_full_path.GetFullPath()] = group_full_path;
+    }
+
+    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + wxFileName::GetPathSeparator());
+    if (server != nullptr) {
+        folderGroupName.Prepend(server->GetName() + wxFileName::GetPathSeparator());
+    } else {
+        folderGroupName.Prepend(wxString("local") + wxFileName::GetPathSeparator());
+    }
+
+    return folderGroupName;
 }

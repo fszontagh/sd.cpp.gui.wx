@@ -42,20 +42,29 @@
 #include "wx/dcbuffer.h"
 #include "wx/treelist.h"
 
+#include "ver.hpp"
+#include "helpers/DirTypes.h"
+#include "sockets-cpp/TcpClient.h"
 #include "libs/json.hpp"
+#include "network/RemoteModelInfo.h"
+#include "network/packets.h"
+#include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"
 #include "exiv2/exiv2.hpp"
 
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
+#include "helpers/civitai.hpp"
+#include "helpers/sd.hpp"
+
 #include "libs/SharedMemoryManager.h"
 #include "libs/subprocess.h"
 
 #include "libs/cores.h"
 #include "ui/utils.hpp"
 #include "ui/imageUtils.h"
-#include "ver.hpp"
+
 
 #include "ui/QueueManager.h"
 

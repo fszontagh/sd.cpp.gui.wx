@@ -24,6 +24,7 @@
 #include <wx/string.h>
 #include <wx/translation.h>
 #include <wx/filename.h>
+#include "network/packets.h"
 #include "helpers/sd.hpp"
 #include "helpers/sslUtils.hpp"
 #include "libs/SharedLibrary.h"

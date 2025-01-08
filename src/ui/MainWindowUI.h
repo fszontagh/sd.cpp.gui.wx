@@ -107,6 +107,8 @@ protected:
     void OnInpaintBrushSizeSliderScroll(wxScrollEvent& event) override;
     void OnInpaintZoomSliderScroll(wxScrollEvent& event) override;
 
+    void OnServerSelect(wxCommandEvent& event) override;
+
 public:
     /** Constructor */
     MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
@@ -116,6 +118,21 @@ public:
     void OnCivitAiThreadMessage(wxThreadEvent& e);
 
 private:
+    enum class queueJobRows : unsigned int {
+        ID = 0,
+        CREATED_AT,
+        TYPE,
+        MODEL,
+        SAMPLER,
+        SEED,
+        PROGRESS,
+        SPEED,
+        STATUS,
+        STATUS_MESSAGE,
+        SERVER,
+        N_COUNTER
+    };
+
     MainApp* mapp = nullptr;
     std::unique_ptr<TreeListManager> treeListManager;
 
@@ -126,6 +143,8 @@ private:
 
     std::vector<wxStaticBitmap*> modelImagePreviews;
     std::vector<wxStaticBitmap*> jobImagePreviews;
+
+    std::vector<std::shared_ptr<sd_gui_utils::networks::TcpClient>> tcpClients;
 
     wxTaskBarIcon* TaskBar;
     wxMenu* TaskBarMenu;
@@ -321,9 +340,6 @@ private:
     void deInitLog();
     void writeLog(const wxString& msg, bool writeIntoGui = true, bool debug = false);
     void writeLog(const std::string& message);
-
-    SdSetLogCallbackFunction sd_set_log_callback;
-    SdSetProgressCallbackFunction sd_set_progress_callback;
 
     inline static wxString formatFileName(const QM::QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
         wxDateTime localTime = wxDateTime::Now();

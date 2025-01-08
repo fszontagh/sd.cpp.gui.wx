@@ -1,5 +1,6 @@
 {
     "port": 8191,
     "host": "127.0.0.1",
-    "logfile": "/var/log/stable-diffusion-server.log"
+    "logfile": "/var/log/stable-diffusion-server.log",
+    "backend": "avx"
 }
