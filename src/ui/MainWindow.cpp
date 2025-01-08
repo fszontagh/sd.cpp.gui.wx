@@ -181,7 +181,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer138 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_notebook1302 = new wxNotebook( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxNB_NOPAGETHEME|wxNB_TOP|wxBORDER_THEME );
+	m_notebook1302 = new wxNotebook( m_panel31, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxNB_NOPAGETHEME|wxNB_TOP|wxBORDER_DEFAULT );
 	wxSize m_notebook1302ImageSize = wxSize( 16,16 );
 	int m_notebook1302Index = 0;
 	wxImageList* m_notebook1302Images = new wxImageList( m_notebook1302ImageSize.GetWidth(), m_notebook1302ImageSize.GetHeight() );
@@ -568,11 +568,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1028->Fit( m_panel26 );
 	bSizer1026->Add( m_panel26, 0, wxALL|wxEXPAND, 5 );
 
-	m_panel261 = new wxPanel( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel261 = new wxPanel( m_panel25, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE|wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer1022;
 	bSizer1022 = new wxBoxSizer( wxVERTICAL );
 
-	m_img2imPanel = new wxScrolledWindow( m_panel261, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxALWAYS_SHOW_SB|wxBORDER_THEME|wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL, wxT("inpaintEditor") );
+	m_img2imPanel = new wxScrolledWindow( m_panel261, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE|wxFULL_REPAINT_ON_RESIZE|wxHSCROLL|wxNO_FULL_REPAINT_ON_RESIZE|wxVSCROLL, wxT("inpaintEditor") );
 	m_img2imPanel->SetScrollRate( 5, 5 );
 	m_img2imPanel->DragAcceptFiles( true );
 	m_img2imPanel->SetMinSize( wxSize( 256,256 ) );

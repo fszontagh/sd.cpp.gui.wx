@@ -329,14 +329,19 @@ private:
         wxDateTime localTime = wxDateTime::Now();
 
         auto day = localTime.Format(wxT("%d"));
+        auto month = localTime.Format(wxT("%m"));
+        auto year = localTime.Format(wxT("%Y"));
+        auto hours = localTime.Format(wxT("%H"));
+        auto minutes = localTime.Format(wxT("%M"));
+        auto seconds = localTime.Format(wxT("%S"));
 
         std::unordered_map<std::string, std::string> tags = {
-            {"[year]", std::to_string(localTime.GetYear())},
-            {"[month]", std::to_string(1 + localTime.GetMonth())},
-            {"[day]", day.utf8_string()},
-            {"[hours]", std::to_string(localTime.GetHour())},
-            {"[minutes]", std::to_string(localTime.GetMinute())},
-            {"[seconds]", std::to_string(localTime.GetSecond())},
+            {"[year]", year.ToStdString()},
+            {"[month]", month.ToStdString()},
+            {"[day]", day.ToStdString()},
+            {"[hours]", hours.ToStdString()},
+            {"[minutes]", minutes.ToStdString()},
+            {"[seconds]", seconds.ToStdString()},
             {"[finished_at]", std::to_string(item.finished_at)},
             {"[created_at]", std::to_string(item.created_at)},
             {"[updated_at]", std::to_string(item.updated_at)},
