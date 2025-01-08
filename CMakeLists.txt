@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
-project(StableDiffusionGUI 
-LANGUAGES CXX C 
-VERSION 0.2.3
+project(StableDiffusionGUI
+LANGUAGES CXX C
+VERSION 0.2.4
 DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 
@@ -17,7 +17,9 @@ include(cmake/wxWidgets_version.cmake)
 set(PROJECT_BINARY_NAME "stablediffusiongui")
 set(PROJECT_DISPLAY_NAME "Stable Diffusion GUI")
 # in github workflow to minimize output..
-add_definitions(-w)
+if (DEFINED ENV{GITHUB_ACTIONS})
+    set(CMAKE_VERBOSE_MAKEFILE OFF)
+endif()
 
 include(FetchContent)
 include(ExternalProject)
@@ -43,7 +45,7 @@ endif()
 
 find_package(exiv2 CONFIG QUIET)
 if (NOT exiv2_FOUND)
-    find_package(exiv2 REQUIRED)    
+    find_package(exiv2 REQUIRED)
 endif()
 
 
@@ -83,12 +85,17 @@ set(SOURCES
 )
 
 if (WIN32)
-    list(APPEND SOURCES minimal.rc)
+    set(BNAME ${PROJECT_BINARY_NAME})
+    set(COMPONENT_NAME ${PROJECT_DISPLAY_NAME})
+    configure_file(platform/msvc/app.rc.in app.rc)
+    configure_file(platform/msvc/minimal.rc.in minimal.rc)
+    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/app.rc)
+    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/minimal.rc)
 endif()
 
 add_subdirectory(extprocess)
 
-option(SD_SERVER "Build socket server" ON)
+option(SD_SERVER "Build socket server" OFF)
 
 if (SD_SERVER)
     include(cmake/sockets-cpp.cmake)
@@ -100,10 +107,12 @@ endif()
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE src/pch.h)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(${PROJECT_BINARY_NAME} PRIVATE -Wunused)
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(${PROJECT_BINARY_NAME} PRIVATE /w44265) # Hasonló figyelmeztetés MSVC-ben
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(${PROJECT_BINARY_NAME} PRIVATE -Wunused)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${PROJECT_BINARY_NAME} PRIVATE /w44265)
+    endif()
 endif()
 
 
@@ -160,7 +169,7 @@ include(cmake/intl.cmake)
 add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile sockets_cpp)
 
 # Include directories
-target_include_directories(${PROJECT_BINARY_NAME} PRIVATE 
+target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${stable_diffusion_SOURCE_DIR}
     ${CpuFeatures_SOURCE_DIR}

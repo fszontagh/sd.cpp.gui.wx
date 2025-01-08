@@ -42,3 +42,4 @@ vcpkg_installed/
 /external/stable-diffusion
 /ui/ver.hpp
 locale/**/*.mo
+CMakeUserPresets.json

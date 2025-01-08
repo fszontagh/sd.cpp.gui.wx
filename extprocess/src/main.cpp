@@ -5,11 +5,17 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
+
     std::cout << "[EXTPROCESS] starting with shared memory size: " << SHARED_MEMORY_SIZE << std::endl;
+    try {
+        sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
+    } catch (const std::exception& e) {
+        std::cerr << "[EXTPROCESS] Failed to create SharedMemoryManager: " << e.what() << std::endl;
+        return 1;
+    }
 
-    std::shared_ptr<SharedMemoryManager> sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
-
-    if (!sharedMemory) {
+    if (sharedMemory == nullptr) {
         std::cerr << "[EXTPROCESS] Failed to create SharedMemoryManager" << std::endl;
         return 1;
     }
@@ -25,9 +31,7 @@ int main(int argc, char* argv[]) {
     bool needToRun = true;
     int lastId     = 0;
     while (needToRun) {
-        
         std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
-
 
         if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE)) {
             if (std::strlen(buffer.get()) > 0) {

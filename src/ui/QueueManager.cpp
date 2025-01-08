@@ -57,6 +57,14 @@ void QM::QueueManager::UpdateItem(const QM::QueueItem& item) {
     }
 }
 
+void QM::QueueManager::UpdateItem(std::shared_ptr<QM::QueueItem> item) {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    if (this->QueueList.find(item->id) != this->QueueList.end()) {
+        this->QueueList[item->id] = item;
+        this->SaveJobToFile(*item);
+    }
+}
+
 std::shared_ptr<QM::QueueItem> QM::QueueManager::GetItemPtr(int id) {
     std::lock_guard<std::mutex> lock(queueMutex);
     if (this->QueueList.find(id) == this->QueueList.end()) {
@@ -386,7 +394,10 @@ void QM::QueueManager::LoadJobListFromDir() {
         try {
             nlohmann::json data                 = nlohmann::json::parse(f);
             std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(data.get<QM::QueueItem>());
-            if (item->status == QM::QueueStatus::RUNNING || item->status == QM::QueueStatus::MODEL_LOADING) {
+            if (item->status == QM::QueueStatus::RUNNING ||
+                item->status == QM::QueueStatus::MODEL_LOADING ||
+                item->status == QM::QueueStatus::HASHING ||
+                item->status == QM::QueueStatus::HASHING_DONE) {
                 item->status = QM::QueueStatus::PAUSED;
             }
 

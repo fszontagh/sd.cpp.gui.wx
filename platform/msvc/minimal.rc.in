@@ -1,0 +1,2 @@
+aaaa ICON "@CMAKE_SOURCE_DIR@/graphics/icons/256/stablediffusiongui.ico"
+#include "wx/msw/wx.rc"

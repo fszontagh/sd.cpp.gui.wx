@@ -32,6 +32,24 @@ namespace sd_gui_utils {
         return image.Scale(newWidth, newHeight);
     };
 
+    inline void ResizeImageToMaxSize(std::shared_ptr<wxImage> image, int maxWidth, int maxHeight) {
+        int newWidth  = image->GetWidth();
+        int newHeight = image->GetHeight();
+
+        if (newWidth > maxWidth || newHeight > maxHeight) {
+            double aspectRatio = static_cast<double>(newWidth) / static_cast<double>(newHeight);
+            if (aspectRatio > 1.0) {
+                newWidth  = maxWidth;
+                newHeight = static_cast<int>(maxWidth / aspectRatio);
+            } else {
+                newHeight = maxHeight;
+                newWidth  = static_cast<int>(maxHeight * aspectRatio);
+            }
+        }
+        wxImage tmpImage = image->Scale(newWidth, newHeight);
+        *image           = tmpImage;
+    };
+
     /**
      * Resize the given image to fit within the specified maximum width and
      * height while maintaining the image's aspect ratio. If the resized image
@@ -84,7 +102,7 @@ namespace sd_gui_utils {
         return fn;
     }
 
-    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor, const wxString& cache_path = "") {
+    inline wxImage cropResizeImage(const wxString image_path, int targetWidth, int targetHeight, const wxColour& backgroundColor = wxColour(51, 51, 51, wxALPHA_TRANSPARENT), const wxString& cache_path = "") {
         wxFileName cache_name;
         if (!cache_path.empty()) {
             cache_name = sd_gui_utils::cropResizeCacheName(targetWidth, targetHeight, image_path, cache_path);
@@ -129,7 +147,87 @@ namespace sd_gui_utils {
         resizedImage.SaveFile(cache_name.GetAbsolutePath());
         return resizedImage;
     };
+    struct wxEnlargeImageSizes {
+        int top    = 0;
+        int right  = 0;
+        int bottom = 0;
+        int left   = 0;
+        void ResetSizes() {
+            top    = 0;
+            right  = 0;
+            bottom = 0;
+            left   = 0;
+        }
+    };
 
+    inline void CropOrFillBitmap(std::shared_ptr<wxBitmap> bitmap, const wxEnlargeImageSizes& enlargeSizes, wxColour fillColor) {
+        if (bitmap == nullptr || !bitmap->IsOk()) {
+            return;
+        }
+
+        // Convert wxBitmap to wxImage for manipulation
+        wxImage image = bitmap->ConvertToImage();
+
+        int originalWidth  = image.GetWidth();
+        int originalHeight = image.GetHeight();
+
+        int newWidth  = originalWidth + enlargeSizes.left + enlargeSizes.right;
+        int newHeight = originalHeight + enlargeSizes.top + enlargeSizes.bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        // Fill the new image with the fill color
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = enlargeSizes.left + (newWidth - originalWidth - enlargeSizes.left - enlargeSizes.right) / 2;
+        int yOffset = enlargeSizes.top + (newHeight - originalHeight - enlargeSizes.top - enlargeSizes.bottom) / 2;
+
+        // Paste the original image onto the new image
+        newImage.Paste(image, xOffset, yOffset);
+
+        // Convert the modified wxImage back to wxBitmap
+        *bitmap = wxBitmap(newImage);
+    }
+    inline void CropOrFillImage(std::shared_ptr<wxImage> image, const wxEnlargeImageSizes& enlargeSizes, wxColour fillColor) {
+        if (image == nullptr) {
+            return;
+        }
+        int originalWidth  = image->GetWidth();
+        int originalHeight = image->GetHeight();
+
+        int newWidth  = originalWidth + enlargeSizes.left + enlargeSizes.right;
+        int newHeight = originalHeight + enlargeSizes.top + enlargeSizes.bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = enlargeSizes.left + (newWidth - originalWidth - enlargeSizes.left - enlargeSizes.right) / 2;
+        int yOffset = enlargeSizes.top + (newHeight - originalHeight - enlargeSizes.top - enlargeSizes.bottom) / 2;
+
+        newImage.Paste(*image, xOffset, yOffset);
+
+        *image = newImage;
+    }
+
+    inline void CropOrFillImage(wxImage& image, int top, int right, int bottom, int left, wxColour fillColor) {
+        int originalWidth  = image.GetWidth();
+        int originalHeight = image.GetHeight();
+
+        int newWidth  = originalWidth + left + right;
+        int newHeight = originalHeight + top + bottom;
+
+        wxImage newImage(newWidth, newHeight);
+
+        newImage.SetRGB(wxRect(0, 0, newWidth, newHeight), fillColor.Red(), fillColor.Green(), fillColor.Blue());
+
+        int xOffset = left + (newWidth - originalWidth - left - right) / 2;
+        int yOffset = top + (newHeight - originalHeight - top - bottom) / 2;
+
+        newImage.Paste(image, xOffset, yOffset);
+
+        image = newImage;
+    }
     static std::unordered_map<wxString, wxString> ReadMetadata(const std::string& filepath) {
         std::unordered_map<wxString, wxString, std::hash<wxString>> metadata;
 
@@ -310,6 +408,172 @@ namespace sd_gui_utils {
         for (png_uint_32 y = 0; y < height; ++y) {
             free(rowPointers[y]);
         }
+    }
+    inline void ResizeWithBorder(wxBitmap& bitmap, int top, int right, int bottom, int left) {
+        if (top < 0 || right < 0 || bottom < 0 || left < 0) {
+            return;
+        }
+
+        int originalWidth  = bitmap.GetWidth();
+        int originalHeight = bitmap.GetHeight();
+
+        int newWidth  = originalWidth + left + right;
+        int newHeight = originalHeight + top + bottom;
+
+        wxBitmap newBitmap(newWidth, newHeight);
+        wxMemoryDC dc(newBitmap);
+
+        dc.SetBackground(*wxGREY_BRUSH);
+        dc.Clear();
+
+        int xOffset = left + (newWidth - originalWidth - left - right) / 2;
+        int yOffset = top + (newHeight - originalHeight - top - bottom) / 2;
+
+        dc.DrawBitmap(bitmap, xOffset, yOffset, false);
+
+        dc.SelectObject(wxNullBitmap);
+        bitmap = newBitmap;
+    }
+
+    /**
+     * Inverts white and transparent pixels in the given bitmap.
+     *
+     * For each pixel in the bitmap:
+     * - If the pixel is white (RGB = (255, 255, 255)) and has an alpha value of greater than 0, it will be made transparent (alpha = 0).
+     * - If the pixel is not white and has an alpha value of less than 255, it will be made white (RGB = (255, 255, 255)) and fully opaque (alpha = 255).
+     *
+     * The image is then converted back to a bitmap and the scale factor is set to the original value.
+     *
+     * @param bitmap The bitmap to be modified.
+     */
+    inline void InvertWhiteAndTransparent(wxBitmap& bitmap) {
+        auto oldScale = bitmap.GetScaleFactor();
+        wxImage image = bitmap.ConvertToImage();
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                unsigned char red   = image.GetRed(x, y);
+                unsigned char green = image.GetGreen(x, y);
+                unsigned char blue  = image.GetBlue(x, y);
+                unsigned char alpha = image.GetAlpha(x, y);
+
+                if (red == 255 && green == 255 && blue == 255 && alpha > 0) {
+                    image.SetAlpha(x, y, 0);  // make it transparent
+                }
+
+                else if (alpha < 255) {
+                    image.SetRGB(x, y, 255, 255, 255);  // make it white
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+
+        bitmap = wxBitmap(image);
+        bitmap.SetScaleFactor(oldScale);
+    }
+
+    inline void InvertWhiteAndTransparent(std::shared_ptr<wxBitmap> bitmap) {
+        if (!bitmap)
+            return;
+
+        auto oldScale = bitmap->GetScaleFactor();
+        wxImage image = bitmap->ConvertToImage();
+
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                unsigned char red   = image.GetRed(x, y);
+                unsigned char green = image.GetGreen(x, y);
+                unsigned char blue  = image.GetBlue(x, y);
+                unsigned char alpha = image.GetAlpha(x, y);
+
+                if (red == 255 && green == 255 && blue == 255 && alpha > 0) {
+                    image.SetAlpha(x, y, 0);  // Make it transparent
+                } else if (alpha < 255) {
+                    image.SetRGB(x, y, 255, 255, 255);  // Make it white
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+
+        *bitmap = wxBitmap(image);
+        bitmap->SetScaleFactor(oldScale);
+    }
+
+    inline void convertMaskImageToTransparent(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // only convert black pixels to transparent
+                auto red   = image.GetRed(x, y);
+                auto green = image.GetGreen(x, y);
+                auto blue  = image.GetBlue(x, y);
+
+                // if not white
+                if (red == 0 && green == 0 && blue == 0) {
+                    image.SetRGB(x, y, 0, 0, 0);
+                    image.SetAlpha(x, y, 0);
+                }
+            }
+        }
+    }
+
+    inline void convertMaskImageTransparentToBlack(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                // only convert transparent pixels to black
+                auto red   = image.GetRed(x, y);
+                auto green = image.GetGreen(x, y);
+                auto blue  = image.GetBlue(x, y);
+                auto alpha = image.GetAlpha(x, y);
+                if (alpha < 255) {
+                    image.SetRGB(x, y, 0, 0, 0);
+                    image.SetAlpha(x, y, 255);
+                }
+            }
+        }
+        if (image.HasAlpha()) {
+            image.ClearAlpha();
+        }
+    }
+
+    inline void blendImageOnBlackBackground(wxImage& image) {
+        if (!image.HasAlpha()) {
+            image.InitAlpha();
+        }
+
+        wxImage blackBackground(image.GetWidth(), image.GetHeight());
+        blackBackground.SetRGB(wxRect(0, 0, image.GetWidth(), image.GetHeight()), 0, 0, 0);
+
+        for (int x = 0; x < image.GetWidth(); ++x) {
+            for (int y = 0; y < image.GetHeight(); ++y) {
+                unsigned char srcRed   = image.GetRed(x, y);
+                unsigned char srcGreen = image.GetGreen(x, y);
+                unsigned char srcBlue  = image.GetBlue(x, y);
+                unsigned char srcAlpha = image.GetAlpha(x, y);
+
+                float alphaFactor = static_cast<float>(srcAlpha) / 255.0f;
+
+                unsigned char blendedRed   = static_cast<unsigned char>(srcRed * alphaFactor);
+                unsigned char blendedGreen = static_cast<unsigned char>(srcGreen * alphaFactor);
+                unsigned char blendedBlue  = static_cast<unsigned char>(srcBlue * alphaFactor);
+
+                blackBackground.SetRGB(x, y, blendedRed, blendedGreen, blendedBlue);
+            }
+        }
+
+        image = blackBackground;
     }
 
 }

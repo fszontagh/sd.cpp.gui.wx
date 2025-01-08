@@ -9,6 +9,9 @@ Licensed under the MIT License.
 
 -   **Text-to-image (text2img)** generation
 -   **Image-to-image (img2img)** generation
+-   **Inpaint & Outpaint**, save / load masks, built-in inpaint / outpaint editor
+-   **Tiling** for low memory
+-   Model **quantization** in-fly or manually
 -   Built-in **upscaling** capabilities
 -   **ControlNet** integration
 -   [**Model conversion** to GGUF format](https://github.com/fszontagh/sd.cpp.gui.wx/wiki/Convert-safetensors-model-into-gguf-(aka.-quantization))
@@ -16,7 +19,9 @@ Licensed under the MIT License.
 -   Hardware detection for optimal diffusion performance
 -   Integrated **model management** tools
 -   **VAE** support
+-   **TAESD** support
 -   Customizable **generation presets**
+-   ComfyUI compatible **Prompt presets **
 -   **Generation queue** for batch processing
 -   Real-time **progress monitoring** during generation
 -   Save and load metadata directly from images
@@ -26,7 +31,7 @@ Licensed under the MIT License.
 
 -   CPU (AVX, AVX2, AVX512)
 -   CUDA
--   ROCm
+-   VULKAN
 
 ----------
 

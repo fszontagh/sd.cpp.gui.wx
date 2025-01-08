@@ -20,7 +20,7 @@ public:
 
         if (item != nullptr) {
             item->hash_progress_size = readed;
-            item->generated_sha256 = hash;
+            item->generated_sha256   = hash;
             instance->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_UPDATE);
         }
     }
@@ -56,8 +56,7 @@ public:
         }
 
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        instance->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_UPDATED);
-        std::cout << "[EXTPROCESS] Item: " << instance->currentItem->id << " Step: " << instance->currentItem->step << "/" << instance->currentItem->steps << " Time: " << instance->currentItem->time << "s" << std::endl;
+        instance->sendStatus(QM::QueueEvents::ITEM_UPDATED);
     }
 
     bool loadLibrary();
@@ -135,7 +134,12 @@ private:
         nlohmann::json j       = *this->currentItem;
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
-
+    }
+    inline void sendStatus(QM::QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
+        if (this->currentItem == nullptr) {
+            return;
+        }
+        this->sendStatus(this->currentItem->status, event, reason, sleep);
     }
     std::string generateRandomFilename(const std::string& extension = ".tmp") {
         const char charset[] =

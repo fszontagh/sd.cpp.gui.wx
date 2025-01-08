@@ -898,11 +898,6 @@ namespace sd_gui_utils {
         return data;
     }
     inline std::unordered_map<wxString, wxString> parseExifPrompts(wxString text) {
-        size_t pos = text.find("charset=Unicode");
-        if (pos != wxString::npos) {
-            text.erase(pos, wxStrlen("charset=Unicode"));
-        }
-
         std::unordered_map<wxString, wxString> result;
         result["prompt"] = "";
 
@@ -980,8 +975,37 @@ namespace sd_gui_utils {
         return result;
     }
 
+    inline wxString Exiv2ToWxString(const std::string& exifString) {
+        const char* prefix_ascii1  = "charset=\"ASCII\" ";
+        const char* prefix_ascii2  = "charset=Ascii ";
+        const char* prefix_Unicode = "charset=Unicode ";
+        wxString info;
+
+        const size_t input_size = exifString.size();
+
+        if (wxString::FromUTF8(exifString).StartsWith(prefix_ascii1)) {
+            const size_t prefix1_size = strlen(prefix_ascii1);
+            if (input_size > prefix1_size) {
+                info = wxString(exifString.c_str() + prefix1_size, wxConvISO8859_1);
+            }
+        } else if (wxString::FromUTF8(exifString).StartsWith(prefix_ascii2)) {
+            const size_t prefix2_size = strlen(prefix_ascii2);
+            if (input_size > prefix2_size) {
+                info = wxString(exifString.c_str() + prefix2_size, wxConvISO8859_1);
+            }
+        } else if (wxString::FromUTF8(exifString).StartsWith(prefix_Unicode)) {
+            const size_t prefixunicode_size = strlen(prefix_Unicode);
+            if (input_size > prefixunicode_size) {
+                info = wxString::FromUTF8(exifString.c_str() + prefixunicode_size, input_size - prefixunicode_size);
+            }
+        } else if (input_size > 0) {
+            info = wxString::FromUTF8(exifString.c_str(), input_size);
+        }
+
+        return info;
+    }
+
     inline static wxString AppendSuffixToFileName(const wxString& filePath, const wxString& suffix) {
-        // Ellenőrizzük, hogy a fájl létezik-e
         if (!wxFileExists(filePath)) {
             std::cerr << "File does not exist: " << filePath << std::endl;
             return "";
@@ -994,6 +1018,22 @@ namespace sd_gui_utils {
 
         return fileName.GetFullPath();
     }
+
+    /**
+     * Creates a unique file path by combining the given filename, extension, and folder path.
+     * If a file with the same name already exists, appends a counter to generate a unique filename.
+     * Optionally appends a suffix to the filename.
+     *
+     * @param filename The base name of the file.
+     * @param extension The file extension.
+     * @param folderPath The path to the folder where the file will be located.
+     * @param suffix An optional suffix to append to the filename.
+     * @return The full path of the unique file as a wxString.
+     *
+     * If the specified directory does not exist, it is created recursively.
+     * Handles different path separators based on the operating system.
+     * Logs an error message if the directory cannot be created.
+     */
 
     inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "") {
         // Normalize path separator for the current OS
@@ -1088,6 +1128,38 @@ namespace sd_gui_utils {
         int m_id;
     };
 
+    struct wxPointDouble {
+        wxPointDouble()                                = default;
+        wxPointDouble(const wxPointDouble&)            = default;
+        wxPointDouble(wxPointDouble&&)                 = default;
+        wxPointDouble& operator=(const wxPointDouble&) = default;
+        wxPointDouble& operator=(wxPointDouble&&)      = default;
+        wxPointDouble& operator=(wxPoint&&) {
+            x = static_cast<double>(x);
+            y = static_cast<double>(y);
+            return *this;
+        }
+        wxPointDouble& operator=(wxPoint&) {
+            x = static_cast<double>(x);
+            y = static_cast<double>(y);
+            return *this;
+        }
+        wxPointDouble(wxPoint pos)
+            : x(pos.x), y(pos.y) {}
+        wxPointDouble(double x, double y)
+            : x(x), y(y) {}
+        double x = 0;
+        double y = 0;
+    };
+    struct wxPosition {
+        wxPosition(sd_gui_utils::wxPointDouble pos, wxPoint offset, sd_gui_utils::wxPointDouble originalPos)
+            : pos(pos), offset(offset), originalPos(originalPos) {}
+        wxPosition() = default;
+        sd_gui_utils::wxPointDouble pos;
+        wxPoint offset;
+        wxPointDouble originalPos;
+    };
+
     /*
      * Used at m_notebook1302OnNotebookPageChanged
      * FYI: keep the order as the gui builder
@@ -1100,5 +1172,23 @@ namespace sd_gui_utils {
         PANEL_IMAGEINFO,
         PANEL_MODELS
     };
+    /// \brief Convert GuiMainPanels enum to size_t
+    ///
+    /// This implicit conversion is useful when using the enum as an index to a
+    /// container, such as a vector or array.
+    ///
+    /// \param[in] panel The GuiMainPanels enum value to convert
+    /// \return The size_t value corresponding to the enum
+    constexpr size_t operator+(GuiMainPanels panel) {
+        return static_cast<size_t>(panel);
+    }
+    constexpr bool operator==(int value, GuiMainPanels panel) {
+        return value == static_cast<int>(panel);
+    }
+
+    constexpr bool operator!=(int value, GuiMainPanels panel) {
+        return value != static_cast<int>(panel);
+    }
+
 }  // namespace sd_gui_utils
 #endif

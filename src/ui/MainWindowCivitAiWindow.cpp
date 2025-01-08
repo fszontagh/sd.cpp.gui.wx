@@ -71,7 +71,7 @@ void MainWindowCivitAiWindow::m_model_detailsOnDataViewListCtrlSelectionChanged(
     auto item = this->m_model_details->GetCurrentItem();
 
     nlohmann::json* data = reinterpret_cast<nlohmann::json*>(this->m_model_details->GetItemData(item));
-    if (data == nullptr || data == NULL) {
+    if (data == nullptr) {
         return;
     }
     nlohmann::json js(*data);
@@ -87,7 +87,7 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
     }
     auto item             = this->m_model_filelist->RowToItem(selection);
     nlohmann::json* jsptr = reinterpret_cast<nlohmann::json*>(this->m_model_filelist->GetItemData(item));
-    if (jsptr == NULL || jsptr == nullptr) {
+    if (jsptr == nullptr) {
         return;
     }
     nlohmann::json js(*jsptr);
@@ -340,7 +340,7 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread) {
         for (auto& bm : this->bitmaps) {
             auto img = static_cast<CivitAi::PreviewImage*>(bm->GetClientData());
             if (img->downloaded && std::filesystem::exists(img->localpath)) {
-                auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img->localpath), 200, 200, wxColour(0, 0, 0), wxString::FromUTF8Unchecked(this->config->thumbs_path));
+                auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img->localpath), 200, 200, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->config->thumbs_path));
                 bm->SetBitmap(resized);
             }
         }
@@ -354,7 +354,7 @@ void MainWindowCivitAiWindow::showImages(int version_id, bool from_thread) {
 
         for (auto& img : this->previewImagesMap) {
             if (img.second->downloaded && std::filesystem::exists(img.second->localpath)) {
-                auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.second->localpath), 200, 200, wxColour(0, 0, 0, 0), wxString::FromUTF8Unchecked(this->config->thumbs_path));
+                auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.second->localpath), 200, 200, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->config->thumbs_path));
                 wxStaticBitmap* bitmap = new wxStaticBitmap(m_scrolledWindow4, wxID_ANY, resized, wxDefaultPosition, wxSize(200, 200), 0);
                 bitmap->SetClientData((void*)img.second.get());
                 image_container->Add(bitmap, 0, wxALL | wxRESERVE_SPACE_EVEN_IF_HIDDEN, 1);

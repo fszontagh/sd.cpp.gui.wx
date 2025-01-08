@@ -1,16 +1,12 @@
-name: Release and Check build on multiple platforms
+name: Test on Windows22
 
 on:
   workflow_dispatch:
-  push:
-    tags: [ 'v[0-9]+.[0-9]+.[0-9]+*' ]
-  pull_request:
-
 jobs:
 
   prepare-conan-cache:
     name: Prepare Conan cache for Windows
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -23,8 +19,8 @@ jobs:
             ~/.conan2
             build\generators
             CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         if: steps.cache-conan.outputs.cache-hit != 'true'
@@ -43,7 +39,7 @@ jobs:
   build-windows:
     name: Build on Windows
     needs: [prepare-conan-cache]
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       VULKAN_VERSION: 1.3.261.1
     strategy:
@@ -99,8 +95,8 @@ jobs:
            ~/.conan2
            build\generators
            CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -111,11 +107,12 @@ jobs:
       - name: Install CUDA Toolkit
         if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
         id: cuda-toolkit
-        uses: Jimver/cuda-toolkit@v0.2.11
+        uses: Jimver/cuda-toolkit@v0.2.19
         with:
-          cuda: "12.2.0"
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust", "visual_studio_integration"]'
+          cuda: "12.4.1"
+          sub-packages: '["nvcc", "visual_studio_integration"]'
           method: "network"
+          linux-local-args: '["--toolkit"]'
 
       - name: Print cuda version
         if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
@@ -156,7 +153,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_TOOLKIT_ROOT_DIR="${{steps.cuda-toolkit.outputs.CUDA_PATH}}" ${{ matrix.variant.cmake_flags }} --preset conan-default
+          cmake .. -DCMAKE_BUILD_TYPE=Release ${{ matrix.variant.cmake_flags }} --preset conan-default
 
       - name: Build Targets
         if: steps.cache-build.outputs.cache-hit != 'true'
@@ -174,7 +171,7 @@ jobs:
 
   package-installer:
     name: Build main Application
-    runs-on: windows-2019
+    runs-on: windows-2022
     needs: [build-windows]
     steps:
       - name: Check out code
@@ -195,8 +192,8 @@ jobs:
            ~/.conan2
            build\generators
            CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
+          key: ${{ runner.os }}-win22-conan-${{ hashFiles('conanfile.txt') }}
+          restore-keys: ${{ runner.os }}-win22-conan
 
       - name: Install Conan
         run: |

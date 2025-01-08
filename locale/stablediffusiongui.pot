@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: StableDiffusionGUI 0.2.2\n"
+"Project-Id-Version: StableDiffusionGUI 0.2.4\n"
 "Report-Msgid-Bugs-To: sdgui@fsociety.hu\n"
-"POT-Creation-Date: 2024-12-15 11:34+0100\n"
+"POT-Creation-Date: 2025-01-08 11:17+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,12 +22,12 @@ msgstr ""
 msgid "Failed to load model: "
 msgstr ""
 
-#: extprocess/src/ApplicationLogic.cpp:208
+#: extprocess/src/ApplicationLogic.cpp:212
 #, c-format
 msgid "Unknown mode: %s"
 msgstr ""
 
-#: extprocess/src/ApplicationLogic.cpp:419
+#: extprocess/src/ApplicationLogic.cpp:435
 msgid "Failed to load image: "
 msgstr ""
 
@@ -35,211 +35,454 @@ msgstr ""
 msgid "Another program instance is already running, aborting."
 msgstr ""
 
-#: src/helpers/TreeListManager.h:73 src/ui/MainWindowUI.cpp:1284
+#: src/helpers/TreeListManager.h:73 src/ui/MainWindowUI.cpp:1495
 msgid "[F] "
 msgstr ""
 
-#: src/ui/MainWindow.cpp:76
+#: src/ui/MainWindow.cpp:81
 msgid "About the sd.cpp.gui.wx"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:77
+#: src/ui/MainWindow.cpp:82
 msgid "About the program"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:84
+#: src/ui/MainWindow.cpp:89
 msgid "Open CivitAi.com model browser"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:85
+#: src/ui/MainWindow.cpp:90
 msgid ""
 "With CivitAi.com model browser, you can search for models or download models"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:92 src/ui/MainWindowUI.cpp:1392
+#: src/ui/MainWindow.cpp:97 src/ui/MainWindowUI.cpp:1602
 msgid "Show Widget"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:101
+#: src/ui/MainWindow.cpp:106
 msgid "Stop and restart the background process"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:102
+#: src/ui/MainWindow.cpp:107
 msgid ""
 "This will send a terminate to the background diffuser process. This will "
 "clear up all used memory (eg. freeing up all the loaded models)"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:115
+#: src/ui/MainWindow.cpp:120
 msgid "Model:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:132
+#: src/ui/MainWindow.cpp:137
 msgid "Type:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:139 src/ui/MainWindow.cpp:1170
+#: src/ui/MainWindow.cpp:144 src/ui/MainWindow.cpp:1462
 msgid ""
 "Weight type. If not specified, the default is the type of the weight file."
 msgstr ""
 
-#: src/ui/MainWindow.cpp:149 src/ui/MainWindow.cpp:2325
+#: src/ui/MainWindow.cpp:154 src/ui/MainWindow.cpp:2623
 msgid "Current job: none"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:193
+#: src/ui/MainWindow.cpp:206
 msgid "Resume all"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:198
+#: src/ui/MainWindow.cpp:211
 msgid "Pause all"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:203
+#: src/ui/MainWindow.cpp:216
 msgid "Delete all"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:210
+#: src/ui/MainWindow.cpp:223
 msgid "Number of jobs: 0"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:234
+#: src/ui/MainWindow.cpp:247
 msgid "Id"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:235
+#: src/ui/MainWindow.cpp:248
 msgid "Crated at"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:236 src/ui/MainWindow.cpp:992
-#: src/ui/MainWindow.cpp:2192 src/ui/MainWindow.cpp:2240
-#: src/ui/MainWindowUI.cpp:42 src/ui/MainWindowUI.cpp:1765
-#: src/ui/MainWindowUI.cpp:3543
+#: src/ui/MainWindow.cpp:249 src/ui/MainWindow.cpp:988
+#: src/ui/MainWindow.cpp:2490 src/ui/MainWindow.cpp:2538
+#: src/ui/MainWindowUI.cpp:42 src/ui/MainWindowUI.cpp:1916
+#: src/ui/MainWindowUI.cpp:3830
 msgid "Type"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:237 src/ui/MainWindowUI.cpp:3515
-#: src/ui/MainWindowUI.cpp:3521
+#: src/ui/MainWindow.cpp:250 src/ui/MainWindowUI.cpp:3802
+#: src/ui/MainWindowUI.cpp:3808
 msgid "Model"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:238 src/ui/MainWindowUI.cpp:3599
+#: src/ui/MainWindow.cpp:251 src/ui/MainWindowUI.cpp:3893
 msgid "Sampler"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:239 src/ui/MainWindowUI.cpp:3579
+#: src/ui/MainWindow.cpp:252 src/ui/MainWindowUI.cpp:3873
 msgid "Seed"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:240
+#: src/ui/MainWindow.cpp:253
 msgid "Progress"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:241
+#: src/ui/MainWindow.cpp:254
 msgid "Speed"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:242 src/ui/MainWindow.cpp:2167
-#: src/ui/MainWindow.cpp:2197 src/ui/MainWindow.cpp:2239
-#: src/ui/MainWindow.cpp:2253
+#: src/ui/MainWindow.cpp:255 src/ui/MainWindow.cpp:2465
+#: src/ui/MainWindow.cpp:2495 src/ui/MainWindow.cpp:2537
+#: src/ui/MainWindow.cpp:2551
 msgid "Status"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:280
+#: src/ui/MainWindow.cpp:293
 msgid "Job details"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:297
+#: src/ui/MainWindow.cpp:310
 msgid "Jobs and Images"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:328 src/ui/MainWindow.cpp:622
-#: src/ui/MainWindow.cpp:1900
+#: src/ui/MainWindow.cpp:349 src/ui/MainWindow.cpp:460
+#: src/ui/MainWindow.cpp:2198
 msgid "Diffusion"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:343
+#: src/ui/MainWindow.cpp:364
 msgid "Controlnet"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:379
+#: src/ui/MainWindow.cpp:369
+msgid "OpenPose Editor"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:382 src/ui/MainWindow.cpp:519 src/ui/MainWindow.cpp:945
+#: src/ui/MainWindow.cpp:1182 src/ui/MainWindow.cpp:1201
+#: src/ui/MainWindow.cpp:1208 src/ui/MainWindow.cpp:1215
+msgid "Select a file"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:382 src/ui/MainWindow.cpp:519 src/ui/MainWindow.cpp:643
+#: src/ui/MainWindow.cpp:713 src/ui/MainWindow.cpp:945
+msgid ""
+"Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;"
+"*.JPEG;*.PNG"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:387 src/ui/MainWindowUI.cpp:4001
+msgid "CN on CPU"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:388
+msgid "Keep controlnet on CPU"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:403 src/ui/MainWindow.cpp:654
+msgid "Show full"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:405
+msgid "Show the original controlnet image"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:413
+msgid "Remove control image"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:424
+msgid "txt2img"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:472
+msgid "Brush"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:481
+msgid "Zoom"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:493
+msgid "Save the mask into png"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:500
+msgid "Invert mask"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:507
+msgid ""
+"Resize the image to fit into the diffusion's width and height.\n"
+"WARNING: this will delete the current mask if have!"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:515
+msgid "Clear the mask"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:520
+msgid "Open a mask image from file"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:534
+msgid "Change the brush shape to circle"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:541
+msgid "Change the brush shape to square"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:548
+msgid "Change the brush shape to triangle"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:558
+msgid ""
+"Ctrl + Mouse wheel to ZOOM\n"
+"Shift + Mouse wheel to Change brush size"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:592
+msgid "Outpaint Top:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:596 src/ui/MainWindow.cpp:603 src/ui/MainWindow.cpp:610
+#: src/ui/MainWindow.cpp:617
+msgid "0"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:599
+msgid "Right:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:606
+msgid "Bottom:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:613
+msgid "Left:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:620
+msgid "Resize"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:633
+msgid "Preview and InPaint"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:643 src/ui/MainWindow.cpp:713
+msgid "Select an image"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:646
+msgid "Strength:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:671
+msgid "img2img"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:709
+msgid "Source Image"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:727
+msgid "Upscaler model"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:742 src/ui/MainWindow.cpp:764
+msgid "Width:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:750 src/ui/MainWindow.cpp:772
+msgid "Height:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:786
+msgid "Upscale factor"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:818
+msgid "Keep upscale model in memory"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:819
+msgid ""
+"WARNING: If you check this box, the upscaler model will remain in memory for "
+"the next job, which could lead to a memory overflow or program crash "
+"(segfault)."
+msgstr ""
+
+#: src/ui/MainWindow.cpp:823
+msgid "Keep checkpoints in memory"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:824
+msgid ""
+"WARNING: If you check this box, the SD model from the previous job will "
+"remain in RAM/VRAM, which could potentially lead to a program crash "
+"(segfault)."
+msgstr ""
+
+#: src/ui/MainWindow.cpp:835
+msgid "Upscaler"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:882 src/ui/MainWindow.cpp:897
+msgid "Copy to txt2img prompt"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:885 src/ui/MainWindow.cpp:900
+msgid "Copy to img2img prompt"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:914
+msgid "Find and select model"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:915
+msgid "Try to find and load the model by the image parameters"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:919
+msgid "Load all to txt2img"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:924
+msgid "Load all to img2img"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:954
+msgid "Clear"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:965
+msgid "Image info"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:986 src/ui/MainWindow.cpp:2459
+#: src/ui/MainWindow.cpp:2489 src/ui/MainWindow.cpp:2536
+#: src/ui/MainWindowUI.cpp:40 src/ui/MainWindowUI.cpp:1898
+msgid "Name"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:987 src/ui/MainWindow.cpp:2493
+#: src/ui/MainWindow.cpp:2496 src/ui/MainWindow.cpp:2550
+#: src/ui/MainWindowUI.cpp:41
+msgid "Size"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:989 src/ui/MainWindowUI.cpp:43
+#: src/ui/MainWindowUI.cpp:1910
+msgid "Hash"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1007
+msgid "Model details"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1014
+msgid "[F]avorite"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1019
+msgid "wxFB Website"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1046 src/ui/MainWindow.cpp:2529
+msgid "Models"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1067
+msgid "Prompt:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1082
+msgid "Negative prompt:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1098
+msgid "Prompt presets:"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1122
 msgid "What is this?"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:383
-msgid ""
-"For more information, click the button with the question mark icon.\n"
-"\n"
-"To use the FLUX model, select the \"Diffusion Model\" file picker and choose "
-"the FLUX model.\n"
-"For SD3.5, use the dropdown menu at the top to select a model."
-msgstr ""
-
-#: src/ui/MainWindow.cpp:393
+#: src/ui/MainWindow.cpp:1129
 msgid "SLG scale:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:395 src/ui/MainWindow.cpp:401
+#: src/ui/MainWindow.cpp:1131 src/ui/MainWindow.cpp:1137
 msgid "skip layer guidance (SLG) scale, only for DiT models: (default: 0.0)"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:411
+#: src/ui/MainWindow.cpp:1141
 msgid "Skip layers:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:413 src/ui/MainWindow.cpp:418
+#: src/ui/MainWindow.cpp:1143 src/ui/MainWindow.cpp:1148
 msgid "Layers to skip for SLG steps: (default: [7,8,9])"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:417
+#: src/ui/MainWindow.cpp:1147
 msgid "7,8,9"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:428
+#: src/ui/MainWindow.cpp:1152
 msgid "Skip Layer Start:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:430 src/ui/MainWindow.cpp:436
+#: src/ui/MainWindow.cpp:1154 src/ui/MainWindow.cpp:1160
 msgid ""
 "SLG enabling point: (default: 0.01)\n"
 "SLG will be enabled at step int([STEPS]*[START]) and disabled at "
 "int([STEPS]*[END])"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:446
+#: src/ui/MainWindow.cpp:1164
 msgid "Skip Layer End:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:448 src/ui/MainWindow.cpp:454
+#: src/ui/MainWindow.cpp:1166 src/ui/MainWindow.cpp:1172
 msgid ""
 "SLG disabling point: (default: 0.2)\n"
 "SLG will be enabled at step int([STEPS]*[START]) and disabled at "
 "int([STEPS]*[END])"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:473
+#: src/ui/MainWindow.cpp:1176
 msgid "Diffusion Model:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:475
+#: src/ui/MainWindow.cpp:1178
 msgid "Diffusion models, for example FLUX"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:479 src/ui/MainWindow.cpp:504 src/ui/MainWindow.cpp:517
-#: src/ui/MainWindow.cpp:530 src/ui/MainWindow.cpp:548 src/ui/MainWindow.cpp:959
-msgid "Select a file"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:479 src/ui/MainWindow.cpp:504 src/ui/MainWindow.cpp:517
-#: src/ui/MainWindow.cpp:530
+#: src/ui/MainWindow.cpp:1182 src/ui/MainWindow.cpp:1201
+#: src/ui/MainWindow.cpp:1208 src/ui/MainWindow.cpp:1215
 msgid "Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:482
+#: src/ui/MainWindow.cpp:1188
+msgid "Clean models"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1192
 msgid "Flash attention"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:483
+#: src/ui/MainWindow.cpp:1193
 msgid ""
 "Use flash attention in the diffusion model. This will reduce significantly "
 "the memory uage (for low vram).\n"
@@ -248,426 +491,264 @@ msgid ""
 "\n"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:490
-msgid "Clean model"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:500
+#: src/ui/MainWindow.cpp:1197
 msgid "ClipL:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:513
+#: src/ui/MainWindow.cpp:1204
 msgid "ClipG:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:526
+#: src/ui/MainWindow.cpp:1211
 msgid "T5XXL:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:548 src/ui/MainWindow.cpp:671 src/ui/MainWindow.cpp:735
-#: src/ui/MainWindow.cpp:959
-msgid ""
-"Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;"
-"*.JPEG;*.PNG"
+#: src/ui/MainWindow.cpp:1240 src/ui/MainWindowUI.cpp:3926
+msgid "VAE"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:553 src/ui/MainWindowUI.cpp:3707
-msgid "CN on CPU"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:554
-msgid "Keep controlnet on CPU"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:569 src/ui/MainWindow.cpp:684
-msgid "Show full"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:571
-msgid "Show the original controlnet image"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:579
-msgid "Remove control image"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:590
-msgid "txt2img"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:638
-msgid "Input image"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:671 src/ui/MainWindow.cpp:735
-msgid "Select an image"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:676
-msgid "Strength:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:701
-msgid "img2img"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:731
-msgid "Source Image"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:749
-msgid "Upscaler model"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:764 src/ui/MainWindow.cpp:786
-#: src/ui/MainWindow.cpp:1205
-msgid "Width:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:772 src/ui/MainWindow.cpp:794
-#: src/ui/MainWindow.cpp:1212
-msgid "Height:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:808
-msgid "Upscale factor"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:840
-msgid "Keep upscale model in memory"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:841
-msgid ""
-"WARNING: If you check this box, the upscaler model will remain in memory for "
-"the next job, which could lead to a memory overflow or program crash "
-"(segfault)."
-msgstr ""
-
-#: src/ui/MainWindow.cpp:845
-msgid "Keep checkpoints in memory"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:846
-msgid ""
-"WARNING: If you check this box, the SD model from the previous job will "
-"remain in RAM/VRAM, which could potentially lead to a program crash "
-"(segfault)."
-msgstr ""
-
-#: src/ui/MainWindow.cpp:857
-msgid "Upscaler"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:896 src/ui/MainWindow.cpp:911
-msgid "Copy to txt2img prompt"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:899 src/ui/MainWindow.cpp:914
-msgid "Copy to img2img prompt"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:928
-msgid "Find and select model"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:929
-msgid "Try to find and load the model by the image parameters"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:949
-msgid "Load all to txt2img"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:954
-msgid "Load all to img2img"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:968
-msgid "Clear"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:979
-msgid "Image info"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:990 src/ui/MainWindow.cpp:2161
-#: src/ui/MainWindow.cpp:2191 src/ui/MainWindow.cpp:2238
-#: src/ui/MainWindowUI.cpp:40 src/ui/MainWindowUI.cpp:1747
-msgid "Name"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:991 src/ui/MainWindow.cpp:2195
-#: src/ui/MainWindow.cpp:2198 src/ui/MainWindow.cpp:2252
-#: src/ui/MainWindowUI.cpp:41
-msgid "Size"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:993 src/ui/MainWindowUI.cpp:43
-#: src/ui/MainWindowUI.cpp:1759
-msgid "Hash"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1011
-msgid "Model details"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1018
-msgid "wxFB Website"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1023
-msgid "[F]avorite"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1050 src/ui/MainWindow.cpp:2231
-msgid "Models"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1063
-msgid "Vae:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1077 src/ui/MainWindow.cpp:1118
+#: src/ui/MainWindow.cpp:1256 src/ui/MainWindow.cpp:1288
 msgid "CPU"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1078 src/ui/MainWindowUI.cpp:3638
+#: src/ui/MainWindow.cpp:1257 src/ui/MainWindowUI.cpp:3932
 msgid "VAE on CPU"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1085 src/ui/MainWindowUI.cpp:3643
-msgid "VAE tiling"
+#: src/ui/MainWindow.cpp:1261
+msgid "Tiling"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1086
+#: src/ui/MainWindow.cpp:1262
 msgid "Process vae in tiles to reduce memory usage"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1090
-msgid "VAE decode only"
+#: src/ui/MainWindow.cpp:1269
+msgid "Decode only"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1096
-msgid "CFG:"
+#: src/ui/MainWindow.cpp:1278
+msgid "CLIP"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1104
-msgid "Clip skip:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1106 src/ui/MainWindow.cpp:1114
+#: src/ui/MainWindow.cpp:1281 src/ui/MainWindow.cpp:1294
 msgid ""
 "ignore last layers of CLIP network; 1 ignores none, 2 ignores one layer "
 "(default: -1)\n"
 "<= 0 represents unspecified, will be 1 for SD1.x, 2 for SD2.x"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1119
+#: src/ui/MainWindow.cpp:1289
 msgid "CLIP on CPU"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1126
+#: src/ui/MainWindow.cpp:1307
 msgid "TAESD:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1128
+#: src/ui/MainWindow.cpp:1309
 msgid "Using Tiny AutoEncoder for fast decoding (low quality)"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1139
-msgid "Batch:"
+#: src/ui/MainWindow.cpp:1313 src/ui/MainWindowUI.cpp:2687
+#: src/ui/MainWindowUI.cpp:2694 src/ui/MainWindowUI.cpp:2709
+#: src/ui/MainWindowUI.cpp:2715
+msgid "Not selected"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1141 src/ui/MainWindow.cpp:1146
-msgid "number of images to generate."
+#: src/ui/MainWindow.cpp:1327
+msgid "SEED"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1150
-msgid "Sampler:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1152 src/ui/MainWindow.cpp:1159
-msgid "sampling method (default: \"euler_a\")"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1163
-msgid "Scheduler:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1174
-msgid "Seed:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1187
+#: src/ui/MainWindow.cpp:1342
 msgid "Generate a random seed"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1194
-msgid "Steps:"
+#: src/ui/MainWindow.cpp:1349
+msgid "RESOLUTIONS"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1196 src/ui/MainWindow.cpp:1201
-msgid "number of sample steps (default: 20)"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1225
+#: src/ui/MainWindow.cpp:1358
 msgid "Swap the resolution"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1238
-msgid "Save the current settings into preset"
+#: src/ui/MainWindow.cpp:1365 src/ui/MainWindow.cpp:1376
+msgid "512"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1239
-msgid "Save the current settings into a new preset, or overwrite an exists one"
+#: src/ui/MainWindow.cpp:1390
+msgid "Small resolutions"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1246
+#: src/ui/MainWindow.cpp:1390
+msgid "640x384"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1390
+msgid "512x512"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1390
+msgid "512x768"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1394
+msgid "Lower resolutions for SD1.x"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "Large resolutions"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "1024x1024"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "1152x896"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "1216x832"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "1344x768"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1398
+msgid "1536x640"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1402
+msgid "Higher resolutions for FLUX/SDXL/SD3.5"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1409
+msgid "No presets"
+msgstr ""
+
+#: src/ui/MainWindow.cpp:1423
 msgid "Load the selected preset"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1247
+#: src/ui/MainWindow.cpp:1424
 msgid ""
 "Load a selected preset. The preset settings will over write the current "
 "generation settings"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1274
-msgid "Low res.:"
+#: src/ui/MainWindow.cpp:1431
+msgid "Save the current settings into preset"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1276 src/ui/MainWindow.cpp:1284
-msgid "Lower resolutions for SD1.x"
+#: src/ui/MainWindow.cpp:1432
+msgid "Save the current settings into a new preset, or overwrite an exists one"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1280 src/ui/MainWindow.cpp:1294
-msgid "Select one"
+#: src/ui/MainWindow.cpp:1455
+msgid "sampling method (default: \"euler_a\")"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1280
-msgid "640x384"
+#: src/ui/MainWindow.cpp:1472
+msgid "Steps:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1280
-msgid "512x512"
+#: src/ui/MainWindow.cpp:1474 src/ui/MainWindow.cpp:1479
+msgid "number of sample steps (default: 20)"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1280
-msgid "512x768"
+#: src/ui/MainWindow.cpp:1489
+msgid "Batch:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1288
-msgid "High Res.:"
+#: src/ui/MainWindow.cpp:1491 src/ui/MainWindow.cpp:1496
+msgid "number of images to generate."
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1290 src/ui/MainWindow.cpp:1298
-msgid "Higher resolutions for FLUX/SDXL/SD3.5"
+#: src/ui/MainWindow.cpp:1506
+msgid "CFG:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1294
-msgid "1024x1024"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1294
-msgid "1152x896"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1294
-msgid "1216x832"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1294
-msgid "1344x768"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1294
-msgid "1536x640"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1302
-msgid "Prompt presets:"
-msgstr ""
-
-#: src/ui/MainWindow.cpp:1313
+#: src/ui/MainWindow.cpp:1523
 msgid "Queue"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1524
+#: src/ui/MainWindow.cpp:1822
 msgid "Models path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1530 src/ui/MainWindow.cpp:1554
-#: src/ui/MainWindow.cpp:1578 src/ui/MainWindow.cpp:1602
-#: src/ui/MainWindow.cpp:1626 src/ui/MainWindow.cpp:1657
-#: src/ui/MainWindow.cpp:1679 src/ui/MainWindow.cpp:1706
-#: src/ui/MainWindow.cpp:1730
+#: src/ui/MainWindow.cpp:1828 src/ui/MainWindow.cpp:1852
+#: src/ui/MainWindow.cpp:1876 src/ui/MainWindow.cpp:1900
+#: src/ui/MainWindow.cpp:1924 src/ui/MainWindow.cpp:1955
+#: src/ui/MainWindow.cpp:1977 src/ui/MainWindow.cpp:2004
+#: src/ui/MainWindow.cpp:2028
 msgid "Select a folder"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1538 src/ui/MainWindow.cpp:1562
-#: src/ui/MainWindow.cpp:1586 src/ui/MainWindow.cpp:1610
-#: src/ui/MainWindow.cpp:1634 src/ui/MainWindow.cpp:1665
-#: src/ui/MainWindow.cpp:1687 src/ui/MainWindow.cpp:1714
-#: src/ui/MainWindow.cpp:1738 src/ui/MainWindowUI.cpp:715
+#: src/ui/MainWindow.cpp:1836 src/ui/MainWindow.cpp:1860
+#: src/ui/MainWindow.cpp:1884 src/ui/MainWindow.cpp:1908
+#: src/ui/MainWindow.cpp:1932 src/ui/MainWindow.cpp:1963
+#: src/ui/MainWindow.cpp:1985 src/ui/MainWindow.cpp:2012
+#: src/ui/MainWindow.cpp:2036 src/ui/MainWindowUI.cpp:850
 msgid "Open folder"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1548
+#: src/ui/MainWindow.cpp:1846
 msgid "Lora path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1572
+#: src/ui/MainWindow.cpp:1870
 msgid "Vae path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1596
+#: src/ui/MainWindow.cpp:1894
 msgid "Embedding path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1620
+#: src/ui/MainWindow.cpp:1918
 msgid "TAESD path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1641
+#: src/ui/MainWindow.cpp:1939
 msgid ""
 "TAESD models you can download from here: https://github.com/madebyollin/taesd/"
 "tree/main"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1651
+#: src/ui/MainWindow.cpp:1949
 msgid "Controlnet path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1675
+#: src/ui/MainWindow.cpp:1973
 msgid "ESRGAN path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1700
+#: src/ui/MainWindow.cpp:1998
 msgid "Presets path"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1724
+#: src/ui/MainWindow.cpp:2022
 msgid "Images output"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1749
+#: src/ui/MainWindow.cpp:2047
 msgid "Paths"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1757
+#: src/ui/MainWindow.cpp:2055
 msgid "Generate missing base model hash before diffusion"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1767
+#: src/ui/MainWindow.cpp:2065
 msgid "Keep model in memory"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1770
+#: src/ui/MainWindow.cpp:2068
 msgid "Keep model in (v)RAM after diffusions"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1771
+#: src/ui/MainWindow.cpp:2069
 msgid ""
 "Keep the model in memory (vRAM or RAM, depends on diffusion type) when it is "
 "possible. \n"
@@ -681,186 +762,186 @@ msgid ""
 "job is finished. "
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1782
+#: src/ui/MainWindow.cpp:2080
 msgid "Save all images (intermediate images)"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1794
+#: src/ui/MainWindow.cpp:2092
 msgid "Output images format"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1800
+#: src/ui/MainWindow.cpp:2098
 msgid "JPG"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1800
+#: src/ui/MainWindow.cpp:2098
 msgid "PNG"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1806
+#: src/ui/MainWindow.cpp:2104
 msgid "PNG meta data not supported yet"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1818
+#: src/ui/MainWindow.cpp:2116
 msgid "JPEG quality"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1825 src/ui/MainWindow.cpp:1843
+#: src/ui/MainWindow.cpp:2123 src/ui/MainWindow.cpp:2141
 msgid "Image output quality, default: 90%"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1836
+#: src/ui/MainWindow.cpp:2134
 msgid "PNG compression level"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1860
+#: src/ui/MainWindow.cpp:2158
 msgid "Number of CPU cores"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1879
+#: src/ui/MainWindow.cpp:2177
 msgid "Image name format"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1890
+#: src/ui/MainWindow.cpp:2188
 msgid "[mode]_[jobid]_[seed]_[width]x[height]_[batch]"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1909
+#: src/ui/MainWindow.cpp:2207
 msgid "Show notifications"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1916
+#: src/ui/MainWindow.cpp:2214
 msgid "Notification timeout:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1921
+#: src/ui/MainWindow.cpp:2219
 msgid "The timeout is depends on the OS and notification type"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1925
+#: src/ui/MainWindow.cpp:2223
 msgid "Language:"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1938
+#: src/ui/MainWindow.cpp:2236
 msgid "Only show favorite models"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1939
+#: src/ui/MainWindow.cpp:2237
 msgid ""
 "Only display the models marked as favorites in the model selector of the main "
 "GUI"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1950
+#: src/ui/MainWindow.cpp:2248
 msgid "GUI"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1958
+#: src/ui/MainWindow.cpp:2256
 msgid "Enable CivitAi features"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1960
+#: src/ui/MainWindow.cpp:2258
 msgid "Enable or disable all CivitAi features"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1970
+#: src/ui/MainWindow.cpp:2268
 msgid "CivitAi.com API key"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1980
+#: src/ui/MainWindow.cpp:2278
 msgid "How to generate API key on CivitAi.com"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1981
+#: src/ui/MainWindow.cpp:2279
 msgid "Click to the question mark button to get help"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1992
+#: src/ui/MainWindow.cpp:2290
 msgid "CivitAi"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:1996
+#: src/ui/MainWindow.cpp:2294
 msgid "Save"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2154
+#: src/ui/MainWindow.cpp:2452
 msgid "Versions"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2162
+#: src/ui/MainWindow.cpp:2460
 msgid "baseModel"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2163
+#: src/ui/MainWindow.cpp:2461
 msgid "baseModelType"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2165
+#: src/ui/MainWindow.cpp:2463
 msgid "Published"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2166 src/ui/MainWindow.cpp:2241
-#: src/ui/MainWindow.cpp:2244
+#: src/ui/MainWindow.cpp:2464 src/ui/MainWindow.cpp:2539
+#: src/ui/MainWindow.cpp:2542
 msgid "Downloads"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2176
+#: src/ui/MainWindow.cpp:2474
 msgid "Files"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2182
+#: src/ui/MainWindow.cpp:2480
 msgid "Download"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2194
+#: src/ui/MainWindow.cpp:2492
 msgid "Format"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2196
+#: src/ui/MainWindow.cpp:2494
 msgid "Fp"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2212
+#: src/ui/MainWindow.cpp:2510
 msgid "Checkpoints"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2212
+#: src/ui/MainWindow.cpp:2510
 msgid "LORA"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2212
+#: src/ui/MainWindow.cpp:2510
 msgid "Embeddings"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2216
+#: src/ui/MainWindow.cpp:2514
 msgid "Select the model type to filter"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2221
+#: src/ui/MainWindow.cpp:2519
 msgid "Search for model names"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2225
+#: src/ui/MainWindow.cpp:2523
 msgid "Search"
 msgstr ""
 
-#: src/ui/MainWindow.cpp:2251
+#: src/ui/MainWindow.cpp:2549
 msgid "File"
 msgstr ""
 
-#: src/ui/MainWindow.h:315
+#: src/ui/MainWindow.h:370
 msgid "sd.cpp.gui"
 msgstr ""
 
-#: src/ui/MainWindow.h:417
+#: src/ui/MainWindow.h:472
 msgid "Settings"
 msgstr ""
 
-#: src/ui/MainWindow.h:457
+#: src/ui/MainWindow.h:512
 msgid "About"
 msgstr ""
 
-#: src/ui/MainWindow.h:526
+#: src/ui/MainWindow.h:581
 msgid "CivitAI model downloader"
 msgstr ""
 
@@ -925,7 +1006,7 @@ msgstr ""
 
 #: src/ui/MainWindowCivitAiWindow.cpp:661 src/ui/MainWindowCivitAiWindow.cpp:834
 #: src/ui/MainWindowCivitAiWindow.cpp:849 src/ui/MainWindowCivitAiWindow.cpp:854
-#: src/ui/MainWindowUI.cpp:235
+#: src/ui/MainWindowUI.cpp:242
 msgid "N/A"
 msgstr ""
 
@@ -942,11 +1023,11 @@ msgstr ""
 msgid "Current job: %s %s %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:78 src/ui/MainWindowUI.cpp:1388
+#: src/ui/MainWindowUI.cpp:81 src/ui/MainWindowUI.cpp:1598
 msgid "Hide Widget"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:98
+#: src/ui/MainWindowUI.cpp:102
 #, c-format
 msgid ""
 "Officially from sd.cpp, the following upscaler model is supported: <br/><a "
@@ -954,20 +1035,21 @@ msgid ""
 "<a href=\"%s\">RealESRGAN_x4Plus</a>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:121 src/ui/MainWindowUI.cpp:122
+#: src/ui/MainWindowUI.cpp:125 src/ui/MainWindowUI.cpp:126
 #, c-format
 msgid ""
 "An error occurred when trying to start external process: %s.\n"
 " Please try again."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:121 src/ui/MainWindowUI.cpp:135
-#: src/ui/MainWindowUI.cpp:157 src/ui/MainWindowUI.cpp:2125
-#: src/ui/MainWindowUI.cpp:2310
+#: src/ui/MainWindowUI.cpp:125 src/ui/MainWindowUI.cpp:139
+#: src/ui/MainWindowUI.cpp:161 src/ui/MainWindowUI.cpp:2288
+#: src/ui/MainWindowUI.cpp:2476 src/ui/MainWindowUI.cpp:5143
+#: src/ui/MainWindowUI.cpp:5153
 msgid "Error"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:135 src/ui/MainWindowUI.cpp:136
+#: src/ui/MainWindowUI.cpp:139 src/ui/MainWindowUI.cpp:140
 #, c-format
 msgid ""
 "An error occurred when trying to start external process. Shared lib not "
@@ -975,21 +1057,21 @@ msgid ""
 " Please try again."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:151
+#: src/ui/MainWindowUI.cpp:155
 #, c-format
 msgid "Starting external process: %s %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:157
+#: src/ui/MainWindowUI.cpp:161
 msgid ""
 "An error occurred when trying to start external process. Please try again."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:172
+#: src/ui/MainWindowUI.cpp:176
 msgid "Please wait to finish the currently running jobs!"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:205
+#: src/ui/MainWindowUI.cpp:212
 msgid ""
 "<p><strong>Disclaimer</strong></p><p>Use of this application is at your own "
 "risk. The developer assumes no responsibility or liability for any potential "
@@ -997,368 +1079,403 @@ msgid ""
 "application, you acknowledge and accept these terms.</p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:212
+#: src/ui/MainWindowUI.cpp:219
 #, c-format
 msgid "<p>Version: %s</p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:213
+#: src/ui/MainWindowUI.cpp:220
 #, c-format
 msgid "<p>Git version: %s</p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:214
+#: src/ui/MainWindowUI.cpp:221
 #, c-format
 msgid "<p>Stable Diffusion CPP version: %s</p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:215
+#: src/ui/MainWindowUI.cpp:222
 #, c-format
 msgid "<p>Website: <a target='_blank' href='%s'>%s</a></p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:217
+#: src/ui/MainWindowUI.cpp:224
 #, c-format
 msgid "<p>Loaded backend: %s</p>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:219
+#: src/ui/MainWindowUI.cpp:226
 msgid "Configuration folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:223
+#: src/ui/MainWindowUI.cpp:230
 msgid "Model folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:224
+#: src/ui/MainWindowUI.cpp:231
 msgid "Embedding folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:225
+#: src/ui/MainWindowUI.cpp:232
 msgid "Lora folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:226
+#: src/ui/MainWindowUI.cpp:233
 msgid "Vae folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:227
+#: src/ui/MainWindowUI.cpp:234
 msgid "Controlnet folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:228
+#: src/ui/MainWindowUI.cpp:235
 msgid "ESRGAN folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:229
+#: src/ui/MainWindowUI.cpp:236
 msgid "TAESD folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:230
+#: src/ui/MainWindowUI.cpp:237
 msgid "Output folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:231
+#: src/ui/MainWindowUI.cpp:238
 msgid "Jobs folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:232
+#: src/ui/MainWindowUI.cpp:239
 msgid "Presets folder:"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:280
+#: src/ui/MainWindowUI.cpp:287
 msgid "No model selected"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:287 src/ui/MainWindowUI.cpp:288
+#: src/ui/MainWindowUI.cpp:294 src/ui/MainWindowUI.cpp:295
 #, c-format
 msgid "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:534
-msgid "Requeue"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:551
-msgid "Load parameters"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:552 src/ui/MainWindowUI.cpp:3770
-msgid "Copy prompts to text2img"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:553 src/ui/MainWindowUI.cpp:3771
-msgid "Copy prompts to img2img"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:554
-#, c-format
-msgid "Select model %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:557
-msgid "Send the last image to the Upscale tab"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:558
-msgid "Send the last image to the img2img tab"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:563
-msgid "Upscale again"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:570
-msgid "Pause"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:570
-msgid "Resume"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:574
-msgid "Delete"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:622
-#, c-format
-msgid "Create subfolder in: '%s'"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:627
-msgid "RE-Calculate &Hash"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:629
-msgid "Calculate &Hash"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:635
-msgid "Force update info from &CivitAi"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:637
-msgid "Update info from &CivitAi"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:642
-#, c-format
-msgid "&Select model %s to the next job"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:644
-msgid "Open model on CivitAi.com in default browser"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:648
-#, c-format
-msgid "Convert model to %s gguf format"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:657
-#, c-format
-msgid "Append to text2img prompt <lora:%s:0.5>"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:658
-#, c-format
-msgid "Append to text2img neg. prompt <lora:%s:0.5>"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:659
-#, c-format
-msgid "Append to img2img prompt <lora:%s:0.5>"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:660
-#, c-format
-msgid "Append to img2img neg. prompt <lora:%s:0.5>"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:664
-#, c-format
-msgid "Append to text2img prompt %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:665
-#, c-format
-msgid "Append to text2img neg. prompt %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:666
-#, c-format
-msgid "Append to img2img prompt %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:667
-#, c-format
-msgid "Append to img2img neg. prompt %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:678
-msgid "&Move model into another sub folder"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:682
-#, c-format
-msgid "Move the model into the checkoints folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:683
-#, c-format
-msgid "Move the model into the VAE folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:684
-#, c-format
-msgid "Move the model into the Lora folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:685
-#, c-format
-msgid "Move the model into the Embedding folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:686
-#, c-format
-msgid "Move the model into the TaeSD folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:687
-#, c-format
-msgid "Move the model into the ESRGAN (upscalers) folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:688
-#, c-format
-msgid "Move the model into the ControlNet folder: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:696
-msgid "&Move to another folder"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:698
-msgid "&Delete model file"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:743 src/ui/MainWindowUI.cpp:749
-#, c-format
-msgid "Image type not supported: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:759
-msgid "Load generation parameters from image?"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:759
-msgid "Load parameters?"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:849
-msgid "No upscaler model found!"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:892
-msgid "No taesd model found!"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:902
-msgid "No vae model found!"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1030
-#, c-format
-msgid "Skipping controlnet with diffusion model: %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1034
-msgid "No controlnet model found!"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1096
-#, c-format
-msgid "Controlnet Image %dx%dpx"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1183
-msgid "IMG2IMG - original image"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1241 src/ui/MainWindowUI.cpp:1242
-#: src/ui/MainWindowUI.cpp:1247 src/ui/MainWindowUI.cpp:1248
-#, c-format
-msgid "%dpx"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1284
-#, c-format
-msgid "%s %s"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1487
-msgid "Please specify a name (only alphanumeric)"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1673
-msgid "Taesd file not found: "
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1691
-msgid "Vae file not found: "
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1714
-msgid "Controlnet file not found: "
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1753
-msgid "File name"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1777
-msgid "Last modified"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1794
-#, c-format
-msgid "#%d id"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1799
-#, c-format
-msgid "#%d name"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1804
-#, c-format
-msgid "#%d format"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1809
-#, c-format
-msgid "#%d type"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1826
-#, c-format
-msgid "Resolution: %s Seed: %<PRId64> Steps: %d"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1826
-msgid "Unknown"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1843
-msgid "Open Image on CivitAi.com"
-msgstr ""
-
-#: src/ui/MainWindowUI.cpp:1952 src/ui/MainWindowUI.cpp:2341
+#: src/ui/MainWindowUI.cpp:582 src/ui/MainWindowUI.cpp:651
+#: src/ui/MainWindowUI.cpp:2111 src/ui/MainWindowUI.cpp:2505
 #, c-format
 msgid "Number of jobs: %d"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2115
+#: src/ui/MainWindowUI.cpp:634
+msgid "Error: rows_to_del.size() != items_to_del.size()"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:639
+#, c-format
+msgid "Delete %d items"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:668
+msgid "Requeue"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:685
+msgid "Load parameters"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:686 src/ui/MainWindowUI.cpp:1987
+#: src/ui/MainWindowUI.cpp:4064
+msgid "Copy prompts to text2img"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:687 src/ui/MainWindowUI.cpp:1988
+#: src/ui/MainWindowUI.cpp:4065
+msgid "Copy prompts to img2img"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:688 src/ui/MainWindowUI.cpp:2003
+#, c-format
+msgid "Select model %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:691
+msgid "Send the last image to the Upscale tab"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:692
+msgid "Send the last image to the img2img tab"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:697
+msgid "Upscale again"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:704
+msgid "Pause"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:704
+msgid "Resume"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:708
+msgid "Delete"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:757
+#, c-format
+msgid "Create subfolder in: '%s'"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:762
+msgid "RE-Calculate &Hash"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:764
+msgid "Calculate &Hash"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:770
+msgid "Force update info from &CivitAi"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:772
+msgid "Update info from &CivitAi"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:777
+#, c-format
+msgid "&Select model %s to the next job"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:779
+msgid "Open model on CivitAi.com in default browser"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:783
+#, c-format
+msgid "Convert model to %s gguf format"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:792
+#, c-format
+msgid "Append to text2img prompt <lora:%s:0.5>"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:793
+#, c-format
+msgid "Append to text2img neg. prompt <lora:%s:0.5>"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:794
+#, c-format
+msgid "Append to img2img prompt <lora:%s:0.5>"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:795
+#, c-format
+msgid "Append to img2img neg. prompt <lora:%s:0.5>"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:799
+#, c-format
+msgid "Append to text2img prompt %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:800
+#, c-format
+msgid "Append to text2img neg. prompt %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:801
+#, c-format
+msgid "Append to img2img prompt %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:802
+#, c-format
+msgid "Append to img2img neg. prompt %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:813
+msgid "&Move model into another sub folder"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:817
+#, c-format
+msgid "Move the model into the checkoints folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:818
+#, c-format
+msgid "Move the model into the VAE folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:819
+#, c-format
+msgid "Move the model into the Lora folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:820
+#, c-format
+msgid "Move the model into the Embedding folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:821
+#, c-format
+msgid "Move the model into the TaeSD folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:822
+#, c-format
+msgid "Move the model into the ESRGAN (upscalers) folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:823
+#, c-format
+msgid "Move the model into the ControlNet folder: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:831
+msgid "&Move to another folder"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:833
+msgid "&Delete model file"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:891 src/ui/MainWindowUI.cpp:897
+#, c-format
+msgid "Image type not supported: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:907
+msgid "Load generation parameters from image?"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:907
+msgid "Load parameters?"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1004
+msgid "No upscaler model found!"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1047
+msgid "No taesd model found!"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1057
+msgid "No vae model found!"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1232
+#, c-format
+msgid "Skipping controlnet with diffusion model: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1236
+msgid "No controlnet model found!"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1298
+#, c-format
+msgid "Controlnet Image %dx%dpx"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1387
+msgid "IMG2IMG - original image"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1451 src/ui/MainWindowUI.cpp:1452
+#: src/ui/MainWindowUI.cpp:1457 src/ui/MainWindowUI.cpp:1458
+#, c-format
+msgid "%dpx"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1495
+#, c-format
+msgid "%s %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1625
+msgid "Please specify a name (only alphanumeric)"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1824
+msgid "Taesd file not found: "
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1842
+msgid "Vae file not found: "
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1865
+msgid "Controlnet file not found: "
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1904
+msgid "File name"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1928
+msgid "Last modified"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1945
+#, c-format
+msgid "#%d id"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1950
+#, c-format
+msgid "#%d name"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1955
+#, c-format
+msgid "#%d format"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1960
+#, c-format
+msgid "#%d type"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1977
+#, c-format
+msgid "Resolution: %s Seed: %<PRId64> Steps: %d"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1977
+msgid "Unknown"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1989
+msgid "Send to img2img"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1995
+msgid "Load available parameters"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:1996
+msgid "Open the original image in the web browser"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:2007
+msgid "Send to Image Info tab"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:2057
+#, c-format
+msgid ""
+"Open the original image in the web browser?\n"
+" %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:2057
+msgid "Open original image"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:2278
 #, c-format
 msgid ""
 "Create subfolder in: \n"
@@ -1367,143 +1484,153 @@ msgid ""
 "file is added to it."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2115
+#: src/ui/MainWindowUI.cpp:2278
 msgid "Create folder"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2125
+#: src/ui/MainWindowUI.cpp:2288
 msgid "Folder already exists"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2128
+#: src/ui/MainWindowUI.cpp:2291
 #, c-format
 msgid "Created folder: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2132
+#: src/ui/MainWindowUI.cpp:2295
 #, c-format
 msgid "Can not create folder: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2176
+#: src/ui/MainWindowUI.cpp:2339
 msgid "Select the directory to move the model"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2176
+#: src/ui/MainWindowUI.cpp:2339
 msgid "Move Model"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2183
+#: src/ui/MainWindowUI.cpp:2346
 #, c-format
 msgid ""
 "Are you sure you want to delete this model?\n"
 "%s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2183
+#: src/ui/MainWindowUI.cpp:2346
 msgid "Delete Model"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2310
+#: src/ui/MainWindowUI.cpp:2476
 msgid "Diffusion model not found"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2501 src/ui/MainWindowUI.cpp:2510
-#: src/ui/MainWindowUI.cpp:2517 src/ui/MainWindowUI.cpp:2524
-#: src/ui/MainWindowUI.cpp:2530 src/ui/MainWindowUI.cpp:2539
-#: src/ui/MainWindowUI.cpp:2545
-msgid "-none-"
+#: src/ui/MainWindowUI.cpp:2671 src/ui/MainWindowUI.cpp:2680
+#: src/ui/MainWindowUI.cpp:2700
+msgid "Select one"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2645
+#: src/ui/MainWindowUI.cpp:2815
 #, c-format
 msgid "Failed to parse preset: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2662
+#: src/ui/MainWindowUI.cpp:2832
 #, c-format
 msgid "Failed to parse prompt template: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2674 src/ui/MainWindowUI.cpp:2676
+#: src/ui/MainWindowUI.cpp:2852 src/ui/MainWindowUI.cpp:2854
 #, c-format
 msgid "Loaded %s: %d"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2851
+#: src/ui/MainWindowUI.cpp:3032
+#, c-format
+msgid ""
+"Image size (%d x %d) is smaller than the original size (%d x %d). Please "
+"increase the size to at least (%d x %d)."
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:3059
 msgid "Can not open image!"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2857
+#: src/ui/MainWindowUI.cpp:3118
+#, c-format
+msgid "No metadata found in image: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:3151
 msgid "Upscaler image open: file name is empty"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2863
+#: src/ui/MainWindowUI.cpp:3157
 #, c-format
 msgid "Upscaler image open: file not found: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:2900
+#: src/ui/MainWindowUI.cpp:3194
 msgid "Error accessing to the background process. Please try again."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3075
+#: src/ui/MainWindowUI.cpp:3369
 #, c-format
 msgid ""
 "%s is just stared to generate %d images\n"
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3078
+#: src/ui/MainWindowUI.cpp:3372
 msgid "Upscaling started"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3079
+#: src/ui/MainWindowUI.cpp:3373
 #, c-format
 msgid ""
 "Upscaling the image is started: %s\n"
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3081
+#: src/ui/MainWindowUI.cpp:3375
 msgid "Conversion started"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3082
+#: src/ui/MainWindowUI.cpp:3376
 #, c-format
 msgid ""
 "Conversion the model is started: %s\n"
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3085
+#: src/ui/MainWindowUI.cpp:3379
 #, c-format
 msgid "%d images generation started"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3087
+#: src/ui/MainWindowUI.cpp:3381
 msgid "One image generation started!"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3088
+#: src/ui/MainWindowUI.cpp:3382
 #, c-format
 msgid ""
 "%s is just started to generate the image\n"
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3103
+#: src/ui/MainWindowUI.cpp:3397
 #, c-format
 msgid ""
 "%s is just finished to generate %d images\n"
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3105
+#: src/ui/MainWindowUI.cpp:3399
 msgid "Upscaling done"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3106
+#: src/ui/MainWindowUI.cpp:3400
 #, c-format
 msgid ""
 "Upscaling the image is done: \n"
@@ -1511,11 +1638,11 @@ msgid ""
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3108
+#: src/ui/MainWindowUI.cpp:3402
 msgid "Conversion done"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3109
+#: src/ui/MainWindowUI.cpp:3403
 #, c-format
 msgid ""
 "Conversion the model is done: \n"
@@ -1523,384 +1650,441 @@ msgid ""
 "Model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3113
+#: src/ui/MainWindowUI.cpp:3412
 #, c-format
 msgid "%d images generation done"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3115
+#: src/ui/MainWindowUI.cpp:3414
 msgid "Image generation done!"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3116
+#: src/ui/MainWindowUI.cpp:3415
 #, c-format
 msgid "%s is just finished to generate the image with model: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3125
+#: src/ui/MainWindowUI.cpp:3424
 #, c-format
 msgid "%d jobs and %d steps without a segfault"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3127
+#: src/ui/MainWindowUI.cpp:3426
 #, c-format
 msgid "%d job and %d step without a segfault"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3141
+#: src/ui/MainWindowUI.cpp:3440
 #, c-format
 msgid "Model loaded: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3145
+#: src/ui/MainWindowUI.cpp:3444
 #, c-format
 msgid "Model load started: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3149
+#: src/ui/MainWindowUI.cpp:3448
 #, c-format
 msgid "Model load failed: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3150
+#: src/ui/MainWindowUI.cpp:3449
 msgid "Model load failed"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3151
+#: src/ui/MainWindowUI.cpp:3450
 #, c-format
 msgid "The '%s' just failed to load... for more details please see the logs!"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3159
+#: src/ui/MainWindowUI.cpp:3458
 #, c-format
 msgid "Diffusion started. Seed: %<PRId64> Batch: %d %dx%dpx Cfg: %.1f Steps: %d"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3165
+#: src/ui/MainWindowUI.cpp:3464
 #, c-format
 msgid "Upscale start, factor: %d image: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3170
+#: src/ui/MainWindowUI.cpp:3469
 #, c-format
 msgid "Generation error: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3181
+#: src/ui/MainWindowUI.cpp:3480
 #, c-format
 msgid "Model civitai image downloaded for model: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3198 src/ui/MainWindowUI.cpp:3203
+#: src/ui/MainWindowUI.cpp:3497 src/ui/MainWindowUI.cpp:3502
 #, c-format
 msgid "Moving: %s%%"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3209
+#: src/ui/MainWindowUI.cpp:3508
 #, c-format
 msgid "Model move error: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3215
+#: src/ui/MainWindowUI.cpp:3514
 #, c-format
 msgid "Model civitai %<PRIuMAX> image(s) download started for model: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3221
+#: src/ui/MainWindowUI.cpp:3520
 #, c-format
 msgid "Model civitai info download error: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3226
+#: src/ui/MainWindowUI.cpp:3525
 #, c-format
 msgid "Model civitai info download start: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3234
+#: src/ui/MainWindowUI.cpp:3533
 #, c-format
 msgid "Model civitai info download finished: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3238
+#: src/ui/MainWindowUI.cpp:3537
 #, c-format
 msgid "Model civitai info not found: %s Hash: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3241
+#: src/ui/MainWindowUI.cpp:3540
 #, c-format
 msgid "Model civitai info unkown parsing error happened: %s Hash: %s\n"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3424
+#: src/ui/MainWindowUI.cpp:3707
 msgid "Model download finished"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3425
+#: src/ui/MainWindowUI.cpp:3708
 #, c-format
 msgid "The model download is finished: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3432
+#: src/ui/MainWindowUI.cpp:3715
 msgid "Model download failed"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3433
+#: src/ui/MainWindowUI.cpp:3716
 #, c-format
 msgid "The model download is failed: %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3473
+#: src/ui/MainWindowUI.cpp:3760
 msgid "ID"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3478
+#: src/ui/MainWindowUI.cpp:3765
 msgid "Created at"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3483
+#: src/ui/MainWindowUI.cpp:3770
 msgid "Started at"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3492
+#: src/ui/MainWindowUI.cpp:3779
 msgid "Finished at"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3501
+#: src/ui/MainWindowUI.cpp:3788
 msgid "Udated at"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3510
+#: src/ui/MainWindowUI.cpp:3797
 msgid "Mode"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3527
+#: src/ui/MainWindowUI.cpp:3814
 msgid "Threads"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3533
+#: src/ui/MainWindowUI.cpp:3820
 msgid "Factor"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3548
+#: src/ui/MainWindowUI.cpp:3835
 msgid "Scheduler"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3556
+#: src/ui/MainWindowUI.cpp:3843
 msgid "Init image"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3561
+#: src/ui/MainWindowUI.cpp:3849
+msgid "Mask image"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:3855
 msgid "Strength"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3569
+#: src/ui/MainWindowUI.cpp:3863
 msgid "Prompt"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3574
+#: src/ui/MainWindowUI.cpp:3868
 msgid "Neg. prompt"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3584
+#: src/ui/MainWindowUI.cpp:3878
 msgid "Clip skip"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3589
+#: src/ui/MainWindowUI.cpp:3883
 msgid "Clip on CPU"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3590 src/ui/MainWindowUI.cpp:3639
-#: src/ui/MainWindowUI.cpp:3644 src/ui/MainWindowUI.cpp:3708
-#: src/ui/MainWindowUI.cpp:3715
+#: src/ui/MainWindowUI.cpp:3884 src/ui/MainWindowUI.cpp:3933
+#: src/ui/MainWindowUI.cpp:3938 src/ui/MainWindowUI.cpp:4002
+#: src/ui/MainWindowUI.cpp:4009
 msgid "yes"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3590 src/ui/MainWindowUI.cpp:3639
-#: src/ui/MainWindowUI.cpp:3644 src/ui/MainWindowUI.cpp:3708
-#: src/ui/MainWindowUI.cpp:3715
+#: src/ui/MainWindowUI.cpp:3884 src/ui/MainWindowUI.cpp:3933
+#: src/ui/MainWindowUI.cpp:3938 src/ui/MainWindowUI.cpp:4002
+#: src/ui/MainWindowUI.cpp:4009
 msgid "no"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3594
+#: src/ui/MainWindowUI.cpp:3888
 msgid "Cfg scale"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3604
+#: src/ui/MainWindowUI.cpp:3898
 msgid "Steps"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3610
+#: src/ui/MainWindowUI.cpp:3904
 msgid "Time min."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3615
+#: src/ui/MainWindowUI.cpp:3909
 msgid "Time max."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3620
+#: src/ui/MainWindowUI.cpp:3914
 msgid "Time avg."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3625
+#: src/ui/MainWindowUI.cpp:3919
 msgid "Time total"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3632
-msgid "VAE"
+#: src/ui/MainWindowUI.cpp:3937
+msgid "VAE tiling"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3649
+#: src/ui/MainWindowUI.cpp:3943
 msgid "CLIP L"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3655
+#: src/ui/MainWindowUI.cpp:3949
 msgid "CLIP G"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3662
+#: src/ui/MainWindowUI.cpp:3956
 msgid "T5xxl"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3669
+#: src/ui/MainWindowUI.cpp:3963
 msgid "TAESD"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3676
+#: src/ui/MainWindowUI.cpp:3970
 msgid "Width"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3681
+#: src/ui/MainWindowUI.cpp:3975
 msgid "Height"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3686
+#: src/ui/MainWindowUI.cpp:3980
 msgid "Batch count"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3692
+#: src/ui/MainWindowUI.cpp:3986
 msgid "CN model"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3697
+#: src/ui/MainWindowUI.cpp:3991
 msgid "CN img"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3702
+#: src/ui/MainWindowUI.cpp:3996
 msgid "CN strength"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3714
+#: src/ui/MainWindowUI.cpp:4008
 msgid "Flash Attention"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3719
+#: src/ui/MainWindowUI.cpp:4013
 msgid "SLG scale"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3724
+#: src/ui/MainWindowUI.cpp:4018
 msgid "Skip layers"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3735
+#: src/ui/MainWindowUI.cpp:4029
 msgid "Skip Layer Start"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3740
+#: src/ui/MainWindowUI.cpp:4034
 msgid "Skip Layer End"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3765
+#: src/ui/MainWindowUI.cpp:4059
 msgid "Open image"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3766
+#: src/ui/MainWindowUI.cpp:4060
 msgid "Open parent folder"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3769
+#: src/ui/MainWindowUI.cpp:4063
 #, c-format
 msgid "Copy seed %<PRId64>"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3772
+#: src/ui/MainWindowUI.cpp:4066 src/ui/MainWindowUI.cpp:4076
 msgid "Send the image to img2img"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3773
+#: src/ui/MainWindowUI.cpp:4067
 msgid "Upscale"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3777
+#: src/ui/MainWindowUI.cpp:4071
 msgid "Send image to the controlnet image"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3830
+#: src/ui/MainWindowUI.cpp:4080
+msgid "Send image to img2img mask"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:4165
 msgid "Invalid image from diffusion: "
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:3858
+#: src/ui/MainWindowUI.cpp:4174 src/ui/MainWindowUI.cpp:4959
 #, c-format
 msgid "Failed to save image into %s"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4217
+#: src/ui/MainWindowUI.cpp:4532
+#, c-format
+msgid "Converting model %s to %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:4566
 #, c-format
 msgid "Do you want to convert model %s with quantation %s to gguf format?"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4220
+#: src/ui/MainWindowUI.cpp:4569
 #, c-format
 msgid ""
 "Do you want to convert model %s with quantation %s and vae %s to gguf format?"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4223
+#: src/ui/MainWindowUI.cpp:4572
 #, c-format
 msgid "Convert model %s?"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4226
+#: src/ui/MainWindowUI.cpp:4575
 #, c-format
 msgid "The file %s already exists. Do you want to overwrite it?"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4227
+#: src/ui/MainWindowUI.cpp:4576
 msgid "Overwrite File?"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4383
+#: src/ui/MainWindowUI.cpp:4587
+msgid "Open Link?"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:4733
 msgid "Stopping..."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4402
+#: src/ui/MainWindowUI.cpp:4752
 msgid "Process is ready"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4420
+#: src/ui/MainWindowUI.cpp:4770
 msgid "External process stopped"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4423
+#: src/ui/MainWindowUI.cpp:4773
 msgid "Process is stopped"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4436
+#: src/ui/MainWindowUI.cpp:4786
 msgid "Failed to restart the background process..."
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4455
+#: src/ui/MainWindowUI.cpp:4805
 #, c-format
 msgid "%s started"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4464
+#: src/ui/MainWindowUI.cpp:4814
 #, c-format
 msgid "%s exited"
 msgstr ""
 
-#: src/ui/MainWindowUI.cpp:4499
+#: src/ui/MainWindowUI.cpp:4851
 #, c-format
 msgid "Current job: %s %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:4936
+msgid "Save mask image file"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:4937
+msgid "PNG files (*.png)|*.png|All files (*.*)|*.*"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5084 src/ui/MainWindowUI.cpp:5213
+#, c-format
+msgid "%i x %i"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5086 src/ui/MainWindowUI.cpp:5215
+#, c-format
+msgid "%i x %i (%i x %i)"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5134
+#, c-format
+msgid "Inpaint mask open: file not found: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5143
+msgid ""
+"No image loaded into the img2img, please load a base image before open the "
+"mask!"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5151
+#, c-format
+msgid ""
+"Inpaint mask open: the resolution of the mask does not match the resolution "
+"of the image: %s"
+msgstr ""
+
+#: src/ui/MainWindowUI.cpp:5153
+msgid "The resolution of the mask does not match the resolution of the image"
 msgstr ""
 
 #: src/ui/QueueManager.h:39

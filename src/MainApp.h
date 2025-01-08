@@ -91,8 +91,8 @@ public:
                 dllName       = libPrefix + "stable-diffusion_cuda";
                 this->backend = "cuda";
             } else if (isAmdGPU()) {
-                dllName       = libPrefix + "stable-diffusion_hipblas";
-                this->backend = "hipblas";
+                dllName       = libPrefix + "stable-diffusion_vulkan";
+                this->backend = "vulkan";
             } else {
                 static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
                 if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl) {

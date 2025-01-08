@@ -173,7 +173,8 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_strength,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path
-                                       std::vector<int>,      // skip_layers,
+                                       int*,                  // skip_layers
+                                       size_t,                // skip_layers_size
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end
@@ -182,6 +183,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
 
 typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        sd_image_t,            // init_image
+                                       sd_image_t,            // mask_image
                                        const char*,           // prompt_c_str,
                                        const char*,           // negative_prompt_c_str,
                                        int,                   // clip_skip,
@@ -199,7 +201,8 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        float,                 // style_ratio,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path_c_str
-                                       std::vector<int>,      // skip_layers,
+                                       int*,                  // skip_layers
+                                       size_t,                // skip_layers_count
                                        float,                 // slg_scale,
                                        float,                 // skip_layer_start,
                                        float                  // skip_layer_end)
