@@ -203,11 +203,13 @@ namespace QM {
         std::string git_version              = GIT_HASH;
         std::string original_prompt          = "";
         std::string original_negative_prompt = "";
+        std::string original_negative_prompt = "";
         bool keep_checkpoint_in_memory       = false;
         bool keep_upscaler_in_memory         = false;
         bool need_sha256                     = false;
         std::string generated_sha256         = "";
         int update_index                     = -1;
+        int server                           = -1;
         inline wxString GetActualSpeed() {
             wxString speed = "";
             if (this->status == QM::QueueStatus::MODEL_LOADING || this->mode == QM::GenerationMode::CONVERT) {
@@ -262,7 +264,8 @@ namespace QM {
               keep_upscaler_in_memory(other.keep_upscaler_in_memory),
               need_sha256(other.need_sha256),
               generated_sha256(other.generated_sha256),
-              update_index(other.update_index) {}
+              update_index(other.update_index),
+              server(other.server) {}
         QueueItem() = default;
     };
 
@@ -299,7 +302,8 @@ namespace QM {
         keep_upscaler_in_memory,
         need_sha256,
         generated_sha256,
-        update_index)
+        update_index,
+        server)
 
     class QueueManager {
     public:

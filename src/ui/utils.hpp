@@ -1,12 +1,6 @@
 #ifndef __MAINFRAME_HPP__UTILS
 #define __MAINFRAME_HPP__UTILS
 
-#include <filesystem>
-#include <random>
-#include "../helpers/civitai.hpp"
-#include "../helpers/sd.hpp"
-#include "../libs/bitmask_operators.h"
-
 namespace sd_gui_utils {
 
     /**
@@ -43,66 +37,6 @@ namespace sd_gui_utils {
         void* p3;  // Others...
     } VoidHolder;
 
-    enum class DirTypes : int {
-        EMPTY            = 0,        // If no option is set
-        LORA             = 1 << 0,   // The LORA option represents the 0th bit
-        CHECKPOINT       = 1 << 1,   // The CHECKPOINT option represents the 1st bit
-        VAE              = 1 << 2,   // The VAE option represents the 2nd bit
-        PRESETS          = 1 << 3,   // The PRESETS option represents the 3rd bit
-        PROMPTS          = 1 << 4,   // The PROMPTS option represents the 4th bit
-        NEG_PROMPTS      = 1 << 5,   // The NEG_PROMPTS option represents the 5th bit
-        TAESD            = 1 << 6,   // The TAESD option represents the 6th bit
-        ESRGAN           = 1 << 7,   // The ESRGAN option represents the 7th bit
-        CONTROLNET       = 1 << 8,   // The CONTROLNET option represents the 8th bit
-        UPSCALER         = 1 << 9,   // The UPSCALER option represents the 9th bit
-        EMBEDDING        = 1 << 10,  // The EMBEDDING option represents the 10th bit
-        PROMPT_TEMPLATES = 1 << 11,  // The PROMPT_TEMPLATES option represents the 11th bit
-        ALL              = -1,       // All options are set
-        UNKNOWN          = -2,       // The unknown option
-    };
-
-    template <>
-    struct enable_bitmask_operators<sd_gui_utils::DirTypes> {
-        static constexpr bool enable = true;
-    };
-
-    inline bool filterByModelType(const sd_gui_utils::DirTypes modelType,
-                                  sd_gui_utils::DirTypes filterType) {
-        return static_cast<bool>(modelType & filterType);
-    }
-
-    inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
-        {sd_gui_utils::DirTypes::LORA, "LORA"},
-        {sd_gui_utils::DirTypes::CHECKPOINT, "CHECKPOINT"},
-        {sd_gui_utils::DirTypes::VAE, "VAE"},
-        {sd_gui_utils::DirTypes::PRESETS, "PRESETS"},
-        {sd_gui_utils::DirTypes::PROMPTS, "PROMPTS"},
-        {sd_gui_utils::DirTypes::NEG_PROMPTS, "NEG_PROMPTS"},
-        {sd_gui_utils::DirTypes::TAESD, "TAESD"},
-        {sd_gui_utils::DirTypes::ESRGAN, "ESRGAN"},
-        {sd_gui_utils::DirTypes::CONTROLNET, "CONTROLNET"},
-        {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
-        {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
-        {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
-        {sd_gui_utils::DirTypes::ALL, "ALL"},
-        {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"}};
-
-    inline std::unordered_map<wxString, DirTypes> dirtypes_wxstr = {
-        {wxT("LORA"), sd_gui_utils::DirTypes::LORA},
-        {wxT("CHECKPOINT"), sd_gui_utils::DirTypes::CHECKPOINT},
-        {wxT("VAE"), sd_gui_utils::DirTypes::VAE},
-        {wxT("PRESETS"), sd_gui_utils::DirTypes::PRESETS},
-        {wxT("PROMPTS"), sd_gui_utils::DirTypes::PROMPTS},
-        {wxT("NEG_PROMPTS"), sd_gui_utils::DirTypes::NEG_PROMPTS},
-        {wxT("TAESD"), sd_gui_utils::DirTypes::TAESD},
-        {wxT("ESRGAN"), sd_gui_utils::DirTypes::ESRGAN},
-        {wxT("CONTROLNET"), sd_gui_utils::DirTypes::CONTROLNET},
-        {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER},
-        {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING},
-        {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES},
-        {wxT("ALL"), sd_gui_utils::DirTypes::ALL},
-        {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN}};
-
     enum CivitAiState { OK,
                         NOT_FOUND,
                         ERR,
@@ -113,33 +47,6 @@ namespace sd_gui_utils {
         "Parse error",
         "",
     };
-
-    enum class ModelInfoTag {
-        None      = 0,       // No specific tag
-        Deletable = 1 << 0,  // Indicates the item can be deleted
-        Favorite  = 1 << 1   // Indicates the item is marked as favorite
-    };
-
-    // Allow bitwise operations for ModelInfoTag.
-    inline ModelInfoTag operator|(ModelInfoTag lhs, ModelInfoTag rhs) {
-        return static_cast<ModelInfoTag>(static_cast<int>(lhs) | static_cast<int>(rhs));
-    }
-
-    inline ModelInfoTag& operator|=(ModelInfoTag& lhs, ModelInfoTag rhs) {
-        lhs = lhs | rhs;
-        return lhs;
-    }
-    inline ModelInfoTag operator~(ModelInfoTag tag) {
-        return static_cast<ModelInfoTag>(~static_cast<int>(tag));
-    }
-
-    inline ModelInfoTag operator&(ModelInfoTag lhs, ModelInfoTag rhs) {
-        return static_cast<ModelInfoTag>(static_cast<int>(lhs) & static_cast<int>(rhs));
-    }
-
-    inline bool HasTag(ModelInfoTag tags, ModelInfoTag tag) {
-        return (tags & tag) != ModelInfoTag::None;
-    }
 
     struct ModelFileInfo {
         std::string name;
@@ -161,8 +68,10 @@ namespace sd_gui_utils {
         std::string folderGroupName = "";
         std::string target_filename = "";
         int move_progress           = 0;
+        int server_id               = -1;
 
         ModelFileInfo() = default;
+        ModelFileInfo(const sd_gui_utils::networks::RemoteModelInfo& remote) { *this = remote; }
         ModelFileInfo(const sd_gui_utils::ModelFileInfo& other)
             : name(other.name), path(other.path), url(other.url), poster(other.poster), sha256(other.sha256), tags(other.tags), size(other.size), size_f(other.size_f), meta_file(other.meta_file), hash_progress_size(other.hash_progress_size), hash_fullsize(other.hash_fullsize), model_type(other.model_type), civitaiPlainJson(other.civitaiPlainJson), CivitAiInfo(other.CivitAiInfo), state(other.state), preview_images(other.preview_images), folderGroupName(folderGroupName) {}
         ModelFileInfo& operator=(const sd_gui_utils::ModelFileInfo& other) {
@@ -184,23 +93,46 @@ namespace sd_gui_utils {
                 state              = other.state;
                 preview_images     = other.preview_images;
                 folderGroupName    = other.folderGroupName;
+                server_id          = other.server_id;
             }
             return *this;
         }
+        ModelFileInfo& operator=(const sd_gui_utils::networks::RemoteModelInfo& remote) {
+            name               = remote.name;
+            path               = remote.path;
+            sha256             = remote.sha256;
+            size               = remote.size;
+            size_f             = remote.size_f;
+            hash_progress_size = remote.hash_progress_size;
+            hash_fullsize      = remote.hash_fullsize;
+            model_type         = remote.model_type;
+            server_id          = remote.server_id;
+
+            // Defaults for missing RemoteModelInfo fields
+            url              = "";
+            poster           = "";
+            tags             = sd_gui_utils::ModelInfoTag::None;
+            meta_file        = "";
+            civitaiPlainJson = "";
+            state            = sd_gui_utils::CivitAiState::NOT_CHECKED;
+            preview_images.clear();
+            folderGroupName = "";
+            target_filename = "";
+            move_progress   = 0;
+
+            return *this;
+        }
         inline bool operator==(const sd_gui_utils::ModelFileInfo& rh) const {
-            return path == rh.path;
+            return (path == rh.path && server_id == rh.server_id);
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo rh) const {
-            return path == rh.path;
+            return (path == rh.path && server_id == rh.server_id);
         }
         inline bool operator==(const sd_gui_utils::ModelFileInfo* rh) const {
             if (rh == nullptr) {
                 return false;
             }
-            return path == rh->path;
-        }
-        inline bool operator==(const std::string& otherPath) const {
-            return path == otherPath;
+            return (path == rh->path && server_id == rh->server_id);
         }
     };
 
@@ -219,7 +151,8 @@ namespace sd_gui_utils {
                            {"CivitAiInfo", p.CivitAiInfo},
                            {"state", (int)p.state},
                            {"preview_images", p.preview_images},
-                           {"folderGroupName", p.folderGroupName}
+                           {"folderGroupName", p.folderGroupName},
+                           {"server_id", p.server_id}
 
         };
     }
@@ -280,6 +213,9 @@ namespace sd_gui_utils {
         if (j.contains("tags")) {
             p.tags = static_cast<sd_gui_utils::ModelInfoTag>(j.at("tags").get<int>());
         }
+        if (j.contains("server_id")) {
+            p.server_id = j.at("server_id").get<int>();
+        }
     }
     enum imageTypes { JPG,
                       PNG,
@@ -320,8 +256,11 @@ namespace sd_gui_utils {
     class config {
     private:
         wxConfigBase* configBase = nullptr;
+        // mutex to protect concurrent access to tcp client config
+        std::mutex mutex;
 
     public:
+        std::vector<sd_gui_utils::sdServer*> servers;
         wxString model                     = "";
         wxString vae                       = "";
         wxString lora                      = "";
@@ -354,6 +293,121 @@ namespace sd_gui_utils {
         bool widgetVisible                 = false;
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
+
+        inline void ServerEnable(int server_id, bool enable) {
+            std::cout << "ServerEnable " << server_id << " " << enable << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->enabled = enable;
+                    std::cout << "ServerEnable done " << server_id << " " << enable << std::endl;
+                    return;
+                }
+            }
+        }
+        inline void AddTcpServer(const sd_gui_utils::sdServer& server) {
+            std::cout << "AddTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->servers.push_back(new sd_gui_utils::sdServer(server));
+            std::cout << "AddTcpServer done" << std::endl;
+        }
+        inline sd_gui_utils::sdServer* GetTcpServer(int server_id) {
+            std::cout << "GetTcpServer id: " << server_id << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    std::cout << "GetTcpServer done" << std::endl;
+                    return *it;
+                }
+            }
+            std::cout << "GetTcpServer done nullptr" << std::endl;
+            return nullptr;
+        }
+        inline void AddTcpServer(sd_gui_utils::sdServer* server) {
+            std::cout << "AddTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->servers.push_back(server);
+            std::cout << "AddTcpServer done" << std::endl;
+        }
+        inline void RemoveTcpServer(int server_id) {
+            std::cout << "RemoveTcpServer" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    delete *it;
+                    this->servers.erase(it);
+                    std::cout << "RemoveTcpServer done" << std::endl;
+                    return;
+                }
+            }
+        }
+        inline bool ServerExist(const std::string& host, int port) {
+            std::cout << "ServerExist" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->host == host && (*it)->port == port) {
+                    std::cout << "ServerExist done" << std::endl;
+                    return true;
+                }
+            }
+            std::cout << "ServerExist done" << std::endl;
+            return false;
+        }
+
+        inline void ServerChangePort(int server_id, int port) {
+            std::cout << "ServerChangePort" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->port = port;
+                    break;
+                }
+            }
+            std::cout << "ServerChangePort done" << std::endl;
+        }
+
+        inline void ServerChangeHost(int server_id, const std::string& host) {
+            std::cout << "ServerChangeHost" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->host = host;
+                    break;
+                }
+            }
+            std::cout << "ServerChangeHost done" << std::endl;
+        }
+        inline void ServerChangeName(int server_id, const std::string& name) {
+            std::cout << "ServerChangeName" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->server_id == server_id) {
+                    (*it)->name = name;
+                    break;
+                }
+            }
+            std::cout << "ServerChangeName done" << std::endl;
+        }
+
+        inline void ClearTcpServers() {
+            std::cout << "ClearTcpServers" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if (*it == nullptr) {
+                    continue;
+                }
+                delete *it;
+            }
+            this->servers.clear();
+            std::cout << "ClearTcpServers done" << std::endl;
+        }
+
+        inline std::vector<sd_gui_utils::sdServer*> ListRemoteServers() {
+            std::cout << "ListRemoteServers" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            return this->servers;
+            std::cout << "ListRemoteServers done" << std::endl;
+        }
 
         inline const wxString getPathByDirType(const wxString& dirTypeName) {
             auto f = sd_gui_utils::dirtypes_wxstr.find(dirTypeName);
@@ -463,6 +517,34 @@ namespace sd_gui_utils {
                 this->image_type = sd_gui_utils::image_types_str_reverse.at(saved_image_type);
             }
 
+            long index;
+            wxString server;
+
+            if (config->HasGroup("/servers")) {
+                wxString oldGroup = config->GetPath();
+                config->SetPath("/servers");
+                long index;
+                wxString serverKey;
+                bool hasMore = config->GetFirstGroup(serverKey, index);
+
+                while (hasMore) {
+                    config->SetPath(serverKey);
+                    wxString host;
+                    int port;
+                    config->Read("Host", &host);
+                    config->Read("Port", &port, 8191);
+                    bool enabled                   = config->ReadBool("Enabled", false);
+                    int id                         = config->Read("Id", -1);
+                    sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port);
+                    server->enabled                = enabled;
+                    server->server_id              = id;
+                    this->AddTcpServer(server);
+                    config->SetPath("..");
+                    hasMore = config->GetNextGroup(serverKey, index);
+                }
+                config->SetPath(oldGroup);
+            }
+
             // check if directories exists
             if (wxFileName::DirExists(datapath) == false) {
                 wxFileName(datapath).Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
@@ -548,7 +630,25 @@ namespace sd_gui_utils {
                 this->configBase->Write("/mainSashPose", this->mainSashPose);
                 this->configBase->Write("/favorite_models_only", this->favorite_models_only);
                 this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
+                this->configBase->Write("/png_compression_level", this->png_compression_level);
+
+                if (this->configBase->HasGroup("/Servers")) {
+                    this->configBase->DeleteGroup("/Servers");  // Előző bejegyzések törlése
+                }
+                wxString oldPath = this->configBase->GetPath();
+                this->configBase->SetPath("/Servers");
+
+                for (size_t i = 0; i < servers.size(); ++i) {
+                    this->configBase->SetPath(wxString::Format("Server%zu", i));
+                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->host));
+                    this->configBase->Write("Port", servers[i]->port);
+                    this->configBase->Write("Enabled", servers[i]->enabled.load());
+                    this->configBase->Write("Id", servers[i]->server_id);
+                    this->configBase->SetPath("..");
+                }
+                this->configBase->SetPath(oldPath);
             }
+            this->ClearTcpServers();
         }
     };
 
@@ -758,7 +858,11 @@ namespace sd_gui_utils {
         MODEL_MOVE_START,
         MODEL_MOVE_FAILED,
         MODEL_MOVE_DONE,
-        MODEL_MOVE_UPDATE
+        MODEL_MOVE_UPDATE,
+        SERVER_CONNECTED,
+        SERVER_DISCONNECTED,
+        SERVER_ERROR,
+        SERVER_MODEL_LIST_UPDATE
     };
     // sd c++
 
