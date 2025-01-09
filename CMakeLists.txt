@@ -97,10 +97,6 @@ add_subdirectory(extprocess)
 
 option(SD_SERVER "Build socket server" OFF)
 
-if (SD_SERVER)
-    include(cmake/sockets-cpp.cmake)
-    add_subdirectory(server)
-endif()
 
 
 # Set target for the application
@@ -121,13 +117,19 @@ if (NOT WIN32)
 set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
 
 else()
-	set(APPDEPENDS wxWidgets::wxWidgets)
+	set( wxWidgets::wxWidgets)
     if (MSVC)
         set_target_properties(${PROJECT_BINARY_NAME} PROPERTIES
             COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"
             LINK_FLAGS "/MANIFEST:NO"
         )
     endif()
+endif()
+
+include(cmake/sockets-cpp.cmake)
+
+if (SD_SERVER)
+    add_subdirectory(server)
 endif()
 
 
