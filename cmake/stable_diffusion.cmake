@@ -6,12 +6,6 @@ set(SD_BUILD_SHARED_LIBS ON)
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS ON)
 
 
-if (SDCPP_VERSION STREQUAL "master")
-    set(SD_GIT_TAG "${SDCPP_VERSION}")
-else()
-    set(SD_GIT_TAG "tags/master-${SDCPP_VERSION}")
-endif()
-
 
 option(SD_AVX "Enable AVX library build" OFF)
 option(SD_AVX2 "Enable AVX2 library build" OFF)
@@ -20,7 +14,7 @@ option(SD_CUDA "Enable CUDA library build" OFF)
 option(SD_HIPBLAS "Enable HIPBLAS library build" OFF)
 option(SD_VULKAN "Enable Vulkan library build" OFF)
 
-
+set(SD_GIT_TAG "tags/master-${SDCPP_VERSION}")
 
 if (SD_AVX)
     set(SDGUI_AVX ON)
@@ -81,37 +75,9 @@ else()
     set(DISABLE_WARNINGS_FLAGS "-w -Wno-deprecated")
 endif()
 
-if(NOT SD_HIPBLAS AND NOT SD_VULKAN)
-
-ExternalProject_Add(
-    stable_diffusion_cpp_${variant_name}
-    GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
-    GIT_TAG ${SD_GIT_TAG}
-    EXCLUDE_FROM_ALL
-    LOG_OUTPUT_ON_FAILURE ON
-    BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-    CMAKE_ARGS "-DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}"
-    "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
-    "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}"
-    "-DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}"
-    "-DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}"
-    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-    "-DSD_BUILD_EXAMPLES=OFF"
-    "-DSD_BUILD_SHARED_LIBS=ON"
-    "-DGGML_AVX=${SD_AVX}"
-    "-DGGML_AVX2=${SD_AVX2}"
-    "-DGGML_AVX512=${SD_AVX512}"
-    "-DSD_CUDA=${SD_CUDA}"
-    "-DSD_HIPBLAS=${SD_HIPBLAS}"
-    "-DSD_VULKAN=${SD_VULKAN}"
-    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-    INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-)
-
-endif()
+if(NOT SD_HIPBLAS)
 
 
-if(SD_VULKAN)
 
     file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
     message(STATUS "Bin path: ${_BINPATH}")
@@ -120,14 +86,12 @@ if(SD_VULKAN)
     else ()
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
-
+    set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
             GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
             GIT_TAG ${SD_GIT_TAG}
-            LOG_OUTPUT_ON_FAILURE ON
-            EXCLUDE_FROM_ALL
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
+            #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             CMAKE_ARGS "-DGGML_NATIVE=ON"
             "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
@@ -144,7 +108,7 @@ if(SD_VULKAN)
             "-DSD_VULKAN=${SD_VULKAN}"
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-            INSTALL_BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+            BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         )
 endif()
 

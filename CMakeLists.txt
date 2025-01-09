@@ -173,7 +173,6 @@ add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile sockets_cpp)
 # Include directories
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${stable_diffusion_SOURCE_DIR}
     ${CpuFeatures_SOURCE_DIR}
     ${wxWidgets_SOURCE_DIR}/include
     ${sockets_cpp_SOURCE}

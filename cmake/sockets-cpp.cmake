@@ -6,6 +6,7 @@ ExternalProject_Add(
   CMAKE_ARGS -DBUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DFMT_SUPPORT=OFF
   INSTALL_COMMAND ""
   UPDATE_COMMAND ""
+  BUILD_COMMAND ""
 )
 ExternalProject_Get_property(sockets_cpp SOURCE_DIR)
 set(sockets_cpp_SOURCE ${SOURCE_DIR}/include)
