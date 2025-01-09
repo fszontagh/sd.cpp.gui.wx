@@ -124,7 +124,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         this->config->SetPath(wxString::Format("Server%zu", i));
         this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i]->host));
         this->config->Write("Port", this->cfg->servers[i]->port);
-        this->config->Write("Id", this->cfg->servers[i]->server_id);
+        this->config->Write("InternalId", this->cfg->servers[i]->internal_id);
         this->config->Write("Enabled", this->cfg->servers[i]->enabled.load());
         this->config->SetPath("..");
     }
@@ -246,10 +246,10 @@ void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer* server) {
     values.push_back(wxGetTranslation((server->GetStatus())));
     // get last row
     auto row = this->m_serverList->GetItemCount();
-    if (server->server_id == -1) {
-        server->server_id = row;
+    if (server->internal_id == -1) {
+        server->internal_id = row;
     }
-    this->m_serverList->InsertItem(row, values, row);
+    this->m_serverList->InsertItem(row, values, server->internal_id);
     values.clear();
     this->checkboxUpdate = false;
 }
@@ -262,10 +262,10 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
     }
 
     for (const auto item : selections) {
-        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
-        auto row       = this->m_serverList->ItemToRow(item);
+        auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto row         = this->m_serverList->ItemToRow(item);
         this->m_serverList->DeleteItem(row);
-        this->cfg->RemoveTcpServer(server_id);
+        this->cfg->RemoveTcpServer(internal_id);
     }
 }
 
@@ -307,12 +307,12 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
     if (value.empty()) {
         return;
     }
-    auto col       = event.GetColumn();
-    auto item      = event.GetItem();
-    auto row       = this->m_serverList->ItemToRow(item);
-    auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
+    auto col        = event.GetColumn();
+    auto item       = event.GetItem();
+    auto row        = this->m_serverList->ItemToRow(item);
+    int internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
 
-    auto srv = this->cfg->GetTcpServer(server_id);
+    auto srv = this->cfg->GetTcpServer(internal_id);
     if (srv == nullptr) {
         return;
     }
@@ -321,7 +321,7 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
             wxMessageDialog(this, _("Server already exists")).ShowModal();
             this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv->host), row, col);
         }
-        this->cfg->ServerChangeHost(server_id, value.utf8_string());
+        this->cfg->ServerChangeHost(internal_id, value.utf8_string());
     }
 
     if (col == ServerListColumns::SERVER_LIST_COLUMN_AUTH_KEY) {
@@ -351,15 +351,15 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
     if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {
         auto oldPort = srv->port;
         if (value.ToInt(&srv->port) == false) {
-            this->cfg->ServerChangePort(server_id, oldPort);
+            this->cfg->ServerChangePort(internal_id, oldPort);
             this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv->port), row, col);
         }
         if (srv->port < 1 || srv->port > 65535) {
-            this->cfg->ServerChangePort(server_id, oldPort);
+            this->cfg->ServerChangePort(internal_id, oldPort);
             this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv->port), row, col);
         }
         for (const auto& server : this->cfg->servers) {
-            if (server->host == value.utf8_string() && server->port == srv->port && server->server_id != server_id) {
+            if (server->host == value.utf8_string() && server->port == srv->port && server->internal_id != internal_id) {
                 wxMessageDialog(this, _("Server already exists")).ShowModal();
                 this->m_serverList->SetValue(wxString::FromUTF8Unchecked(srv->host), row, col);
                 return;
@@ -377,10 +377,10 @@ void MainWindowSettings::OnServerListSelectionChanged(wxDataViewEvent& event) {
 
     if (this->m_serverList->GetSelectedItemsCount() == 1) {
         this->m_serverEnable->Enable();
-        auto item      = event.GetItem();
-        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto item        = event.GetItem();
+        auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
         for (auto& srv : this->cfg->ListRemoteServers()) {
-            if (srv->server_id == server_id) {
+            if (srv->internal_id == internal_id) {
                 this->m_serverEnable->SetValue(srv->enabled);
                 this->m_serverEnable->SetLabel(srv->enabled ? _("Disable") : _("Enable"));
                 break;
@@ -394,15 +394,15 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
     auto item = this->m_serverList->GetSelection();
     auto row  = this->m_serverList->ItemToRow(item);
     if (item.IsOk()) {
-        auto server_id = static_cast<int>(this->m_serverList->GetItemData(item));
+        auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
         for (auto& srv : this->cfg->servers) {
-            if (srv->server_id == server_id) {
+            if (srv->internal_id == internal_id) {
                 if ((srv->authkey == false || srv->host.empty() || srv->port == 0) && this->m_serverEnable->GetValue() == true) {
                     this->m_serverEnable->SetValue(srv->enabled);
                     wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
                     return;
                 }
-                this->cfg->ServerEnable(server_id, this->m_serverEnable->GetValue());
+                this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue());
                 ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
                 this->m_serverEnable->SetLabel(srv->enabled ? _("Disable") : _("Enable"));
                 break;

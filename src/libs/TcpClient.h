@@ -53,4 +53,4 @@ namespace sd_gui_utils::networks {
         }
     };
 }
-#endif;  // _LIBS_TCPCLIENT_H_
+#endif  // _LIBS_TCPCLIENT_H_

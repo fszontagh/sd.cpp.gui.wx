@@ -26,7 +26,6 @@ ApplicationLogic::ApplicationLogic(const std::string& libName, std::shared_ptr<S
 #else
     this->tempPath = std::filesystem::temp_directory_path().string();
 #endif
-    std::cout << "Using tmp path: " << this->tempPath << std::endl;
 }
 
 ApplicationLogic::~ApplicationLogic() {
@@ -141,7 +140,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;
 
     if (this->currentItem->need_sha256 == true) {
-        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_START);
+        this->sendStatus(QueueStatus::HASHING, QueueEvents::ITEM_MODEL_HASH_START);
         this->currentItem->hash_fullsize = std::filesystem::file_size(this->currentItem->params.model_path.c_str());
 
         this->currentItem->generated_sha256 = sd_gui_utils::sha256_file_openssl(
@@ -149,22 +148,22 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
             (void*)this,
             ApplicationLogic::HandleHashCallback);
 
-        this->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_DONE, "", EPROCESS_SLEEP_TIME);
+        this->sendStatus(QueueStatus::HASHING, QueueEvents::ITEM_MODEL_HASH_DONE, "", EPROCESS_SLEEP_TIME);
     }
 
-    this->sendStatus(QM::QueueStatus::MODEL_LOADING, QM::QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
+    this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
     // on mode convert always return true, because no model loading
     if (this->loadSdModel() == false) {
-        if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
+        if (this->currentItem->mode == SDMode::TXT2IMG || this->currentItem->mode == SDMode::IMG2IMG) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.model_path << std::endl;
             this->currentItem->status_message = _("Failed to load model: ") + this->currentItem->params.model_path;
         }
 
-        if (this->currentItem->mode == QM::GenerationMode::UPSCALE) {
+        if (this->currentItem->mode == SDMode::UPSCALE) {
             std::cerr << "[EXTPROCESS] Failed to load model: " << this->currentItem->params.esrgan_path << std::endl;
             this->currentItem->status_message = _("Failed to load model: ") + this->currentItem->params.esrgan_path;
         }
-        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_MODEL_FAILED);
+        this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_MODEL_FAILED);
         this->currentItem = nullptr;
         this->lastItem    = nullptr;
         return;
@@ -174,43 +173,43 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
     this->currentItem->step = 0;
     this->currentItem->steps = 1;
 
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
+    this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
 
     // handle the convert differently
-    if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED, "", EPROCESS_SLEEP_TIME);
+    if (this->currentItem->mode == SDMode::CONVERT) {
+        this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED, "", EPROCESS_SLEEP_TIME);
         bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype);
         if (status == false) {
-            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
             this->currentItem = nullptr;
             this->lastItem    = nullptr;
             return;
         }
-        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED, "", EPROCESS_SLEEP_TIME);
+        this->sendStatus(QueueStatus::DONE, QueueEvents::ITEM_FINISHED, "", EPROCESS_SLEEP_TIME);
         this->currentItem = nullptr;
         this->lastItem    = nullptr;
         return;
     }
 
-    std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << QM::GenerationMode_str.at(this->currentItem->mode) << std::endl;
+    std::cout << "[EXTPROCESS] Starting item: " << this->currentItem->id << " type: " << GenerationMode_str.at(this->currentItem->mode) << std::endl;
     switch (this->currentItem->mode) {
-        case QM::GenerationMode::TXT2IMG: {
+        case SDMode::TXT2IMG: {
             std::cout << "[EXTPROCESS] Running txt2img" << std::endl;
             Txt2Img();
         } break;
-        case QM::GenerationMode::IMG2IMG: {
+        case SDMode::IMG2IMG: {
             std::cout << "[EXTPROCESS] Running img2img" << std::endl;
             Img2img();
         } break;
-        case QM::GenerationMode::UPSCALE: {
+        case SDMode::UPSCALE: {
             std::cout << "[EXTPROCESS] Running upscale" << std::endl;
             Upscale();
         } break;
 
         default: {
             std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-            this->currentItem->status_message = wxString::Format(_("Unknown mode: %s"), QM::GenerationMode_str.at(this->currentItem->mode).c_str());
-            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            this->currentItem->status_message = wxString::Format(_("Unknown mode: %s"), GenerationMode_str.at(this->currentItem->mode).c_str());
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
             std::cerr << this->currentItem->status_message << std::endl;
             this->lastItem    = nullptr;
             this->currentItem = nullptr;
@@ -224,7 +223,7 @@ void ApplicationLogic::processMessage(QM::QueueItem& item) {
 void ApplicationLogic::Txt2Img() {
     try {
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+        this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED);
 
         sd_image_t* control_image = NULL;
         sd_image_t* results;
@@ -272,7 +271,7 @@ void ApplicationLogic::Txt2Img() {
 
         if (results == NULL) {
             std::cout << "[EXTPROCESS] txt2img failed" << std::endl;
-            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
             return;
         }
 
@@ -290,12 +289,12 @@ void ApplicationLogic::Txt2Img() {
         auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
         this->currentItem->finished_at = finished_at;
-        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+        this->sendStatus(QueueStatus::DONE, QueueEvents::ITEM_FINISHED);
         delete results;
 
     } catch (const std::exception& e) {
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
         std::cerr << "Error calling txt2img: " << e.what() << std::endl;
     }
 }
@@ -305,7 +304,7 @@ void ApplicationLogic::Img2img() {
     std::cout << "running img2img" << std::endl;
     try {
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
-        this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+        this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED);
         std::cout << " sent status" << std::endl;
 
         unsigned char* input_image_buffer   = NULL;
@@ -329,13 +328,13 @@ void ApplicationLogic::Img2img() {
             } else {
                 std::cerr << "Initial image not found: " << this->currentItem->initial_image << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-                this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Initial image not found:" + this->currentItem->initial_image);
+                this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Initial image not found:" + this->currentItem->initial_image);
                 return;
             }
         } else {
             std::cerr << "Missing input image" << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED, "Missing input image");
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Missing input image");
             return;
         }
         if (this->currentItem->mask_image.length() > 0 && std::filesystem::exists(this->currentItem->mask_image)) {
@@ -396,7 +395,7 @@ void ApplicationLogic::Img2img() {
         delete control_image;
 
         if (results == NULL) {
-            this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
             return;
         }
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
@@ -413,12 +412,12 @@ void ApplicationLogic::Img2img() {
         auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
         this->currentItem->finished_at = finished_at;
-        this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+        this->sendStatus(QueueStatus::DONE, QueueEvents::ITEM_FINISHED);
 
         delete results;
 
     } catch (const std::exception& e) {
-        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
         std::cerr << "Error calling img2img: " << e.what() << std::endl;
     }
 }
@@ -433,18 +432,18 @@ void ApplicationLogic::Upscale() {
     if (input_image_buffer == NULL) {
         std::cerr << "Failed to load image: " << this->currentItem->initial_image << std::endl;
         this->currentItem->status_message = _("Failed to load image: ") + this->currentItem->initial_image;
-        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
         return;
     }
     sd_image_t control_image = sd_image_t{(uint32_t)w, (uint32_t)h, 3, input_image_buffer};
 
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-    this->sendStatus(QM::QueueStatus::RUNNING, QM::QueueEvents::ITEM_GENERATION_STARTED);
+    this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED);
 
     results = this->upscalerFuncPtr(this->upscale_ctx, control_image, this->currentItem->upscale_factor);
 
     if (results.data == NULL) {
-        this->sendStatus(QM::QueueStatus::FAILED, QM::QueueEvents::ITEM_FAILED);
+        this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
         stbi_image_free(input_image_buffer);
         return;
     }
@@ -458,7 +457,7 @@ void ApplicationLogic::Upscale() {
     auto finished_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
     this->currentItem->finished_at = finished_at;
-    this->sendStatus(QM::QueueStatus::DONE, QM::QueueEvents::ITEM_FINISHED);
+    this->sendStatus(QueueStatus::DONE, QueueEvents::ITEM_FINISHED);
     stbi_image_free(input_image_buffer);
 }
 
@@ -490,7 +489,7 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
 
 bool ApplicationLogic::loadSdModel() {
     // on covert, there is no model loading into ctx, but need to clean up memory
-    if (this->currentItem->mode == QM::GenerationMode::CONVERT) {
+    if (this->currentItem->mode == SDMode::CONVERT) {
         // remove already loaded models
         if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
             std::cout << "Freeing up previous sd model" << std::endl;
@@ -506,7 +505,7 @@ bool ApplicationLogic::loadSdModel() {
     }
 
     // hnalde upscaler model
-    if (this->currentItem->mode == QM::GenerationMode::UPSCALE) {
+    if (this->currentItem->mode == SDMode::UPSCALE) {
         std::cout << "Loading upscale model: " << this->currentItem->params.esrgan_path << std::endl;
         // free up the sd model
         if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
@@ -516,7 +515,7 @@ bool ApplicationLogic::loadSdModel() {
         }
 
         // check if we need reload the model
-        if (this->lastItem != nullptr && this->lastItem->mode == QM::GenerationMode::UPSCALE) {
+        if (this->lastItem != nullptr && this->lastItem->mode == SDMode::UPSCALE) {
             std::cout << "Previous model is upscale" << std::endl;
             if (this->lastItem->params.esrgan_path != this->currentItem->params.esrgan_path) {
                 std::cout << "upscaler model changed" << std::endl;
@@ -535,7 +534,7 @@ bool ApplicationLogic::loadSdModel() {
         this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
         return this->upscale_ctx != NULL;
     }
-    if (this->currentItem->mode == QM::GenerationMode::TXT2IMG || this->currentItem->mode == QM::GenerationMode::IMG2IMG) {
+    if (this->currentItem->mode == SDMode::TXT2IMG || this->currentItem->mode == SDMode::IMG2IMG) {
         if (this->currentItem->params.model_path == "") {
             std::cout << "Loading sd model: " << this->currentItem->params.diffusion_model_path << std::endl;
         } else {
@@ -654,11 +653,11 @@ bool ApplicationLogic::loadSdModel() {
             bool vae_decode_only = true;
 
             switch (this->currentItem->mode) {
-                case QM::GenerationMode::IMG2IMG:
-                    // case QM::GenerationMode::IMG2VID:
+                case SDMode::IMG2IMG:
+                    // case SDMode::IMG2VID:
                     vae_decode_only = false;
                     break;
-                case QM::GenerationMode::TXT2IMG:
+                case SDMode::TXT2IMG:
                     vae_decode_only = true;
                     break;
                 default:

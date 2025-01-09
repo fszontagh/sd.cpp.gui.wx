@@ -1,15 +1,20 @@
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <dynamiclib_name>" << std::endl;
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <dynamiclib_name> [shared_memory_path]" << std::endl;
         return 1;
+    }
+    std::string shared_memory_path = SHARED_MEMORY_PATH;
+
+    if (argv[2]) {
+        shared_memory_path = argv[2];
     }
 
     std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
 
     std::cout << "[EXTPROCESS] starting with shared memory size: " << SHARED_MEMORY_SIZE << std::endl;
     try {
-        sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, false);
+        sharedMemory = std::make_shared<SharedMemoryManager>(shared_memory_path.c_str(), SHARED_MEMORY_SIZE, false);
     } catch (const std::exception& e) {
         std::cerr << "[EXTPROCESS] Failed to create SharedMemoryManager: " << e.what() << std::endl;
         return 1;

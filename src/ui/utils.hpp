@@ -256,7 +256,6 @@ namespace sd_gui_utils {
     class config {
     private:
         wxConfigBase* configBase = nullptr;
-        // mutex to protect concurrent access to tcp client config
         std::mutex mutex;
 
     public:
@@ -294,13 +293,13 @@ namespace sd_gui_utils {
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
 
-        inline void ServerEnable(int server_id, bool enable) {
-            std::cout << "ServerEnable " << server_id << " " << enable << std::endl;
+        inline void ServerEnable(int internal_id, bool enable) {
+            std::cout << "ServerEnable " << internal_id << " " << enable << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->internal_id == internal_id) {
                     (*it)->enabled = enable;
-                    std::cout << "ServerEnable done " << server_id << " " << enable << std::endl;
+                    std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
                     return;
                 }
             }
@@ -311,7 +310,19 @@ namespace sd_gui_utils {
             this->servers.push_back(new sd_gui_utils::sdServer(server));
             std::cout << "AddTcpServer done" << std::endl;
         }
-        inline sd_gui_utils::sdServer* GetTcpServer(int server_id) {
+        inline sd_gui_utils::sdServer* GetTcpServer(int internal_id) {
+            std::cout << "GetTcpServer id: " << internal_id << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->internal_id == internal_id) {
+                    std::cout << "GetTcpServer done" << std::endl;
+                    return *it;
+                }
+            }
+            std::cout << "GetTcpServer done nullptr" << std::endl;
+            return nullptr;
+        }
+        inline sd_gui_utils::sdServer* GetTcpServer(std::string server_id) {
             std::cout << "GetTcpServer id: " << server_id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
@@ -329,11 +340,11 @@ namespace sd_gui_utils {
             this->servers.push_back(server);
             std::cout << "AddTcpServer done" << std::endl;
         }
-        inline void RemoveTcpServer(int server_id) {
+        inline void RemoveTcpServer(int internal_id) {
             std::cout << "RemoveTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->internal_id == internal_id) {
                     delete *it;
                     this->servers.erase(it);
                     std::cout << "RemoveTcpServer done" << std::endl;
@@ -354,11 +365,11 @@ namespace sd_gui_utils {
             return false;
         }
 
-        inline void ServerChangePort(int server_id, int port) {
+        inline void ServerChangePort(int internal_id, int port) {
             std::cout << "ServerChangePort" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->internal_id == internal_id) {
                     (*it)->port = port;
                     break;
                 }
@@ -366,22 +377,22 @@ namespace sd_gui_utils {
             std::cout << "ServerChangePort done" << std::endl;
         }
 
-        inline void ServerChangeHost(int server_id, const std::string& host) {
+        inline void ServerChangeHost(int internal_id, const std::string& host) {
             std::cout << "ServerChangeHost" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->internal_id == internal_id) {
                     (*it)->host = host;
                     break;
                 }
             }
             std::cout << "ServerChangeHost done" << std::endl;
         }
-        inline void ServerChangeName(int server_id, const std::string& name) {
+        inline void ServerChangeName(int internal_id, const std::string& name) {
             std::cout << "ServerChangeName" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->internal_id == internal_id) {
                     (*it)->name = name;
                     break;
                 }
@@ -534,7 +545,7 @@ namespace sd_gui_utils {
                     config->Read("Host", &host);
                     config->Read("Port", &port, 8191);
                     bool enabled                   = config->ReadBool("Enabled", false);
-                    int id                         = config->Read("Id", -1);
+                    wxString id                    = config->Read("Id", wxEmptyString);
                     sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port);
                     server->enabled                = enabled;
                     server->server_id              = id;
@@ -643,7 +654,7 @@ namespace sd_gui_utils {
                     this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->host));
                     this->configBase->Write("Port", servers[i]->port);
                     this->configBase->Write("Enabled", servers[i]->enabled.load());
-                    this->configBase->Write("Id", servers[i]->server_id);
+                    this->configBase->Write("Id", wxString::FromUTF8Unchecked(servers[i]->server_id));
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
@@ -836,7 +847,7 @@ namespace sd_gui_utils {
         {schedule_t::AYS, "Ays"},
         {schedule_t::GITS, "Gits"}};
 
-    /* JSONize SD Params*/
+
     enum class ThreadEvents {
         QUEUE,
         HASHING_PROGRESS,

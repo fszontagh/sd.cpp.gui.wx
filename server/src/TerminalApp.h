@@ -2,19 +2,15 @@
 #define _SERVER_TERMINALAPP_H
 
 #include "libs/SharedLibrary.h"
-#include "wx/wxprec.h"
-
-#ifndef WX_PRECOMP
-#include "wx/wx.h"
-#endif
 
 #include <wx/app.h>
-#include <wx/event.h>
 #include <wx/evtloop.h>
 #include <wx/filename.h>
 #include <wx/log.h>
 #include <wx/stdpaths.h>
 #include <wx/textfile.h>
+#include <wx/timer.h>
+
 #include <iostream>
 #include "libs/json.hpp"
 #include "network/RemoteModelInfo.h"
@@ -24,9 +20,9 @@
 #include "helpers/sslUtils.hpp"
 #include "libs/ExternalProcess.h"
 
-wxDECLARE_APP(TerminalApp);
+#include "EventQueue.h"
 
-wxDEFINE_EVENT(wxEVT_THREAD_LOG, wxCommandEvent);
+wxDECLARE_APP(TerminalApp);
 
 class TerminalApp : public wxAppConsole {
 public:
@@ -35,25 +31,40 @@ public:
     virtual int OnExit() override;
     virtual bool IsGUI() const override { return false; }
     void ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet);
-    inline void sendLogEvent(const wxString& strLogMsg, const wxLogLevel level = wxLOG_Info) {
-        if (!this->eventHandlerReady) {
-            std::cerr << "Event handler not ready. Dropping log: " << strLogMsg << std::endl;
-            return;
-        }
-        wxCommandEvent evt(wxEVT_THREAD_LOG);
-        evt.SetString(strLogMsg);
-        evt.SetInt((int)level);
-        wxTheApp->AddPendingEvent(evt);
+    inline void sendLogEvent(const wxString& message, const wxLogLevel level = wxLOG_Info) {
+        eventQueue.Push([message, level]() {
+            switch (level) {
+                case wxLOG_Info:
+                    wxLogInfo(message);
+                    break;
+                case wxLOG_Warning:
+                    wxLogWarning(message);
+                    break;
+                case wxLOG_Error:
+                    wxLogError(message);
+                    break;
+                case wxLOG_Debug:
+                    wxLogDebug(message);
+                    break;
+                default:
+                    wxLogMessage(message);
+                    break;
+            }
+        });
     }
     std::shared_ptr<ServerConfig> configData = nullptr;
-    
 
 private:
     void ExternalProcessRunner();
+    void ProcessOutputThread();
+    void ProcessLogQueue();
     // process the messages from the shm
     bool ProcessEventHandler(std::string message);
     bool LoadModelFiles();
+    std::thread logThread;
+    std::atomic<bool> eventHanlderExit{false};
 
+    EventQueue eventQueue;
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;
@@ -62,12 +73,12 @@ private:
     std::FILE* logfile                                       = nullptr;
     wxLogStderr* logger                                      = nullptr;
     wxLog* oldLogger                                         = nullptr;
-    std::atomic<bool> eventHandlerReady                      = false;
     struct subprocess_s* subprocess                          = nullptr;
     wxString extprocessCommand                               = "";
-    wxString extProcessParam                                 = "";
-    std::atomic<bool> extprocessIsRunning                    = false;
-    std::atomic<bool> extProcessNeedToRun                    = true;
+    wxArrayString extProcessParams;
+    std::atomic<bool> eventHandlerReady{false};
+    std::atomic<bool> extProcessNeedToRun{false};
+    std::atomic<bool> extprocessIsRunning{false};
     wxTimer timer;
     std::unordered_map<std::string, sd_gui_utils::networks::RemoteModelInfo> modelFiles;
 };

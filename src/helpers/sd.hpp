@@ -216,11 +216,14 @@ typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
 
 inline const char* modes_str[] = {"txt2img", "img2img", "convert", "upscale"};
 
-enum SDMode { TXT2IMG,
-              IMG2IMG,
-              CONVERT,
-              UPSCALE,
-              MODE_COUNT };
+enum SDMode {
+    TXT2IMG,
+    IMG2IMG,
+    CONVERT,
+    UPSCALE,
+    IMG2VID,
+    MODE_COUNT
+};
 
 struct SDParams {
     int n_threads = -1;

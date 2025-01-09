@@ -2,5 +2,14 @@
     "port": 8191,
     "host": "127.0.0.1",
     "logfile": "/var/log/stable-diffusion-server.log",
-    "backend": "avx"
+    "backend": "avx",
+    "model_path": "/app/models/checkpoints",
+    "lora_path": "/app/models/loras",
+    "vae_path": "/app/models/vae",
+    "embedding_path": "/app/models/embeddings",
+    "taesd_path": "/app/models/taesd",
+    "controlnet_path": "/app/models/controlnet",
+    "esrgan_path": "/app/models/esrgan",
+    "max_clients": 10,
+    "unauthorized_timeout": 4
 }

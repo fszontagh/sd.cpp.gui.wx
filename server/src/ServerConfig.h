@@ -40,6 +40,7 @@ struct ServerConfig {
     std::string logfile;
     backend_type backend = backend_type::AVX;
     std::string authkey;
+    std::string shared_memory_path    = "";
     std::string server_name           = "";  // optional server name to display in the gui
     unsigned int unauthorized_timeout = 4;   // disconnect clients after this many seconds if not authenticated
     std::string exprocess_binary_path;       // force to use this exprocess binary
@@ -50,6 +51,7 @@ struct ServerConfig {
     std::string taesd_path;
     std::string controlnet_path;
     std::string esrgan_path;
+    std::string server_id;
 };
 
 inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohmann_json_t) {
@@ -61,6 +63,10 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohma
     nlohmann_json_j["backend"]              = backend_type_to_str.at(nlohmann_json_t.backend);
     nlohmann_json_j["authkey"]              = nlohmann_json_t.authkey;
     nlohmann_json_j["unauthorized_timeout"] = nlohmann_json_t.unauthorized_timeout;
+    nlohmann_json_j["server_id"]            = nlohmann_json_t.server_id;
+    if (nlohmann_json_t.shared_memory_path.empty() == false) {
+        nlohmann_json_j["shared_memory_path"] = nlohmann_json_t.shared_memory_path;
+    }
     if (nlohmann_json_t.server_name.empty() == false) {
         nlohmann_json_j["server_name"] = nlohmann_json_t.server_name;
     }
@@ -96,13 +102,16 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
     nlohmann_json_t.max_clients      = nlohmann_json_j.value("max_clients", nlohmann_json_default_obj.max_clients);
     nlohmann_json_t.max_request_size = nlohmann_json_j.value("max_request_size", nlohmann_json_default_obj.max_request_size);
     nlohmann_json_t.logfile          = nlohmann_json_j.value("logfile", nlohmann_json_default_obj.logfile);
+    nlohmann_json_t.server_id        = nlohmann_json_j.value("server_id", nlohmann_json_default_obj.server_id);
 
     std::string backend = nlohmann_json_j.value("backend", "avx");
     if (backend_str_to_type.find(backend) == backend_str_to_type.end()) {
         backend = "avx";
     }
-    nlohmann_json_t.backend = backend_str_to_type.at(backend);
-    nlohmann_json_t.authkey = nlohmann_json_j.value("authkey", nlohmann_json_default_obj.authkey);
+
+    nlohmann_json_t.shared_memory_path = nlohmann_json_j.value("shared_memory_path", nlohmann_json_default_obj.shared_memory_path);
+    nlohmann_json_t.backend            = backend_str_to_type.at(backend);
+    nlohmann_json_t.authkey            = nlohmann_json_j.value("authkey", nlohmann_json_default_obj.authkey);
     if (nlohmann_json_j.contains("server_name") && !nlohmann_json_j["server_name"].is_null()) {
         nlohmann_json_t.server_name = nlohmann_json_j.value("server_name", nlohmann_json_default_obj.server_name);
     }

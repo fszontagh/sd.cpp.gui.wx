@@ -1,6 +1,5 @@
 #ifndef _NETWORK_PACKETS_H_
 #define _NETWORK_PACKETS_H_
-
 namespace sd_gui_utils {
 
     static std::string toHex(const char* data, size_t size) {
@@ -30,7 +29,7 @@ namespace sd_gui_utils {
             ERROR      = 0,
             AUTH       = 1,
             MODEL_LIST = 2,
-            KEEPALIVE = 3
+            KEEPALIVE  = 3
         };
 
         NLOHMANN_JSON_SERIALIZE_ENUM(PacketParam, {{PacketParam::ERROR, 0}, {PacketParam::AUTH, 1}, {PacketParam::MODEL_LIST, 2}})
@@ -47,9 +46,10 @@ namespace sd_gui_utils {
                 : type(PacketType::REQUEST), param(PacketParam::ERROR) {}
             sd_gui_utils::networks::PacketType type;
             sd_gui_utils::networks::PacketParam param;
-            std::string version = std::string(SD_GUI_VERSION);
-            int source_idx      = -1;
-            int target_idx      = -1;
+            std::string version   = std::string(SD_GUI_VERSION);
+            int source_idx        = -1;
+            int target_idx        = -1;
+            std::string server_id = "";
 
             inline size_t GetSize() { return this->data_size; }
             template <typename T>
@@ -93,14 +93,12 @@ namespace sd_gui_utils {
                     std::vector<std::uint8_t> binary_data(data, data + size);
                     auto json_data = nlohmann::json::from_ubjson(binary_data);
 
-                    // Ellenőrizzük, hogy valóban megfelelő adat érkezett
                     if (json_data.is_null()) {
                         throw std::runtime_error("Received empty MessagePack data.");
                     }
 
                     return json_data.get<Packet>();
                 } catch (const std::exception& e) {
-                    // Debugging kiírás hexadecimálisan
                     std::string received_data(data, data + size);
                     throw std::runtime_error(
                         "Failed to convert MessagePack to Packet: " + std::string(e.what()) + "\nRaw data size: " + std::to_string(size) + "\nRaw data: " + sd_gui_utils::toHex(data, size));
@@ -113,6 +111,7 @@ namespace sd_gui_utils {
                 nlohmann_json_j["version"]   = nlohmann_json_t.version;
                 nlohmann_json_j["data_size"] = nlohmann_json_t.data_size;
                 nlohmann_json_j["data"]      = nlohmann_json_t.data;
+                nlohmann_json_j["server_id"] = nlohmann_json_t.server_id;
             }
             friend void from_json(const nlohmann ::json& nlohmann_json_j, Packet& nlohmann_json_t) {
                 const Packet nlohmann_json_default_obj{};
@@ -121,6 +120,7 @@ namespace sd_gui_utils {
                 nlohmann_json_t.version   = nlohmann_json_j.value("version", nlohmann_json_default_obj.version);
                 nlohmann_json_t.data_size = nlohmann_json_j.value("data_size", nlohmann_json_default_obj.data_size);
                 nlohmann_json_t.data      = nlohmann_json_j.value("data", nlohmann_json_default_obj.data);
+                nlohmann_json_t.server_id = nlohmann_json_j.value("server_id", nlohmann_json_default_obj.server_id);
             }
         };
     }  // namespace networks

@@ -26,12 +26,15 @@ set(bin_INSTALL_PATH_NSIS "bin")
 if (WIN32)
 	set(bin_INSTALL_PATH_NSIS ".")
 endif()
-
+# to generate Dockerfile for the server
+configure_file(platforms/Docker/Dockerfile.in ${PROJECT_BINARY_DIR}/Dockerfile)
+configure_file(server-config-example.json ${PROJECT_BINARY_DIR}/server-config-example.json @ONLY)
 
 install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Dockerfile DESTINATION share/stablediffusiongui COMPONENT "${CMAKE_PROJECT_NAME}Server")
 
 if(WIN32)
     target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
 else(WIN32)
-    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
+    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base OpenSSL::Crypto)
 endif(WIN32)

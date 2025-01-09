@@ -44,9 +44,12 @@
 
 #include "ver.hpp"
 #include "helpers/DirTypes.h"
+#include "helpers/sd.hpp"
 #include "sockets-cpp/TcpClient.h"
 #include "libs/json.hpp"
+#include "helpers/QueueItem.h"
 #include "network/RemoteModelInfo.h"
+#include "network/RemoteQueueJobItem.h"
 #include "network/packets.h"
 #include "libs/TcpClient.h"
 
@@ -56,7 +59,7 @@
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
 #include "helpers/civitai.hpp"
-#include "helpers/sd.hpp"
+
 
 #include "libs/SharedMemoryManager.h"
 #include "libs/subprocess.h"

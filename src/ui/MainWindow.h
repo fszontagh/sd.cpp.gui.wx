@@ -44,6 +44,7 @@
 #include <wx/imaglist.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/valgen.h>
 #include <wx/dialog.h>
 #include <wx/radiobox.h>
 
@@ -91,7 +92,6 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn321111111;
 		wxDataViewColumn* m_dataViewListColumn3211111111;
 		wxDataViewColumn* m_dataViewListColumn32111111111;
-		wxDataViewColumn* m_dataViewListColumn41;
 		wxScrolledWindow* m_scrolledWindow41;
 		wxStaticBitmap* m_bitmap6;
 		wxStaticText* m_staticText64;
@@ -455,19 +455,19 @@ class Settings : public wxFrame
 		wxStaticText* m_staticText42;
 		wxTextCtrl* m_civitai_api_key;
 		wxBitmapButton* m_bpButton15;
-		wxPanel* m_panel181;
+		wxPanel* m_serversPanel;
+		wxButton* m_deleteServer;
+		wxToggleButton* m_serverEnable;
 		wxDataViewListCtrl* m_serverList;
 		wxDataViewColumn* m_dataViewListColumn36;
 		wxDataViewColumn* m_dataViewListColumn37;
 		wxDataViewColumn* m_dataViewListColumn38;
 		wxDataViewColumn* m_dataViewListColumn39;
-		wxToggleButton* m_serverEnable;
-		wxButton* m_addServer;
-		wxStaticText* m_staticText68;
+		wxStaticText* m_staticText70;
 		wxTextCtrl* m_AddServerHost;
-		wxStaticText* m_staticText69;
+		wxStaticText* m_staticText71;
 		wxTextCtrl* m_AddServerPort;
-		wxButton* m_deleteServer;
+		wxButton* m_button18;
 		wxButton* m_save;
 
 		// Virtual event handlers, override them in your derived class
@@ -479,14 +479,14 @@ class Settings : public wxFrame
 		virtual void OnOutputFilenameText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnDeleteServer( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnServerEnableToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnServerListEditingDone( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnServerListEditingStarted( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnServerListStartEditing( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnServerListItemValueChanged( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnServerListSelectionChanged( wxDataViewEvent& event ) { event.Skip(); }
-		virtual void OnServerEnableToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAddServer( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnDeleteServer( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onSave( wxCommandEvent& event ) { event.Skip(); }
 
 

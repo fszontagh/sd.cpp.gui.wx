@@ -1,14 +1,19 @@
 #ifndef _SERVER_SOCKETAPP_H
 #define _SERVER_SOCKETAPP_H
+#include <sstream>
 
 #include <wx/log.h>
 #include <wx/time.h>
 #include <wx/timer.h>
 
+#include "ver.hpp"
+
+#include "libs/json.hpp"
+
 #include "network/packets.h"
 #include "sockets-cpp/TcpServer.h"
 
-#include "libs/json.hpp"
+
 
 inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
 
@@ -30,8 +35,8 @@ public:
     void sendMsg(int idx, const sd_gui_utils::networks::Packet& packet);
     void DisconnectClient(int idx);
     void parseMsg(sd_gui_utils::networks::Packet& packet);
-    inline bool isRunning() { return this->needToRun == true; }
-    inline void stop() { this->needToRun = false; }
+    inline bool isRunning() { return this->needToRun.load() == true; }
+    inline void stop() { this->needToRun.store(false); }
     void OnTimer();
 
 private:
@@ -48,7 +53,7 @@ private:
     int m_clientIdx = 0;
     std::map<sockets::ClientHandle, clientInfo> m_clientInfo;
     std::mutex m_mutex;
-    std::atomic<bool> needToRun = true;
+    std::atomic<bool> needToRun{true};
     TerminalApp* parent         = nullptr;
     std::vector<char> buffer;
     size_t expected_size = 0;

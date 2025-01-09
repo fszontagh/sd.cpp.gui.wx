@@ -169,9 +169,6 @@ public:
             delete this->config;
             this->config = nullptr;
         }
-        if (this->cfg != nullptr) {
-            delete this->cfg;
-        }
         this->config = new wxConfig(PROJECT_NAME, SD_GUI_AUTHOR, wxEmptyString, wxEmptyString, wxCONFIG_USE_LOCAL_FILE);
         this->cfg    = new sd_gui_utils::config(this->config);
         wxConfigBase::Set(this->config);

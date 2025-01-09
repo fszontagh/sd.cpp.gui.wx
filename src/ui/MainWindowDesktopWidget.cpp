@@ -46,7 +46,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
     sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
 
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
-        QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
+        QueueEvents event = (QueueEvents)std::stoi(content);
 
         std::shared_ptr<QM::QueueItem> item = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
 
@@ -54,7 +54,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
         size_t stepsDone = 0;  // item->stats.time_per_step.size();
         wxString steps   = wxEmptyString;
 
-        if (event == QM::QueueEvents::ITEM_MODEL_HASH_START || event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE) {
+        if (event == QueueEvents::ITEM_MODEL_HASH_START || event == QueueEvents::ITEM_MODEL_HASH_UPDATE) {
             stepsSum  = item->hash_fullsize;
             stepsDone = item->hash_progress_size;
 
@@ -68,7 +68,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
                                      wxFileName::GetHumanReadableSize((wxULongLong)stepsDone),
                                      wxFileName::GetHumanReadableSize((wxULongLong)stepsSum));
         }
-        if (event == QM::QueueEvents::ITEM_MODEL_HASH_DONE || event == QM::QueueEvents::ITEM_UPDATED || event == QM::QueueEvents::ITEM_FINISHED) {
+        if (event == QueueEvents::ITEM_MODEL_HASH_DONE || event == QueueEvents::ITEM_UPDATED || event == QueueEvents::ITEM_FINISHED) {
             stepsSum  = (size_t)(item->params.sample_steps * item->params.batch_count);
             stepsDone = item->stats.time_per_step.size();
 
@@ -87,7 +87,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
 
         this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s %s"),
                                                          modes_str[item->mode],
-                                                         wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status)),
+                                                         wxGetTranslation(QueueStatus_GUI_str.at(item->status)),
                                                          steps));
     }
 }

@@ -1,0 +1,73 @@
+FROM ubuntu:24.04
+
+ARG BACKEND=avx
+
+# Build argumentumok (default értékek)
+ARG BACKEND=avx
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    libstdc++6 \
+    openssl \
+    bash \
+    libgomp1
+
+COPY *.so /usr/lib/
+
+RUN mkdir /app
+RUN mkdir /app/models
+RUN mkdir /app/models/checkpoints
+RUN mkdir /app/models/loras
+RUN mkdir /app/models/vae
+RUN mkdir /app/models/embeddings
+RUN mkdir /app/models/taesd
+RUN mkdir /app/models/controlnet
+RUN mkdir /app/models/esrgan
+
+RUN if [ "$BACKEND" = "cuda" ]; then \
+        echo "CUDA support enabled"; \
+        apt update; apt install -y --no-install-recommends libcudart12 libcublas12; \
+    fi
+
+
+RUN if [ "$BACKEND" = "vulkan" ]; then \
+        echo "Vulkan support enabled"; \
+        apt install -y --no-install-recommends libvulkan1; \
+    fi
+
+# AVX/AVX2/AVX512 beállítások, ha szükséges
+RUN if [ "$BACKEND" = "avx" ]; then \
+        echo "AVX support enabled"; \
+    fi
+
+RUN if [ "$BACKEND" = "avx2" ]; then \
+        echo "AVX2 support enabled"; \
+    fi
+
+RUN if [ "$BACKEND" = "avx512" ]; then \
+        echo "AVX512 support enabled"; \
+    fi
+
+
+COPY server/@SERVER_BINARY_NAME@ /app/@SERVER_BINARY_NAME@
+COPY server-config-example.json /app/config.json
+COPY extprocess/@PROJECT_BINARY_NAME@_diffuser /app/@PROJECT_BINARY_NAME@_diffuser
+
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i "s/\"backend\": \".*\"/\"backend\": \"$BACKEND\"/" /app/config.json
+# Fájl engedélyek beállítása
+RUN chmod +x /app/@SERVER_BINARY_NAME@
+
+# Munkakönyvtár beállítása
+WORKDIR /app
+
+# Indítási parancs
+CMD ["/app/@SERVER_BINARY_NAME@", "/app/config.json"]
+
+
+#docker build --build-arg BACKEND=cuda -t myimage-cuda .
+#docker build --build-arg BACKEND=vulkan -t myimage-vulkan .
+#docker build --build-arg BACKEND=avx -t myimage-avx .
+#docker build --build-arg BACKEND=avx2 -t myimage-avx2 .
+#docker build --build-arg BACKEND=avx512 -t myimage-avx512 .

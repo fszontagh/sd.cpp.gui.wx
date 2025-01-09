@@ -177,7 +177,7 @@ private:
     std::vector<sd_gui_utils::VoidHolder*> voids;
     struct subprocess_s* subprocess = nullptr;
 
-    std::atomic<bool> extProcessNeedToRun = true;
+    std::atomic<bool> extProcessNeedToRun{true};
     wxString extprocessCommand;
     wxString extProcessParam;
     wxString extprocessLastError;
@@ -217,7 +217,7 @@ private:
     void ProcessOutputThread();
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
-    void UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QM::QueueEvents& event);
+    void UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QueueEvents& event);
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
@@ -287,9 +287,9 @@ private:
     }
     inline void EnableModelSelect() { this->m_model->Enable(); }
 
-    std::shared_ptr<std::thread> processCheckThread   = nullptr;
-    std::shared_ptr<std::thread> processHandleOutput  = nullptr;
-    std::atomic_bool extProcessRunning                = false;
+    std::shared_ptr<std::thread> processCheckThread  = nullptr;
+    std::shared_ptr<std::thread> processHandleOutput = nullptr;
+    std::atomic<bool> extProcessRunning{false};
     std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
 
     static void ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
@@ -323,7 +323,7 @@ private:
     void OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::QueueItem> item);
 
     template <typename T>
-    static void SendThreadEvent(wxEvtHandler* eventHandler, QM::QueueEvents eventType, const T& payload, std::string text = "");
+    static void SendThreadEvent(wxEvtHandler* eventHandler, QueueEvents eventType, const T& payload, std::string text = "");
 
     template <typename T>
     static void SendThreadEvent(wxEvtHandler* eventHandler, sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "");
@@ -344,10 +344,10 @@ private:
     inline static wxString formatFileName(const QM::QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
         wxDateTime localTime = wxDateTime::Now();
 
-        auto day = localTime.Format(wxT("%d"));
-        auto month = localTime.Format(wxT("%m"));
-        auto year = localTime.Format(wxT("%Y"));
-        auto hours = localTime.Format(wxT("%H"));
+        auto day     = localTime.Format(wxT("%d"));
+        auto month   = localTime.Format(wxT("%m"));
+        auto year    = localTime.Format(wxT("%Y"));
+        auto hours   = localTime.Format(wxT("%H"));
         auto minutes = localTime.Format(wxT("%M"));
         auto seconds = localTime.Format(wxT("%S"));
 

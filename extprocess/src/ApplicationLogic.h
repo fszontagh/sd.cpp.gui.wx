@@ -21,7 +21,7 @@ public:
         if (item != nullptr) {
             item->hash_progress_size = readed;
             item->generated_sha256   = hash;
-            instance->sendStatus(QM::QueueStatus::HASHING, QM::QueueEvents::ITEM_MODEL_HASH_UPDATE);
+            instance->sendStatus(QueueStatus::HASHING, QueueEvents::ITEM_MODEL_HASH_UPDATE);
         }
     }
 
@@ -48,7 +48,7 @@ public:
         }
 
         // instance->currentItem->stats.time_per_step[step] = time;
-        instance->currentItem->stats.time_per_step.emplace_back(QM::QueueStatsStepItem(step, steps, time));
+        instance->currentItem->stats.time_per_step.emplace_back(QueueStatsStepItem(step, steps, time));
         instance->currentItem->stats.time_total += time;
 
         if (instance->currentItem->step > 0) {
@@ -56,7 +56,7 @@ public:
         }
 
         instance->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        instance->sendStatus(QM::QueueEvents::ITEM_UPDATED);
+        instance->sendStatus(QueueEvents::ITEM_UPDATED);
     }
 
     bool loadLibrary();
@@ -112,7 +112,7 @@ private:
      * status_message field. If a sleep time is provided, the function will
      * sleep for that amount of time before sending the message.
      */
-    inline void sendStatus(QM::QueueStatus status, QM::QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
+    inline void sendStatus(QueueStatus status, QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
         if (this->currentItem == nullptr) {
             return;
         }
@@ -135,7 +135,7 @@ private:
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
     }
-    inline void sendStatus(QM::QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
+    inline void sendStatus(QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
         if (this->currentItem == nullptr) {
             return;
         }

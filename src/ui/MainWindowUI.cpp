@@ -128,8 +128,9 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
                             break;
                         }
 
-                        if (tries > 5) {
+                        if (tries > 5 || server->needToRun == false) {
                             server->needToRun = false;
+                            break;
                         }
                         tries++;
                         std::this_thread::sleep_for(std::chrono::seconds(5 * tries));
@@ -190,7 +191,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->extProcessParam = dllName + ".so";
 #endif
 
-        this->extProcessRunning = false;
+        this->extProcessRunning.store(false);
 
         // start process from the thread
 
@@ -207,7 +208,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             this->Destroy();
             return;
         }
-        this->extProcessNeedToRun = true;
+        this->extProcessNeedToRun.store(true);
         this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
         this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
     }
@@ -313,7 +314,7 @@ void MainWindowUI::OnCivitAitButton(wxCommandEvent& event) {
 void MainWindowUI::OnStopBackgroundProcess(wxCommandEvent& event) {
     if (this->subprocess != nullptr &&              // we have subprocess
         subprocess_alive(this->subprocess) != 0 &&  // is running
-        this->extProcessNeedToRun &&                // need to run, eg. not in stopping state
+        this->extProcessNeedToRun.load() &&         // need to run, eg. not in stopping state
         this->qmanager->GetCurrentItem() == nullptr) {
         this->m_stop_background_process->Disable();
         subprocess_terminate(this->subprocess);
@@ -611,10 +612,10 @@ void MainWindowUI::OnJobListItemKeyDown(wxKeyEvent& event) {
 
             int id     = store->GetItemData(item);
             auto qitem = this->qmanager->GetItemPtr(id);
-            if (qitem->status == QM::QueueStatus::RUNNING ||
-                qitem->status == QM::QueueStatus::MODEL_LOADING ||
-                qitem->status == QM::QueueStatus::HASHING ||
-                qitem->status == QM::QueueStatus::HASHING_DONE) {
+            if (qitem->status == QueueStatus::RUNNING ||
+                qitem->status == QueueStatus::MODEL_LOADING ||
+                qitem->status == QueueStatus::HASHING ||
+                qitem->status == QueueStatus::HASHING_DONE) {
                 continue;
             }
             if (this->qmanager->DeleteJob(id) && row != wxNOT_FOUND) {
@@ -651,8 +652,51 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
             return;
         }
         wxMenu* menu = new wxMenu();
+        if (this->m_joblist->GetSelectedItemsCount() > 1) {
+            wxDataViewItemArray selections;
+            this->m_joblist->GetSelections(selections);
+            wxDataViewListStore* store = this->m_joblist->GetStore();
+            std::vector<int> items_to_del;
+            std::vector<wxDataViewItem> rows_to_del;
+            for (const auto item : selections) {
+                int id     = store->GetItemData(item);
+                auto qitem = this->qmanager->GetItemPtr(id);
+                if (qitem == nullptr) {
+                    continue;
+                }
+                if (qitem->status == QueueStatus::RUNNING ||
+                    qitem->status == QueueStatus::MODEL_LOADING ||
+                    qitem->status == QueueStatus::HASHING ||
+                    qitem->status == QueueStatus::HASHING_DONE) {
+                    continue;
+                }
+                rows_to_del.emplace_back(item);
+                items_to_del.emplace_back(qitem->id);
+            }
+            if (rows_to_del.size() != items_to_del.size()) {
+                this->writeLog(_("Error: rows_to_del.size() != items_to_del.size()"));
+                items_to_del.clear();
+                rows_to_del.clear();
+            }
+            if (items_to_del.size() > 0) {
+                menu->Append(99, wxString::Format(_("Delete %d items"), (int)rows_to_del.size()));
+                // menu->Enable(99, false);
+                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, rows_to_del, items_to_del](wxCommandEvent& event) {
+                    // unselect all before delete
+                    this->m_joblist->SetSelections(wxDataViewItemArray());
+                    for (int i = 0; i < items_to_del.size(); i++) {
+                        this->qmanager->DeleteJob(items_to_del[i]);
+                        auto row = this->m_joblist->ItemToRow(rows_to_del[i]);
+                        if (row != wxNOT_FOUND) {
+                            this->m_joblist->DeleteItem(row);
+                        }
+                    }
+                    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+                });
+            }
 
-        auto item = event.GetItem();
+        } else {
+            auto item = event.GetItem();
 
             wxDataViewListStore* store = this->m_joblist->GetStore();
 
@@ -663,10 +707,10 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 return;
             }
 
-            if (qitem->mode != QM::GenerationMode::CONVERT) {
+            if (qitem->mode != SDMode::CONVERT) {
                 menu->Append(1, _("Requeue"));
-                if (qitem->mode == QM::GenerationMode::IMG2IMG ||
-                    qitem->mode == QM::GenerationMode::UPSCALE) {
+                if (qitem->mode == SDMode::IMG2IMG ||
+                    qitem->mode == SDMode::UPSCALE) {
                     if (!std::filesystem::exists(qitem->initial_image)) {
                         menu->Enable(1, false);
                     }
@@ -679,8 +723,8 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 menu->Enable(1, false);
             }
 
-            if (qitem->mode != QM::GenerationMode::UPSCALE &&
-                qitem->mode != QM::GenerationMode::CONVERT) {
+            if (qitem->mode != SDMode::UPSCALE &&
+                qitem->mode != SDMode::CONVERT) {
                 menu->Append(2, _("Load parameters"));
                 menu->Append(3, _("Copy prompts to text2img"));
                 menu->Append(4, _("Copy prompts to img2img"));
@@ -691,31 +735,31 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                     menu->Append(7, _("Send the last image to the img2img tab"));
                 }
             }
-            if (qitem->mode == QM::GenerationMode::UPSCALE) {
+            if (qitem->mode == SDMode::UPSCALE) {
                 if (qitem->images.size() > 0) {
                     menu->Append(6, wxString::Format(_("Upscale again")));
                 }
             }
 
-            if (qitem->status == QM::QueueStatus::PAUSED ||
-                qitem->status == QM::QueueStatus::PENDING) {
+            if (qitem->status == QueueStatus::PAUSED ||
+                qitem->status == QueueStatus::PENDING) {
                 menu->AppendSeparator();
-                menu->Append(8, qitem->status == QM::QueueStatus::PENDING ? _("Pause") : _("Resume"));
+                menu->Append(8, qitem->status == QueueStatus::PENDING ? _("Pause") : _("Resume"));
             }
 
             menu->AppendSeparator();
             menu->Append(99, _("Delete"));
             menu->Enable(99, false);
 
-            if (qitem->status == QM::QueueStatus::RUNNING ||
-                qitem->status == QM::QueueStatus::HASHING) {
+            if (qitem->status == QueueStatus::RUNNING ||
+                qitem->status == QueueStatus::HASHING) {
                 menu->Enable(1, false);
             }
 
-            if (qitem->status == QM::QueueStatus::PENDING ||
-                qitem->status == QM::QueueStatus::PAUSED ||
-                qitem->status == QM::QueueStatus::FAILED ||
-                qitem->status == QM::QueueStatus::DONE) {
+            if (qitem->status == QueueStatus::PENDING ||
+                qitem->status == QueueStatus::PAUSED ||
+                qitem->status == QueueStatus::FAILED ||
+                qitem->status == QueueStatus::DONE) {
                 menu->Enable(99, true);
             }
             menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
@@ -834,12 +878,12 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             // do not delete the model if it is used in a job
             for (const auto& qitem : this->qmanager->getList()) {
                 if (qitem.second->params.model_path == modelInfo->path &&
-                    (qitem.second->status == QM::QueueStatus::MODEL_LOADING ||
-                     qitem.second->status == QM::QueueStatus::HASHING ||
-                     qitem.second->status == QM::QueueStatus::HASHING_DONE ||
-                     qitem.second->status == QM::QueueStatus::PAUSED ||
-                     qitem.second->status == QM::QueueStatus::PENDING ||
-                     qitem.second->status == QM::QueueStatus::RUNNING)) {
+                    (qitem.second->status == QueueStatus::MODEL_LOADING ||
+                     qitem.second->status == QueueStatus::HASHING ||
+                     qitem.second->status == QueueStatus::HASHING_DONE ||
+                     qitem.second->status == QueueStatus::PAUSED ||
+                     qitem.second->status == QueueStatus::PENDING ||
+                     qitem.second->status == QueueStatus::RUNNING)) {
                     menu->Enable(310, false);
                     break;
                 }
@@ -971,17 +1015,17 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     this->CheckQueueButton();
 
-    auto type  = QM::GenerationMode::TXT2IMG;
+    auto type  = SDMode::TXT2IMG;
     int pageId = this->m_notebook1302->GetSelection();
     switch (pageId) {
         case 1:
-            type = QM::GenerationMode::TXT2IMG;
+            type = SDMode::TXT2IMG;
             break;
         case 2:
-            type = QM::GenerationMode::IMG2IMG;
+            type = SDMode::IMG2IMG;
             break;
         case 3:
-            type = QM::GenerationMode::UPSCALE;
+            type = SDMode::UPSCALE;
             break;
         default:
             return;
@@ -999,7 +1043,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     auto sClientData  = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_scheduler->GetClientObject(this->m_scheduler->GetSelection()));
     auto smClientData = dynamic_cast<sd_gui_utils::IntClientData*>(this->m_sampler->GetClientObject(this->m_sampler->GetSelection()));
 
-    if (type == QM::GenerationMode::UPSCALE) {
+    if (type == SDMode::UPSCALE) {
         auto esrganModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_upscaler_model->GetClientData(this->m_upscaler_model->GetSelection()));
         if (esrganModel == nullptr) {
             wxLogError(_("No upscaler model found!"));
@@ -1084,7 +1128,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     item->model = this->m_model->GetStringSelection().utf8_string();
 
-    if (type == QM::GenerationMode::TXT2IMG || type == QM::GenerationMode::IMG2IMG) {
+    if (type == SDMode::TXT2IMG || type == SDMode::IMG2IMG) {
         if (diffusionModel.empty() == false) {
             item->model = wxFileName(item->params.diffusion_model_path).GetFullName();
         }
@@ -1146,7 +1190,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->params.clip_on_cpu          = this->clipOnCpu->GetValue();
     item->params.diffusion_flash_attn = this->diffusionFlashAttn->GetValue();
 
-    if (type == QM::GenerationMode::TXT2IMG) {
+    if (type == SDMode::TXT2IMG) {
         item->params.prompt          = this->m_prompt->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt->GetValue().utf8_string();
 
@@ -1183,7 +1227,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         }
     }
 
-    if (type == QM::GenerationMode::IMG2IMG) {
+    if (type == SDMode::IMG2IMG) {
         item->params.prompt          = this->m_prompt2->GetValue().utf8_string();
         item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
         wxImage originalImage        = this->inpaintHelper->GetOriginalImage();
@@ -1239,15 +1283,15 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->params.clip_skip    = this->m_clip_skip->GetValue();
     item->params.sample_steps = this->m_steps->GetValue();
 
-    if (type == QM::GenerationMode::TXT2IMG) {
+    if (type == SDMode::TXT2IMG) {
         item->params.control_strength = this->m_controlnetStrength->GetValue();
     }
 
-    if (type == QM::GenerationMode::IMG2IMG) {
+    if (type == SDMode::IMG2IMG) {
         item->params.strength = this->m_strength->GetValue();
     }
 
-    if (this->m_controlnetModels->GetCurrentSelection() > 0 && type == QM::GenerationMode::TXT2IMG) {
+    if (this->m_controlnetModels->GetCurrentSelection() > 0 && type == SDMode::TXT2IMG) {
         if (diffusionModel.empty() == false) {
             this->writeLog(wxString::Format(_("Skipping controlnet with diffusion model: %s"), diffusionModel.c_str()));
         } else {
@@ -1275,7 +1319,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     item->mode = type;
 
-    if (type == QM::GenerationMode::IMG2IMG) {
+    if (type == SDMode::IMG2IMG) {
         if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists() && item->initial_image.empty()) {
             item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
             // if (this->mapp->cfg->save_all_image) {
@@ -1299,7 +1343,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
     this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
     this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath());
-    this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(QM::GenerationMode_str.at(type)));
+    this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(GenerationMode_str.at(type)));
     this->mapp->config->Flush(true);
 }
 
@@ -1676,10 +1720,10 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
         preset.name  = preset_name.utf8_string();
         preset.type  = this->m_type->GetStringSelection().utf8_string();
         if (this->m_notebook1302->GetSelection() == (int)sd_gui_utils::GuiMainPanels::PANEL_TEXT2IMG) {
-            preset.mode = modes_str[QM::GenerationMode::TXT2IMG];
+            preset.mode = modes_str[SDMode::TXT2IMG];
         }
         if (this->m_notebook1302->GetSelection() == (int)sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG) {
-            preset.mode = modes_str[QM::GenerationMode::IMG2IMG];
+            preset.mode = modes_str[SDMode::IMG2IMG];
         }
 
         nlohmann::json j(preset);
@@ -1759,7 +1803,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
     this->m_cfg->SetValue(item.params.cfg_scale);
     this->m_batch_count->SetValue(item.params.batch_count);
 
-    if (item.mode == QM::GenerationMode::TXT2IMG) {
+    if (item.mode == SDMode::TXT2IMG) {
         auto currentSkipLayers = sd_gui_utils::splitStr2int(this->m_skipLayers->GetValue().utf8_string(), ',');
         if (currentSkipLayers.size() != item.params.skip_layers.size()) {
             wxString newSkipLayers;
@@ -1790,7 +1834,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             this->slgScale->SetValue(item.params.slg_scale);
         }
     }
-    if (item.mode == QM::GenerationMode::IMG2IMG) {
+    if (item.mode == SDMode::IMG2IMG) {
         for (const auto& img : item.images) {
             if (wxFileExists(wxString::FromUTF8Unchecked(img.pathname)) == false) {
                 continue;
@@ -1926,7 +1970,16 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     }
 
     data.push_back(wxVariant(_("File name")));
-    data.push_back(wxVariant(wxString::Format("%s", modelinfo->path)));
+
+    if (modelinfo->server_id > -1) {
+        wxFileName fname(modelinfo->path);
+        data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
+    } else {
+        wxString p = wxString::Format("%s", modelinfo->path).SubString(65,modelinfo->path.length());
+        wxFileName fname(p);
+        data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
+    }
+
     this->m_model_details->AppendItem(data);
     data.clear();
 
@@ -2120,7 +2173,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
     data.push_back(wxVariant(modes_str[item->mode]));
     data.push_back(wxVariant(item->model));
 
-    if (item->mode == QM::GenerationMode::UPSCALE || item->mode == QM::GenerationMode::CONVERT) {
+    if (item->mode == SDMode::UPSCALE || item->mode == SDMode::CONVERT) {
         data.push_back(wxVariant("--"));  // sample method
         data.push_back(wxVariant("--"));  // seed
     } else {
@@ -2128,15 +2181,15 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
         data.push_back(wxVariant(std::to_string(item->params.seed)));
     }
 
-    data.push_back(item->status == QM::QueueStatus::DONE ? 100 : 1);  // progressbar
+    data.push_back(item->status == QueueStatus::DONE ? 100 : 1);  // progressbar
     // calculate the item average speed frrom item->stats in step / seconds or seconds / step
 
     wxString speed = wxString::Format(item->stats.time_avg > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->stats.time_avg > 1.0f || item->stats.time_avg == 0 ? item->stats.time_avg : (1.0f / item->stats.time_avg), item->step, item->steps);
-    data.push_back(wxString(speed));                                                        // speed
-    data.push_back(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));  // status
+    data.push_back(wxString(speed));                                                    // speed
+    data.push_back(wxVariant(wxGetTranslation(QueueStatus_GUI_str.at(item->status))));  // status
     data.push_back(wxVariant(item->status_message));
 
-    if (item->server > -1) {
+    if (item->server.empty() == false) {
         auto srv = this->mapp->cfg->GetTcpServer(item->server);
         if (srv != nullptr) {
             data.push_back(wxVariant(srv->GetName()));
@@ -2197,34 +2250,29 @@ MainWindowUI::~MainWindowUI() {
     if (this->widget != nullptr) {
         this->widget->Destroy();
     }
-    this->extProcessNeedToRun = false;
-
-    if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
-        this->processCheckThread->join();
-    }
+    this->extProcessNeedToRun.store(false);
 
     if (this->disableExternalProcessHandling == false && this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
-        std::cout << "Terminating processs" << std::endl;
+        if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
+            this->processCheckThread->join();
+        }
         int result = 0;
         result     = subprocess_terminate(subprocess);
         if (0 != result) {
             std::cerr << "Can not terminate extprocess" << std::endl;
         }
-
-        std::cout << "Join processs" << std::endl;
         result = subprocess_join(subprocess, NULL);
         if (0 != result) {
             std::cerr << "Can not join extprocess" << std::endl;
         }
-
-        std::cout << "Destroy processs" << std::endl;
         result = subprocess_destroy(subprocess);
         if (0 != result) {
             std::cerr << "Can not destroy extprocess" << std::endl;
         }
-    }
-    if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
-        this->processHandleOutput->join();
+
+        if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
+            this->processHandleOutput->join();
+        }
     }
 
     for (auto it = this->tcpClients.begin(); it != this->tcpClients.end(); it++) {
@@ -2479,38 +2527,29 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
 
 void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
     auto tu = evt.GetId();
-    if (tu == 99) {
-        this->m_joblist->GetSelections(sel);
-        for (auto& item : sel) {
-            int id                               = store->GetItemData(item);
-            std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
-            if (this->qmanager->DeleteJob(qitem->id)) {
-                store->DeleteItem(this->m_joblist->ItemToRow(item));
-                this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
-            }
-        }
-        return;
-    }
 
     // 100 for queueitem list table
     if (tu < 100) {
         wxDataViewListStore* store = this->m_joblist->GetStore();
-        auto currentItem           = this->m_joblist->GetCurrentItem();
         auto currentRow            = this->m_joblist->GetSelectedRow();
         if (currentRow == wxNOT_FOUND) {
+            return;
+        }
+        auto currentItem = this->m_joblist->RowToItem(currentRow);
+        if (currentItem.IsOk() == false) {
             return;
         }
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
 
-    /*
-            1 Copy and queue
-            2 copy to text2img
-            3 copy prompts to text2image
-            4 copy prompts to img2img
-            5 Details
-            99 delete
-    */
+        /*
+                1 Copy and queue
+                2 copy to text2img
+                3 copy prompts to text2image
+                4 copy prompts to img2img
+                5 Details
+                99 delete
+        */
 
         switch (tu) {
             case 1:
@@ -2544,15 +2583,15 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
                 this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);  // switch to the upscaler
             } break;
-             case 7: {
+            case 7: {
                 this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname), true);
             } break;
             case 8: {
-                if (qitem->status == QM::QueueStatus::PAUSED) {
+                if (qitem->status == QueueStatus::PAUSED) {
                     this->qmanager->UnPauseItem(qitem);
                     return;
                 }
-                if (qitem->status == QM::QueueStatus::PENDING) {
+                if (qitem->status == QueueStatus::PENDING) {
                     this->qmanager->PauseItem(qitem);
                     return;
                 }
@@ -2589,7 +2628,7 @@ void MainWindowUI::loadTaesdList() {
 
 wxString MainWindowUI::paramsToImageComment(const QM::QueueItem& myItem) {
     // TODO: copy original image's exif...
-    if (myItem.mode == QM::GenerationMode::UPSCALE) {
+    if (myItem.mode == SDMode::UPSCALE) {
         return "";
     }
     if (myItem.params.model_path.empty() && myItem.params.diffusion_model_path.empty()) {
@@ -2699,7 +2738,7 @@ std::string MainWindowUI::paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_
 }
 
 template <typename T>
-inline void MainWindowUI::SendThreadEvent(wxEvtHandler* eventHandler, QM::QueueEvents eventType, const T& payload, std::string text) {
+inline void MainWindowUI::SendThreadEvent(wxEvtHandler* eventHandler, QueueEvents eventType, const T& payload, std::string text) {
     wxThreadEvent* e = new wxThreadEvent();
     e->SetString(wxString::Format("%d:%d:%s", (int)sd_gui_utils::ThreadEvents::QUEUE, (int)eventType, text));
     e->SetPayload(payload);
@@ -3246,8 +3285,8 @@ void MainWindowUI::StartGeneration(std::shared_ptr<QM::QueueItem> myJob) {
         if (subprocess_alive(this->subprocess) == 0) {
             wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
             myJob->status_message = _("Error accessing to the background process. Please try again.");
-            // this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_FAILED, myJob);
-            this->qmanager->SetStatus(QM::QueueStatus::FAILED, myJob);
+            // this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_FAILED, myJob);
+            this->qmanager->SetStatus(QueueStatus::FAILED, myJob);
             errorDialog.ShowModal();
             return;
         }
@@ -3255,12 +3294,12 @@ void MainWindowUI::StartGeneration(std::shared_ptr<QM::QueueItem> myJob) {
 
     try {
         myJob->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        this->qmanager->SetStatus(QM::QueueStatus::PENDING, myJob);
+        this->qmanager->SetStatus(QueueStatus::PENDING, myJob);
         nlohmann::json j = *myJob;
         std::string msg  = j.dump();
         this->sharedMemory->write(msg.data(), msg.size());
 
-        //  this->qmanager->SendEventToMainWindow(QM::QueueEvents::ITEM_GENERATION_STARTED, myJob);
+        //  this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_GENERATION_STARTED, myJob);
 
     } catch (const std::exception& e) {
         std::cerr << __FILE__ << ":" << __LINE__ << e.what() << std::endl;
@@ -3341,7 +3380,7 @@ void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::Queue
         int id                               = store->GetItemData(currentItem);
         std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
-            store->SetValueByRow(wxVariant(wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))), i, (int)queueJobRows::STATUS);
+            store->SetValueByRow(wxVariant(wxGetTranslation(QueueStatus_GUI_str.at(item->status))), i, (int)queueJobRows::STATUS);
             store->RowValueChanged(i, (int)queueJobRows::STATUS);
 
             store->SetValueByRow(wxVariant(item->status_message), i, (int)queueJobRows::STATUS_MESSAGE);
@@ -3373,11 +3412,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
 
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
         // only numbers here...
-        QM::QueueEvents event = (QM::QueueEvents)std::stoi(content);
+        QueueEvents event = (QueueEvents)std::stoi(content);
 
         std::shared_ptr<QM::QueueItem> item = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
 
-        if (QM::QueueEvents::ITEM_ADDED != event) {
+        if (QueueEvents::ITEM_ADDED != event) {
             this->qmanager->UpdateItem(*item);
         }
 
@@ -3385,44 +3424,44 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         wxString message;
 
         switch (event) {
-            case QM::QueueEvents::ITEM_MODEL_HASH_START: {
+            case QueueEvents::ITEM_MODEL_HASH_START: {
             } break;
-            case QM::QueueEvents::ITEM_MODEL_HASH_UPDATE: {
+            case QueueEvents::ITEM_MODEL_HASH_UPDATE: {
                 MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_PROGRESS, item);  // this will call the STANDALONE_HASHING_PROGRESS event too
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_MODEL_HASH_DONE: {
+            case QueueEvents::ITEM_MODEL_HASH_DONE: {
                 MainWindowUI::SendThreadEvent(sd_gui_utils::ThreadEvents::HASHING_DONE, item);  // this will call the STANDALONE_HASHING_DONE event too
                 this->UpdateCurrentProgress(item, event);
             } break;
                 // new item added
-            case QM::QueueEvents::ITEM_ADDED: {
+            case QueueEvents::ITEM_ADDED: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemAdded(item);
             } break;
                 // item status changed
-            case QM::QueueEvents::ITEM_STATUS_CHANGED: {
+            case QueueEvents::ITEM_STATUS_CHANGED: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->OnQueueItemManagerItemStatusChanged(item);
                 this->UpdateCurrentProgress(item, event);
             } break;
                 // item updated... -> set the progress bar in the queue
-            case QM::QueueEvents::ITEM_UPDATED: {
+            case QueueEvents::ITEM_UPDATED: {
                 this->OnQueueItemManagerItemUpdated(item);
                 this->UpdateCurrentProgress(item, event);
             } break;
                 // this is just the item start, if no mode
                 // loaded, then will trigger model load
                 // event
-            case QM::QueueEvents::ITEM_START: {
+            case QueueEvents::ITEM_START: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->StartGeneration(item);
                 message = wxString::Format(_("%s is just stared to generate %d images\nModel: %s"), modes_str[item->mode], item->params.batch_count, item->model);
 
-                if (item->mode == QM::GenerationMode::UPSCALE) {
+                if (item->mode == SDMode::UPSCALE) {
                     title   = _("Upscaling started");
                     message = wxString::Format(_("Upscaling the image is started: %s\nModel: %s"), item->initial_image, item->model);
-                } else if (item->mode == QM::GenerationMode::CONVERT) {
+                } else if (item->mode == SDMode::CONVERT) {
                     title   = _("Conversion started");
                     message = wxString::Format(_("Conversion the model is started: %s\nModel: %s"), item->initial_image, item->model);
                 } else {
@@ -3438,18 +3477,18 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 // update global status info
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_FINISHED: {
+            case QueueEvents::ITEM_FINISHED: {
                 // update again
-                this->SendThreadEvent(this->GetEventHandler(), QM::QueueEvents::ITEM_UPDATED, item);
+                this->SendThreadEvent(this->GetEventHandler(), QueueEvents::ITEM_UPDATED, item);
                 this->m_stop_background_process->Enable();
                 this->jobsCountSinceSegfault++;
                 this->stepsCountSinceSegfault += item->steps;
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 message = wxString::Format(_("%s is just finished to generate %d images\nModel: %s"), modes_str[item->mode], item->params.batch_count, item->model);
-                if (item->mode == QM::GenerationMode::UPSCALE) {
+                if (item->mode == SDMode::UPSCALE) {
                     title   = _("Upscaling done");
                     message = wxString::Format(_("Upscaling the image is done: \n%s\nModel: %s"), item->initial_image, item->model);
-                } else if (item->mode == QM::GenerationMode::CONVERT) {
+                } else if (item->mode == SDMode::CONVERT) {
                     title   = _("Conversion done");
                     message = wxString::Format(_("Conversion the model is done: \n%s\nModel: %s"), item->model, item->params.output_path);
                     if (wxFileExists(item->params.output_path)) {
@@ -3469,7 +3508,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->ShowNotification(title, message);
                 this->writeLog(message);
                 {
-                    if (this->jobsCountSinceSegfault > 0) {
+                    if (this->jobsCountSinceSegfault.load() > 0) {
                         wxString msg;
                         if (this->jobsCountSinceSegfault.load() > 1) {
                             msg = _("%d jobs and %d steps without a segfault");
@@ -3486,37 +3525,37 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 // update global status info
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_MODEL_LOADED: {  // MODEL_LOAD_DONE
+            case QueueEvents::ITEM_MODEL_LOADED: {  // MODEL_LOAD_DONE
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->writeLog(wxString::Format(_("Model loaded: %s\n"), item->model));
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_MODEL_LOAD_START: {  // MODEL_LOAD_START
+            case QueueEvents::ITEM_MODEL_LOAD_START: {  // MODEL_LOAD_START
                 this->writeLog(wxString::Format(_("Model load started: %s\n"), item->model));
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_MODEL_FAILED: {  // MODEL_LOAD_ERROR
+            case QueueEvents::ITEM_MODEL_FAILED: {  // MODEL_LOAD_ERROR
                 this->writeLog(wxString::Format(_("Model load failed: %s\n"), item->model));
                 title   = _("Model load failed");
                 message = wxString::Format(_("The '%s' just failed to load... for more details please see the logs!"), item->model);
                 this->ShowNotification(title, message);
                 this->UpdateCurrentProgress(item, event);
             } break;
-            case QM::QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
-                if (item->mode == QM::GenerationMode::IMG2IMG ||
-                    item->mode == QM::GenerationMode::TXT2IMG) {
+            case QueueEvents::ITEM_GENERATION_STARTED:  // GENERATION_START
+                if (item->mode == SDMode::IMG2IMG ||
+                    item->mode == SDMode::TXT2IMG) {
                     this->writeLog(wxString::Format(
                         _("Diffusion started. Seed: %" PRId64 " Batch: %d %dx%dpx Cfg: %.1f Steps: %d"),
                         item->params.seed, item->params.batch_count, item->params.width,
                         item->params.height, item->params.cfg_scale,
                         item->params.sample_steps));
                 }
-                if (item->mode == QM::GenerationMode::UPSCALE) {
+                if (item->mode == SDMode::UPSCALE) {
                     this->writeLog(wxString::Format(_("Upscale start, factor: %d image: %s\n"), item->upscale_factor, item->initial_image));
                 }
                 this->UpdateCurrentProgress(item, event);
                 break;
-            case QM::QueueEvents::ITEM_FAILED:  // GENERATION_ERROR
+            case QueueEvents::ITEM_FAILED:  // GENERATION_ERROR
                 this->writeLog(wxString::Format(_("Generation error: %s\n"), item->status_message));
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->UpdateCurrentProgress(item, event);
@@ -3534,6 +3573,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->disconnect_reason));
         // this->treeListManager->DeleteByServerId(server);
+        this->treeListManager->DeleteByServerId(server->server_id);
         this->ModelManager->UnloadModelsByServer(server);
         return;
     }
@@ -3884,7 +3924,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     data.clear();
 
     data.push_back(wxVariant(_("Server")));
-    if (item->server > -1) {
+    if (item->server.empty() == false) {
         auto srv = this->mapp->cfg->GetTcpServer(item->server);
         data.push_back(wxVariant(wxString::Format("%s", srv == nullptr ? _("deleted server") : srv->GetName())));
     } else {
@@ -3910,7 +3950,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    if (item->mode == QM::GenerationMode::CONVERT) {
+    if (item->mode == SDMode::CONVERT) {
         data.push_back(wxVariant(_("Model")));
         data.push_back(wxVariant(wxString(item->params.output_path)));
         this->m_joblist_item_details->AppendItem(data);
@@ -3922,7 +3962,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
-    if (item->mode == QM::GenerationMode::UPSCALE) {
+    if (item->mode == SDMode::UPSCALE) {
         data.push_back(wxVariant(_("Factor")));
         data.push_back(
             wxVariant(wxString::Format("%" PRId32, item->upscale_factor)));
@@ -3930,14 +3970,14 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         data.clear();
     }
 
-    if (item->mode == QM::GenerationMode::IMG2IMG ||
-        item->mode == QM::GenerationMode::TXT2IMG ||
-        item->mode == QM::GenerationMode::CONVERT) {
+    if (item->mode == SDMode::IMG2IMG ||
+        item->mode == SDMode::TXT2IMG ||
+        item->mode == SDMode::CONVERT) {
         data.push_back(wxVariant(_("Type")));
         data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::sd_type_gui_names[item->params.wtype])));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
-        if (item->mode != QM::GenerationMode::CONVERT) {
+        if (item->mode != SDMode::CONVERT) {
             data.push_back(wxVariant(_("Scheduler")));
             data.push_back(wxVariant(sd_gui_utils::sd_scheduler_gui_names[item->params.schedule]));
             this->m_joblist_item_details->AppendItem(data);
@@ -3945,7 +3985,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         }
     }
 
-    if (item->mode == QM::GenerationMode::IMG2IMG) {
+    if (item->mode == SDMode::IMG2IMG) {
         data.push_back(wxVariant(_("Init image")));
         data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->initial_image.data(), item->initial_image.size())));
         this->m_joblist_item_details->AppendItem(data);
@@ -3964,8 +4004,8 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
         data.clear();
     }
 
-    if (item->mode == QM::GenerationMode::TXT2IMG ||
-        item->mode == QM::GenerationMode::IMG2IMG) {
+    if (item->mode == SDMode::TXT2IMG ||
+        item->mode == SDMode::IMG2IMG) {
         data.push_back(wxVariant(_("Prompt")));
         data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.prompt)));
         this->m_joblist_item_details->AppendItem(data);
@@ -4072,7 +4112,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             data.clear();
         }
     }
-    if (item->mode == QM::GenerationMode::TXT2IMG) {
+    if (item->mode == SDMode::TXT2IMG) {
         data.push_back(wxVariant(_("Width")));
         data.push_back(wxVariant(wxString::Format("%dpx", item->params.width)));
         this->m_joblist_item_details->AppendItem(data);
@@ -4269,7 +4309,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
         rawImage->SetLoadFlags(rawImage->GetLoadFlags() & ~wxImage::Load_Verbose);
         if (!rawImage->LoadFile(wxString::FromUTF8Unchecked(rimage))) {
             itemPtr->status_message = _("Invalid image from diffusion: ") + rimage;
-            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, itemPtr);
             delete rawImage;
             return itemPtr;
         }
@@ -4278,7 +4318,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
         rawImage->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
         if (!rawImage->SaveFile(fullName, imgHandler)) {
             itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), fullName).utf8_string();
-            MainWindowUI::SendThreadEvent(eventHandler, QM::QueueEvents::ITEM_FAILED, itemPtr);
+            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, itemPtr);
             delete rawImage;
             return itemPtr;
         }
@@ -4639,7 +4679,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
 
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
     item->model                         = modelInfo->name;
-    item->mode                          = QM::GenerationMode::CONVERT;
+    item->mode                          = SDMode::CONVERT;
     item->params.mode                   = SDMode::CONVERT;
     item->params.n_threads              = this->mapp->cfg->n_threads;
     item->params.output_path            = modelOut.GetAbsolutePath().utf8_string();
@@ -4710,12 +4750,12 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             std::cerr << "[GUI] Could not find item " << item.id << std::endl;
             return false;
         }
-        if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
-            std::cerr << "[GUI] Item " << item.id << " QM::QueueEvents::ITEM_FAILED" << std::endl;
+        if (itemPtr->event == QueueEvents::ITEM_FAILED) {
+            std::cerr << "[GUI] Item " << item.id << " QueueEvents::ITEM_FAILED" << std::endl;
             // return true;
         }
-        if (itemPtr->status == QM::QueueStatus::FAILED) {
-            std::cerr << "[GUI] Item " << item.id << " QM::QueueStatus::FAILED, skipping" << std::endl;
+        if (itemPtr->status == QueueStatus::FAILED) {
+            std::cerr << "[GUI] Item " << item.id << " QueueStatus::FAILED, skipping" << std::endl;
             return true;
         }
         // mutex lock
@@ -4723,7 +4763,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
 
         if (itemPtr->update_index != item.update_index || itemPtr->event != item.event) {
             if (BUILD_TYPE == "Debug") {
-                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QM::QueueEvents_str.at(item.event) << std::endl;
+                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QueueEvents_str.at(item.event) << std::endl;
             }
 
             *itemPtr = item;
@@ -4731,7 +4771,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             if (!itemPtr->rawImages.empty()) {
                 this->handleSdImages(itemPtr, this->GetEventHandler());
             }
-            if (itemPtr->event == QM::QueueEvents::ITEM_FAILED) {
+            if (itemPtr->event == QueueEvents::ITEM_FAILED) {
                 if (this->extprocessLastError.empty() == false) {
                     itemPtr->status_message   = this->extprocessLastError;
                     this->extprocessLastError = "";
@@ -4818,7 +4858,7 @@ void MainWindowUI::ProcessOutputThread() {
 }
 
 void MainWindowUI::ProcessCheckThread() {
-    while (this->extProcessNeedToRun == true) {
+    while (this->extProcessNeedToRun.load()) {
         if (subprocess_alive(this->subprocess) != 0) {
             std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
 
@@ -4831,7 +4871,7 @@ void MainWindowUI::ProcessCheckThread() {
                 }
             }
 
-            if (this->extProcessNeedToRun == false) {
+            if (this->extProcessNeedToRun.load() == false) {
                 std::string exitMsg = "exit";
                 this->sharedMemory->write(exitMsg.c_str(), exitMsg.size());
                 {
@@ -4844,7 +4884,7 @@ void MainWindowUI::ProcessCheckThread() {
                 return;
             }
             float sleepTime = EPROCESS_SLEEP_TIME;
-            if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QM::QueueStatus::RUNNING) {
+            if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QueueStatus::RUNNING) {
                 if (this->qmanager->GetCurrentItem()->stats.time_min > 0) {
                     sleepTime = this->qmanager->GetCurrentItem()->stats.time_min;
                 } else {
@@ -4852,7 +4892,7 @@ void MainWindowUI::ProcessCheckThread() {
                 }
             }
             {  // it will be updated again, when a  job is finished
-                if (this->jobsCountSinceSegfault == 0) {
+                if (this->jobsCountSinceSegfault.load() == 0) {
                     {
                         wxThreadEvent* event = new wxThreadEvent();
                         event->SetString(_("Process is ready"));
@@ -4895,9 +4935,9 @@ void MainWindowUI::ProcessCheckThread() {
                 this->m_stop_background_process->Disable();
             }
         }
-        this->jobsCountSinceSegfault  = 0;
-        this->stepsCountSinceSegfault = 0;
-        if (BUILD_TYPE == "Debug") {
+        this->jobsCountSinceSegfault.store(0);
+        this->stepsCountSinceSegfault.store(0);
+        if (std::string(BUILD_TYPE) == "Debug") {
             std::cout << "[GUI] restart sleep time: " << (EPROCESS_SLEEP_TIME * 10) << std::endl;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 10));
@@ -4953,14 +4993,14 @@ void MainWindowUI::writeLog(const wxString& msg, bool writeIntoGui, bool debug) 
 void MainWindowUI::writeLog(const std::string& message) {
     this->writeLog(wxString::FromUTF8Unchecked(message));
 }
-void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QM::QueueEvents& event) {
-    this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QM::QueueStatus_GUI_str.at(item->status))));
+void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QueueEvents& event) {
+    this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QueueStatus_GUI_str.at(item->status))));
 
-    if (event == QM::QueueEvents::ITEM_STATUS_CHANGED) {
+    if (event == QueueEvents::ITEM_STATUS_CHANGED) {
         return;
     }
 
-    if (event == QM::QueueEvents::ITEM_MODEL_HASH_UPDATE || event == QM::QueueEvents::ITEM_MODEL_HASH_START) {
+    if (event == QueueEvents::ITEM_MODEL_HASH_UPDATE || event == QueueEvents::ITEM_MODEL_HASH_START) {
         auto current = item->hash_progress_size;
         auto total   = item->hash_fullsize;
         if (current > total) {
@@ -4971,9 +5011,9 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, co
         return;
     }
 
-    if (event == QM::QueueEvents::ITEM_UPDATED ||
-        event == QM::QueueEvents::ITEM_START ||
-        event == QM::QueueEvents::ITEM_FINISHED) {
+    if (event == QueueEvents::ITEM_UPDATED ||
+        event == QueueEvents::ITEM_START ||
+        event == QueueEvents::ITEM_FINISHED) {
         unsigned int stepsSum  = item->params.sample_steps * item->params.batch_count;
         unsigned int stepsDone = item->stats.time_per_step.size();
 
