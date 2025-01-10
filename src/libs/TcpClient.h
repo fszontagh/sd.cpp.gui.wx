@@ -6,7 +6,7 @@
 namespace sd_gui_utils::networks {
     using TcpClientOnMessage     = std::function<void(int)>;
     using TcpClientOnConnect     = std::function<void()>;
-    using TcpClientOntDisconnect = std::function<void()>;
+    using TcpClientOntDisconnect = std::function<void(std::string)>;
     using TcpClientOnError       = std::function<void(const std::string&)>;
 
     class TcpClient {
@@ -49,7 +49,7 @@ namespace sd_gui_utils::networks {
                 //           this->m_client.finish();
                 this->disconnect_reason = ret.m_msg;
                 if (this->onDisconnectClb != nullptr) {
-                    this->onDisconnectClb();
+                    this->onDisconnectClb(this->disconnect_reason);
                 }
                 this->stop();
             }

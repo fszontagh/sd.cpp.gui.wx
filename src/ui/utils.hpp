@@ -609,8 +609,7 @@ namespace sd_gui_utils {
                 wxFileName::Mkdir(tmppath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
         }
-
-        ~config() {
+        void FlushConfig() {
             if (this->configBase != nullptr) {
                 this->configBase->Write("/paths/model", this->model);
                 this->configBase->Write("/paths/lora", this->lora);
@@ -641,9 +640,10 @@ namespace sd_gui_utils {
                 this->configBase->Write("/png_compression_level", this->png_compression_level);
 
                 if (this->configBase->HasGroup("/Servers")) {
-                    this->configBase->DeleteGroup("/Servers");  // Előző bejegyzések törlése
+                    this->configBase->DeleteGroup("/Servers");
                 }
                 wxString oldPath = this->configBase->GetPath();
+
                 this->configBase->SetPath("/Servers");
 
                 for (size_t i = 0; i < servers.size(); ++i) {
@@ -657,8 +657,12 @@ namespace sd_gui_utils {
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
+                this->configBase->Flush(false);
             }
             this->ClearTcpServers();
+        }
+        ~config() {
+            this->FlushConfig();
         }
     };
 

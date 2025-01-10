@@ -94,7 +94,7 @@ namespace sd_gui_utils::networks {
         }
         // this->server->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this->server);
         if (this->onDisconnectClb != nullptr) {
-            this->onDisconnectClb();
+            this->onDisconnectClb(ret.m_msg);
         }
         this->stop();
     }

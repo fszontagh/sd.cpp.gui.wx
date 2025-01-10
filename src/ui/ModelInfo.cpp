@@ -323,7 +323,12 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
         return wxEmptyString;
     }
 
-    wxFileName path(model_path);
+    wxString path_name = model_path;
+
+    if (remote) {
+        path_name = path_name.SubString(65, path_name.Length());
+    }
+    wxFileName path(path_name);
 
     if (!path.Exists() && !remote) {
         return wxEmptyString;
@@ -344,7 +349,11 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
 }
 
 wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server) {
-    auto folderGroupName = wxFileName(model_path).GetPath();
+    wxString path = model_path;
+    if (server == nullptr) {
+        path = path.SubString(65, path.Length());
+    }
+    auto folderGroupName = wxFileName(path).GetPath();
 
     folderGroupName.Replace(root_path, "", false);
     if (folderGroupName.StartsWith(wxFileName::GetPathSeparator())) {

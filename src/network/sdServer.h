@@ -38,25 +38,36 @@ namespace sd_gui_utils {
             return this->server_id;
         }
         wxString GetDisconnectReason() {
-            return wxString::FromUTF8Unchecked(this->client->GetDisconnectReason());
+            // after disconnect, the client will be nullptr
+            return wxString::FromUTF8Unchecked(this->disconnect_reason);
         }
         bool IsEnabled() const { return this->enabled.load(); }
         void SetAuthKeyState(bool state) { this->authkey = state; }
         bool GetAuthKeyState() const { return this->authkey; }
-        sd_gui_utils::networks::Packet GetPacket(size_t packet_id) { return this->client->getPacket(packet_id); }
+        sd_gui_utils::networks::Packet GetPacket(size_t packet_id) {
+            return this->client == nullptr ? sd_gui_utils::networks::Packet() : this->client->getPacket(packet_id);
+        }
         void Stop() {
             this->needToRun.store(false);
-            this->client->stop();
+            if (this->client != nullptr) {
+                this->client->stop();
+            }
         }
 
         /// @brief Get the status of the server
         /// @return "connected" if enabled and connected, "disconnected" if enabled but not connected, "disabled" if not enabled
         wxString GetStatus() const {
-            return this->enabled.load() == true ? this->client->IsConnected() == true ? "connected" : "disconnected" : "disabled";
+            if (this->client != nullptr) {
+                return this->enabled.load() == true ? this->client->IsConnected() == true ? _("connected") : _("disconnected") : _("disabled");
+            }
+            return "disabled";
         };
 
         void SetEnabled(bool state = true) {
             this->enabled.store(state);
+            if (state == false) {
+                this->Stop();
+            }
         }
         std::string GetHost() {
             return this->host;
@@ -82,28 +93,35 @@ namespace sd_gui_utils {
         }
         void StartServer() {
             this->needToRun.store(true);
+            if (this->client == nullptr) {
+                this->client = std::make_unique<sd_gui_utils::networks::TcpClient>();
+            }
             this->thread = std::thread([this]() {
                 while (this->needToRun.load()) {
                     int tries = 1;
                     while (this->client->IsConnected() == false) {
                         this->client->Connect(this->host, this->port);
-                        if (this->client->IsConnected()) {
+                        if (this->client->IsConnected() || this->needToRun.load() == false) {
                             break;
                         }
 
-                        if (tries > 5 || this->needToRun.load() == false) {
-                            this->needToRun.store(false);
-                            this->client = nullptr;
-                            break;
-                        }
+                        // if (tries > 5 || this->needToRun.load() == false) {
+                        //     this->needToRun.store(false);
+                        //     this->client = nullptr;
+                        //     break;
+                        //}
                         tries++;
                         std::this_thread::sleep_for(std::chrono::seconds(5 * tries));
+                        if (tries > 10) {
+                            tries = 1;
+                        }
                     }
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
                 if (this->client != nullptr) {
                     this->client->stop();
                 }
+                this->client = nullptr;
             });
         }
         sdServer(sdServer&& other) noexcept
@@ -141,11 +159,20 @@ namespace sd_gui_utils {
         sdServer(const std::string& host, int port, wxEvtHandler* evt)
             : host(host), port(port), evt(evt) {
             this->client               = std::make_unique<sd_gui_utils::networks::TcpClient>();
-            this->client->onConnectClb = [this]() {};
+            this->client->onConnectClb = [this]() {
+                this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_CONNECTED, this);
+            };
             this->client->onMessageClb = [this](int packet_id) {
                 auto msg = this->client->getPacket(packet_id);
+                if (msg.server_id.empty() == false && this->server_id.empty()) {
+                    this->SetId(msg.server_id);
+                }
+                if (msg.param == sd_gui_utils::networks::PacketParam::MODEL_LIST) {
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, this);
+                }
             };
-            this->client->onDisconnectClb = [this]() {
+            this->client->onDisconnectClb = [this](const std::string& reason) {
+                this->disconnect_reason = reason;
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this);
             };
             this->client->onErrorClb = [this](std::string msg) {

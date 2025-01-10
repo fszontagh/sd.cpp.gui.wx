@@ -1944,14 +1944,8 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
 
     data.push_back(wxVariant(_("File name")));
 
-    if (modelinfo->server_id.empty() == false) {
-        wxFileName fname(modelinfo->path);
-        data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
-    } else {
-        wxString p = wxString::Format("%s", modelinfo->path).SubString(65, modelinfo->path.length());
-        wxFileName fname(p);
-        data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
-    }
+    wxFileName fname(modelinfo->path);
+    data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
 
     this->m_model_details->AppendItem(data);
     data.clear();

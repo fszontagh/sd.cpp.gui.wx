@@ -95,43 +95,6 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         }
     }
 
-    this->config->Write("/paths/lora", this->m_lora_dir->GetPath());
-    this->config->Write("/paths/model", this->m_model_dir->GetPath());
-    this->config->Write("/paths/vae", this->m_vae_dir->GetPath());
-    this->config->Write("/paths/embedding", this->m_embedding_dir->GetPath());
-    this->config->Write("/paths/taesd", this->m_taesd_dir->GetPath());
-    this->config->Write("/paths/esrgan", this->m_esrgan_dir->GetPath());
-    this->config->Write("/paths/controlnet", this->m_controlnet_dir->GetPath());
-    this->config->Write("/paths/presets", this->m_presets_dir->GetPath());
-    this->config->Write("/keep_model_in_memory", this->m_keep_model_in_memory->GetValue());
-    this->config->Write("/save_all_image", this->m_save_all_image->GetValue());
-    this->config->Write("/n_threads", this->m_threads->GetValue());
-    this->config->Write("/paths/output", this->m_images_output->GetPath());
-    this->config->Write("/image_quality", this->m_image_quality->GetValue());
-    this->config->Write("/png_compression_level", this->m_png_compression->GetValue());
-    this->config->Write("/image_type", this->m_image_type->GetStringSelection());
-    this->config->Write("/show_notification", this->m_show_notifications->GetValue());
-    this->config->Write("/notification_timeout", this->m_notification_timeout->GetValue());
-    this->config->Write("/enable_civitai", this->m_enableCivitai->GetValue());
-    this->config->Write("/output_filename_format", this->m_output_filename_format->GetValue());
-    this->config->Write("/autogen_hash", this->m_autogen_hash->GetValue());
-    this->config->Write("/favorite_models_only", this->m_favorite_models_only->GetValue());
-
-    wxString oldPath = this->config->GetPath();
-    this->config->DeleteGroup("Server");
-    this->config->SetPath("/Servers");
-    for (size_t i = 0; i < this->cfg->servers.size(); ++i) {
-        this->config->SetPath(wxString::Format("Server%zu", i));
-        this->config->Write("Host", wxString::FromUTF8Unchecked(this->cfg->servers[i]->GetHost()));
-        this->config->Write("Port", this->cfg->servers[i]->GetPort());
-        this->config->Write("InternalId", this->cfg->servers[i]->GetInternalId());
-        this->config->Write("Enabled", this->cfg->servers[i]->IsEnabled());
-        this->config->Write("Id", wxString::FromUTF8Unchecked(this->cfg->servers[i]->GetId()));
-        this->config->Write("Name", this->cfg->servers[i]->GetName());
-        this->config->SetPath("..");
-    }
-    this->config->SetPath(oldPath);
-
     this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
     this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
     this->cfg->vae                    = this->m_vae_dir->GetPath().utf8_string();
@@ -158,6 +121,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
     this->cfg->language = language;
     this->config->Write("/language", wxString::FromUTF8Unchecked(language));
     this->config->Flush();
+    this->cfg->FlushConfig();
     this->Close();
 }
 
