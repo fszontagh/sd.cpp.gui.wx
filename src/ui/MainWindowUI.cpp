@@ -7,7 +7,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
     // this->AppOrigPlaceHolderBitmap    = this->m_img2img_preview->GetBitmap();
 
-    if (BUILD_TYPE != "Release") {
+    if (std::string(BUILD_TYPE) != "Release") {
         this->SetTitle(wxString::Format("%s - %s (%s) - %s", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH, BUILD_TYPE));
     } else {
         this->SetTitle(wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
@@ -99,47 +99,20 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
 
-    // populate server list if available
-    // this->m_server->Clear();
+    this->mapp->cfg->initServerList(this->GetEventHandler());
+
     if (this->mapp->cfg->servers.empty() == false) {
         for (auto& server : this->mapp->cfg->ListRemoteServers()) {
-            if (server->enabled == false) {
+            if (server->IsEnabled() == false) {
                 continue;
             }
 
             auto id = this->m_server->Append(server->GetName());
             this->m_server->SetClientData(id, (void*)server);
+            server->StartServer();
         }
         this->m_server->SetSelection(0);
         this->m_server->Show();
-
-        for (auto& server : this->mapp->cfg->ListRemoteServers()) {
-            if (server->enabled == false) {
-                continue;
-            }
-            server->needToRun = true;
-            this->threads.emplace_back(new std::thread([this, server]() {
-                while (server->needToRun) {
-                    int tries = 1;
-                    while (server->connected == false) {
-                        server->client = std::make_shared<sd_gui_utils::networks::TcpClient>(server, this->GetEventHandler());
-                        if (server->connected) {
-                            this->tcpClients.push_back(server->client);
-                            break;
-                        }
-
-                        if (tries > 5 || server->needToRun == false) {
-                            server->needToRun = false;
-                            break;
-                        }
-                        tries++;
-                        std::this_thread::sleep_for(std::chrono::seconds(5 * tries));
-                    }
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                }
-                server->connected = false;
-            }));
-        }
     }
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
@@ -890,7 +863,7 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             }
         }
     }
-    if (modelInfo->server_id == -1) {
+    if (modelInfo->server_id.empty()) {
         menu->Append(311, _("Open folder"));
     }
 
@@ -1070,7 +1043,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             if (id != wxNOT_FOUND) {
                 auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
                 if (server != nullptr) {
-                    item->server = server->server_id;
+                    item->server = server->GetId();
                 }
             }
         }
@@ -1089,7 +1062,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (id != wxNOT_FOUND) {
             auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
             if (server != nullptr) {
-                item->server = server->server_id;
+                item->server = server->GetId();
             }
         }
     }
@@ -1971,11 +1944,11 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
 
     data.push_back(wxVariant(_("File name")));
 
-    if (modelinfo->server_id > -1) {
+    if (modelinfo->server_id.empty() == false) {
         wxFileName fname(modelinfo->path);
         data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
     } else {
-        wxString p = wxString::Format("%s", modelinfo->path).SubString(65,modelinfo->path.length());
+        wxString p = wxString::Format("%s", modelinfo->path).SubString(65, modelinfo->path.length());
         wxFileName fname(p);
         data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
     }
@@ -2008,7 +1981,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
         data.clear();
     }
 
-    if (modelinfo->server_id > -1) {
+    if (modelinfo->server_id.empty() == false) {
         auto srv = this->mapp->cfg->GetTcpServer(modelinfo->server_id);
         data.push_back(wxVariant(_("Server")));
         data.push_back(wxVariant(wxString::Format("%s", srv == nullptr ? _("deleted server") : srv->GetName())));
@@ -2275,8 +2248,8 @@ MainWindowUI::~MainWindowUI() {
         }
     }
 
-    for (auto it = this->tcpClients.begin(); it != this->tcpClients.end(); it++) {
-        (*it)->stop();
+    for (auto& srv : this->mapp->cfg->ListRemoteServers()) {
+        srv->Stop();
     }
 
     for (auto& threadPtr : this->threads) {
@@ -3571,15 +3544,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
-        this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->disconnect_reason));
+        this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->GetDisconnectReason()));
         // this->treeListManager->DeleteByServerId(server);
-        this->treeListManager->DeleteByServerId(server->server_id);
+        this->treeListManager->DeleteByServerId(server->GetId());
         this->ModelManager->UnloadModelsByServer(server);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
-        this->writeLog(wxString::Format(_("Server error: %s"), server->GetName(), server->disconnect_reason));
+        this->writeLog(wxString::Format(_("Server error: %s"), server->GetName(), server->GetDisconnectReason()));
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
@@ -3588,7 +3561,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         if (server == nullptr) {
             return;
         }
-        auto packet = server->client->getPacket(packetId);
+        auto packet = server->GetPacket(packetId);
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
             for (const auto& item : list) {

@@ -68,7 +68,7 @@ namespace sd_gui_utils {
         std::string folderGroupName = "";
         std::string target_filename = "";
         int move_progress           = 0;
-        int server_id               = -1;
+        std::string server_id       = "";
 
         ModelFileInfo() = default;
         ModelFileInfo(const sd_gui_utils::networks::RemoteModelInfo& remote) { *this = remote; }
@@ -293,28 +293,54 @@ namespace sd_gui_utils {
         int mainSashPose                   = 320;
         bool favorite_models_only          = false;
 
+        bool initServerList(wxEvtHandler* eventHandler) {
+            if (configBase->HasGroup("/servers")) {
+                wxString oldGroup = configBase->GetPath();
+                configBase->SetPath("/servers");
+                long index;
+                wxString serverKey;
+                bool hasMore = configBase->GetFirstGroup(serverKey, index);
+
+                while (hasMore) {
+                    configBase->SetPath(serverKey);
+                    wxString host                  = configBase->Read("Host");
+                    bool enabled                   = configBase->ReadBool("Enabled", false);
+                    wxString id                    = configBase->Read("Id", wxEmptyString);
+                    int port                       = configBase->Read("Port", 8191);
+                    int internal_id                = configBase->Read("InternalId", -1);
+                    wxString name                  = configBase->Read("Name", wxEmptyString);
+                    sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
+                    server->SetEnabled(enabled);
+                    server->SetInternalId(internal_id);
+                    server->SetId(id.ToStdString());
+                    server->SetName(name.ToStdString());
+                    this->AddTcpServer(server);
+                    configBase->SetPath("..");
+                    hasMore = configBase->GetNextGroup(serverKey, index);
+                }
+                configBase->SetPath(oldGroup);
+                return true;
+            }
+            return false;
+        }
+
         inline void ServerEnable(int internal_id, bool enable) {
             std::cout << "ServerEnable " << internal_id << " " << enable << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
-                    (*it)->enabled = enable;
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetEnabled(enable);
                     std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
                     return;
                 }
             }
         }
-        inline void AddTcpServer(const sd_gui_utils::sdServer& server) {
-            std::cout << "AddTcpServer" << std::endl;
-            std::lock_guard<std::mutex> lock(this->mutex);
-            this->servers.push_back(new sd_gui_utils::sdServer(server));
-            std::cout << "AddTcpServer done" << std::endl;
-        }
+
         inline sd_gui_utils::sdServer* GetTcpServer(int internal_id) {
             std::cout << "GetTcpServer id: " << internal_id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
+                if ((*it)->GetInternalId() == internal_id) {
                     std::cout << "GetTcpServer done" << std::endl;
                     return *it;
                 }
@@ -326,7 +352,7 @@ namespace sd_gui_utils {
             std::cout << "GetTcpServer id: " << server_id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->server_id == server_id) {
+                if ((*it)->GetId() == server_id) {
                     std::cout << "GetTcpServer done" << std::endl;
                     return *it;
                 }
@@ -344,7 +370,7 @@ namespace sd_gui_utils {
             std::cout << "RemoveTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
+                if ((*it)->GetInternalId() == internal_id) {
                     delete *it;
                     this->servers.erase(it);
                     std::cout << "RemoveTcpServer done" << std::endl;
@@ -356,7 +382,7 @@ namespace sd_gui_utils {
             std::cout << "ServerExist" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->host == host && (*it)->port == port) {
+                if ((*it)->GetHost() == host && (*it)->GetPort() == port) {
                     std::cout << "ServerExist done" << std::endl;
                     return true;
                 }
@@ -369,8 +395,8 @@ namespace sd_gui_utils {
             std::cout << "ServerChangePort" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
-                    (*it)->port = port;
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetPort(port);
                     break;
                 }
             }
@@ -381,8 +407,8 @@ namespace sd_gui_utils {
             std::cout << "ServerChangeHost" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
-                    (*it)->host = host;
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetHost(host);
                     break;
                 }
             }
@@ -392,8 +418,8 @@ namespace sd_gui_utils {
             std::cout << "ServerChangeName" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->internal_id == internal_id) {
-                    (*it)->name = name;
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetName(name);
                     break;
                 }
             }
@@ -407,6 +433,7 @@ namespace sd_gui_utils {
                 if (*it == nullptr) {
                     continue;
                 }
+                (*it)->Stop();
                 delete *it;
             }
             this->servers.clear();
@@ -417,7 +444,6 @@ namespace sd_gui_utils {
             std::cout << "ListRemoteServers" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             return this->servers;
-            std::cout << "ListRemoteServers done" << std::endl;
         }
 
         inline const wxString getPathByDirType(const wxString& dirTypeName) {
@@ -521,39 +547,10 @@ namespace sd_gui_utils {
             this->mainSashPose           = config->Read("/mainSashPose", this->mainSashPose);
             this->favorite_models_only   = config->ReadBool("/favorite_models_only", this->favorite_models_only);
 
-            int idx               = 0;
             auto saved_image_type = config->Read("/image_type", "JPG");
 
             if (sd_gui_utils::image_types_str_reverse.contains(saved_image_type)) {
                 this->image_type = sd_gui_utils::image_types_str_reverse.at(saved_image_type);
-            }
-
-            long index;
-            wxString server;
-
-            if (config->HasGroup("/servers")) {
-                wxString oldGroup = config->GetPath();
-                config->SetPath("/servers");
-                long index;
-                wxString serverKey;
-                bool hasMore = config->GetFirstGroup(serverKey, index);
-
-                while (hasMore) {
-                    config->SetPath(serverKey);
-                    wxString host;
-                    int port;
-                    config->Read("Host", &host);
-                    config->Read("Port", &port, 8191);
-                    bool enabled                   = config->ReadBool("Enabled", false);
-                    wxString id                    = config->Read("Id", wxEmptyString);
-                    sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port);
-                    server->enabled                = enabled;
-                    server->server_id              = id;
-                    this->AddTcpServer(server);
-                    config->SetPath("..");
-                    hasMore = config->GetNextGroup(serverKey, index);
-                }
-                config->SetPath(oldGroup);
             }
 
             // check if directories exists
@@ -651,10 +648,12 @@ namespace sd_gui_utils {
 
                 for (size_t i = 0; i < servers.size(); ++i) {
                     this->configBase->SetPath(wxString::Format("Server%zu", i));
-                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->host));
-                    this->configBase->Write("Port", servers[i]->port);
-                    this->configBase->Write("Enabled", servers[i]->enabled.load());
-                    this->configBase->Write("Id", wxString::FromUTF8Unchecked(servers[i]->server_id));
+                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->GetHost()));
+                    this->configBase->Write("Port", servers[i]->GetPort());
+                    this->configBase->Write("Enabled", servers[i]->IsEnabled());
+                    this->configBase->Write("InternalId", servers[i]->GetInternalId());
+                    this->configBase->Write("Name", servers[i]->GetName());
+                    this->configBase->Write("Id", wxString::FromUTF8Unchecked(servers[i]->GetId()));
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
@@ -847,34 +846,6 @@ namespace sd_gui_utils {
         {schedule_t::AYS, "Ays"},
         {schedule_t::GITS, "Gits"}};
 
-
-    enum class ThreadEvents {
-        QUEUE,
-        HASHING_PROGRESS,
-        MODEL_LOAD_DONE,
-        GENERATION_DONE,
-        STANDALONE_HASHING_PROGRESS,
-        STANDALONE_HASHING_DONE,
-        HASHING_DONE,
-        GENERATION_PROGRESS,
-        SD_MESSAGE,
-        MESSAGE,
-        MODEL_INFO_DOWNLOAD_START,
-        MODEL_INFO_DOWNLOAD_FAILED,
-        MODEL_INFO_DOWNLOAD_FINISHED,
-        MODEL_INFO_DOWNLOAD_IMAGES_START,
-        MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS,
-        MODEL_INFO_DOWNLOAD_IMAGES_DONE,
-        MODEL_INFO_DOWNLOAD_IMAGE_FAILED,
-        MODEL_MOVE_START,
-        MODEL_MOVE_FAILED,
-        MODEL_MOVE_DONE,
-        MODEL_MOVE_UPDATE,
-        SERVER_CONNECTED,
-        SERVER_DISCONNECTED,
-        SERVER_ERROR,
-        SERVER_MODEL_LIST_UPDATE
-    };
     // sd c++
 
     inline const unsigned int generateRandomInt(unsigned int min, unsigned int max) {

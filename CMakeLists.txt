@@ -117,7 +117,7 @@ if (NOT WIN32)
 set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
 
 else()
-	set( wxWidgets::wxWidgets)
+    set(APPDEPENDS wxWidgets::wxWidgets)
     if (MSVC)
         set_target_properties(${PROJECT_BINARY_NAME} PROPERTIES
             COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"

@@ -17946,7 +17946,7 @@
                             <property name="ellipsize"></property>
                             <property name="flags">wxDATAVIEW_COL_RESIZABLE</property>
                             <property name="label">Host</property>
-                            <property name="mode">wxDATAVIEW_CELL_INERT</property>
+                            <property name="mode">wxDATAVIEW_CELL_EDITABLE</property>
                             <property name="name">m_dataViewListColumn36</property>
                             <property name="permission">protected</property>
                             <property name="type">Text</property>
@@ -17957,7 +17957,7 @@
                             <property name="ellipsize"></property>
                             <property name="flags">wxDATAVIEW_COL_RESIZABLE</property>
                             <property name="label">Port</property>
-                            <property name="mode">wxDATAVIEW_CELL_INERT</property>
+                            <property name="mode">wxDATAVIEW_CELL_EDITABLE</property>
                             <property name="name">m_dataViewListColumn37</property>
                             <property name="permission">protected</property>
                             <property name="type">Text</property>
@@ -17968,7 +17968,7 @@
                             <property name="ellipsize">wxELLIPSIZE_MIDDLE</property>
                             <property name="flags">wxDATAVIEW_COL_RESIZABLE</property>
                             <property name="label">Auth key</property>
-                            <property name="mode">wxDATAVIEW_CELL_INERT</property>
+                            <property name="mode">wxDATAVIEW_CELL_EDITABLE</property>
                             <property name="name">m_dataViewListColumn38</property>
                             <property name="permission">protected</property>
                             <property name="type">Text</property>

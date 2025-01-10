@@ -1,13 +1,10 @@
 #ifndef _SERVER_SOCKETAPP_H
 #define _SERVER_SOCKETAPP_H
-#include <sstream>
+#include <map>
 
 #include <wx/log.h>
 #include <wx/time.h>
 #include <wx/timer.h>
-
-#include "ver.hpp"
-
 #include "libs/json.hpp"
 
 #include "network/packets.h"

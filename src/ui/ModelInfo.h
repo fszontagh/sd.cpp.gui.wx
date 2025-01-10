@@ -57,7 +57,7 @@ namespace ModelInfo {
         inline void UnloadModelsByServer(sd_gui_utils::sdServer* server) {
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
-                if (it->second->server_id == server->internal_id) {
+                if (it->second->server_id == server->GetInternalId()) {
                     this->ModelCount[it->second->model_type]--;
                     delete it->second;
                     it = this->ModelInfos.erase(it);

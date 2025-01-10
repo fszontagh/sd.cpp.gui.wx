@@ -2320,9 +2320,9 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer105->Add( bSizer106, 0, wxEXPAND, 5 );
 
 	m_serverList = new wxDataViewListCtrl( m_serversPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VERT_RULES );
-	m_dataViewListColumn36 = m_serverList->AppendTextColumn( _("Host"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn37 = m_serverList->AppendTextColumn( _("Port"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn38 = m_serverList->AppendTextColumn( _("Auth key"), wxDATAVIEW_CELL_INERT, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn36 = m_serverList->AppendTextColumn( _("Host"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn37 = m_serverList->AppendTextColumn( _("Port"), wxDATAVIEW_CELL_EDITABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn38 = m_serverList->AppendTextColumn( _("Auth key"), wxDATAVIEW_CELL_EDITABLE, 200, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn38->GetRenderer()->EnableEllipsize( wxELLIPSIZE_MIDDLE );
 	m_dataViewListColumn39 = m_serverList->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer105->Add( m_serverList, 1, wxALL|wxEXPAND, 5 );

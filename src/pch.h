@@ -41,16 +41,19 @@
 #include "wx/hashmap.h"
 #include "wx/dcbuffer.h"
 #include "wx/treelist.h"
+#include "libs/json.hpp"
 
 #include "ver.hpp"
 #include "helpers/DirTypes.h"
 #include "helpers/sd.hpp"
 #include "sockets-cpp/TcpClient.h"
-#include "libs/json.hpp"
+#include "ui/ThreadEventTypes.hpp"
+
+#include "network/sdServer.h"
+
 #include "helpers/QueueItem.h"
 #include "network/RemoteModelInfo.h"
 #include "network/RemoteQueueJobItem.h"
-#include "network/packets.h"
 #include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"

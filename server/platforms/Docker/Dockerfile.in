@@ -25,7 +25,7 @@ RUN mkdir /app/models/esrgan
 
 RUN if [ "$BACKEND" = "cuda" ]; then \
         echo "CUDA support enabled"; \
-        apt update; apt install -y --no-install-recommends libcudart12 libcublas12; \
+        apt update; apt install -y --no-install-recommends libcudart12 libcublas12 libnvidia-compute-565-server; \
     fi
 
 
