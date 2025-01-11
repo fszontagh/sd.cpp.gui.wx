@@ -355,7 +355,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     }
     try {
         nlohmann::json msg = nlohmann::json::parse(message);
-        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::ERROR);
+        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
         packet.SetData(message);
         this->socket->sendMsg(0, packet);
 
@@ -371,8 +371,8 @@ void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Pa
         this->sendLogEvent("Invalid source index", wxLOG_Error);
         return;
     }
-    if (packet.param == sd_gui_utils::networks::PacketParam::MODEL_LIST) {
-        auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::MODEL_LIST);
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
+        auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST);
         std::vector<sd_gui_utils::networks::RemoteModelInfo> list;
         for (auto model : this->modelFiles) {
             // change the model's path

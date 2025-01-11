@@ -1,27 +1,5 @@
 #ifndef _SERVER_TERMINALAPP_H
 #define _SERVER_TERMINALAPP_H
-
-#include "libs/SharedLibrary.h"
-
-#include <wx/app.h>
-#include <wx/evtloop.h>
-#include <wx/filename.h>
-#include <wx/log.h>
-#include <wx/stdpaths.h>
-#include <wx/textfile.h>
-#include <wx/timer.h>
-
-#include <iostream>
-#include "libs/json.hpp"
-#include "network/RemoteModelInfo.h"
-
-#include "ServerConfig.h"
-#include "SocketApp.h"
-#include "helpers/sslUtils.hpp"
-#include "libs/ExternalProcess.h"
-
-#include "EventQueue.h"
-
 wxDECLARE_APP(TerminalApp);
 
 class TerminalApp : public wxAppConsole {

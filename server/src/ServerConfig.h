@@ -1,11 +1,6 @@
 #ifndef __SERVER_CONFIG_H
 #define __SERVER_CONFIG_H
 
-#include <cstddef>
-#include <cstdint>
-
-#include "libs/json.hpp"
-
 enum class backend_type {
     AVX,
     AVX2,

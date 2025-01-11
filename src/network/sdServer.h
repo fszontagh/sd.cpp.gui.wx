@@ -15,7 +15,7 @@ namespace sd_gui_utils {
         int internal_id       = -1;
         std::string disconnect_reason;
         std::thread thread;
-        std::unique_ptr<sd_gui_utils::networks::TcpClient> client = nullptr;
+        std::shared_ptr<sd_gui_utils::networks::TcpClient> client = nullptr;
         wxEvtHandler* evt                                         = nullptr;
         bool IsOk() const { return !host.empty() && port > 0; }
 
@@ -94,7 +94,7 @@ namespace sd_gui_utils {
         void StartServer() {
             this->needToRun.store(true);
             if (this->client == nullptr) {
-                this->client = std::make_unique<sd_gui_utils::networks::TcpClient>();
+                this->client = std::make_shared<sd_gui_utils::networks::TcpClient>();
             }
             this->thread = std::thread([this]() {
                 while (this->needToRun.load()) {
@@ -158,7 +158,7 @@ namespace sd_gui_utils {
         }
         sdServer(const std::string& host, int port, wxEvtHandler* evt)
             : host(host), port(port), evt(evt) {
-            this->client               = std::make_unique<sd_gui_utils::networks::TcpClient>();
+            this->client               = std::make_shared<sd_gui_utils::networks::TcpClient>();
             this->client->onConnectClb = [this]() {
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_CONNECTED, this);
             };
@@ -167,7 +167,7 @@ namespace sd_gui_utils {
                 if (msg.server_id.empty() == false && this->server_id.empty()) {
                     this->SetId(msg.server_id);
                 }
-                if (msg.param == sd_gui_utils::networks::PacketParam::MODEL_LIST) {
+                if (msg.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, this);
                 }
             };

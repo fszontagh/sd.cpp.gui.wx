@@ -323,25 +323,12 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
         return wxEmptyString;
     }
 
-    wxString path_name = model_path;
-
-    if (remote) {
-        path_name = path_name.SubString(65, path_name.Length());
-    }
+    wxString path_name = remote ? model_path.SubString(65, model_path.Length()) : model_path;
     wxFileName path(path_name);
-
-    if (!path.Exists() && !remote) {
-        return wxEmptyString;
-    }
-
     path.SetExt("json");
     wxFileName meta_path(this->MetaStorePath, path.GetFullName());
 
-    if (!wxFileName::DirExists(meta_path.GetPath())) {
-        return wxEmptyString;
-    }
     if (remote) {
-        // add _remote suffix
         meta_path.SetName(meta_path.GetName() + "_remote");
     }
 
@@ -350,7 +337,7 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
 
 wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server) {
     wxString path = model_path;
-    if (server == nullptr) {
+    if (server != nullptr) {
         path = path.SubString(65, path.Length());
     }
     auto folderGroupName = wxFileName(path).GetPath();

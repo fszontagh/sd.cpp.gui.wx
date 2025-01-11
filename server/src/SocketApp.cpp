@@ -1,5 +1,4 @@
 #include "SocketApp.h"
-#include "TerminalApp.h"
 SocketApp::SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent)
     : m_socketOpt({sockets::TX_BUFFER_SIZE, sockets::RX_BUFFER_SIZE, listenAddr}), m_server(*this, &m_socketOpt), parent(parent) {
     sockets::SocketRet ret = m_server.start(port);
@@ -80,8 +79,8 @@ void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
             this->m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime()};
         }
         sd_gui_utils::networks::Packet auth_required_packet;
-        auth_required_packet.type  = sd_gui_utils::networks::PacketType::REQUEST;
-        auth_required_packet.param = sd_gui_utils::networks::PacketParam::AUTH;
+        auth_required_packet.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+        auth_required_packet.param = sd_gui_utils::networks::Packet::Param::PARAM_AUTH;
         this->sendMsg(client, auth_required_packet);
     }
 }
@@ -107,7 +106,7 @@ void SocketApp::OnTimer() {
         } else {
             if (it->second.last_keepalive == 0 || (wxGetLocalTime() - it->second.last_keepalive) > this->parent->configData->tcp_keepalive) {
                 it->second.last_keepalive = wxGetLocalTime();
-                this->sendMsg(it->second.idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::REQUEST, sd_gui_utils::networks::PacketParam::KEEPALIVE));
+                this->sendMsg(it->second.idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE));
             }
             ++it;
         }
@@ -118,19 +117,19 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
     // parse from cbor to struct Packet
     try {
         if (packet.version != SD_GUI_VERSION) {
-            auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR);
+            auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
             errorPacket.SetData("Version Mismatch, server: " + std::string(SD_GUI_VERSION) + ", client: " + packet.version);
             this->sendMsg(packet.source_idx, errorPacket);
             this->parent->sendLogEvent(wxString::Format("Version Mismatch, server: %s, client: %s", SD_GUI_VERSION, packet.version), wxLOG_Error);
             this->DisconnectClient(packet.source_idx);
             return;
         }
-        if (packet.type == sd_gui_utils::networks::PacketType::REQUEST) {
+        if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE) {
             this->parent->ProcessReceivedSocketPackages(packet);
         }
         // handle the response to the auth request
-        if (packet.type == sd_gui_utils::networks::PacketType::RESPONSE) {
-            if (packet.param == sd_gui_utils::networks::PacketParam::AUTH) {
+        if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
+            if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_AUTH) {
                 {
                     std::lock_guard<std::mutex> guard(m_mutex);
                     std::string packetData = packet.GetData<std::string>();
@@ -140,7 +139,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
                         this->m_clientInfo[packet.source_idx].apikey = packetData;
                         this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
                     } else {
-                        auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::PacketType::RESPONSE, sd_gui_utils::networks::PacketParam::ERROR);
+                        auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
                         errorPacket.SetData("Authentication Failed");
                         this->sendMsg(packet.source_idx, errorPacket);
                         this->parent->sendLogEvent("Authentication Failed, ip: " + this->m_clientInfo[packet.source_idx].host + " port: " + std::to_string(this->m_clientInfo[packet.source_idx].port) + " key: " + this->m_clientInfo[packet.source_idx].apikey + "", wxLOG_Error);
