@@ -436,6 +436,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer10099;
 	bSizer10099 = new wxBoxSizer( wxVERTICAL );
 
+	bSizer10099->SetMinSize( wxSize( 620,-1 ) );
 	wxBoxSizer* bSizer28;
 	bSizer28 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -473,42 +474,42 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintBrushSize->Wrap( -1 );
 	m_inpaintBrushSize->SetMinSize( wxSize( 50,-1 ) );
 
-	bSizer1030->Add( m_inpaintBrushSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintBrushSize, 0, wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT, 5 );
 
 	m_inpaintBrushSizeSlider = new wxSlider( m_panel26, wxID_ANY, 10, 1, 40, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
-	bSizer1030->Add( m_inpaintBrushSizeSlider, 0, wxALL, 5 );
+	bSizer1030->Add( m_inpaintBrushSizeSlider, 0, wxTOP|wxBOTTOM, 5 );
 
 	m_inpaintZoom = new wxStaticText( m_panel26, wxID_ANY, _("Zoom"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintZoom->Wrap( -1 );
-	m_inpaintZoom->SetMinSize( wxSize( 40,-1 ) );
+	m_inpaintZoom->SetMinSize( wxSize( 50,-1 ) );
 
-	bSizer1030->Add( m_inpaintZoom, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintZoom, 0, wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM, 5 );
 
 	m_inpaintZoomSlider = new wxSlider( m_panel26, wxID_ANY, 100, 25, 200, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL|wxSL_VALUE_LABEL );
 	m_inpaintZoomSlider->Enable( false );
 
-	bSizer1030->Add( m_inpaintZoomSlider, 0, wxALL, 5 );
+	bSizer1030->Add( m_inpaintZoomSlider, 0, wxTOP|wxBOTTOM, 5 );
 
 	m_inpaintSaveMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
 
 	m_inpaintSaveMask->SetBitmap( disk_png_to_wx_bitmap() );
 	m_inpaintSaveMask->SetToolTip( _("Save the mask into png") );
 
-	bSizer1030->Add( m_inpaintSaveMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintSaveMask, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintInvert = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
 
 	m_inpaintInvert->SetBitmap( replace_png_to_wx_bitmap() );
 	m_inpaintInvert->SetToolTip( _("Invert mask") );
 
-	bSizer1030->Add( m_inpaintInvert, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintInvert, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintResizeToSdSize = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
 
 	m_inpaintResizeToSdSize->SetBitmap( drag_png_to_wx_bitmap() );
 	m_inpaintResizeToSdSize->SetToolTip( _("Resize the image to fit into the diffusion's width and height.\nWARNING: this will delete the current mask if have!") );
 
-	bSizer1030->Add( m_inpaintResizeToSdSize, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintResizeToSdSize, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintClearMask = new wxBitmapButton( m_panel26, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 28,28 ), wxBU_AUTODRAW|0 );
 
@@ -516,7 +517,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inpaintClearMask->Enable( false );
 	m_inpaintClearMask->SetToolTip( _("Clear the mask") );
 
-	bSizer1030->Add( m_inpaintClearMask, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1030->Add( m_inpaintClearMask, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintOpenMask = new wxFilePickerCtrl( m_panel26, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
 	m_inpaintOpenMask->SetToolTip( _("Open a mask image from file") );
@@ -535,21 +536,21 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_inPaintBrushStyleCircle->SetBitmap( circle_png_to_wx_bitmap() );
 	m_inPaintBrushStyleCircle->SetToolTip( _("Change the brush shape to circle") );
 
-	bSizer1029->Add( m_inPaintBrushStyleCircle, 0, wxALL, 5 );
+	bSizer1029->Add( m_inPaintBrushStyleCircle, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inPaintBrushStyleSquare = new wxBitmapToggleButton( m_panel26, wxID_ANY, square_png_to_wx_bitmap(), wxDefaultPosition, wxSize( 28,28 ), 0 );
 
 	m_inPaintBrushStyleSquare->SetBitmap( square_png_to_wx_bitmap() );
 	m_inPaintBrushStyleSquare->SetToolTip( _("Change the brush shape to square") );
 
-	bSizer1029->Add( m_inPaintBrushStyleSquare, 0, wxALL, 5 );
+	bSizer1029->Add( m_inPaintBrushStyleSquare, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inPaintBrushStyleTriangle = new wxBitmapToggleButton( m_panel26, wxID_ANY, triangle_png_to_wx_bitmap(), wxDefaultPosition, wxSize( 28,28 ), 0 );
 
 	m_inPaintBrushStyleTriangle->SetBitmap( triangle_png_to_wx_bitmap() );
 	m_inPaintBrushStyleTriangle->SetToolTip( _("Change the brush shape to triangle") );
 
-	bSizer1029->Add( m_inPaintBrushStyleTriangle, 0, wxALL, 5 );
+	bSizer1029->Add( m_inPaintBrushStyleTriangle, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_inpaintImageResolution = new wxStaticText( m_panel26, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	m_inpaintImageResolution->Wrap( -1 );

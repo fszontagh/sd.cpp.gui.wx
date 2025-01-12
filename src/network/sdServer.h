@@ -244,7 +244,7 @@ namespace sd_gui_utils {
                 // std::lock_guard<std::mutex> lock(this->mutex);
                 std::cout << "sdServer: onDisconnectClb" << std::endl;
                 this->disconnect_reason = reason;
-                this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this);
+                this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this, reason);
             });
 
             this->client->SetOnErrorCallback([this](std::string msg) {

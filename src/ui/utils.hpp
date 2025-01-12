@@ -134,6 +134,48 @@ namespace sd_gui_utils {
             }
             return (path == rh->path && server_id == rh->server_id);
         }
+        inline ModelFileInfo operator+(const sd_gui_utils::networks::RemoteModelInfo& remote) const {
+            ModelFileInfo merged      = *this;
+            merged.name               = remote.name != merged.name ? remote.name : merged.name;
+            merged.path               = remote.path != merged.path ? remote.path : merged.path;
+            merged.sha256             = remote.sha256 != remote.sha256 ? remote.sha256 : merged.sha256;
+            merged.size               = remote.size != merged.size ? remote.size : merged.size;
+            merged.size_f             = remote.size_f != merged.size_f ? remote.size_f : merged.size_f;
+            merged.hash_progress_size = remote.hash_progress_size != merged.hash_progress_size ? remote.hash_progress_size : merged.hash_progress_size;
+            merged.hash_fullsize      = remote.hash_fullsize != merged.hash_fullsize ? remote.hash_fullsize : merged.hash_fullsize;
+            merged.model_type         = remote.model_type != merged.model_type ? remote.model_type : merged.model_type;
+            merged.server_id          = remote.server_id != merged.server_id ? remote.server_id : merged.server_id;
+            return merged;
+        }
+        inline void operator+=(const sd_gui_utils::networks::RemoteModelInfo& remote) {
+            if (remote.name != name) {
+                name = remote.name;
+            }
+            if (remote.path != path) {
+                path = remote.path;
+            }
+            if (remote.sha256 != sha256) {
+                sha256 = remote.sha256;
+            }
+            if (remote.size != size) {
+                size = remote.size;
+            }
+            if (remote.size_f != size_f) {
+                size_f = remote.size_f;
+            }
+            if (remote.hash_progress_size != hash_progress_size) {
+                hash_progress_size = remote.hash_progress_size;
+            }
+            if (remote.hash_fullsize != hash_fullsize) {
+                hash_fullsize = remote.hash_fullsize;
+            }
+            if (remote.model_type != model_type) {
+                model_type = remote.model_type;
+            }
+            if (remote.server_id != server_id) {
+                server_id = remote.server_id;
+            }
+        }
     };
 
     inline void to_json(nlohmann::json& j, const sd_gui_utils::ModelFileInfo& p) {
@@ -214,7 +256,7 @@ namespace sd_gui_utils {
             p.tags = static_cast<sd_gui_utils::ModelInfoTag>(j.at("tags").get<int>());
         }
         if (j.contains("server_id")) {
-            p.server_id = j.at("server_id").get<int>();
+            p.server_id = j.at("server_id").get<std::string>();
         }
     }
     enum imageTypes { JPG,

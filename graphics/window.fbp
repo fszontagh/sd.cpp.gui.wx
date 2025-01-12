@@ -2981,11 +2981,11 @@
                       </object>
                     </object>
                   </object>
-                  <object class="notebookpage" expanded="false">
+                  <object class="notebookpage" expanded="true">
                     <property name="bitmap">Load From Embedded File; icons/16/palette.png</property>
                     <property name="label">img2img</property>
                     <property name="select">0</property>
-                    <object class="wxPanel" expanded="false">
+                    <object class="wxPanel" expanded="true">
                       <property name="BottomDockable">1</property>
                       <property name="LeftDockable">1</property>
                       <property name="RightDockable">1</property>
@@ -3038,8 +3038,8 @@
                       <property name="window_name">img2img</property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
                       <event name="OnDropFiles">Onimg2imgDropFile</event>
-                      <object class="wxBoxSizer" expanded="false">
-                        <property name="minimum_size"></property>
+                      <object class="wxBoxSizer" expanded="true">
+                        <property name="minimum_size">620,-1</property>
                         <property name="name">bSizer10099</property>
                         <property name="orient">wxVERTICAL</property>
                         <property name="permission">none</property>
@@ -3367,7 +3367,7 @@
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxStaticText" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3429,7 +3429,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL</property>
+                                                  <property name="flag">wxTOP|wxBOTTOM</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxSlider" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3496,7 +3496,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxStaticText" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3534,7 +3534,7 @@
                                                     <property name="maximum_size"></property>
                                                     <property name="min_size"></property>
                                                     <property name="minimize_button">0</property>
-                                                    <property name="minimum_size">40,-1</property>
+                                                    <property name="minimum_size">50,-1</property>
                                                     <property name="moveable">1</property>
                                                     <property name="name">m_inpaintZoom</property>
                                                     <property name="pane_border">1</property>
@@ -3558,7 +3558,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL</property>
+                                                  <property name="flag">wxTOP|wxBOTTOM</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxSlider" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3625,7 +3625,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3700,7 +3700,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3775,7 +3775,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -3850,7 +3850,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL|wxALIGN_CENTER_VERTICAL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -4003,7 +4003,7 @@
                                                 <property name="permission">none</property>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapToggleButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -4076,7 +4076,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapToggleButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -4149,7 +4149,7 @@
                                                 </object>
                                                 <object class="sizeritem" expanded="false">
                                                   <property name="border">5</property>
-                                                  <property name="flag">wxALL</property>
+                                                  <property name="flag">wxALIGN_CENTER_VERTICAL</property>
                                                   <property name="proportion">0</property>
                                                   <object class="wxBitmapToggleButton" expanded="false">
                                                     <property name="BottomDockable">1</property>
@@ -4349,11 +4349,11 @@
                                           </object>
                                         </object>
                                       </object>
-                                      <object class="sizeritem" expanded="true">
+                                      <object class="sizeritem" expanded="false">
                                         <property name="border">5</property>
                                         <property name="flag">wxEXPAND | wxALL</property>
                                         <property name="proportion">1</property>
-                                        <object class="wxPanel" expanded="true">
+                                        <object class="wxPanel" expanded="false">
                                           <property name="BottomDockable">1</property>
                                           <property name="LeftDockable">1</property>
                                           <property name="RightDockable">1</property>
@@ -4387,7 +4387,7 @@
                                           <property name="maximum_size"></property>
                                           <property name="min_size"></property>
                                           <property name="minimize_button">0</property>
-                                          <property name="minimum_size"></property>
+                                          <property name="minimum_size">-1,-1</property>
                                           <property name="moveable">1</property>
                                           <property name="name">m_panel261</property>
                                           <property name="pane_border">1</property>
@@ -4405,7 +4405,7 @@
                                           <property name="window_extra_style"></property>
                                           <property name="window_name"></property>
                                           <property name="window_style">wxBORDER_NONE|wxTAB_TRAVERSAL</property>
-                                          <object class="wxBoxSizer" expanded="true">
+                                          <object class="wxBoxSizer" expanded="false">
                                             <property name="minimum_size"></property>
                                             <property name="name">bSizer1022</property>
                                             <property name="orient">wxVERTICAL</property>

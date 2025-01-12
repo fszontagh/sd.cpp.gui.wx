@@ -778,14 +778,15 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
                 if (parentName.IsEmpty()) {
                     break;
                 }
-                name.Prepend(parentName + wxFileName::GetPathSeparators());
+                name.Prepend(parentName + '/');  // always use unix separator
                 parentItem = this->m_modelTreeList->GetItemParent(parentItem);
             }
+            name.Replace("//", "/");
             menu->Append(106, wxString::Format(_("Create subfolder in: '%s'"), name));
             menu->Enable(106, false);
         }
     } else {
-        if (modelInfo->hash_progress_size == 0) {
+        if (modelInfo->hash_progress_size == 0 && modelInfo->server_id.empty()) {
             if (!modelInfo->sha256.empty()) {
                 menu->Append(100, _("RE-Calculate &Hash"));
             } else {
@@ -806,12 +807,13 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             if (modelInfo->state == sd_gui_utils::CivitAiState::OK && this->mapp->cfg->enable_civitai == true) {
                 menu->Append(199, _("Open model on CivitAi.com in default browser"));
             }
-            if (modelInfo->name.find(".safetensors")) {
-                menu->AppendSeparator();
-                menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
-                if (modelInfo->hash_progress_size > 0) {
-                    menu->Enable(201, false);
-                }
+        }
+        // allow to convert all model files to gguf TODO: allow remote models to be converted
+        if (modelInfo->name.find(".safetensors") && modelInfo->server_id.empty()) {
+            menu->AppendSeparator();
+            menu->Append(201, wxString::Format(_("Convert model to %s gguf format"), this->m_type->GetStringSelection()));
+            if (modelInfo->hash_progress_size > 0) {
+                menu->Enable(201, false);
             }
         }
 
@@ -867,7 +869,8 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
                      qitem.second->status == QueueStatus::HASHING_DONE ||
                      qitem.second->status == QueueStatus::PAUSED ||
                      qitem.second->status == QueueStatus::PENDING ||
-                     qitem.second->status == QueueStatus::RUNNING)) {
+                     qitem.second->status == QueueStatus::RUNNING ||
+                     modelInfo->server_id.empty() == false)) {  // TODO: allow remote models to delete
                     menu->Enable(310, false);
                     break;
                 }
@@ -3554,14 +3557,30 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_CONNECTED) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Connected to server: %s"), server->GetName()));
+        // add to the server selector if not exists
+        for (size_t i = 0; i < this->m_server->GetCount(); i++) {
+            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(i));
+            if (_srv && _srv == server) {
+                return;
+            }
+        }
+        this->m_server->Append(server->GetName(), server);
+
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
-        this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), server->GetDisconnectReason()));
-        // this->treeListManager->DeleteByServerId(server);
+        this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), content));
         this->treeListManager->DeleteByServerId(server->GetId());
         this->ModelManager->UnloadModelsByServer(server);
+        // remove from m_server too
+        for (size_t i = 0; i < this->m_server->GetCount(); i++) {
+            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(i));
+            if (_srv && _srv == server) {
+                this->m_server->Delete(i);
+                break;
+            }
+        }
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
@@ -4643,37 +4662,39 @@ void MainWindowUI::threadedModelInfoImageDownload(
     }
 
     // Loop through each image and download
+    wxFileName base_path(wxString::Format("%s/CivitAiPreviews/%s/",
+                                          this->mapp->cfg->datapath.utf8_string(),
+                                          modelinfo->sha256));
+
+    if (wxDirExists(base_path.GetAbsolutePath()) == false) {
+        wxMkDir(base_path.GetAbsolutePath(), wxS_DIR_DEFAULT);
+    }
     int index = 0;
     for (CivitAi::image& img : modelinfo->CivitAiInfo.images) {
         std::ostringstream response;
         try {
             sd_gui_utils::SimpleCurl curl;
-
-            // Set callback to write data to file
-            std::string target_path = std::filesystem::path(this->mapp->cfg->datapath.utf8_string() + "/" + modelinfo->sha256 + "_" + std::to_string(index) + ".tmp").generic_string();
-
-            curl.getFile(img.url, headers, target_path);
+            wxFileName target_path(wxString::Format("%s/%d.tmp", base_path.GetAbsolutePath(), index));
+            curl.getFile(img.url, headers, target_path.GetAbsolutePath().utf8_string());
 
             // Process downloaded image
             wxImage _tmpImg;
             _tmpImg.SetLoadFlags(_tmpImg.GetLoadFlags() & ~wxImage::Load_Verbose);
 
-            if (_tmpImg.LoadFile(target_path)) {
-                std::string new_path;
+            if (_tmpImg.LoadFile(target_path.GetAbsolutePath(), wxBITMAP_TYPE_ANY)) {
+                wxFileName new_path = target_path;
                 if (_tmpImg.GetType() == wxBITMAP_TYPE_JPEG) {
-                    new_path = std::filesystem::path(target_path).replace_extension(".jpg").generic_string();
+                    new_path.SetExt("jpg");
                 } else if (_tmpImg.GetType() == wxBITMAP_TYPE_PNG) {
-                    new_path = std::filesystem::path(target_path).replace_extension(".png").generic_string();
+                    new_path.SetExt("png");
                 }
 
-                if (!new_path.empty()) {
-                    std::filesystem::rename(target_path, new_path);
-                    modelinfo->preview_images.emplace_back(new_path);
-                    img.local_path = new_path;
+                wxRenameFile(target_path.GetAbsolutePath(), new_path.GetAbsolutePath());
+                modelinfo->preview_images.emplace_back(new_path.GetAbsolutePath().utf8_string());
+                img.local_path = new_path.GetAbsolutePath().utf8_string();
 
-                    MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
-                    index++;
-                }
+                MainWindowUI::SendThreadEvent(eventHandler, sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_PROGRESS, modelinfo, img.url);
+                index++;
             }
             _tmpImg.Destroy();
         } catch (const std::exception& e) {

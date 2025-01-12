@@ -404,6 +404,7 @@ bool TerminalApp::LoadModelFiles() {
         wxFileName filename(file);
         if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), filename.GetExt()) != CHECKPOINT_FILE_EXTENSIONS.end()) {
             sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT, this->configData->model_path);
+            modelInfo.server_id                                        = this->configData->server_id;
             this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
             used_sizes += modelInfo.size;
             used_checkpoint_sizes += modelInfo.size;
@@ -427,6 +428,7 @@ bool TerminalApp::LoadModelFiles() {
             wxFileName filename(file);
             if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), filename.GetExt()) != LORA_FILE_EXTENSIONS.end()) {
                 sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::LORA, this->configData->lora_path);
+                modelInfo.server_id                                        = this->configData->server_id;
                 this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
                 used_sizes += modelInfo.size;
                 used_lora_sizes += modelInfo.size;
@@ -461,6 +463,17 @@ void TerminalApp::CalcModelHashes() {
         wxFileName hashFileName(model.second.remote_path);
         hashFileName.SetExt("sha256");
         if (wxFileExists(hashFileName.GetFullPath())) {
+            wxFile f;
+            if (f.Open(hashFileName.GetAbsolutePath(), wxFile::read)) {
+                wxString hash;
+                f.ReadAll(&hash);
+                if (hash.IsEmpty() == false) {
+                    model.second.sha256 = hash.SubString(0, 64).ToStdString();
+                }
+                f.Close();
+                continue;
+            }
+            wxLogWarning("Failed to read hash file: %s", hashFileName.GetFullPath());
             continue;
         }
 

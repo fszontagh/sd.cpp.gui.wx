@@ -95,6 +95,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addRemoteModel(const sd_gui_uti
                 _z->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
                 _z->meta_file                   = meta_file.utf8_string();
                 _z->server_id                   = server->GetId();
+                *_z += info; // merge with the new info
                 if (_z->sha256.empty()) {
                     auto localVer = this->findInfoByName(info.name);
                     if (localVer != nullptr && localVer->sha256.empty() == false) {
