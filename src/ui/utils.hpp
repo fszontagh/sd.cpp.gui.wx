@@ -73,7 +73,24 @@ namespace sd_gui_utils {
         ModelFileInfo() = default;
         ModelFileInfo(const sd_gui_utils::networks::RemoteModelInfo& remote) { *this = remote; }
         ModelFileInfo(const sd_gui_utils::ModelFileInfo& other)
-            : name(other.name), path(other.path), url(other.url), poster(other.poster), sha256(other.sha256), tags(other.tags), size(other.size), size_f(other.size_f), meta_file(other.meta_file), hash_progress_size(other.hash_progress_size), hash_fullsize(other.hash_fullsize), model_type(other.model_type), civitaiPlainJson(other.civitaiPlainJson), CivitAiInfo(other.CivitAiInfo), state(other.state), preview_images(other.preview_images), folderGroupName(folderGroupName) {}
+            : name(other.name),
+              path(other.path),
+              url(other.url),
+              poster(other.poster),
+              sha256(other.sha256),
+              tags(other.tags),
+              size(other.size),
+              size_f(other.size_f),
+              meta_file(other.meta_file),
+              hash_progress_size(other.hash_progress_size),
+              hash_fullsize(other.hash_fullsize),
+              model_type(other.model_type),
+              civitaiPlainJson(other.civitaiPlainJson),
+              CivitAiInfo(other.CivitAiInfo),
+              state(other.state),
+              preview_images(other.preview_images),
+              folderGroupName(other.folderGroupName),
+              server_id(other.server_id) {}
         ModelFileInfo& operator=(const sd_gui_utils::ModelFileInfo& other) {
             if (this != &other) {
                 name               = other.name;
@@ -455,7 +472,17 @@ namespace sd_gui_utils {
             }
             std::cout << "ServerChangePort done" << std::endl;
         }
-
+        inline void ServerUpdateId(int internal_id, const std::string& id) {
+            std::cout << "ServerUpdateId: " << id << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetId(id);
+                    break;
+                }
+            }
+            std::cout << "ServerUpdateId done" << std::endl;
+        }
         inline void ServerChangeHost(int internal_id, const std::string& host) {
             std::cout << "ServerChangeHost" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
@@ -468,7 +495,7 @@ namespace sd_gui_utils {
             std::cout << "ServerChangeHost done" << std::endl;
         }
         inline void ServerChangeName(int internal_id, const std::string& name) {
-            std::cout << "ServerChangeName" << std::endl;
+            std::cout << "ServerChangeName: " << name << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 if ((*it)->GetInternalId() == internal_id) {

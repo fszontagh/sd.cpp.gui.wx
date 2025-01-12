@@ -3559,7 +3559,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->writeLog(wxString::Format(_("Connected to server: %s"), server->GetName()));
         // add to the server selector if not exists
         for (size_t i = 0; i < this->m_server->GetCount(); i++) {
-            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(i));
+            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
             if (_srv && _srv == server) {
                 return;
             }
@@ -3575,7 +3575,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->ModelManager->UnloadModelsByServer(server);
         // remove from m_server too
         for (size_t i = 0; i < this->m_server->GetCount(); i++) {
-            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientObject(i));
+            auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
             if (_srv && _srv == server) {
                 this->m_server->Delete(i);
                 break;
@@ -3623,6 +3623,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->writeLog("Got invalid packet from server: " + server->GetName());
             return;
         }
+        this->mapp->cfg->ServerUpdateId(server->GetInternalId(), packet.server_id);      // update the server id before loading the model list
+        this->mapp->cfg->ServerChangeName(server->GetInternalId(), packet.server_name);  // TODO: implement server info packet to update these
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
             for (const auto& item : list) {

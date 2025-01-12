@@ -381,6 +381,11 @@ void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Pa
             list.emplace_back(model.second);
         }
         response.SetData(list);
+        response.server_id = this->configData->server_id;  // send the server id to identify the server from the model on client side
+                                                           // TODO: implement server info to send server_id and server_name
+
+        response.server_name = this->configData->server_name;
+
         this->socket->sendMsg(packet.source_idx, response);
         this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }

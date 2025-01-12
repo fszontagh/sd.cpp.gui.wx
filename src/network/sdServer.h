@@ -230,6 +230,7 @@ namespace sd_gui_utils {
                     return;
                 }
                 if (msg.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
+                    this->SetId(msg.server_id); // update the server's id
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, this, packet_id);
                     return;
                 }
