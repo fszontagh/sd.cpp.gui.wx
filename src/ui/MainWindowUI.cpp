@@ -4664,17 +4664,18 @@ void MainWindowUI::threadedModelInfoImageDownload(
     // Loop through each image and download
     wxFileName base_path(wxString::Format("%s/CivitAiPreviews/%s/",
                                           this->mapp->cfg->datapath.utf8_string(),
-                                          modelinfo->sha256));
+                                          modelinfo->sha256.substr(0, 10)));
 
     if (wxDirExists(base_path.GetAbsolutePath()) == false) {
-        wxMkDir(base_path.GetAbsolutePath(), wxS_DIR_DEFAULT);
+        base_path.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
     }
     int index = 0;
     for (CivitAi::image& img : modelinfo->CivitAiInfo.images) {
         std::ostringstream response;
         try {
             sd_gui_utils::SimpleCurl curl;
-            wxFileName target_path(wxString::Format("%s/%d.tmp", base_path.GetAbsolutePath(), index));
+            // oh, because the thumbs, need to add the model's hash to the filename
+            wxFileName target_path(wxString::Format("%s/%s%d.tmp", base_path.GetAbsolutePath(), modelinfo->sha256, index));
             curl.getFile(img.url, headers, target_path.GetAbsolutePath().utf8_string());
 
             // Process downloaded image

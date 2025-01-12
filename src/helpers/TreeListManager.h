@@ -107,13 +107,17 @@ public:
         }
     }
 
-    void SelectItemByModelPath(const std::string& path) {
+    void SelectItemByModelPath(const std::string& path, bool unselectBefore = true) {
         if (path.empty()) {
             return;
         }
+
         wxTreeListItem root = treeListCtrl->GetRootItem();
         wxTreeListItem item = FindItemByPath(root, path);
         if (item.IsOk()) {
+            if (unselectBefore) {
+                treeListCtrl->UnselectAll();
+            }
             treeListCtrl->Select(item);
         }
     }

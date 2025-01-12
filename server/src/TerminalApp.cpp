@@ -468,7 +468,7 @@ void TerminalApp::CalcModelHashes() {
                 wxString hash;
                 f.ReadAll(&hash);
                 if (hash.IsEmpty() == false) {
-                    model.second.sha256 = hash.SubString(0, 64).ToStdString();
+                    model.second.sha256 = hash.SubString(0, 64).Trim().ToStdString();
                 }
                 f.Close();
                 continue;
