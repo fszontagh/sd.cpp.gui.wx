@@ -464,10 +464,10 @@ void TerminalApp::CalcModelHashes() {
             continue;
         }
 
-        //this->sendLogEvent(wxString::Format("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size), wxLOG_Info);
+        // this->sendLogEvent(wxString::Format("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size), wxLOG_Info);
         wxLogInfo("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size);
         model.second.hash_fullsize = model.second.size;
-        this->currentHashingItem   = &model.second;
+        *this->currentHashingItem  = model.second;
         model.second.sha256        = sd_gui_utils::sha256_file_openssl(model.second.remote_path.c_str(), (void*)this, TerminalApp::FileHashCallBack);
         wxFile file;
         if (file.Open(hashFileName.GetFullPath(), wxFile::write)) {
@@ -481,6 +481,4 @@ void TerminalApp::CalcModelHashes() {
             this->hashingFullSize.store(this->hashingFullSize.load() - static_cast<wxULongLong>(model.second.size));
         }
     }
-    delete this->currentHashingItem;
-    this->currentHashingItem = nullptr;
 }

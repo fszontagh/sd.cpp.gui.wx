@@ -50,19 +50,25 @@ private:
         int progress  = static_cast<int>(100.0 * size / instance->currentHashingItem->size);
 
         if (size % (1024 * 1024) == 0) {
+            std::cout << "\33[2K\r" << std::flush; // from win10 console
             wxULongLong currentTotal    = instance->hashingProcessed.load() + size;
             wxULongLong currentRequired = instance->hashingFullSize.load();
             auto total_progress         = wxULongLong(100) * currentTotal / currentRequired;
             auto msg                    = wxString::Format(
-                "[%s]: %d%% (%llu/%llu) Total: %s%%\t",
-                instance->currentHashingItem->name, progress, size, instance->currentHashingItem->size, total_progress.ToString());
+                "[%s - %s]: %d%% (%llu/%llu) Total: %s%%\t\t\t",
+                instance->currentHashingItem->name,
+                instance->currentHashingItem->size_f,
+                progress,
+                size,
+                instance->currentHashingItem->size,
+                total_progress.ToString());
 
             std::cout << "\r" << msg.ToStdString() << std::flush;
         }
     }
     std::thread logThread;
     std::atomic<bool> eventHanlderExit{false};
-    sd_gui_utils::RemoteModelInfo* currentHashingItem = nullptr;
+    std::shared_ptr<sd_gui_utils::RemoteModelInfo> currentHashingItem = nullptr;
     std::atomic<wxULongLong> hashingFullSize{0};
     std::atomic<wxULongLong> hashingProcessed{0};
 
