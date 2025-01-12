@@ -80,12 +80,18 @@ if(NOT SD_HIPBLAS)
 
 
     file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}" _BINPATH)
-    message(STATUS "Bin path: ${_BINPATH}")
     if (WIN32)
         list(APPEND ${_BINPATH} $ENV{PATH})
     else ()
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
+
+    SET(GGML_NATIVE OFF)
+    SET(GGML_CCACHE OFF)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        SET(GGML_NATIVE ON)
+        SET(GGML_CCACHE ON)
+    endif()
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
@@ -93,13 +99,16 @@ if(NOT SD_HIPBLAS)
             GIT_TAG ${SD_GIT_TAG}
             #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-            CMAKE_ARGS "-DGGML_NATIVE=OFF"
+            CMAKE_ARGS "-DGGML_NATIVE=${GGML_NATIVE}"
+            "-DGGML_CCACHE=${GGML_CCACHE}"
             "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
             "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}"
+            "-DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}"
             "-DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}"
             "-DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}"
             "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-            "-DSD_BUILD_EXAMPLES=OFF" "-DSD_BUILD_SHARED_LIBS=ON"
+            "-DSD_BUILD_EXAMPLES=OFF"
+            "-DSD_BUILD_SHARED_LIBS=ON"
             "-DGGML_AVX=${SD_AVX}"
             "-DGGML_AVX2=${SD_AVX2}"
             "-DGGML_AVX512=${SD_AVX512}"

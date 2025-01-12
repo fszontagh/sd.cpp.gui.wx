@@ -33,9 +33,7 @@ void MainWindowDesktopWidget::PassParentEventHandler(wxEvtHandler* eventHandler)
     this->pEvents->Bind(wxEVT_THREAD, &MainWindowDesktopWidget::OnThreadMessage, this);
 }
 void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
-    if (e.GetSkipped() == false) {
-        e.Skip();
-    }
+    e.Skip();
     if (e.GetId() == 9999) {
         return;
     }

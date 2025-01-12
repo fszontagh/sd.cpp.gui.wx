@@ -1,5 +1,4 @@
 #include "TerminalApp.h"
-#include <wx/dir.h>
 #include "libs/subprocess.h"
 
 bool TerminalApp::OnInit() {
@@ -28,7 +27,7 @@ bool TerminalApp::OnInit() {
     }
 
     try {
-        nlohmann::json cfg = nlohmann::json::parse(fileData.utf8_string());
+        nlohmann::json cfg = nlohmann::json::parse(fileData.utf8_string(), nullptr, true, true);
         auto cdata         = cfg.get<ServerConfig>();
         this->configData   = std::make_shared<ServerConfig>(cdata);
     } catch (const nlohmann::json::parse_error& e) {
@@ -76,7 +75,7 @@ bool TerminalApp::OnInit() {
         }
     }
     if (configData->shared_memory_path.empty()) {
-        configData->shared_memory_path = SHARED_MEMORY_PATH;
+        configData->shared_memory_path = std::string(SHARED_MEMORY_PATH) + this->configData->server_id;
     }
     if (configData->logfile.empty() == false) {
         configData->logfile = wxFileName(configData->logfile).GetAbsolutePath();
@@ -105,17 +104,19 @@ bool TerminalApp::OnInit() {
         if (this->socket != nullptr) {
             this->socket->OnTimer();
         }
+        evt.Skip();
     });
 
     this->timer.SetOwner(this, wxID_ANY);
     this->timer.Start(1000);
 
     this->eventHandlerReady.store(true);
-    // find the external process if not in the config
+
+    wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
+
     if (this->configData->exprocess_binary_path.empty() == false) {
         this->extprocessCommand = wxFileName(this->configData->exprocess_binary_path).GetAbsolutePath();
     } else {
-        wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
         wxFileName f(currentPath, "");
         f.SetName(EPROCESS_BINARY_NAME);
 
@@ -146,8 +147,8 @@ bool TerminalApp::OnInit() {
     wxString dllFullPath = currentPath + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
     this->extProcessParams.Add(dllFullPath.utf8_string() + ".dll");
 
-    if (std::filesystem::exists(this->extProcessParam.utf8_string()) == false) {
-        this->sendLogEvent("Shared lib not found: " + this->extProcessParam, wxLOG_Error);
+    if (wxFileExists(this->extProcessParams.begin()->c_str()) == false) {
+        this->sendLogEvent("Shared lib not found: " + this->extProcessParams.begin()->c_str(), wxLOG_Error);
         return false;
     }
 #else
@@ -168,6 +169,8 @@ bool TerminalApp::OnInit() {
         std::cerr << "Failed to load model files" << std::endl;
         return false;
     }
+    // let the hashing begin
+    this->CalcModelHashes();
 
     this->extProcessParams.Add(this->configData->shared_memory_path);
     this->extProcessNeedToRun.store(true);
@@ -213,7 +216,6 @@ int TerminalApp::OnExit() {
 }
 
 int TerminalApp::OnRun() {
-
     this->logThread = std::thread(&TerminalApp::ProcessLogQueue, this);
 
     std::thread tr3(&TerminalApp::ProcessOutputThread, this);
@@ -240,7 +242,7 @@ int TerminalApp::OnRun() {
             this->sendLogEvent(e.what(), wxLOG_Error);
         }
 
-        while (this->socket->isRunning() && this->eventHandlerReady.load() && this->extprocessIsRunning.load()) {
+        while (this->socket->isRunning() && this->eventHandlerReady.load() && this->extProcessNeedToRun.load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
@@ -290,12 +292,11 @@ void TerminalApp::ExternalProcessRunner() {
         this->sendLogEvent("Subprocess already running", wxLOG_Error);
         return;
     }
-
-    const char* command_line[this->extProcessParams.size() + 1];
-
-    command_line[0] = this->extprocessCommand.c_str();
+    std::vector<const char*> command_line;
+    command_line.push_back(this->extprocessCommand.c_str());
     wxString params = this->extprocessCommand;
-    int counter     = 1;
+
+    int counter = 1;
     for (auto const& p : this->extProcessParams) {
         params.Append(" ");
         params.Append(p);
@@ -307,7 +308,7 @@ void TerminalApp::ExternalProcessRunner() {
 
     this->sendLogEvent(wxString::Format("Starting subprocess: %s", params), wxLOG_Info);
     this->subprocess = new subprocess_s();
-    int result       = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+    int result       = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
     if (this->subprocess == nullptr || result != 0) {
         this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
         this->extprocessIsRunning.store(false);
@@ -322,7 +323,7 @@ void TerminalApp::ExternalProcessRunner() {
             this->sendLogEvent("Subprocess stopped", wxLOG_Error);
             this->extprocessIsRunning.store(false);
             // restart
-            int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+            int result = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
             if (this->subprocess == nullptr) {
                 this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
                 this->extprocessIsRunning.store(false);
@@ -381,6 +382,7 @@ void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Pa
         }
         response.SetData(list);
         this->socket->sendMsg(packet.source_idx, response);
+        this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }
 }
 
@@ -401,11 +403,16 @@ bool TerminalApp::LoadModelFiles() {
     for (const auto& file : checkpoint_files) {
         wxFileName filename(file);
         if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), filename.GetExt()) != CHECKPOINT_FILE_EXTENSIONS.end()) {
-            sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT, this->configData->model_path);
+            sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT, this->configData->model_path);
             this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
             used_sizes += modelInfo.size;
             used_checkpoint_sizes += modelInfo.size;
             checkpoint_count++;
+            wxFileName hashFileName = filename;
+            hashFileName.SetExt("sha256");
+            if (!wxFileExists(hashFileName.GetFullPath())) {
+                this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
+            }
         }
     }
     wxLogInfo("Loaded %d checkpoints %s", checkpoint_count, wxFileName::GetHumanReadableSize(used_checkpoint_sizes));
@@ -419,18 +426,24 @@ bool TerminalApp::LoadModelFiles() {
         for (const auto& file : lora_files) {
             wxFileName filename(file);
             if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), filename.GetExt()) != LORA_FILE_EXTENSIONS.end()) {
-                sd_gui_utils::networks::RemoteModelInfo modelInfo          = sd_gui_utils::networks::RemoteModelInfo(filename, sd_gui_utils::DirTypes::LORA, this->configData->lora_path);
+                sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::LORA, this->configData->lora_path);
                 this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
                 used_sizes += modelInfo.size;
                 used_lora_sizes += modelInfo.size;
                 lora_count++;
+                wxFileName hashFileName = filename;
+                hashFileName.SetExt("sha256");
+                if (!wxFileExists(hashFileName.GetFullPath())) {
+                    this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
+                }
             }
         }
         wxLogInfo("Loaded %d loras %s", lora_count, wxFileName::GetHumanReadableSize(used_lora_sizes));
-        wxLogInfo("Total size: %s", wxFileName::GetHumanReadableSize((wxULongLong)used_sizes));
     } else {
         wxLogWarning("Lora path does not exist or missing from config: %s", this->configData->lora_path);
     }
+    wxLogInfo("Total size: %s", wxFileName::GetHumanReadableSize((wxULongLong)used_sizes));
+    wxLogInfo("Need to hash: %s", wxFileName::GetHumanReadableSize(this->hashingFullSize.load()));
     return true;
 }
 
@@ -442,4 +455,32 @@ void TerminalApp::ProcessLogQueue() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+}
+void TerminalApp::CalcModelHashes() {
+    for (auto& model : this->modelFiles) {
+        wxFileName hashFileName(model.second.remote_path);
+        hashFileName.SetExt("sha256");
+        if (wxFileExists(hashFileName.GetFullPath())) {
+            continue;
+        }
+
+        //this->sendLogEvent(wxString::Format("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size), wxLOG_Info);
+        wxLogInfo("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size);
+        model.second.hash_fullsize = model.second.size;
+        this->currentHashingItem   = &model.second;
+        model.second.sha256        = sd_gui_utils::sha256_file_openssl(model.second.remote_path.c_str(), (void*)this, TerminalApp::FileHashCallBack);
+        wxFile file;
+        if (file.Open(hashFileName.GetFullPath(), wxFile::write)) {
+            wxString fileContent = wxString::Format("%s\t%s", model.second.sha256, model.second.remote_path);
+            file.Write(fileContent);
+            file.Close();
+            wxLogInfo("Hash calculated for %s %s", model.second.path, model.second.sha256);
+            this->hashingProcessed.store(this->hashingProcessed.load() + static_cast<wxULongLong>(model.second.size));
+        } else {
+            wxLogError("Failed to calculate hash for %s", model.second.path);
+            this->hashingFullSize.store(this->hashingFullSize.load() - static_cast<wxULongLong>(model.second.size));
+        }
+    }
+    delete this->currentHashingItem;
+    this->currentHashingItem = nullptr;
 }

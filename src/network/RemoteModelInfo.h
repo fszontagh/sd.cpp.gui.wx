@@ -10,10 +10,11 @@ namespace sd_gui_utils {
 
         class RemoteModelInfo {
         public:
-            int server_id = -1;  // deleted server id
+            std::string server_id = "";  // deleted server id
             std::string name;
             std::string path;
             std::string root_path;
+            std::string remote_path;
             std::string sha256;
             size_t size;
             std::string size_f;
@@ -29,8 +30,13 @@ namespace sd_gui_utils {
                 this->size_f             = path.GetHumanReadableSize().utf8_string();
                 this->hash_fullsize      = 0;
                 this->hash_progress_size = 0;
-                this->path               = path.GetAbsolutePath().utf8_string();
+                this->remote_path        = path.GetAbsolutePath().utf8_string();
                 this->root_path          = root_path.utf8_string();
+                auto rpath               = path.GetAbsolutePath();
+
+                rpath.Replace(root_path, "");
+
+                this->path = rpath;
             }
             ~RemoteModelInfo() {}
             friend void to_json(nlohmann ::json& nlohmann_json_j, const RemoteModelInfo& nlohmann_json_t) {
@@ -38,6 +44,7 @@ namespace sd_gui_utils {
                 nlohmann_json_j["name"]               = nlohmann_json_t.name;
                 nlohmann_json_j["path"]               = nlohmann_json_t.path;
                 nlohmann_json_j["root_path"]          = nlohmann_json_t.root_path;
+                nlohmann_json_j["remote_path"]        = nlohmann_json_t.remote_path;
                 nlohmann_json_j["sha256"]             = nlohmann_json_t.sha256;
                 nlohmann_json_j["size"]               = nlohmann_json_t.size;
                 nlohmann_json_j["size_f"]             = nlohmann_json_t.size_f;
@@ -51,6 +58,12 @@ namespace sd_gui_utils {
                     if (iter != nlohmann_json_j.end())
                         if (!iter->is_null())
                             iter->get_to(nlohmann_json_t.server_id);
+                }
+                {
+                    auto iter = nlohmann_json_j.find("remote_path");
+                    if (iter != nlohmann_json_j.end())
+                        if (!iter->is_null())
+                            iter->get_to(nlohmann_json_t.remote_path);
                 }
                 {
                     auto iter = nlohmann_json_j.find("name");

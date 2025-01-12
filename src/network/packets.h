@@ -12,7 +12,8 @@ namespace sd_gui_utils {
         public:
             enum class Type : int {
                 REQUEST_TYPE,
-                RESPONSE_TYPE
+                RESPONSE_TYPE,
+                INVALID_TYPE
             };
 
             enum class Param : int {
@@ -26,13 +27,16 @@ namespace sd_gui_utils {
                 : type(type), param(param) {}
             Packet()
                 : type(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE), param(sd_gui_utils::networks::Packet::Param::PARAM_ERROR) {}
-            sd_gui_utils::networks::Packet::Type type;
+            sd_gui_utils::networks::Packet::Type type = sd_gui_utils::networks::Packet::Type::INVALID_TYPE;
             sd_gui_utils::networks::Packet::Param param;
             // std::string version   = std::string(SD_GUI_VERSION);
-            std::string version   = "";
+            std::string version   = std::string(SD_GUI_VERSION);
             int source_idx        = -1;
             int target_idx        = -1;
             std::string server_id = "";
+            bool isValid() {
+                return this->type == sd_gui_utils::networks::Packet::Type::INVALID_TYPE ? false : true;
+            }
 
             inline size_t GetSize() { return this->data_size; }
             template <typename T>

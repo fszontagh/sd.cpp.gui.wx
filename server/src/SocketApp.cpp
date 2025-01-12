@@ -106,7 +106,10 @@ void SocketApp::OnTimer() {
         } else {
             if (it->second.last_keepalive == 0 || (wxGetLocalTime() - it->second.last_keepalive) > this->parent->configData->tcp_keepalive) {
                 it->second.last_keepalive = wxGetLocalTime();
-                this->sendMsg(it->second.idx, sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE));
+                auto keepAlivePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
+                //keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
+                this->sendMsg(it->second.idx, keepAlivePacket);
+                this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port), wxLOG_Debug);
             }
             ++it;
         }
@@ -131,12 +134,15 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
         if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
             if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_AUTH) {
                 {
-                    std::lock_guard<std::mutex> guard(m_mutex);
+                    //std::lock_guard<std::mutex> guard(m_mutex);
                     std::string packetData = packet.GetData<std::string>();
-                    this->parent->sendLogEvent("Got auth key: " + packetData + " our key: " + this->parent->configData->authkey, wxLOG_Debug);
+                    this->parent->sendLogEvent("Got auth key: \n" + packetData + " our key: \n" + this->parent->configData->authkey, wxLOG_Debug);
 
                     if (this->parent->configData->authkey.compare(packetData) == 0) {
                         this->m_clientInfo[packet.source_idx].apikey = packetData;
+                        auto responsePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
+                        responsePacket.SetData("Authentication done");
+                        this->sendMsg(packet.source_idx, responsePacket);
                         this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
                     } else {
                         auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);

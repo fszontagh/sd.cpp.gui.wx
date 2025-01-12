@@ -1,5 +1,9 @@
 #ifndef _SERVER_TERMINALAPP_H
 #define _SERVER_TERMINALAPP_H
+
+#include "libs/SharedLibrary.h"
+#include "libs/SharedMemoryManager.h"
+
 wxDECLARE_APP(TerminalApp);
 
 class TerminalApp : public wxAppConsole {
@@ -39,8 +43,28 @@ private:
     // process the messages from the shm
     bool ProcessEventHandler(std::string message);
     bool LoadModelFiles();
+    void CalcModelHashes();
+    inline static void FileHashCallBack(size_t size, std::string name, void* data) {
+        auto instance = ((TerminalApp*)data);
+        size          = size == 0 ? 1 : size;
+        int progress  = static_cast<int>(100.0 * size / instance->currentHashingItem->size);
+
+        if (size % (1024 * 1024) == 0) {
+            wxULongLong currentTotal    = instance->hashingProcessed.load() + size;
+            wxULongLong currentRequired = instance->hashingFullSize.load();
+            auto total_progress         = wxULongLong(100) * currentTotal / currentRequired;
+            auto msg                    = wxString::Format(
+                "[%s]: %d%% (%llu/%llu) Total: %s%%\t",
+                instance->currentHashingItem->name, progress, size, instance->currentHashingItem->size, total_progress.ToString());
+
+            std::cout << "\r" << msg.ToStdString() << std::flush;
+        }
+    }
     std::thread logThread;
     std::atomic<bool> eventHanlderExit{false};
+    sd_gui_utils::RemoteModelInfo* currentHashingItem = nullptr;
+    std::atomic<wxULongLong> hashingFullSize{0};
+    std::atomic<wxULongLong> hashingProcessed{0};
 
     EventQueue eventQueue;
     std::vector<std::thread> threads;

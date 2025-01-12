@@ -1,6 +1,6 @@
 # CPack configuration
 
-include(InstallRequiredSystemLibraries)
+#include(InstallRequiredSystemLibraries)
 set(CPACK_PACKAGE_NAME "StableDiffusionGUI")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_CONTACT "Ferenc Szonta'gh <szf@fsociety.hu>")

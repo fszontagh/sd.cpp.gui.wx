@@ -1,7 +1,7 @@
 #ifndef _SERVER_SOCKETAPP_H
 #define _SERVER_SOCKETAPP_H
 
-
+#include "sockets-cpp/TcpServer.h"
 
 inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
 
@@ -42,7 +42,7 @@ private:
     std::map<sockets::ClientHandle, clientInfo> m_clientInfo;
     std::mutex m_mutex;
     std::atomic<bool> needToRun{true};
-    TerminalApp* parent         = nullptr;
+    TerminalApp* parent = nullptr;
     std::vector<char> buffer;
     size_t expected_size = 0;
 };

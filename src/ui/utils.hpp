@@ -294,27 +294,35 @@ namespace sd_gui_utils {
         bool favorite_models_only          = false;
 
         bool initServerList(wxEvtHandler* eventHandler) {
-            if (configBase->HasGroup("/servers")) {
+            auto it = this->servers.begin();
+            while (it != this->servers.end()) {
+                delete *it;
+                *it = nullptr;
+                it  = this->servers.erase(it);
+            }
+            if (configBase->HasGroup("/Servers")) {
                 wxString oldGroup = configBase->GetPath();
-                configBase->SetPath("/servers");
+                configBase->SetPath("/Servers");
                 long index;
                 wxString serverKey;
                 bool hasMore = configBase->GetFirstGroup(serverKey, index);
 
                 while (hasMore) {
                     configBase->SetPath(serverKey);
-                    wxString host                  = configBase->Read("Host");
-                    bool enabled                   = configBase->ReadBool("Enabled", false);
-                    wxString id                    = configBase->Read("Id", wxEmptyString);
-                    int port                       = configBase->Read("Port", 8191);
-                    int internal_id                = configBase->Read("InternalId", -1);
-                    wxString name                  = configBase->Read("Name", wxEmptyString);
+                    wxString host   = configBase->Read("Host", wxEmptyString);
+                    bool enabled    = configBase->ReadBool("Enabled", false);
+                    wxString id     = configBase->Read("Id", wxEmptyString);
+                    int port        = configBase->Read("Port", 8191);
+                    int internal_id = configBase->Read("InternalId", -1);
+                    wxString name   = configBase->Read("Name", wxEmptyString);
+
                     sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
                     server->SetEnabled(enabled);
                     server->SetInternalId(internal_id);
                     server->SetId(id.ToStdString());
                     server->SetName(name.ToStdString());
                     this->AddTcpServer(server);
+
                     configBase->SetPath("..");
                     hasMore = configBase->GetNextGroup(serverKey, index);
                 }
@@ -324,12 +332,15 @@ namespace sd_gui_utils {
             return false;
         }
 
-        inline void ServerEnable(int internal_id, bool enable) {
+        inline void ServerEnable(int internal_id, bool enable, bool autostartstop = false) {
             std::cout << "ServerEnable " << internal_id << " " << enable << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetEnabled(enable);
+                    if ((*it)->IsEnabled() == enable) {
+                        continue;
+                    }
+                    (*it)->SetEnabled(enable, autostartstop);
                     std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
                     return;
                 }
@@ -433,7 +444,6 @@ namespace sd_gui_utils {
                 if (*it == nullptr) {
                     continue;
                 }
-                (*it)->Stop();
                 delete *it;
             }
             this->servers.clear();
@@ -642,6 +652,7 @@ namespace sd_gui_utils {
                 if (this->configBase->HasGroup("/Servers")) {
                     this->configBase->DeleteGroup("/Servers");
                 }
+
                 wxString oldPath = this->configBase->GetPath();
 
                 this->configBase->SetPath("/Servers");
@@ -657,12 +668,16 @@ namespace sd_gui_utils {
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
-                this->configBase->Flush(false);
+                this->configBase->Flush();
             }
-            this->ClearTcpServers();
         }
         ~config() {
             this->FlushConfig();
+            for (auto srv : this->servers) {
+                delete srv;
+                srv = nullptr;
+            }
+            this->servers.clear();
         }
     };
 

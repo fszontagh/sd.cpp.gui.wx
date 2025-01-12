@@ -77,7 +77,8 @@ public:
         treeListCtrl->SetItemText(newItem, 2, wxString(ConvertTypeToString(item->model_type)));
         treeListCtrl->SetItemText(newItem, 3, wxString(item->sha256).substr(0, 10));
         treeListCtrl->SetItemData(newItem, new ModelFileInfoData(const_cast<sd_gui_utils::ModelFileInfo*>(item)));
-        if (select) {
+        if (select && item->server_id.empty()) {
+            treeListCtrl->UnselectAll();
             treeListCtrl->Select(newItem);
         }
     }
@@ -153,6 +154,9 @@ public:
 
     sd_gui_utils::ModelFileInfo* FindItem(const wxTreeListItem& item) {
         ModelFileInfoData* data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(item));
+        if (data == nullptr) {
+            return nullptr;
+        }
         return data ? data->GetFileInfo() : nullptr;
     }
 
@@ -191,7 +195,24 @@ public:
     }
 
     void DeleteByServerId(const std::string& serverId) {
+        std::cout << "TreeListManager::DeleteByServerId: " << serverId << std::endl;
+        if (serverId.empty()) {
+            return;
+        }
+        wxTreeListItem currentItem = treeListCtrl->GetRootItem();
+        if (currentItem.IsOk() == false) {
+            return;
+        }
 
+        while (currentItem.IsOk()) {
+            auto data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(currentItem));
+            if (data) {
+                if (data->GetFileInfo()->server_id == serverId) {
+                    treeListCtrl->DeleteItem(currentItem);
+                }
+            }
+            currentItem = this->treeListCtrl->GetNextItem(currentItem);
+        }
     }
 
     void CleanAll() {

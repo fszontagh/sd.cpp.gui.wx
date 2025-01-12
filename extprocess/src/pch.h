@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <cstring>
+#include <dlfcn.h>
 #endif
 
 #include "libs/json.hpp"

@@ -1,15 +1,37 @@
+/*
+Comments are welcome here
+
+FYI:
+- Model paths need to be exists before server start
+- Please verify your hardware capabilities before starting the server
+- Please verigy the selected libraries before starting the server
+- On the first start, the server will generate a random sha256 key which is required to authenticate the clients. Do not share the hash with anyone
+*/
 {
+    // the tcp port to listen
     "port": 8191,
+    // the host to listen, possible values: 0.0.0.0 -> listann all interfaces, 127.0.0.1 -> listen only on localhost, :: -> listen on all ipv6 interfaces
     "host": "127.0.0.1",
+    // where the server will log
     "logfile": "/var/log/stable-diffusion-server.log",
+    // the backend HW accelerator, valid values: avx, avx2, avx512, cuda, vulkan -> the required libraries must be installed
     "backend": "avx",
+    // the main checkpoint path
     "model_path": "/app/models/checkpoints",
+    // the lora path
     "lora_path": "/app/models/loras",
+    // the vae path
     "vae_path": "/app/models/vae",
+    // the embedding path
     "embedding_path": "/app/models/embeddings",
+    // the taesd path
     "taesd_path": "/app/models/taesd",
+    // the controlnet models path
     "controlnet_path": "/app/models/controlnet",
+    // the esrgan models path
     "esrgan_path": "/app/models/esrgan",
+    // maximum number of clients that can connect in parallel
     "max_clients": 10,
+    // the maximum interval in seconds to wait the client to send an authentication request
     "unauthorized_timeout": 4
 }

@@ -128,12 +128,18 @@ public:
         }
         return 0;
     }
-    void ReloadMainWindow(wxString newLangName, bool disableExternalProcessHandling = false) {
+    void ReloadMainWindow(const wxString& newLangName, bool disableExternalProcessHandling = false) {
         if (this->mainFrame != nullptr) {
             SetTopWindow(NULL);
             this->mainFrame->Destroy();
         }
+        this->ChangeLocale(newLangName);
+        this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
+        SetTopWindow(this->mainFrame);
+        this->mainFrame->Show();
+    };
 
+    void ChangeLocale(const wxString& newLangName) {
         wxLanguageInfo info;
         auto linfo = wxUILocale::FindLanguageInfo(newLangName);
 
@@ -157,11 +163,7 @@ public:
 #endif  // USE_COREUTILS_MO
             this->m_Locale->AddCatalog("stablediffusiongui");
         }
-
-        this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
-        SetTopWindow(this->mainFrame);
-        this->mainFrame->Show();
-    };
+    }
 
     void inline initConfig() {
         if (this->config != nullptr) {

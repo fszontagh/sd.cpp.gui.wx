@@ -1,12 +1,7 @@
-#ifndef SHARED_LIBRARY_H
-#define SHARED_LIBRARY_H
-
-#include <iostream>
-#include <stdexcept>
-#include <string>
-
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
+#ifndef _SDGUI_LIBS_SHARED_LIBRARY_H
+#define _SDGUI_LIBS_SHARED_LIBRARY_H
+#ifdef _WIN32
+#include <libloaderapi.h>
 #else
 #include <dlfcn.h>
 #endif
@@ -46,4 +41,4 @@ private:
     void* handle;
 };
 
-#endif  // SHARED_LIBRARY_H
+#endif  // _SDGUI_LIBS_SHARED_LIBRARY_H

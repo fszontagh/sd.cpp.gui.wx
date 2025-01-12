@@ -169,9 +169,7 @@ void MainWindowCivitAiWindow::m_model_filelistOnDataViewListCtrlSelectionChanged
 }
 
 void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
-    if (e.GetSkipped() == false) {
-        e.Skip();
-    }
+    e.Skip();
 
     auto msg            = e.GetString().utf8_string();
     std::string token   = msg.substr(0, msg.find(":"));
@@ -269,9 +267,9 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
             CivitAi::DownloadItem* itemData = reinterpret_cast<CivitAi::DownloadItem*>(this->m_downloads->GetItemData(item));
             if (itemData->local_file == payload->local_file) {
                 if (payload->downloadedSize == 0 || payload->targetSize == 0) {
-                    store->SetValueByRow(0, _i, progressCol);                                                    // progress
+                    store->SetValueByRow(0, _i, progressCol);                                                                      // progress
                     store->SetValueByRow(wxGetTranslation(CivitAi::DownloadItemStateNames[payload->state]), _i, progressCol - 1);  // state
-                    store->SetValueByRow("", _i, progressCol - 2);                                               // size
+                    store->SetValueByRow("", _i, progressCol - 2);                                                                 // size
                     store->RowValueChanged(_i, progressCol - 2);
                     store->RowValueChanged(_i, progressCol - 1);
                     store->RowValueChanged(_i, progressCol);
@@ -283,9 +281,9 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
                 auto target_s  = sd_gui_utils::humanReadableFileSize(payload->targetSize);
                 auto current_s = sd_gui_utils::humanReadableFileSize(payload->downloadedSize);
                 size           = wxString::Format("%.2f %s / %.2f %s", target_s.first, target_s.second, current_s.first, current_s.second);
-                store->SetValueByRow(size, _i, progressCol - 2);                                             // size
+                store->SetValueByRow(size, _i, progressCol - 2);                                                               // size
                 store->SetValueByRow(wxGetTranslation(CivitAi::DownloadItemStateNames[payload->state]), _i, progressCol - 1);  // state
-                store->SetValueByRow(current_progress, _i, progressCol);                                     // progress
+                store->SetValueByRow(current_progress, _i, progressCol);                                                       // progress
 
                 store->RowValueChanged(_i, progressCol - 2);
                 store->RowValueChanged(_i, progressCol - 1);

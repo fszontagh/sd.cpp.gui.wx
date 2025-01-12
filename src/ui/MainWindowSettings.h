@@ -48,6 +48,7 @@ private:
     void InitConfig();
     void AddRemoteServerToList(sd_gui_utils::sdServer* server);
     void ChangeRemoteServer(const wxString& value, ServerListColumns col, int row);
+    void OnThreadMessage(wxThreadEvent& e);
 };
 
 #endif  // __MainWindowSettings__

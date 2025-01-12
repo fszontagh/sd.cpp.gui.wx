@@ -216,9 +216,8 @@ void QM::QueueManager::SendEventToMainWindow(QueueEvents eventType, std::shared_
 }
 
 void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
-    if (e.GetSkipped() == false) {
-        e.Skip();
-    }
+    e.Skip();
+
     if (e.GetId() == 9999) {
         return;
     }
@@ -232,7 +231,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     // only handle the QUEUE messages, what this class generate
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
         QueueEvents event = (QueueEvents)wxAtoi(content);
-        auto payload          = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        auto payload      = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
         if (event == QueueEvents::ITEM_START) {
             this->SetStatus(QueueStatus::RUNNING, payload);
             this->isRunning   = true;

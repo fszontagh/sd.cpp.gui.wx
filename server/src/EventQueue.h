@@ -1,9 +1,6 @@
 #ifndef __SERVER_EVENT_QUEUE__
 #define __SERVER_EVENT_QUEUE__
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <queue>
+
 
 class EventQueue {
 public:

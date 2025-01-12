@@ -2346,7 +2346,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_staticText71->Wrap( -1 );
 	bSizer104->Add( m_staticText71, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_AddServerPort = new wxTextCtrl( m_serversPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_AddServerPort = new wxTextCtrl( m_serversPanel, wxID_ANY, _("8191"), wxDefaultPosition, wxDefaultSize, 0 );
 	#ifdef __WXGTK__
 	if ( !m_AddServerPort->HasFlag( wxTE_MULTILINE ) )
 	{

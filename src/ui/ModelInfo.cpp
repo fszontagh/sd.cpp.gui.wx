@@ -338,7 +338,7 @@ wxString ModelInfo::Manager::GetMetaPath(const wxString& model_path, bool remote
 wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_gui_utils::DirTypes& type, wxString root_path, const sd_gui_utils::sdServer* server) {
     wxString path = model_path;
     if (server != nullptr) {
-        path = path.SubString(65, path.Length());
+        path = model_path.SubString(65, model_path.Length());
     }
     auto folderGroupName = wxFileName(path).GetPath();
 

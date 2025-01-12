@@ -3,6 +3,10 @@
 MainWindowSettings::MainWindowSettings(wxWindow* parent, wxConfigBase* config, sd_gui_utils::config* cfg)
     : Settings(parent), config(config), cfg(cfg) {
     this->InitConfig();
+    // connect to the parent's eventhandler to get the servers state
+    // this->m_parent->Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainWindowSettings::onServerStateChanged), NULL, this);
+
+    this->m_parent->Bind(wxEVT_THREAD, &MainWindowSettings::OnThreadMessage, this);
 }
 MainWindowSettings::~MainWindowSettings() {
 }
@@ -229,9 +233,23 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
     for (const auto item : selections) {
         auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
         auto row         = this->m_serverList->ItemToRow(item);
+        auto srv         = this->cfg->GetTcpServer(internal_id);
+        if (srv == nullptr) {
+            continue;
+        }
+
+        wxSecretStore store = wxSecretStore::GetDefault();
+        if (store.IsOk()) {
+            store.Delete(srv->GetsecretKeyName());
+        }
         this->m_serverList->DeleteItem(row);
         this->cfg->RemoveTcpServer(internal_id);
+
     }
+    if (this->m_serverList->GetItemCount() > 0) {
+        this->m_serverList->SelectRow(0);
+    }
+    this->m_serverList->SetFocus();
 }
 
 void MainWindowSettings::OnServerListStartEditing(wxDataViewEvent& event) {
@@ -295,16 +313,15 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
             this->m_serverList->SetValue(wxEmptyString, row, col);
             return;
         }
-        wxSecretStore store  = wxSecretStore::GetDefault();
-        wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(srv->GetHost()), srv->GetPort());
-        wxString username    = "authkey";
+        wxSecretStore store = wxSecretStore::GetDefault();
+        wxString username   = "authkey";
         wxSecretValue authkey(value);
         if (store.IsOk()) {
             if (value.Length() == 0) {
-                store.Delete(serviceName);
+                store.Delete(srv->GetsecretKeyName());
                 return;
             } else {
-                if (store.Save(serviceName, username, authkey) == true) {
+                if (store.Save(srv->GetsecretKeyName(), username, authkey) == true) {
                     srv->SetAuthKeyState(true);
                     return;
                 }
@@ -363,7 +380,7 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
                     wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
                     return;
                 }
-                this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue());
+                this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue(), true);
                 ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
                 this->m_serverEnable->SetLabel(srv->IsEnabled() ? _("Disable") : _("Enable"));
                 break;
@@ -373,4 +390,61 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
 }
 void MainWindowSettings::ChangeRemoteServer(const wxString& value, ServerListColumns col, int row) {
     this->m_serverList->SetValue(value, row, col);
+}
+
+void MainWindowSettings::OnThreadMessage(wxThreadEvent& e) {
+    // always skip
+    e.Skip();
+    if (e.GetId() == 9999) {
+        return;
+    }
+
+    auto msg = e.GetString().utf8_string();
+
+    std::string token                      = msg.substr(0, msg.find(":"));
+    std::string content                    = msg.substr(msg.find(":") + 1);
+    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)std::stoi(token);
+
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_CONNECTED) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        for (int row = 0; row < this->m_serverList->GetItemCount(); row++) {
+            auto item = this->m_serverList->RowToItem(row);
+            if (item.IsOk()) {
+                auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
+                if (internal_id == server->GetInternalId()) {
+                    ChangeRemoteServer(server->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+                    break;
+                }
+            }
+        }
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        for (int row = 0; row < this->m_serverList->GetItemCount(); row++) {
+            auto item = this->m_serverList->RowToItem(row);
+            if (item.IsOk()) {
+                auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
+                if (internal_id == server->GetInternalId()) {
+                    ChangeRemoteServer(server->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+                    break;
+                }
+            }
+        }
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        for (int row = 0; row < this->m_serverList->GetItemCount(); row++) {
+            auto item = this->m_serverList->RowToItem(row);
+            if (item.IsOk()) {
+                auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
+                if (internal_id == server->GetInternalId()) {
+                    ChangeRemoteServer(server->GetDisconnectReason(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+                    break;
+                }
+            }
+        }
+        return;
+    }
 }

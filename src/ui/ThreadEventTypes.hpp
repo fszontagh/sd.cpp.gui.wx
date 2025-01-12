@@ -25,8 +25,10 @@ namespace sd_gui_utils {
         MODEL_MOVE_UPDATE,
         SERVER_CONNECTED,
         SERVER_DISCONNECTED,
+        SERVER_AUTH_REQUEST,
         SERVER_ERROR,
-        SERVER_MODEL_LIST_UPDATE
+        SERVER_MODEL_LIST_UPDATE,
+        SERVER_AUTH_RESPONSE
     };
 }
 #endif  // __UI_THREADEVENTSTYPES__

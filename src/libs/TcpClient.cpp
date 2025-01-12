@@ -5,10 +5,50 @@ namespace sd_gui_utils {
             auto ret = m_client.sendMsg(data, len);
             if (!ret.m_success) {
                 std::cout << "Send Error: " << ret.m_msg << "\n";
-                if (this->onErrorClb != nullptr) {
-                    this->onErrorClb("Send Error: " + ret.m_msg);
+
+                TcpClientOnError onErrorClb;
+                {
+                    std::lock_guard<std::mutex> lock(callbackMutex_);
+                    onErrorClb = callbacks_.onErrorClb;
+                    if (onErrorClb) {
+                        onErrorClb(ret.m_msg);
+                    }
                 }
             }
+        }
+
+        bool TcpClient::Connect(const std::string& host, int port) {
+            this->host             = host;
+            this->port             = port;
+            sockets::SocketRet ret = m_client.connectTo(this->host.c_str(), this->port);
+            this->connected.store(ret.m_success);
+
+            if (ret.m_success) {
+                TcpClientOnConnect connectClb;
+                {
+                    std::cout << "Lock on connectClb" << std::endl;
+                    std::lock_guard<std::mutex> lock(callbackMutex_);
+                    connectClb = callbacks_.onConnectClb;
+                    if (connectClb) {
+                        connectClb();
+                    }
+                }
+
+            } /* else {
+                 this->disconnect_reason = ret.m_msg;
+                 TcpClientOntDisconnect disconnectClb;
+                 {
+                     std::cout << "Lock on disconnectClb" << std::endl;
+                     std::lock_guard<std::mutex> lock(callbackMutex_);
+                     disconnectClb = callbacks_.onDisconnectClb;
+                     if (disconnectClb) {
+                         disconnectClb(this->disconnect_reason);
+                     }
+                 }
+
+                 this->stop();
+             }*/
+            return ret.m_success;
         }
 
         void TcpClient::onReceiveData(const char* data, size_t size) {
@@ -34,68 +74,68 @@ namespace sd_gui_utils {
             }
         }
         void TcpClient::HandlePackets(Packet& packet) {
+            std::cout << "Handling packet: " << (int)packet.type << " Param:" << (int)packet.param << "\n";
             if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
                 if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_ERROR) {
-                    if (this->onErrorClb != nullptr) {
-                        this->disconnect_reason = packet.GetData<std::string>();
-                        this->onErrorClb(this->disconnect_reason);
+                    this->disconnect_reason = packet.GetData<std::string>();
+                    TcpClientOnError onErrorClb;
+                    {
+                        std::cout << "Lock on onErrorClb" << std::endl;
+                        std::lock_guard<std::mutex> lock(callbackMutex_);
+                        onErrorClb = callbacks_.onErrorClb;
+                        if (onErrorClb) {
+                            onErrorClb(this->disconnect_reason);
+                        }
                     }
-                    // this->server->disconnect_reason = packet.GetData<std::string>();
-                    // this->server->needToRun         = false;
-                    // this->server->enabled           = false;
-                    // this->server->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_ERROR, this->server);
+
+                    return;
                 }
-                if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
-                    size_t packet_id                 = this->receivedPackets.size();
-                    this->receivedPackets[packet_id] = packet;
-                    // this->server->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, server, packet_id);
-                    if (this->onMessageClb != nullptr) {
-                        this->onMessageClb(packet_id);
+                // if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
+
+                //}
+                size_t packet_id                 = this->receivedPackets.size();
+                this->receivedPackets[packet_id] = packet;
+                TcpClientOnMessage onMessageClb;
+                {
+                    std::cout << "Lock on onMessageClb" << std::endl;
+                    std::lock_guard<std::mutex> lock(callbackMutex_);
+                    onMessageClb = callbacks_.onMessageClb;
+                    if (onMessageClb) {
+                        onMessageClb(packet_id);
                     }
                 }
+
+                return;
             }
             if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE) {
                 if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_AUTH) {
-                    // get the auth token from secret store
-                    wxSecretStore store  = wxSecretStore::GetDefault();
-                    wxString serviceName = wxString::Format(wxT("%s/%s_%d"), PROJECT_NAME, wxString::FromUTF8Unchecked(this->host), this->port);
-                    wxString username;
-                    wxSecretValue authkey;
-
-                    if (store.IsOk() && store.Load(serviceName, username, authkey)) {
-                        auto responsePacket  = sd_gui_utils::networks::Packet();
-                        responsePacket.type  = sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE;
-                        responsePacket.param = sd_gui_utils::networks::Packet::Param::PARAM_AUTH;
-                        responsePacket.SetData(authkey.GetAsString().utf8_string());
-
-                        this->sendMsg(responsePacket);
-                        // send model list request
-                        auto modelListPacket  = sd_gui_utils::networks::Packet();
-                        modelListPacket.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-                        modelListPacket.param = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
-                        this->sendMsg(modelListPacket);
-                    } else {
-                        this->disconnect_reason = _("Authentication Failed");
-                        // this->server->needToRun         = false;
-                        // this->server->enabled           = false;
-                        // this->server->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this->server);
-                        if (this->onErrorClb != nullptr) {
-                            this->disconnect_reason = packet.GetData<std::string>();
-                            this->onErrorClb(this->disconnect_reason);
+                    TcpClientOnAuthRequest onAuthRequestClb;
+                    {
+                        std::cout << "Lock on onAuthRequestClb" << std::endl;
+                        std::lock_guard<std::mutex> lock(callbackMutex_);
+                        onAuthRequestClb = callbacks_.onAuthRequestClb;
+                        if (onAuthRequestClb) {
+                            onAuthRequestClb();
                         }
                     }
+                    return;
                 }
             }
         }
 
         void TcpClient::onDisconnect(const sockets::SocketRet& ret) {
             this->connected.store(false);
-            if (ret.m_msg.length() > 0) {
-                this->disconnect_reason = ret.m_msg;
+            this->disconnect_reason = ret.m_msg;
+
+            TcpClientOntDisconnect disconnectClb;
+            {
+                std::cout << "Lock on disconnectClb" << std::endl;
+                std::lock_guard<std::mutex> lock(callbackMutex_);
+                disconnectClb = callbacks_.onDisconnectClb;
             }
-            // this->server->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this->server);
-            if (this->onDisconnectClb != nullptr) {
-                this->onDisconnectClb(ret.m_msg);
+            this->disconnect_reason = ret.m_msg;
+            if (disconnectClb) {
+                disconnectClb(this->disconnect_reason);
             }
             this->stop();
         }

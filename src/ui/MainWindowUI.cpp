@@ -200,7 +200,7 @@ void MainWindowUI::onSettings(wxCommandEvent& event) {
     this->settingsWindow->SetIcon(icon);
     this->Freeze();
     this->settingsWindow->Bind(wxEVT_CLOSE_WINDOW, &MainWindowUI::OnCloseSettings, this);
-    this->Hide();
+    // this->Maximize(false);
     this->settingsWindow->Show();
 }
 
@@ -215,6 +215,16 @@ void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
     this->loadEmbeddingList();
     this->LoadPresets();
     this->LoadPromptTemplates();
+    // get the list from the active server too
+    auto srvlist = this->mapp->cfg->ListRemoteServers();
+    for (size_t i = 0; i < srvlist.size(); i++) {
+        auto srv = srvlist.at(i);
+        if (srv) {
+            if (srv->IsEnabled() && srv->IsConnected()) {
+                srv->RequestModelList();
+            }
+        }
+    }
 }
 
 void MainWindowUI::OnAboutButton(wxCommandEvent& event) {
@@ -665,6 +675,7 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                         }
                     }
                     this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+                    event.Skip();
                 });
             }
 
@@ -756,7 +767,7 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
 
     wxMenu* menu = new wxMenu();
 
-    if (modelInfo == nullptr) {
+    if (modelInfo == nullptr) {  // this is a root item
         wxString name       = this->m_modelTreeList->GetItemText(item);
         wxString parentName = wxEmptyString;
         auto parentItem     = this->m_modelTreeList->GetItemParent(item);
@@ -862,9 +873,9 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
                 }
             }
         }
-    }
-    if (modelInfo->server_id.empty()) {
-        menu->Append(311, _("Open folder"));
+        if (modelInfo->server_id.empty() == true) {
+            menu->Append(311, _("Open folder"));
+        }
     }
 
     menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnModelListPopUpClick, this);
@@ -1943,9 +1954,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     }
 
     data.push_back(wxVariant(_("File name")));
-
-    wxFileName fname(modelinfo->path);
-    data.push_back(wxVariant(wxString::Format("%s", fname.GetName())));
+    data.push_back(wxVariant(wxString::Format("%s", modelinfo->name)));
 
     this->m_model_details->AppendItem(data);
     data.clear();
@@ -2032,6 +2041,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
             bitmap->Show();
             bitmap->SetToolTip(tooltip);
             bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, modelinfo, tooltip, this](wxMouseEvent& event) {
+                event.Skip();
                 wxMenu* menu = new wxMenu();
                 menu->Append(99, tooltip);
                 menu->Enable(99, false);
@@ -2060,6 +2070,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
                 menu->Enable(11, wxFileExists(img.local_path));
 
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, modelinfo](wxCommandEvent& evt) {
+                    evt.Skip();
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {
@@ -2242,9 +2253,9 @@ MainWindowUI::~MainWindowUI() {
         }
     }
 
-    for (auto& srv : this->mapp->cfg->ListRemoteServers()) {
-        srv->Stop();
-    }
+    // for (auto& srv : this->mapp->cfg->ListRemoteServers()) {
+    //     srv->Stop();
+    // }
 
     for (auto& threadPtr : this->threads) {
         if (threadPtr->joinable()) {
@@ -2285,6 +2296,7 @@ void MainWindowUI::loadEmbeddingList() {
 }
 
 void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
+    evt.Skip();
     auto itemId = evt.GetId();
     if (itemId == wxNOT_FOUND) {
         return;
@@ -2493,6 +2505,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
 }
 
 void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
+    evt.Skip();
     auto tu = evt.GetId();
 
     // 100 for queueitem list table
@@ -2949,6 +2962,7 @@ void MainWindowUI::loadLoraList() {
 }
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
+    event.Skip();
     this->settingsWindow->Destroy();
     if (this->mapp->cfg->enable_civitai == false && this->m_civitai->IsShown()) {
         this->m_civitai->Hide();
@@ -2961,11 +2975,19 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
         this->m_civitai->Show();
     }
 
-    this->mapp->ReloadMainWindow(this->mapp->cfg->language, this->disableExternalProcessHandling);
+    // this->mapp->ReloadMainWindow(this->mapp->cfg->language, this->disableExternalProcessHandling);
+    this->mapp->ChangeLocale(this->mapp->cfg->language);
+    this->mapp->cfg->initServerList(this->GetEventHandler());
+
+    this->Thaw();
+    this->Refresh();
+    this->Update();
+    // this->Show();
 }
 void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
     this->civitwindow->Destroy();
     this->civitwindow = nullptr;
+    event.Skip();
 }
 
 void MainWindowUI::imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode) {
@@ -3361,9 +3383,7 @@ void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::Queue
 }
 
 void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
-    if (e.GetSkipped() == false) {
-        e.Skip();
-    }
+    e.Skip();
 
     // this is a taskbar event
     if (e.GetId() == 9999) {
@@ -3546,7 +3566,31 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
-        this->writeLog(wxString::Format(_("Server error: %s"), server->GetName(), server->GetDisconnectReason()));
+        this->writeLog(wxString::Format(_("Server error: %s - %s - %s"), server->GetName(), server->GetDisconnectReason(), content));
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_AUTH_REQUEST) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        this->writeLog(wxString::Format(_("Server auth request: %s"), server->GetName()));
+        wxSecretStore store = wxSecretStore::GetDefault();
+        wxString username;
+        wxSecretValue authkey;
+        if (store.IsOk() && store.Load(server->GetsecretKeyName(), username, authkey)) {
+            server->SendAuthToken(authkey.GetAsString().utf8_string());
+        } else {
+            this->writeLog(wxString::Format(_("Server auth request failed: %s"), server->GetName()));
+            this->mapp->cfg->ServerEnable(server->GetInternalId(), false);
+        }
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_AUTH_RESPONSE) {
+        sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
+        if (!server) {
+            return;
+        }
+
+        this->writeLog(wxString::Format(_("Server auth response: %s - %s"), server->GetName(), content));
+        server->RequestModelList();
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
@@ -3556,6 +3600,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             return;
         }
         auto packet = server->GetPacket(packetId);
+        if (packet.isValid() == false) {
+            this->writeLog("Got invalid packet from server: " + server->GetName());
+            return;
+        }
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
             for (const auto& item : list) {
@@ -3571,6 +3619,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
         } catch (std::exception& e) {
             this->writeLog(wxString::Format(_("Error parsing JSON: %s"), e.what()));
+            std::cout << "The wrong json: " << packet.GetData<std::string>().c_str() << std::endl;
         }
 
         return;
@@ -4163,9 +4212,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
             this->jobImagePreviews.emplace_back(bitmap);
             bitmap->Bind(wxEVT_LEFT_DCLICK, [img](wxMouseEvent& event) {
                 wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.pathname));
+                event.Skip();
             });
             // rightclick
             bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, item, this](wxMouseEvent& event) {
+                event.Skip();
                 wxMenu* menu = new wxMenu();
                 // menu->Append(99,tooltip);
                 // menu->Enable(99,false);
@@ -4194,6 +4245,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                 }
 
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item](wxCommandEvent& evt) {
+                    evt.Skip();
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {

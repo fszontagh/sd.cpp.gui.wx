@@ -32,6 +32,7 @@ struct ServerConfig {
     int max_clients            = 10;
     size_t max_request_size    = 1024 * 1024 * 1024;
     unsigned int tcp_keepalive = 60;  // kep alive period
+    unsigned int cpu_cores     = 1;
     std::string logfile;
     backend_type backend = backend_type::AVX;
     std::string authkey;
