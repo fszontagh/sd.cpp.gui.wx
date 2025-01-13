@@ -21,6 +21,8 @@
 #include "ver.hpp"
 #include "config.hpp"
 
+#include "helpers/formatbytes.hpp"
+
 #include <wx/event.h>
 #include <wx/string.h>
 #include <wx/translation.h>

@@ -44,18 +44,19 @@ private:
     bool ProcessEventHandler(std::string message);
     bool LoadModelFiles();
     void CalcModelHashes();
+    void AddModelFile(const wxFileName& filename, const std::string& rootpath, const sd_gui_utils::DirTypes type, size_t& used_sizes, int& file_count, wxULongLong& used_model_sizes);
     inline static void FileHashCallBack(size_t size, std::string name, void* data) {
         auto instance = ((TerminalApp*)data);
         size          = size == 0 ? 1 : size;
         int progress  = static_cast<int>(100.0 * size / instance->currentHashingItem->size);
 
         if (size % (1024 * 1024) == 0) {
-            std::cout << "\33[2K\r" << std::flush; // from win10 console
+            std::cout << "\33[2K\r" << std::flush;  // from win10 console
             wxULongLong currentTotal    = instance->hashingProcessed.load() + size;
             wxULongLong currentRequired = instance->hashingFullSize.load();
             auto total_progress         = wxULongLong(100) * currentTotal / currentRequired;
             auto msg                    = wxString::Format(
-                "[%s - %s]: %d%% (%llu/%llu) Total: %s%%\t\t\t",
+                "[%s - %s]: %d%% (%llu/%llu) Total: %s%%",
                 instance->currentHashingItem->name,
                 instance->currentHashingItem->size_f,
                 progress,

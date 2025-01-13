@@ -48,7 +48,8 @@ namespace sd_gui_utils {
         "",
     };
 
-    struct ModelFileInfo {
+    class ModelFileInfo {
+    public:
         std::string name;
         std::string path = "";
         std::string url;
@@ -727,13 +728,13 @@ namespace sd_gui_utils {
                 this->configBase->SetPath("/Servers");
 
                 for (size_t i = 0; i < servers.size(); ++i) {
-                    this->configBase->SetPath(wxString::Format("Server%zu", i));
+                    this->configBase->SetPath(wxString::Format("%s:%d", servers[i]->GetHost(), servers[i]->GetPort()));
                     this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->GetHost()));
                     this->configBase->Write("Port", servers[i]->GetPort());
                     this->configBase->Write("Enabled", servers[i]->IsEnabled());
                     this->configBase->Write("InternalId", servers[i]->GetInternalId());
                     this->configBase->Write("Name", servers[i]->GetName());
-                    this->configBase->Write("Id", wxString::FromUTF8Unchecked(servers[i]->GetId()));
+                    this->configBase->Write("Id", wxString(servers[i]->GetId().c_str()));
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);
@@ -943,19 +944,6 @@ namespace sd_gui_utils {
         std::uniform_int_distribution<unsigned int> dis(min, max);
         return dis(gen);
     };
-
-    inline std::pair<double, std::string> humanReadableFileSize(double bytes) {
-        static const char* sizes[] = {"B", "KB", "MB", "GB", "TB"};
-        long unsigned int div      = 0;
-        double size                = bytes;
-
-        while (size >= 1024 && div < (sizeof(sizes) / sizeof(*sizes))) {
-            size /= 1024;
-            div++;
-        }
-
-        return std::make_pair(size, sizes[div]);
-    }
 
     inline std::string removeWhitespace(std::string str) {
         std::string::iterator end_pos = std::remove(str.begin(), str.end(), ' ');

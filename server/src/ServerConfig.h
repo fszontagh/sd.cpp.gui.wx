@@ -26,6 +26,18 @@ inline const std::map<backend_type, std::string> backend_type_to_str = {
     {backend_type::HIPBLAS, "hipblas"},
     {backend_type::VULKAN, "vulkan"}};
 
+struct ModelPaths {
+    std::string checkpoints = "";
+    std::string lora        = "";
+    std::string vae         = "";
+    std::string embedding   = "";
+    std::string taesd       = "";
+    std::string controlnet  = "";
+    std::string esrgan      = "";
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelPaths, checkpoints, lora, vae, embedding, taesd, controlnet, esrgan)
+
 struct ServerConfig {
     std::string host           = "127.0.0.1";
     uint16_t port              = 8191;
@@ -40,13 +52,7 @@ struct ServerConfig {
     std::string server_name           = "";  // optional server name to display in the gui
     unsigned int unauthorized_timeout = 4;   // disconnect clients after this many seconds if not authenticated
     std::string exprocess_binary_path;       // force to use this exprocess binary
-    std::string model_path;
-    std::string lora_path;
-    std::string vae_path;
-    std::string embedding_path;
-    std::string taesd_path;
-    std::string controlnet_path;
-    std::string esrgan_path;
+    ModelPaths model_paths = {};
     std::string server_id;
 };
 
@@ -69,28 +75,10 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohma
     if (nlohmann_json_t.exprocess_binary_path.empty() == false) {
         nlohmann_json_j["exprocess_binary_path"] = nlohmann_json_t.exprocess_binary_path;
     }
-    if (nlohmann_json_t.model_path.empty() == false) {
-        nlohmann_json_j["model_path"] = nlohmann_json_t.model_path;
-    }
-    if (nlohmann_json_t.lora_path.empty() == false) {
-        nlohmann_json_j["lora_path"] = nlohmann_json_t.lora_path;
-    }
-    if (nlohmann_json_t.vae_path.empty() == false) {
-        nlohmann_json_j["vae_path"] = nlohmann_json_t.vae_path;
-    }
-    if (nlohmann_json_t.embedding_path.empty() == false) {
-        nlohmann_json_j["embedding_path"] = nlohmann_json_t.embedding_path;
-    }
-    if (nlohmann_json_t.taesd_path.empty() == false) {
-        nlohmann_json_j["taesd_path"] = nlohmann_json_t.taesd_path;
-    }
-    if (nlohmann_json_t.controlnet_path.empty() == false) {
-        nlohmann_json_j["controlnet_path"] = nlohmann_json_t.controlnet_path;
-    }
-    if (nlohmann_json_t.esrgan_path.empty() == false) {
-        nlohmann_json_j["esrgan_path"] = nlohmann_json_t.esrgan_path;
-    }
+
+    nlohmann_json_j["model_paths"] = nlohmann_json_t.model_paths;
 }
+
 inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nlohmann_json_t) {
     const ServerConfig nlohmann_json_default_obj{};
     nlohmann_json_t.host             = nlohmann_json_j.value("host", nlohmann_json_default_obj.host);
@@ -115,27 +103,6 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
         nlohmann_json_t.exprocess_binary_path = nlohmann_json_j.value("exprocess_binary_path", nlohmann_json_default_obj.exprocess_binary_path);
     }
     nlohmann_json_t.unauthorized_timeout = nlohmann_json_j.value("unauthorized_timeout", nlohmann_json_default_obj.unauthorized_timeout);
-
-    if (nlohmann_json_j.contains("model_path") && !nlohmann_json_j["model_path"].is_null()) {
-        nlohmann_json_t.model_path = nlohmann_json_j.value("model_path", nlohmann_json_default_obj.model_path);
-    }
-    if (nlohmann_json_j.contains("lora_path") && !nlohmann_json_j["lora_path"].is_null()) {
-        nlohmann_json_t.lora_path = nlohmann_json_j.value("lora_path", nlohmann_json_default_obj.lora_path);
-    }
-    if (nlohmann_json_j.contains("vae_path") && !nlohmann_json_j["vae_path"].is_null()) {
-        nlohmann_json_t.vae_path = nlohmann_json_j.value("vae_path", nlohmann_json_default_obj.vae_path);
-    }
-    if (nlohmann_json_j.contains("embedding_path") && !nlohmann_json_j["embedding_path"].is_null()) {
-        nlohmann_json_t.embedding_path = nlohmann_json_j.value("embedding_path", nlohmann_json_default_obj.embedding_path);
-    }
-    if (nlohmann_json_j.contains("taesd_path") && !nlohmann_json_j["taesd_path"].is_null()) {
-        nlohmann_json_t.taesd_path = nlohmann_json_j.value("taesd_path", nlohmann_json_default_obj.taesd_path);
-    }
-    if (nlohmann_json_j.contains("controlnet_path") && !nlohmann_json_j["controlnet_path"].is_null()) {
-        nlohmann_json_t.controlnet_path = nlohmann_json_j.value("controlnet_path", nlohmann_json_default_obj.controlnet_path);
-    }
-    if (nlohmann_json_j.contains("esrgan_path") && !nlohmann_json_j["esrgan_path"].is_null()) {
-        nlohmann_json_t.esrgan_path = nlohmann_json_j.value("esrgan_path", nlohmann_json_default_obj.esrgan_path);
-    }
+    nlohmann_json_t.model_paths          = nlohmann_json_j.at("model_paths");
 }
 #endif  // __SERVER_CONFIG_H

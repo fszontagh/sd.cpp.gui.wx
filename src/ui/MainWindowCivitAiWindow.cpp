@@ -108,11 +108,14 @@ void MainWindowCivitAiWindow::m_model_downloadOnButtonClick(wxCommandEvent& even
         std::string type = parent_js["type"].get<std::string>();
         if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::LORA]) {
             ditem->type = CivitAi::ModelTypes::LORA;
+            ditem->dirType = sd_gui_utils::DirTypes::LORA;
             path        = wxFileName(this->config->lora + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::Checkpoint]) {
+            ditem->dirType = sd_gui_utils::DirTypes::CHECKPOINT;
             ditem->type = CivitAi::ModelTypes::Checkpoint;
             path        = wxFileName(this->config->model + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else if (type == CivitAi::ModelTypesNames[CivitAi::ModelTypes::TextualInversion]) {
+            ditem->dirType = sd_gui_utils::DirTypes::EMBEDDING;
             ditem->type = CivitAi::ModelTypes::TextualInversion;
             path        = wxFileName(this->config->embedding + wxFileName::GetPathSeparators() + js["name"].get<std::string>());
         } else {
@@ -207,7 +210,7 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
         wxVector<wxVariant> data;
 
         data.push_back(wxVariant(wxString::FromUTF8Unchecked(std::filesystem::path(item->local_file).filename().string())));
-        auto s = sd_gui_utils::humanReadableFileSize(item->targetSize);
+        auto s = sd_gui_utils::formatbytes(item->targetSize);
         data.push_back(wxString::Format("%.2f %s", s.first, s.second));
         data.push_back(wxVariant(wxGetTranslation(CivitAi::DownloadItemStateNames[item->state])));
         data.push_back(wxVariant(0));
@@ -278,8 +281,8 @@ void MainWindowCivitAiWindow::OnThreadMessage(wxThreadEvent& e) {
                 }
                 int current_progress = static_cast<int>((payload->downloadedSize * 100) / payload->targetSize);
                 wxString size;
-                auto target_s  = sd_gui_utils::humanReadableFileSize(payload->targetSize);
-                auto current_s = sd_gui_utils::humanReadableFileSize(payload->downloadedSize);
+                auto target_s  = sd_gui_utils::formatbytes(payload->targetSize);
+                auto current_s = sd_gui_utils::formatbytes(payload->downloadedSize);
                 size           = wxString::Format("%.2f %s / %.2f %s", target_s.first, target_s.second, current_s.first, current_s.second);
                 store->SetValueByRow(size, _i, progressCol - 2);                                                               // size
                 store->SetValueByRow(wxGetTranslation(CivitAi::DownloadItemStateNames[payload->state]), _i, progressCol - 1);  // state
@@ -858,7 +861,7 @@ void MainWindowCivitAiWindow::populateFiles(nlohmann::json js) {
                 data.push_back("");
             }
             if (file.contains("sizeKB") && file["sizeKB"].is_number_float()) {
-                auto size = sd_gui_utils::humanReadableFileSize(file["sizeKB"].get<double>() * 1024);
+                auto size = sd_gui_utils::formatbytes(file["sizeKB"].get<double>() * 1024);
                 data.push_back(wxString::Format("%.2f %s", size.first, size.second));
             } else {
                 data.push_back("");

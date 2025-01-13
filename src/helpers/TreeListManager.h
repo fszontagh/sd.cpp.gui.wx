@@ -4,11 +4,18 @@
 class ModelFileInfoData : public wxClientData {
 public:
     explicit ModelFileInfoData(sd_gui_utils::ModelFileInfo* info)
-        : fileInfo(info) {}
+        : fileInfo(info), server_id(info->server_id) {}
+    explicit ModelFileInfoData(const std::string server_id)
+        : server_id(server_id) {
+    }
     sd_gui_utils::ModelFileInfo* GetFileInfo() const { return fileInfo; }
+    const std::string GetServerId() {
+        return this->server_id;
+    }
 
 private:
-    sd_gui_utils::ModelFileInfo* fileInfo;
+    sd_gui_utils::ModelFileInfo* fileInfo = nullptr;
+    std::string server_id                 = "";
 };
 
 template <typename T>
@@ -61,8 +68,8 @@ public:
         columns.push_back(info);
     }
 
-    void AddItem(const sd_gui_utils::ModelFileInfo* item, bool select = false) {
-        wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName);
+    void AddItem(sd_gui_utils::ModelFileInfo* item, bool select = false) {
+        wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName, item->server_id);
         wxString name             = wxString::FromUTF8Unchecked(item->name);
         if (!item->folderGroupName.empty()) {
             name.Replace(item->folderGroupName, "");
@@ -88,7 +95,7 @@ public:
         wxTreeListItem parentItem = GetOrCreateParent(groupName);
         wxTreeListItem newItem    = treeListCtrl->AppendItem(parentItem, title);
         if (data) {
-            treeListCtrl->SetItemData(newItem, new DataContainer(data));
+            treeListCtrl->SetItemData(newItem, data);
         }
 
         if (item.size() != this->columns.size()) {
@@ -203,20 +210,76 @@ public:
         if (serverId.empty()) {
             return;
         }
+
+        auto parents = this->GetParentsByServerId(serverId);
+        if (parents.size() > 0) {
+            this->treeListCtrl->DeleteItem(parents.front());
+            for (const auto& item : parents) {
+                for (auto it = this->parentMap.begin(); it != this->parentMap.end();) {
+                    if ((*it).second == item) {
+                        it = this->parentMap.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+            }
+        }
+
+        // auto list = this->GetItemsByServerId(serverId);
+        // for (const auto& item : list) {
+        //     if (item.IsOk()) {
+        //         this->treeListCtrl->DeleteItem(item);
+        //     }
+        // }
+    }
+
+    std::vector<wxTreeListItem> GetParentsByServerId(const std::string& server_id) {
+        std::vector<wxTreeListItem> list = {};
+        if (server_id.empty()) {
+            return list;
+        }
         wxTreeListItem currentItem = treeListCtrl->GetRootItem();
         if (currentItem.IsOk() == false) {
-            return;
+            return list;
         }
 
         while (currentItem.IsOk()) {
             auto data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(currentItem));
-            if (data) {
-                if (data->GetFileInfo()->server_id == serverId) {
-                    treeListCtrl->DeleteItem(currentItem);
+            if (data != NULL) {
+                if (data->GetServerId().empty() == false && data->GetServerId() == server_id) {
+                    if (currentItem != this->treeListCtrl->GetRootItem()) {
+                        list.push_back(currentItem);
+                    }
                 }
             }
             currentItem = this->treeListCtrl->GetNextItem(currentItem);
         }
+
+        return list;
+    }
+
+    std::vector<wxTreeListItem> GetItemsByServerId(const std::string server_id) {
+        std::vector<wxTreeListItem> list = {};
+        if (server_id.empty()) {
+            return list;
+        }
+        wxTreeListItem currentItem = treeListCtrl->GetRootItem();
+        if (currentItem.IsOk() == false) {
+            return list;
+        }
+
+        while (currentItem.IsOk()) {
+            auto data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(currentItem));
+            if (data != NULL) {
+                auto info = data->GetFileInfo();
+                if (info && info->server_id == server_id) {
+                    list.emplace_back(currentItem);
+                }
+            }
+            currentItem = this->treeListCtrl->GetNextItem(currentItem);
+        }
+
+        return list;
     }
 
     void CleanAll() {
@@ -243,7 +306,7 @@ private:
      *                        where segments are separated by separator character.
      * @return The wxTreeListItem corresponding to the last segment of the folder group name.
      */
-    wxTreeListItem GetOrCreateParent(const std::string& folderGroupName) {
+    wxTreeListItem GetOrCreateParent(const std::string& folderGroupName, std::string server_id = "") {
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
@@ -261,8 +324,9 @@ private:
 
             if (parentMap.find(fullPath) == parentMap.end()) {
                 wxTreeListItem newParent = treeListCtrl->AppendItem(parent, wxString(group));
-                parentMap[fullPath]      = newParent;
-                parent                   = newParent;
+                treeListCtrl->SetItemData(newParent, new ModelFileInfoData(server_id));
+                parentMap[fullPath] = newParent;
+                parent              = newParent;
             } else {
                 parent = parentMap[fullPath];
             }

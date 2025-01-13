@@ -56,7 +56,7 @@ bool TerminalApp::OnInit() {
     }
     if (this->configData->server_id.empty()) {
         this->configData->server_id = std::to_string(std::rand());
-        this->configData->server_id = sd_gui_utils::sha256_string_openssl(this->configData->authkey + this->configData->host + this->configData->model_path);
+        this->configData->server_id = sd_gui_utils::sha256_string_openssl(this->configData->authkey + this->configData->host + this->configData->model_paths.checkpoints);
         wxLogInfo("Generated server_id: %s", this->configData->server_id);
         // save into the config file
         try {
@@ -92,8 +92,8 @@ bool TerminalApp::OnInit() {
         wxLog::SetActiveTarget(this->logger);
     }
 
-    if (this->configData->model_path.empty()) {
-        wxLogError("`model_path` config key is missing");
+    if (this->configData->model_paths.checkpoints.empty()) {
+        wxLogError("`model_paths->checkpoints` config key is missing");
         return false;
     }
 
@@ -396,59 +396,112 @@ bool TerminalApp::LoadModelFiles() {
     wxLogInfo("Loading model files");
     size_t used_sizes = 0;
     // load checkpoints
-    if (this->configData->model_path.empty() || wxDirExists(this->configData->model_path) == false) {
-        wxLogError("Model path does not exist: %s", this->configData->model_path);
+    if (this->configData->model_paths.checkpoints.empty() || wxDirExists(this->configData->model_paths.checkpoints) == false) {
+        wxLogError("Model path does not exist: %s", this->configData->model_paths.checkpoints);
         return false;
     }
 
     wxArrayString checkpoint_files;
-    wxDir::GetAllFiles(this->configData->model_path, &checkpoint_files);
+    wxDir::GetAllFiles(this->configData->model_paths.checkpoints, &checkpoint_files);
     int checkpoint_count              = 0;
     wxULongLong used_checkpoint_sizes = 0;
     for (const auto& file : checkpoint_files) {
         wxFileName filename(file);
         if (std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), filename.GetExt()) != CHECKPOINT_FILE_EXTENSIONS.end()) {
-            sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::CHECKPOINT, this->configData->model_path);
-            modelInfo.server_id                                        = this->configData->server_id;
-            this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
-            used_sizes += modelInfo.size;
-            used_checkpoint_sizes += modelInfo.size;
-            checkpoint_count++;
-            wxFileName hashFileName = filename;
-            hashFileName.SetExt("sha256");
-            if (!wxFileExists(hashFileName.GetFullPath())) {
-                this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
-            }
+            this->AddModelFile(filename, this->configData->model_paths.checkpoints, sd_gui_utils::DirTypes::CHECKPOINT, used_sizes, checkpoint_count, used_checkpoint_sizes);
         }
     }
     wxLogInfo("Loaded %d checkpoints %s", checkpoint_count, wxFileName::GetHumanReadableSize(used_checkpoint_sizes));
 
     // load loras
-    if (this->configData->lora_path.empty() == false && wxDirExists(this->configData->lora_path)) {
+    if (this->configData->model_paths.lora.empty() == false && wxDirExists(this->configData->model_paths.lora)) {
         wxArrayString lora_files;
-        wxDir::GetAllFiles(this->configData->lora_path, &lora_files);
+        wxDir::GetAllFiles(this->configData->model_paths.lora, &lora_files);
         int lora_count              = 0;
         wxULongLong used_lora_sizes = 0;
         for (const auto& file : lora_files) {
             wxFileName filename(file);
             if (std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), filename.GetExt()) != LORA_FILE_EXTENSIONS.end()) {
-                sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, sd_gui_utils::DirTypes::LORA, this->configData->lora_path);
-                modelInfo.server_id                                        = this->configData->server_id;
-                this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
-                used_sizes += modelInfo.size;
-                used_lora_sizes += modelInfo.size;
-                lora_count++;
-                wxFileName hashFileName = filename;
-                hashFileName.SetExt("sha256");
-                if (!wxFileExists(hashFileName.GetFullPath())) {
-                    this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
-                }
+                this->AddModelFile(filename, this->configData->model_paths.lora, sd_gui_utils::DirTypes::LORA, used_sizes, lora_count, used_lora_sizes);
             }
         }
         wxLogInfo("Loaded %d loras %s", lora_count, wxFileName::GetHumanReadableSize(used_lora_sizes));
     } else {
-        wxLogWarning("Lora path does not exist or missing from config: %s", this->configData->lora_path);
+        wxLogWarning("Lora path does not exist or missing from config: %s", this->configData->model_paths.lora);
     }
+
+    // vae models
+    if (this->configData->model_paths.vae.empty() == false && wxDirExists(this->configData->model_paths.vae)) {
+        wxArrayString vae_files;
+        wxDir::GetAllFiles(this->configData->model_paths.vae, &vae_files);
+        int vae_count              = 0;
+        wxULongLong used_vae_sizes = 0;
+        for (const auto& file : vae_files) {
+            wxFileName filename(file);
+            if (std::find(VAE_FILE_EXTENSIONS.begin(), VAE_FILE_EXTENSIONS.end(), filename.GetExt()) != VAE_FILE_EXTENSIONS.end()) {
+                this->AddModelFile(filename, this->configData->model_paths.vae, sd_gui_utils::DirTypes::VAE, used_sizes, vae_count, used_vae_sizes);
+            }
+        }
+        wxLogInfo("Loaded %d vae models %s", vae_count, wxFileName::GetHumanReadableSize(used_vae_sizes));
+    }
+    // controlnet
+    if (this->configData->model_paths.controlnet.empty() == false && wxDirExists(this->configData->model_paths.controlnet)) {
+        wxArrayString controlnet_files;
+        wxDir::GetAllFiles(this->configData->model_paths.controlnet, &controlnet_files);
+        int controlnet_count              = 0;
+        wxULongLong used_controlnet_sizes = 0;
+        for (const auto& file : controlnet_files) {
+            wxFileName filename(file);
+            if (std::find(CONTROLNET_FILE_EXTENSIONS.begin(), CONTROLNET_FILE_EXTENSIONS.end(), filename.GetExt()) != CONTROLNET_FILE_EXTENSIONS.end()) {
+                this->AddModelFile(filename, this->configData->model_paths.controlnet, sd_gui_utils::DirTypes::CONTROLNET, used_sizes, controlnet_count, used_controlnet_sizes);
+            }
+        }
+        wxLogInfo("Loaded %d controlnet models %s", controlnet_count, wxFileName::GetHumanReadableSize(used_controlnet_sizes));
+    }
+    // esrgan models
+    if (this->configData->model_paths.esrgan.empty() == false && wxDirExists(this->configData->model_paths.esrgan)) {
+        wxArrayString esrgan_files;
+        wxDir::GetAllFiles(this->configData->model_paths.esrgan, &esrgan_files);
+        int esrgan_count              = 0;
+        wxULongLong used_esrgan_sizes = 0;
+        for (const auto& file : esrgan_files) {
+            wxFileName filename(file);
+            if (std::find(ESRGAN_FILE_EXTENSIONS.begin(), ESRGAN_FILE_EXTENSIONS.end(), filename.GetExt()) != ESRGAN_FILE_EXTENSIONS.end()) {
+                this->AddModelFile(filename, this->configData->model_paths.esrgan, sd_gui_utils::DirTypes::ESRGAN, used_sizes, esrgan_count, used_esrgan_sizes);
+            }
+        }
+        wxLogInfo("Loaded %d esrgan models %s", esrgan_count, wxFileName::GetHumanReadableSize(used_esrgan_sizes));
+    }
+
+    // load embeddings
+    if (this->configData->model_paths.embedding.empty() == false && wxDirExists(this->configData->model_paths.embedding)) {
+        wxArrayString embedding_files;
+        wxDir::GetAllFiles(this->configData->model_paths.embedding, &embedding_files);
+        int embedding_count              = 0;
+        wxULongLong used_embedding_sizes = 0;
+        for (const auto& file : embedding_files) {
+            wxFileName filename(file);
+            if (std::find(EMBEDDING_FILE_EXTENSIONS.begin(), EMBEDDING_FILE_EXTENSIONS.end(), filename.GetExt()) != EMBEDDING_FILE_EXTENSIONS.end()) {
+                this->AddModelFile(filename, this->configData->model_paths.embedding, sd_gui_utils::DirTypes::EMBEDDING, used_sizes, embedding_count, used_embedding_sizes);
+            }
+        }
+    }
+
+    // load taesd
+    if (this->configData->model_paths.taesd.empty() == false && wxDirExists(this->configData->model_paths.taesd)) {
+        wxArrayString taesd_files;
+        wxDir::GetAllFiles(this->configData->model_paths.taesd, &taesd_files);
+        int taesd_count              = 0;
+        wxULongLong used_taesd_sizes = 0;
+        for (const auto& file : taesd_files) {
+            wxFileName filename(file);
+            if (std::find(TAESD_FILE_EXTENSIONS.begin(), TAESD_FILE_EXTENSIONS.end(), filename.GetExt()) != TAESD_FILE_EXTENSIONS.end()) {
+                this->AddModelFile(filename, this->configData->model_paths.taesd, sd_gui_utils::DirTypes::TAESD, used_sizes, taesd_count, used_taesd_sizes);
+            }
+        }
+    }
+
+    // print stats
     wxLogInfo("Total size: %s", wxFileName::GetHumanReadableSize((wxULongLong)used_sizes));
     wxLogInfo("Need to hash: %s", wxFileName::GetHumanReadableSize(this->hashingFullSize.load()));
     return true;
@@ -485,7 +538,7 @@ void TerminalApp::CalcModelHashes() {
         // this->sendLogEvent(wxString::Format("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size), wxLOG_Info);
         wxLogInfo("Calculating hash for %s size: %s (%llu bytes)", model.second.name, model.second.size_f, model.second.size);
         model.second.hash_fullsize = model.second.size;
-        *this->currentHashingItem  = model.second;
+        this->currentHashingItem   = std::make_shared<sd_gui_utils::RemoteModelInfo>(model.second);
         model.second.sha256        = sd_gui_utils::sha256_file_openssl(model.second.remote_path.c_str(), (void*)this, TerminalApp::FileHashCallBack);
         wxFile file;
         if (file.Open(hashFileName.GetFullPath(), wxFile::write)) {
@@ -498,5 +551,19 @@ void TerminalApp::CalcModelHashes() {
             wxLogError("Failed to calculate hash for %s", model.second.path);
             this->hashingFullSize.store(this->hashingFullSize.load() - static_cast<wxULongLong>(model.second.size));
         }
+    }
+}
+
+void TerminalApp::AddModelFile(const wxFileName& filename, const std::string& rootpath, const sd_gui_utils::DirTypes type, size_t& used_sizes, int& file_count, wxULongLong& used_model_sizes) {
+    sd_gui_utils::networks::RemoteModelInfo modelInfo(filename, type, rootpath);
+    modelInfo.server_id                                        = this->configData->server_id;
+    this->modelFiles[filename.GetAbsolutePath().utf8_string()] = modelInfo;
+    used_sizes += modelInfo.size;
+    used_model_sizes += modelInfo.size;
+    file_count++;
+    wxFileName hashFileName = filename;
+    hashFileName.SetExt("sha256");
+    if (!wxFileExists(hashFileName.GetFullPath())) {
+        this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
     }
 }

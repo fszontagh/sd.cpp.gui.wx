@@ -45,6 +45,7 @@
 
 #include "ver.hpp"
 #include "helpers/DirTypes.h"
+#include "helpers/formatbytes.hpp"
 #include "helpers/sd.hpp"
 #include "sockets-cpp/TcpClient.h"
 #include "ui/ThreadEventTypes.hpp"

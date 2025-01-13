@@ -21,7 +21,7 @@
 
 
 #include "ver.hpp"
-
+#include "helpers/formatbytes.hpp"
 #include "EventQueue.h"
 #include "extprocess/config.hpp"
 #include "helpers/sslUtils.hpp"

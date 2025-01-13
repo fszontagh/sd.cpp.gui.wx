@@ -106,13 +106,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             if (server->IsEnabled() == false) {
                 continue;
             }
-
-            auto id = this->m_server->Append(server->GetName());
-            this->m_server->SetClientData(id, (void*)server);
             server->StartServer();
         }
-        this->m_server->SetSelection(0);
-        this->m_server->Show();
     }
 
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
@@ -1566,7 +1561,8 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
                 return;
             }
         }
-        this->m_model->Append(modelInfo->name, modelInfo);
+        auto last_id = this->m_model->Append(modelInfo->name);
+        this->m_model->SetClientData(last_id, modelInfo);
     }
 }
 
@@ -3558,13 +3554,30 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Connected to server: %s"), server->GetName()));
         // add to the server selector if not exists
-        for (size_t i = 0; i < this->m_server->GetCount(); i++) {
+        bool found = false;
+        for (size_t i = 1; i < this->m_server->GetCount(); i++) {
             auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
-            if (_srv && _srv == server) {
-                return;
+            if (_srv) {
+                if (_srv->IsConnected() == false) {
+                    this->m_server->Delete(i);
+                }
+                if (_srv == server) {
+                    found = true;
+                }
             }
         }
-        this->m_server->Append(server->GetName(), server);
+        if (found == false && server->IsConnected()) {
+            auto added_id = this->m_server->Append(server->GetName());
+            this->m_server->SetClientData(added_id, server);
+        }
+        if (this->m_server->GetCount() > 1) {
+            this->m_server->Show();
+            this->m_server->GetParent()->Layout();
+        } else {
+            this->m_server->Show(false);
+            this->m_server->GetParent()->Layout();
+        }
+        this->m_server->SetSelection(0);
 
         return;
     }
@@ -3574,13 +3587,21 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->treeListManager->DeleteByServerId(server->GetId());
         this->ModelManager->UnloadModelsByServer(server);
         // remove from m_server too
-        for (size_t i = 0; i < this->m_server->GetCount(); i++) {
+        for (size_t i = 1; i < this->m_server->GetCount(); i++) {
             auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
             if (_srv && _srv == server) {
                 this->m_server->Delete(i);
                 break;
             }
         }
+        if (this->m_server->GetCount() > 1) {
+            this->m_server->Show();
+            this->m_server->GetParent()->Layout();
+        } else {
+            this->m_server->Show(false);
+            this->m_server->GetParent()->Layout();
+        }
+        this->m_server->SetSelection(0);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
@@ -3608,7 +3629,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             return;
         }
 
-        this->writeLog(wxString::Format(_("Server auth response: %s - %s"), server->GetName(), content));
+        this->writeLog(wxString::Format(_("Server auth response: %s - %s, requesting model list"), server->GetName(), content));
         server->RequestModelList();
         return;
     }
@@ -3728,8 +3749,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         size_t _x            = modelinfo->hash_progress_size;
         size_t _m            = modelinfo->hash_fullsize;
         int current_progress = 0;
-        auto _hr1            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
-        auto _hr2            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
+        auto _hr1            = sd_gui_utils::formatbytes(_x);
+        auto _hr2            = sd_gui_utils::formatbytes(_m);
 
         if (_m != 0) {
             current_progress = static_cast<int>((_x * 100) / _m);
@@ -3767,8 +3788,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         size_t _x            = myjob->hash_progress_size;
         size_t _m            = myjob->hash_fullsize;
         int current_progress = 0;
-        auto _hr1            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_x));
-        auto _hr2            = sd_gui_utils::humanReadableFileSize(static_cast<double>(_m));
+        auto _hr1            = sd_gui_utils::formatbytes(_x);
+        auto _hr2            = sd_gui_utils::formatbytes(_m);
 
         if (_m != 0) {
             current_progress = static_cast<int>((_x * 100) / _m);
@@ -3863,12 +3884,15 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
 
     if (token == "DOWNLOAD_FINISH") {
         auto payload = e.GetPayload<CivitAi::DownloadItem*>();
+        if (!payload)  {
+            return;
+        }
 
-        wxString name = wxFileName(payload->local_file).GetFullName();
+        wxString name     = wxFileName(payload->local_file).GetAbsolutePath();
+        wxString basepath = this->mapp->cfg->getPathByDirType(payload->dirType);
 
-        // reload everything
-        wxCommandEvent fakeEvenet;
-        this->onModelsRefresh(fakeEvenet);
+        auto newinfo = this->ModelManager->addModel(name, payload->dirType, basepath);
+        this->treeListManager->AddItem(newinfo, true);
 
         auto title   = _("Model download finished");
         auto message = wxString::Format(_("The model download is finished: %s"), name);
@@ -4527,7 +4551,7 @@ void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
     if (info == nullptr) {
         return;
     }
-    for (unsigned int _z = 0; _z < this->m_model->GetCount(); _z++) {
+    for (unsigned int _z = 1; _z < this->m_model->GetCount(); _z++) {
         sd_gui_utils::ModelFileInfo* m = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(this->m_model->GetClientData(_z));
         if (m == nullptr) {
             continue;

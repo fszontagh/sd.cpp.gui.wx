@@ -43,7 +43,9 @@ namespace ModelInfo {
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
                 if (it->second->model_type == type) {
-                    delete it->second;
+                    if (it->second) {
+                        delete it->second;
+                    }
                     it->second = nullptr;
                     it         = this->ModelInfos.erase(it);
                 } else {

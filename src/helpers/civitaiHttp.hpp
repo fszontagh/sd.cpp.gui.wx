@@ -74,6 +74,7 @@ namespace CivitAi {
         std::ofstream* file;
         CivitAi::DownloadItemState state;
         CivitAi::ModelTypes type;
+        sd_gui_utils::DirTypes dirType;
     };
 }  // namespace CivitAi
 

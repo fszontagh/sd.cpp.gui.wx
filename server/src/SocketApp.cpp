@@ -32,7 +32,9 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
     } else {
         this->parent->sendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
     }
-    this->parent->sendLogEvent("Sent to client id: " + std::to_string(idx) + " sent size: " + std::to_string(len), wxLOG_Debug);
+    auto fsize          = sd_gui_utils::formatbytes(len);
+    wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s",idx, fsize.first, fsize.second);
+    this->parent->sendLogEvent(logmsg, wxLOG_Debug);
 }
 void SocketApp::sendMsg(int idx, const sd_gui_utils::networks::Packet& packet) {
     auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
@@ -106,8 +108,8 @@ void SocketApp::OnTimer() {
         } else {
             if (it->second.last_keepalive == 0 || (wxGetLocalTime() - it->second.last_keepalive) > this->parent->configData->tcp_keepalive) {
                 it->second.last_keepalive = wxGetLocalTime();
-                auto keepAlivePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
-                //keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
+                auto keepAlivePacket      = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
+                // keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
                 this->sendMsg(it->second.idx, keepAlivePacket);
                 this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port), wxLOG_Debug);
             }
@@ -134,13 +136,13 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
         if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
             if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_AUTH) {
                 {
-                    //std::lock_guard<std::mutex> guard(m_mutex);
+                    // std::lock_guard<std::mutex> guard(m_mutex);
                     std::string packetData = packet.GetData<std::string>();
                     this->parent->sendLogEvent("Got auth key: \n" + packetData + " our key: \n" + this->parent->configData->authkey, wxLOG_Debug);
 
                     if (this->parent->configData->authkey.compare(packetData) == 0) {
                         this->m_clientInfo[packet.source_idx].apikey = packetData;
-                        auto responsePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
+                        auto responsePacket                          = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
                         responsePacket.SetData("Authentication done");
                         this->sendMsg(packet.source_idx, responsePacket);
                         this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
