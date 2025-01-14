@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
                 }
                 try {
                     nlohmann::json j = nlohmann::json::parse(message);
-                    auto item        = j.get<QM::QueueItem>();
+                    auto item        = j.get<QueueItem>();
                     if (item.id != lastId) {
                         sharedMemory->clear();
                         std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;

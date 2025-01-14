@@ -3,6 +3,7 @@
 
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
+#include "libs/SnowFlakeIdGenerarot.hpp"
 
 wxDECLARE_APP(TerminalApp);
 
@@ -12,7 +13,7 @@ public:
     virtual int OnRun() override;
     virtual int OnExit() override;
     virtual bool IsGUI() const override { return false; }
-    void ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet);
+    void ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& packet);
     inline void sendLogEvent(const wxString& message, const wxLogLevel level = wxLOG_Info) {
         eventQueue.Push([message, level]() {
             switch (level) {
@@ -46,7 +47,7 @@ public:
             file.close();
         });
     }
-    inline void sendOnTimerEvent(const SocketApp::clientInfo &client) {
+    inline void sendOnTimerEvent(const SocketApp::clientInfo& client) {
         if (client.client_id == 0) {
             return;
         }
@@ -111,6 +112,8 @@ private:
     std::atomic<wxULongLong> hashingProcessed{0};
 
     EventQueue eventQueue;
+    std::shared_ptr<SimpleQueueManager> queueManager = nullptr;
+    std::shared_ptr<sd_gui_utils::SnowflakeIDGenerator> snowflakeGenerator = nullptr;
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;

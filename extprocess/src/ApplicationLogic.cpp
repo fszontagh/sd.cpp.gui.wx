@@ -128,13 +128,13 @@ bool ApplicationLogic::loadLibrary() {
     }
 }
 
-void ApplicationLogic::processMessage(QM::QueueItem& item) {
+void ApplicationLogic::processMessage(QueueItem& item) {
     if (item.id == 0) {
         std::cerr << "[EXTPROCESS] Invalid item id: " << item.id << std::endl;
         return;
     }
 
-    this->currentItem             = std::make_shared<QM::QueueItem>(item);
+    this->currentItem             = std::make_shared<QueueItem>(item);
     this->currentItem->started_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     std::cout << "[EXTPROCESS] Processing item: " << this->currentItem->id << std::endl;

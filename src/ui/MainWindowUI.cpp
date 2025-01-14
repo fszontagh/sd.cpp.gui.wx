@@ -994,6 +994,7 @@ void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
     sd_gui_utils::ModelFileInfo* modelinfo = nullptr;
+    wxArrayString errorlist;
 
     this->CheckQueueButton();
 
@@ -1031,7 +1032,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             wxLogError(_("No upscaler model found!"));
             return;
         }
-        std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
+        std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>();
         item->model                         = this->m_upscaler_model->GetStringSelection().utf8_string();
         item->mode                          = type;
         item->params.esrgan_path            = esrganModel->path;
@@ -1045,22 +1046,36 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.schedule = static_cast<schedule_t>(sClientData->getId());
 
         // if (this->mapp->cfg->save_all_image) {
-        item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+        item->images.emplace_back(QueueItemImage({item->initial_image, sd_gui_utils::networks::ImageType::INITIAL}));
         //}
         if (this->m_server->GetSelection() > 0) {
             int id = this->m_server->GetSelection();
             if (id != wxNOT_FOUND) {
                 auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
                 if (server != nullptr) {
-                    item->server = server->GetId();
+                    if (server->IsConnected() == true) {
+                        item->server = server->GetId();
+                    } else {
+                        errorlist.Add(wxString::Format(_("The selected server (%s) not connected"), server->GetName()));
+                    }
                 }
             }
+        }
+        if (errorlist.size() > 0) {
+            wxString error_strs;
+            for (const auto str : errorlist) {
+                error_strs.Append(wxGetTranslation(str));
+                error_strs.Append("\n");
+            }
+            wxMessageDialog dialog(this, error_strs, _("Error"), wxOK | wxICON_ERROR);
+            dialog.ShowModal();
+            return;
         }
         this->qmanager->AddItem(item);
         return;
     }
 
-    std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
+    std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>();
 
     item->params.wtype         = static_cast<sd_type_t>(wClientData->getId());
     item->params.schedule      = static_cast<schedule_t>(sClientData->getId());
@@ -1071,7 +1086,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (id != wxNOT_FOUND) {
             auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
             if (server != nullptr) {
-                item->server = server->GetId();
+                if (server->IsConnected()) {
+                    item->server = server->GetId();
+                } else {
+                    errorlist.Add(wxString::Format(_("The selected server (%s) not connected"), server->GetName()));
+                }
             }
         }
     }
@@ -1080,11 +1099,24 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     if (diffusionModel.empty() == false) {
         item->params.diffusion_model_path = diffusionModel;
+        item->model                       = wxFileName(item->params.diffusion_model_path).GetFullName();
     } else {
-        auto mindex             = this->m_model->GetCurrentSelection();
-        auto data               = this->m_model->GetClientData(mindex);
-        modelinfo               = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(data);
-        item->params.model_path = modelinfo->path;
+        auto mindex = this->m_model->GetCurrentSelection();
+        auto data   = this->m_model->GetClientData(mindex);
+        modelinfo   = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(data);
+        if (modelinfo == nullptr) {
+            errorlist.Add(_("No model found!"));
+        } else {
+            item->model = modelinfo->name;
+            if (item->server.empty()) {
+                item->params.model_path = modelinfo->path;
+
+            } else {
+                if (modelinfo->server_id != item->server) {
+                    errorlist.Add(_("The selected model not available on the selected server!"));
+                }
+            }
+        }
     }
 
     if (this->m_taesd->GetCurrentSelection() > 0) {
@@ -1093,7 +1125,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             wxLogError(_("No taesd model found!"));
             return;
         }
-        item->params.taesd_path = taesdModel->path;
+        if (item->server.empty() == false && taesdModel->server_id != item->server) {
+            errorlist.Add(_("The selected taesd model not available on the selected server!"));
+        } else {
+            item->params.taesd_path = taesdModel->path;
+        }
     } else {
         item->params.taesd_path = "";
     }
@@ -1103,12 +1139,14 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             wxLogError(_("No vae model found!"));
             return;
         }
-        item->params.vae_path = vaeModel->path;
+        if (item->server.empty() == false && vaeModel->server_id != item->server) {
+            errorlist.Add(_("The selected vae model not available on the selected server!"));
+        } else {
+            item->params.vae_path = vaeModel->path;
+        }
     } else {
         item->params.vae_path = "";
     }
-
-    item->model = this->m_model->GetStringSelection().utf8_string();
 
     if (type == SDMode::TXT2IMG || type == SDMode::IMG2IMG) {
         if (diffusionModel.empty() == false) {
@@ -1161,10 +1199,12 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             item->params.t5xxl_path = t5xxlPath.utf8_string();
         }
     }
+    if (item->server.empty()) {
+        item->params.lora_model_dir  = this->mapp->cfg->lora;
+        item->params.embeddings_path = this->mapp->cfg->embedding;
+        item->params.n_threads       = this->mapp->cfg->n_threads;
+    }
 
-    item->params.lora_model_dir     = this->mapp->cfg->lora;
-    item->params.embeddings_path    = this->mapp->cfg->embedding;
-    item->params.n_threads          = this->mapp->cfg->n_threads;
     item->keep_checkpoint_in_memory = this->m_keep_other_models_in_memory->GetValue();
     item->keep_upscaler_in_memory   = this->m_keep_upscaler_in_memory->GetValue();
 
@@ -1227,11 +1267,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             auto maskImage = this->inpaintHelper->GetMaskImage();
             if (this->inpaintHelper->inPaintCanvasEmpty() == false) {
                 maskImage.SaveFile(maskImagename.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                QM::QueueItemImageType _type = QM::QueueItemImageType::MASK_INPAINT | QM::QueueItemImageType::TMP | QM::QueueItemImageType::MASK;
+                sd_gui_utils::networks::ImageType _type = sd_gui_utils::networks::ImageType::MASK_INPAINT | sd_gui_utils::networks::ImageType::TMP | sd_gui_utils::networks::ImageType::MASK;
                 if (this->inpaintHelper->isOutPainted() == false) {
-                    _type |= QM::QueueItemImageType::MASK_USED;
+                    _type |= sd_gui_utils::networks::ImageType::MASK_USED;
                 }
-                item->images.emplace_back(QM::QueueItemImage({maskImagename.GetAbsolutePath(), _type}));
+                item->images.emplace_back(QueueItemImage({maskImagename.GetAbsolutePath(), _type}));
                 item->mask_image = maskImagename.GetAbsolutePath();
             }
             if (this->inpaintHelper->isOutPainted()) {
@@ -1248,13 +1288,13 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 outPaintedMaskImage.SaveFile(outpaintMaskImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
 
                 originalImage.SaveFile(originalImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                item->images.emplace_back(QM::QueueItemImage({initialImageName.GetAbsolutePath(), QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
-                item->images.emplace_back(QM::QueueItemImage({originalImageName.GetAbsolutePath(), QM::QueueItemImageType::ORIGINAL | QM::QueueItemImageType::TMP}));
-                item->images.emplace_back(QM::QueueItemImage({outpaintMaskImageName.GetAbsolutePath(), QM::QueueItemImageType::MASK_OUTPAINT | QM::QueueItemImageType::MASK | QM::QueueItemImageType::MASK_USED | QM::QueueItemImageType::TMP}));
+                item->images.emplace_back(QueueItemImage({initialImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::TMP}));
+                item->images.emplace_back(QueueItemImage({originalImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::ORIGINAL | sd_gui_utils::networks::ImageType::TMP}));
+                item->images.emplace_back(QueueItemImage({outpaintMaskImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::MASK_OUTPAINT | sd_gui_utils::networks::ImageType::MASK | sd_gui_utils::networks::ImageType::MASK_USED | sd_gui_utils::networks::ImageType::TMP}));
                 item->mask_image = outpaintMaskImageName.GetAbsolutePath();
             } else {
                 originalImage.SaveFile(initialImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                item->images.emplace_back(QM::QueueItemImage({initialImageName.GetAbsolutePath(), QM::QueueItemImageType::INITIAL | QM::QueueItemImageType::TMP}));
+                item->images.emplace_back(QueueItemImage({initialImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::TMP}));
             }
             item->initial_image = initialImageName.GetAbsolutePath();
         }
@@ -1282,10 +1322,14 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 wxLogError(_("No controlnet model found!"));
                 return;
             }
-            item->params.controlnet_path = controlnetModel->path;
-            // do not set the control image if we have no model
-            if (this->m_controlnetImageOpen->GetPath().length() > 0) {
-                item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
+            if (item->server.empty() == false && controlnetModel->server_id != item->server) {
+                errorlist.Add(_("The selected controlnet model not available on the selected server!"));
+            } else {
+                item->params.controlnet_path = controlnetModel->path;
+
+                if (this->m_controlnetImageOpen->GetPath().length() > 0) {
+                    item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
+                }
             }
         }
     } else {
@@ -1305,7 +1349,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists() && item->initial_image.empty()) {
             item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
             // if (this->mapp->cfg->save_all_image) {
-            item->images.emplace_back(QM::QueueItemImage({item->initial_image, QM::QueueItemImageType::INITIAL}));
+            item->images.emplace_back(QueueItemImage({item->initial_image, sd_gui_utils::networks::ImageType::INITIAL}));
             //}
         }
     }
@@ -1314,12 +1358,28 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.seed = sd_gui_utils::generateRandomInt(100000000, this->m_seed->GetMax());
         this->m_seed->SetValue(item->params.seed);
     }
-
-    if (modelinfo != nullptr && modelinfo->sha256.empty() && this->mapp->cfg->auto_gen_hash) {
-        item->hash_fullsize = modelinfo->size;
-        item->need_sha256   = true;
+    if (item->server.empty()) {
+        if (modelinfo != nullptr && modelinfo->sha256.empty() && this->mapp->cfg->auto_gen_hash) {
+            item->hash_fullsize = modelinfo->size;
+            item->need_sha256   = true;
+        }
     }
-    this->qmanager->AddItem(item);
+    if (errorlist.empty()) {
+        this->qmanager->AddItem(item);
+    } else {
+        if (errorlist.size() > 0) {
+            wxString error_strs;
+            for (const auto str : errorlist) {
+                error_strs.Append(wxGetTranslation(str));
+                error_strs.Append("\n");
+            }
+            wxMessageDialog dialog(this, error_strs, _("Error"), wxOK | wxICON_ERROR);
+            dialog.ShowModal();
+            return;
+        }
+
+        return;
+    }
 
     this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
@@ -1561,8 +1621,7 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
                 return;
             }
         }
-        auto last_id = this->m_model->Append(modelInfo->name);
-        this->m_model->SetClientData(last_id, modelInfo);
+        this->ChangeModelByInfo(modelInfo);
     }
 }
 
@@ -1773,7 +1832,7 @@ void MainWindowUI::onDeletePreset(wxCommandEvent& event) {
  *
  * @note This function will also set the TAESD, VAE, and ControlNet models if they are not empty.
  */
-void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
+void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
     if (item.id == 0) {
         return;
     }
@@ -1822,10 +1881,10 @@ void MainWindowUI::ChangeGuiFromQueueItem(QM::QueueItem item) {
             if (wxFileExists(wxString::FromUTF8Unchecked(img.pathname)) == false) {
                 continue;
             }
-            if (img.type == QM::QueueItemImageType::INITIAL) {
+            if (img.type == sd_gui_utils::networks::ImageType::INITIAL) {
                 // TODO send image to img2img
             }
-            if (img.type == QM::QueueItemImageType::MASK) {
+            if (img.type == sd_gui_utils::networks::ImageType::MASK) {
                 // load mask from file
             }
         }
@@ -2140,7 +2199,7 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     this->m_modelDetailsImageList->SetScrollbar(wxVERTICAL, 0, 0, 0);
 }
 
-void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> item) {
+void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QueueItem> item) {
     wxVector<wxVariant> data;
 
     auto created_at = sd_gui_utils::formatUnixTimestampToDate(item->created_at);
@@ -2186,7 +2245,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
     this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
 }
 
-void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> item) {
+void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QueueItem> item) {
     // update column
     auto store             = this->m_joblist->GetStore();
     wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
@@ -2205,7 +2264,7 @@ void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> 
     for (unsigned int i = 0; i < store->GetItemCount(); i++) {
         auto currentItem                     = store->GetItem(i);
         int id                               = store->GetItemData(currentItem);
-        std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
             store->SetValueByRow(static_cast<int>(current_progress), i, (int)queueJobRows::PROGRESS);
             store->SetValueByRow(speed, i, (int)queueJobRows::SPEED);
@@ -2519,7 +2578,7 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
             return;
         }
         int id                               = store->GetItemData(currentItem);
-        std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
 
         /*
                 1 Copy and queue
@@ -2605,7 +2664,7 @@ void MainWindowUI::loadTaesdList() {
     this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
-wxString MainWindowUI::paramsToImageComment(const QM::QueueItem& myItem) {
+wxString MainWindowUI::paramsToImageComment(const QueueItem& myItem) {
     // TODO: copy original image's exif...
     if (myItem.mode == SDMode::UPSCALE) {
         return "";
@@ -2683,7 +2742,7 @@ wxString MainWindowUI::paramsToImageComment(const QM::QueueItem& myItem) {
 
     return comment;
 }
-std::string MainWindowUI::paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
+std::string MainWindowUI::paramsToImageCommentJson(QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo) {
     auto modelPath = std::filesystem::path(modelInfo.path);
     auto modelName = modelPath.filename().replace_extension().string();
     auto sha256    = modelInfo.sha256.substr(0, 10);
@@ -3268,7 +3327,7 @@ void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
     }
 }
 
-void MainWindowUI::StartGeneration(std::shared_ptr<QM::QueueItem> myJob) {
+void MainWindowUI::StartGeneration(std::shared_ptr<QueueItem> myJob) {
     if (this->disableExternalProcessHandling == false) {
         if (subprocess_alive(this->subprocess) == 0) {
             wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
@@ -3360,13 +3419,13 @@ void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::strin
     }
 }
 
-void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::QueueItem> item) {
+void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QueueItem> item) {
     auto store = this->m_joblist->GetStore();
 
     for (unsigned int i = 0; i < store->GetItemCount(); i++) {
         auto currentItem                     = store->GetItem(i);
         int id                               = store->GetItemData(currentItem);
-        std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
         if (qitem->id == item->id) {
             store->SetValueByRow(wxVariant(wxGetTranslation(QueueStatus_GUI_str.at(item->status))), i, (int)queueJobRows::STATUS);
             store->RowValueChanged(i, (int)queueJobRows::STATUS);
@@ -3400,7 +3459,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         // only numbers here...
         QueueEvents event = (QueueEvents)std::stoi(content);
 
-        std::shared_ptr<QM::QueueItem> item = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        std::shared_ptr<QueueItem> item = e.GetPayload<std::shared_ptr<QueueItem>>();
 
         if (QueueEvents::ITEM_ADDED != event) {
             this->qmanager->UpdateItem(*item);
@@ -3422,8 +3481,14 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             } break;
                 // new item added
             case QueueEvents::ITEM_ADDED: {
-                this->UpdateJobInfoDetailsFromJobQueueList(item);
-                this->OnQueueItemManagerItemAdded(item);
+                if (item->server.empty()) {
+                    this->UpdateJobInfoDetailsFromJobQueueList(item);
+                    this->OnQueueItemManagerItemAdded(item);
+                } else {
+                    auto srv = this->mapp->cfg->GetTcpServer(item->server);
+                    srv->SendQueueJob(item->convertToNetwork());
+                    this->writeLog(wxString::Format(_("Job added to %s"), srv->GetName()), true);
+                }
             } break;
                 // item status changed
             case QueueEvents::ITEM_STATUS_CHANGED: {
@@ -3655,6 +3720,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->mapp->cfg->ServerChangeName(server->GetInternalId(), packet.server_name);  // TODO: implement server info packet to update these
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
+            std::vector<sd_gui_utils::ModelFileInfo*> addedNewModels;
             for (const auto& item : list) {
                 if (item.path.empty() || item.name.empty()) {
                     continue;
@@ -3664,6 +3730,17 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                     continue;
                 }
                 this->treeListManager->AddItem(newItem, server);
+                addedNewModels.emplace_back(newItem);
+            }
+            for (const auto& item : addedNewModels) {
+                wxString name = wxString::Format("%s: %s", server->GetName(), item->name);
+                if (this->mapp->cfg->favorite_models_only) {
+                    if (sd_gui_utils::HasTag(item->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
+                        this->m_model->Append(name, item);
+                    }
+                    continue;
+                }
+                this->m_model->Append(name, item);
             }
             this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
         } catch (std::exception& e) {
@@ -3784,7 +3861,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
-        std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        std::shared_ptr<QueueItem> myjob = e.GetPayload<std::shared_ptr<QueueItem>>();
 
         auto modelinfo = this->ModelManager->getIntoPtr(myjob->params.model_path);
         if (modelinfo != nullptr) {
@@ -3808,7 +3885,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem                     = store->GetItem(i);
             int id                               = store->GetItemData(currentItem);
-            std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+            std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
                 store->SetValueByRow(current_progress, i, (int)queueJobRows::PROGRESS);
                 store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
@@ -3820,7 +3897,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_DONE) {
-        std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        std::shared_ptr<QueueItem> myjob = e.GetPayload<std::shared_ptr<QueueItem>>();
 
         auto modelinfo = this->ModelManager->getIntoPtr(myjob->params.model_path);
         if (modelinfo != nullptr) {
@@ -3836,7 +3913,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem                     = store->GetItem(i);
             int id                               = store->GetItemData(currentItem);
-            std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+            std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
                 store->SetValueByRow(0, i, (int)queueJobRows::PROGRESS);
                 store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
@@ -3849,7 +3926,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::GENERATION_PROGRESS) {
-        std::shared_ptr<QM::QueueItem> myjob = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        std::shared_ptr<QueueItem> myjob = e.GetPayload<std::shared_ptr<QueueItem>>();
 
         // update column
         auto store      = this->m_joblist->GetStore();
@@ -3859,7 +3936,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         for (unsigned int i = 0; i < store->GetItemCount(); i++) {
             auto currentItem                     = store->GetItem(i);
             int id                               = store->GetItemData(currentItem);
-            std::shared_ptr<QM::QueueItem> qitem = this->qmanager->GetItemPtr(id);
+            std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
                 store->SetValueByRow(qitem->GetActualProgress(), i, progressCol);
                 store->SetValueByRow(qitem->GetActualSpeed(), i, speedCol);
@@ -3919,7 +3996,7 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
     }
 }
 
-void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::QueueItem> item) {
+void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item) {
     if (item == nullptr) {
         this->m_joblist_item_details->DeleteAllItems();
         if (this->previewImageList != nullptr && this->previewImageList->RemoveAll()) {
@@ -3944,7 +4021,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     }
     auto current_item                         = store->GetItem(row);
     int id                                    = store->GetItemData(current_item);
-    std::shared_ptr<QM::QueueItem> store_item = this->qmanager->GetItemPtr(id);
+    std::shared_ptr<QueueItem> store_item = this->qmanager->GetItemPtr(id);
     if (store_item != item) {
         return;
     }
@@ -4277,7 +4354,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                 // menu->Enable(99,false);
                 menu->Append(6, _("Open image"));
                 menu->Append(7, _("Open parent folder"));
-                if (QM::hasType(img.type, QM::QueueItemImageType::GENERATED)) {
+                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
                     menu->AppendSeparator();
                     menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img.id));
                     menu->Append(1, _("Copy prompts to text2img"));
@@ -4285,16 +4362,16 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
                     menu->Append(3, _("Send the image to img2img"));
                     menu->Append(5, _("Upscale"));
                 }
-                if (QM::hasType(img.type, QM::QueueItemImageType::CONTROLNET)) {
+                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
                     menu->AppendSeparator();
                     menu->Append(8, _("Send image to the controlnet image"));
                 }
 
-                if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL) ||
-                    QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
+                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL) ||
+                    sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
                     menu->Append(3, _("Send the image to img2img"));
                 }
-                if (QM::hasType(img.type, QM::QueueItemImageType::MASK)) {
+                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK)) {
                     menu->AppendSeparator();
                     menu->Append(9, _("Send image to img2img mask"));
                 }
@@ -4353,7 +4430,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     this->m_scrolledWindow41->FitInside();
 }
 
-std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler) {
+std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> itemPtr, wxEvtHandler* eventHandler) {
     wxString extension = ".jpg";
     auto imgHandler    = wxBITMAP_TYPE_JPEG;
     if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
@@ -4397,7 +4474,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
             return itemPtr;
         }
         // add the generated image to the job
-        itemPtr->images.emplace_back(QM::QueueItemImage(fullName, QM::QueueItemImageType::GENERATED));
+        itemPtr->images.emplace_back(QueueItemImage(fullName, sd_gui_utils::networks::ImageType::GENERATED));
     }
 
     // handle other images too
@@ -4407,23 +4484,23 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
         wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(baseFullName, "control");
         wxImage _ctrlimg(itemPtr->params.control_image_path);
         _ctrlimg.SaveFile(ctrlFilename);
-        itemPtr->images.emplace_back(QM::QueueItemImage({ctrlFilename, QM::QueueItemImageType::CONTROLNET}));
+        itemPtr->images.emplace_back(QueueItemImage({ctrlFilename, sd_gui_utils::networks::ImageType::CONTROLNET}));
     }
 
     // handle other images, this images come from the img2img or upscale
     for (auto& img : itemPtr->images) {
-        if (QM::hasType(img.type, QM::QueueItemImageType::TMP)) {
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::TMP)) {
             wxString nameSuffix = "";
-            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_INPAINT)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_INPAINT)) {
                 nameSuffix = "_inpaint_mask";
             }
-            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_OUTPAINT)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_OUTPAINT)) {
                 nameSuffix = "_outpaint_mask";
             }
-            if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
                 nameSuffix = "_initial";
             }
-            if (QM::hasType(img.type, QM::QueueItemImageType::ORIGINAL)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
                 nameSuffix = "_original";
             }
             if (nameSuffix.empty()) {
@@ -4437,10 +4514,10 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
             wxRenameFile(img.pathname, newImage.GetAbsolutePath());
             img.pathname = newImage.GetAbsolutePath();
             // update the item's paths too
-            if (QM::hasType(img.type, QM::QueueItemImageType::MASK_USED)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
                 itemPtr->mask_image = newImage.GetAbsolutePath();
             }
-            if (QM::hasType(img.type, QM::QueueItemImageType::INITIAL)) {
+            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
                 itemPtr->initial_image = newImage.GetAbsolutePath();
             }
         }
@@ -4449,7 +4526,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
 
     // iterate over agan, save meta data
     for (auto& img : itemPtr->images) {
-        if (QM::hasType(img.type, QM::QueueItemImageType::GENERATED)) {
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             //
             if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
                 std::string comment = this->paramsToImageComment(*itemPtr).utf8_string();
@@ -4496,7 +4573,7 @@ std::shared_ptr<QM::QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QM::
 void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer) {
     sd_gui_utils::VoidHolder* holder       = static_cast<sd_gui_utils::VoidHolder*>(custom_pointer);
     wxEvtHandler* eventHandler             = (wxEvtHandler*)holder->p1;
-    std::shared_ptr<QM::QueueItem> myItem  = std::shared_ptr<QM::QueueItem>(static_cast<QM::QueueItem*>(holder->p2));
+    std::shared_ptr<QueueItem> myItem  = std::shared_ptr<QueueItem>(static_cast<QueueItem*>(holder->p2));
     sd_gui_utils::ModelFileInfo* modelinfo = (sd_gui_utils::ModelFileInfo*)holder->p3;
     modelinfo->hash_progress_size          = readed_size;
     modelinfo->hash_fullsize               = myItem->hash_fullsize;
@@ -4572,7 +4649,14 @@ void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
         }
     }
     if (this->mapp->cfg->favorite_models_only == true) {
-        this->m_model->Append(info->name, info);
+        wxString name = info->name;
+        if (info->server_id.empty() == false) {
+            auto srv = this->mapp->cfg->GetTcpServer(info->server_id);
+            if (srv != nullptr) {
+                name.Prepend(srv->GetName() + ": ");
+            }
+        }
+        this->m_model->Append(name, info);
         this->m_model->SetSelection(this->m_model->GetCount() - 1);
     }
 }
@@ -4754,7 +4838,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
     modelOut.SetName(modelOut.GetName() + "_" + newType);
     this->writeLog(wxString::Format(_("Converting model %s to %s"), modelIn.GetFullName(), modelOut.GetFullName()));
 
-    std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>();
+    std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>();
     item->model                         = modelInfo->name;
     item->mode                          = SDMode::CONVERT;
     item->params.mode                   = SDMode::CONVERT;
@@ -4819,7 +4903,7 @@ void MainWindowUI::onWhatIsThis(wxCommandEvent& event) {
 bool MainWindowUI::ProcessEventHandler(std::string message) {
     try {
         nlohmann::json msg = nlohmann::json::parse(message);
-        QM::QueueItem item = msg.get<QM::QueueItem>();
+        QueueItem item = msg.get<QueueItem>();
 
         auto itemPtr = this->qmanager->GetItemPtr(item.id);
 
@@ -5070,7 +5154,7 @@ void MainWindowUI::writeLog(const wxString& msg, bool writeIntoGui, bool debug) 
 void MainWindowUI::writeLog(const std::string& message) {
     this->writeLog(wxString::FromUTF8Unchecked(message));
 }
-void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QueueEvents& event) {
+void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QueueItem> item, const QueueEvents& event) {
     this->m_currentStatus->SetLabel(wxString::Format(_("Current job: %s %s"), modes_str[item->mode], wxGetTranslation(QueueStatus_GUI_str.at(item->status))));
 
     if (event == QueueEvents::ITEM_STATUS_CHANGED) {

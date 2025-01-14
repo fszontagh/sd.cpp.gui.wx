@@ -66,7 +66,7 @@ public:
     }
     inline const auto getCurrentItem() { return this->currentItem; }
 
-    void processMessage(QM::QueueItem& item);
+    void processMessage(QueueItem& item);
 
 private:
     SharedLibrary sd_dll;
@@ -74,8 +74,8 @@ private:
     std::string error;
     sd_ctx_t* sd_ctx                                           = NULL;
     upscaler_ctx_t* upscale_ctx                                = nullptr;
-    std::shared_ptr<QM::QueueItem> currentItem                 = nullptr;  //< shared pointer to current item>
-    std::shared_ptr<QM::QueueItem> lastItem                    = nullptr;  //< shared pointer to last item>
+    std::shared_ptr<QueueItem> currentItem                 = nullptr;  //< shared pointer to current item>
+    std::shared_ptr<QueueItem> lastItem                    = nullptr;  //< shared pointer to last item>
     FreeSdCtxFunction freeSdCtxPtr                             = nullptr;
     Txt2ImgFunction txt2imgFuncPtr                             = nullptr;
     Img2ImgFunction img2imgFuncPtr                             = nullptr;

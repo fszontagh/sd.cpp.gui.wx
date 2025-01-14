@@ -39,6 +39,8 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
+        sd_gui_utils::ModelFileInfo* findLocalModelOnRemote(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
+        sd_gui_utils::ModelFileInfo* findRemoteModelOnLocal(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
         inline void resetModels(sd_gui_utils::DirTypes type) {
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {

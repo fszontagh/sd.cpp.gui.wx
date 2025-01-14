@@ -209,15 +209,15 @@ private:
     void ShowNotification(const wxString& title, const wxString& message);
     void ChangeModelByName(wxString ModelName);
     void ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info);
-    void ChangeGuiFromQueueItem(const QM::QueueItem item);
+    void ChangeGuiFromQueueItem(const QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
-    void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::QueueItem> item);
+    void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
     void ProcessOutputThread();
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
-    void UpdateCurrentProgress(std::shared_ptr<QM::QueueItem> item, const QueueEvents& event);
+    void UpdateCurrentProgress(std::shared_ptr<QueueItem> item, const QueueEvents& event);
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
@@ -295,11 +295,11 @@ private:
     static void ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
     static void ModelStandaloneHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer);
 
-    // std::shared_ptr<QM::QueueItem> handleSdImage(std::string result, std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
-    std::shared_ptr<QM::QueueItem> handleSdImages(std::shared_ptr<QM::QueueItem> itemPtr, wxEvtHandler* eventHandler);
+    // std::shared_ptr<QueueItem> handleSdImage(std::string result, std::shared_ptr<QueueItem> itemPtr, wxEvtHandler* eventHandler);
+    std::shared_ptr<QueueItem> handleSdImages(std::shared_ptr<QueueItem> itemPtr, wxEvtHandler* eventHandler);
 
-    wxString paramsToImageComment(const QM::QueueItem& myItem);
-    std::string paramsToImageCommentJson(QM::QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
+    wxString paramsToImageComment(const QueueItem& myItem);
+    std::string paramsToImageCommentJson(QueueItem myItem, sd_gui_utils::ModelFileInfo modelInfo);
     void imageCommentToGuiParams(std::unordered_map<wxString, wxString> params, SDMode mode);
     void onimg2ImgImageOpen(const wxString& file, bool forceResolutions = false);
     void onimgInfoOpen(const wxString& file);
@@ -315,12 +315,12 @@ private:
     void PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo);
 
     // start a thread to generate image
-    void StartGeneration(std::shared_ptr<QM::QueueItem> myJob);
+    void StartGeneration(std::shared_ptr<QueueItem> myJob);
 
     // handle queue managers events, manipulate data table by events
-    void OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> item);
-    void OnQueueItemManagerItemUpdated(std::shared_ptr<QM::QueueItem> item);
-    void OnQueueItemManagerItemStatusChanged(std::shared_ptr<QM::QueueItem> item);
+    void OnQueueItemManagerItemAdded(std::shared_ptr<QueueItem> item);
+    void OnQueueItemManagerItemUpdated(std::shared_ptr<QueueItem> item);
+    void OnQueueItemManagerItemStatusChanged(std::shared_ptr<QueueItem> item);
 
     template <typename T>
     static void SendThreadEvent(wxEvtHandler* eventHandler, QueueEvents eventType, const T& payload, std::string text = "");
@@ -341,7 +341,7 @@ private:
     void writeLog(const wxString& msg, bool writeIntoGui = true, bool debug = false);
     void writeLog(const std::string& message);
 
-    inline static wxString formatFileName(const QM::QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
+    inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
         wxDateTime localTime = wxDateTime::Now();
 
         auto day     = localTime.Format(wxT("%d"));

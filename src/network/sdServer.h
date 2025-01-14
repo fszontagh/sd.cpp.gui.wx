@@ -74,6 +74,7 @@ namespace sd_gui_utils {
         }
 
     public:
+        bool IsConnected() const { return this->client->IsConnected(); }
         /// @brief Get the name of the server
         /// @details If the server name is empty, it returns the host and port concatenated with a colon, otherwise it returns the name given by the server.
         wxString GetName() const {
@@ -123,6 +124,15 @@ namespace sd_gui_utils {
             if (this->thread.joinable()) {
                 this->thread.join();
             }
+        }
+
+        void SendQueueJob(sd_gui_utils::RemoteQueueItem item) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD;
+            packet.client_id = this->client_id;
+            packet.SetData(item);
+            this->client->sendMsg(packet);
         }
 
         /// @brief Get the status of the server
@@ -239,14 +249,6 @@ namespace sd_gui_utils {
             this->client->sendMsg(packet);
         }
 
-        void GetModelList() {
-            std::lock_guard<std::mutex> lock(this->mutex);
-            auto modelListPacket      = sd_gui_utils::networks::Packet();
-            modelListPacket.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-            modelListPacket.param     = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
-            modelListPacket.client_id = this->GetClientId();
-            this->client->sendMsg(modelListPacket);
-        }
         bool IsConnected() {
             return this->client->IsConnected();
         }
@@ -319,7 +321,7 @@ namespace sd_gui_utils {
             std::this_thread::sleep_for(std::chrono::milliseconds(800));
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOBLIST;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST;
             packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }

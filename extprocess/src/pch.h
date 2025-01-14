@@ -27,9 +27,16 @@
 #include <wx/string.h>
 #include <wx/translation.h>
 #include <wx/filename.h>
+
+
 #include "helpers/sd.hpp"
-#include "helpers/QueueItem.h"
+#include "helpers/base64.h"
+#include "helpers/QueueEvents.h"
+#include "helpers/QueueStatus.h"
+#include "helpers/QueueItemStats.h"
 #include "network/RemoteQueueItem.h"
+#include "helpers/QueueItem.h"
+
 #include "network/packets.h"
 #include "helpers/sd.hpp"
 #include "helpers/sslUtils.hpp"

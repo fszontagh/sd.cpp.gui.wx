@@ -157,13 +157,7 @@ if (SDGUI_HIPBLAS)
 endif()
 
 
-list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl)
-
-if (WIN32)
-    list(APPEND APPDEPENDS exiv2lib)
-else()
-    list(APPEND APPDEPENDS exiv2lib)
-endif()
+list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 
 include(cmake/intl.cmake)
 
@@ -223,3 +217,5 @@ endif()
 
 include(cmake/stable_diffusion.cmake)
 include(cmake/cpack.cmake)
+
+set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "iwyu")

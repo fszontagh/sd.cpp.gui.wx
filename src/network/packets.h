@@ -21,7 +21,10 @@ namespace sd_gui_utils {
                 PARAM_AUTH,
                 PARAM_MODEL_LIST,
                 PARAM_KEEPALIVE,
-                PARAM_JOBLIST
+                PARAM_JOB_LIST,
+                PARAM_JOB_ADD,
+                PARAM_JOB_UPDATE,
+                PARAM_JOB_DELETE
             };
 
             Packet(Type type, Param param)

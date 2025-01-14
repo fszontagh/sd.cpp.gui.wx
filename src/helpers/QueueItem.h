@@ -1,19 +1,8 @@
 #ifndef __HELPERS_QUEUE_ITEM_
 #define __HELPERS_QUEUE_ITEM_
-/**
-@file QueueItem.h
-@brief A status of a QueueItem
-*/
-enum QueueStatus {
-    PENDING,        // deletable
-    RUNNING,        // non deletable
-    PAUSED,         // deletable
-    FAILED,         // deletable
-    MODEL_LOADING,  // non deletable
-    DONE,           // deletable
-    HASHING,        // non deletable
-    HASHING_DONE    // non deletable
-};
+
+
+
 
 inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
     {SDMode::TXT2IMG, "txt2img"},
@@ -29,68 +18,150 @@ inline const std::unordered_map<std::string, SDMode> GenerationMode_str_inv = {
     {"upscale", SDMode::UPSCALE},
     {"img2vid", SDMode::IMG2VID}};
 
-inline const char* QueueStatus_str[] = {
-    _("pending"),
-    _("running"),
-    _("paused"),
-    _("failed"),
-    _("model loading..."),
-    _("finished"),
-    _("model hashing...")};
+/// @brief Store the images from the queue jobs
+struct QueueItemImage : public sd_gui_utils::networks::ItemImage {
+    std::string pathname;
+    long id = -1;
 
-inline const std::unordered_map<QueueStatus, wxString> QueueStatus_GUI_str = {
-    {QueueStatus::PENDING, "pending"},
-    {QueueStatus::RUNNING, "running"},
-    {QueueStatus::PAUSED, "paused"},
-    {QueueStatus::FAILED, "failed"},
-    {QueueStatus::MODEL_LOADING, "model loading..."},
-    {QueueStatus::DONE, "finished"},
-    {QueueStatus::HASHING, "model hashing..."}};
+    QueueItemImage() = default;
 
-/// @brief Event commands to inter thread communication
-enum class QueueEvents : unsigned int {
-    ITEM_DELETED            = 1,
-    ITEM_ADDED              = 2,
-    ITEM_STATUS_CHANGED     = 4,
-    ITEM_UPDATED            = 8,
-    ITEM_START              = 16,
-    ITEM_FINISHED           = 32,
-    ITEM_MODEL_LOAD_START   = 64,
-    ITEM_MODEL_LOADED       = 128,
-    ITEM_MODEL_FAILED       = 256,
-    ITEM_GENERATION_STARTED = 512,
-    ITEM_FAILED             = 1024,
-    ITEM_MODEL_HASH_START   = 2048,
-    ITEM_MODEL_HASH_UPDATE  = 4096,
-    ITEM_MODEL_HASH_DONE    = 8192
+    QueueItemImage(const std::string& pathname_, sd_gui_utils::ImageType type_ = sd_gui_utils::ImageType::GENERATED, long id_ = -1)
+        : ItemImage{type_}, pathname(pathname_), id(id_) {}
+    QueueItemImage(const wxString& pathname_, sd_gui_utils::ImageType type_ = sd_gui_utils::ImageType::GENERATED, long id_ = -1)
+        : ItemImage{type_}, pathname(pathname_.utf8_string()), id(id_) {}
+
+    QueueItemImage& operator=(const QueueItemImage& other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        pathname = other.pathname;
+        type     = other.type;
+        id       = other.id;
+        return *this;
+    }
+
+    bool operator==(const QueueItemImage& other) const {
+        return (pathname == other.pathname);
+    }
+};  // struct QueueItemImage
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(QueueItemImage, pathname, type, id)
+inline void to_json(nlohmann::json& j, const QueueItemImage* item) {
+    if (item) {
+        j = nlohmann::json{{"pathname", wxString(item->pathname).utf8_string()}, {"type", item->type}};
+    } else {
+        j = nullptr;
+    }
+}
+
+inline void from_json(const nlohmann::json& j, QueueItemImage*& item) {
+    if (!j.is_null()) {
+        item = new QueueItemImage();
+        j.at("pathname").get_to(item->pathname);
+        j.at("type").get_to(item->type);
+    } else {
+        item = nullptr;
+    }
+}
+
+struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
+    std::vector<QueueItemImage> images = {};
+    std::vector<std::string> rawImages = {};
+    std::string initial_image          = "";
+    std::string mask_image             = "";
+    inline wxString GetActualSpeed() {
+        wxString speed = "";
+        if (this->status == QueueStatus::MODEL_LOADING || this->mode == SDMode::CONVERT) {
+            // int progress = (this->step / this->steps) * 100;
+            speed = wxString::Format(this->time > 1.0f ? "%.2fs/it" : "%.2fit/s", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time));
+        } else {
+            speed = wxString::Format(this->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time), this->step, this->steps);
+        }
+        return speed;
+    }
+    inline int GetActualProgress() {
+        float current_progress = 0.f;
+
+        if (this->step > 0 && this->steps > 0) {
+            current_progress = 100.f * (static_cast<float>(this->step) /
+                                        static_cast<float>(this->steps));
+        }
+        if (this->step == this->steps) {
+            current_progress = 100.f;
+        }
+        return static_cast<int>(current_progress);
+    }
+    QueueItem(const sd_gui_utils::networks::RemoteQueueItem& item)
+        : sd_gui_utils::networks::RemoteQueueItem(item) {}
+    QueueItem(const QueueItem& item)
+        : sd_gui_utils::networks::RemoteQueueItem(item), images(item.images), rawImages(item.rawImages), initial_image(item.initial_image), mask_image(item.mask_image) {}
+    QueueItem() = default;
+    sd_gui_utils::RemoteQueueItem operator=(const sd_gui_utils::RemoteQueueItem& item) {
+    }
+    inline sd_gui_utils::RemoteQueueItem convertToNetwork() {
+        sd_gui_utils::RemoteQueueItem newItem(*this);
+        for (const auto img : this->images) {
+            // read int the file img.pathname
+            wxFile file;
+            if (!file.Open(img.pathname, wxFile::read)) {
+                continue;
+            }
+
+            wxString content;
+            if (!file.ReadAll(&content)) {
+                file.Close();
+                continue;
+            }
+            file.Close();
+
+            auto base64_decoded = sd_gui_utils::base64_decode(content.ToStdString());
+
+            sd_gui_utils::networks::ItemImage itemImage;
+            itemImage.rawData = std::vector<unsigned char>(base64_decoded.data(), base64_decoded.data() + base64_decoded.size());
+            itemImage.type    = img.type;
+            this->image_data.push_back(itemImage);
+        }
+        this->images.clear();
+        return newItem;
+    };
+    inline QueueItem convertFromNetwork() {
+
+    };
 };
 
-inline const std::unordered_map<QueueEvents, std::string> QueueEvents_str = {
-    {QueueEvents::ITEM_DELETED, "ITEM_DELETED"},
-    {QueueEvents::ITEM_ADDED, "ITEM_ADDED"},
-    {QueueEvents::ITEM_STATUS_CHANGED, "ITEM_STATUS_CHANGED"},
-    {QueueEvents::ITEM_UPDATED, "ITEM_UPDATED"},
-    {QueueEvents::ITEM_START, "ITEM_START"},
-    {QueueEvents::ITEM_FINISHED, "ITEM_FINISHED"},
-    {QueueEvents::ITEM_MODEL_LOAD_START, "ITEM_MODEL_LOAD_START"},
-    {QueueEvents::ITEM_MODEL_LOADED, "ITEM_MODEL_LOADED"},
-    {QueueEvents::ITEM_MODEL_FAILED, "ITEM_MODEL_FAILED"},
-    {QueueEvents::ITEM_GENERATION_STARTED, "ITEM_GENERATION_STARTED"},
-    {QueueEvents::ITEM_FAILED, "ITEM_FAILED"},
-    {QueueEvents::ITEM_MODEL_HASH_START, "ITEM_MODEL_HASH_START"},
-    {QueueEvents::ITEM_MODEL_HASH_UPDATE, "ITEM_MODEL_HASH_UPDATE"},
-    {QueueEvents::ITEM_MODEL_HASH_DONE, "ITEM_MODEL_HASH_DONE"}};
-
-struct QueueStatsStepItem {
-    int step;
-    int steps;
-    float time;
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueStatsStepItem, step, steps, time)
-struct QueueItemStats {
-    float time_min = 0.f, time_max = 0.f, time_avg = 0.f, time_total = 0.f;
-    std::vector<QueueStatsStepItem> time_per_step = {};
-};
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItemStats, time_min, time_max, time_avg, time_total, time_per_step)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(
+    QueueItem,
+    id,
+    created_at,
+    updated_at,
+    finished_at,
+    started_at,
+    params,
+    status,
+    event,
+    stats,
+    images,
+    step,
+    steps,
+    hash_fullsize,
+    hash_progress_size,
+    time,
+    model,
+    mode,
+    initial_image,
+    mask_image,
+    status_message,
+    upscale_factor,
+    sha256,
+    rawImages,
+    app_version,
+    git_version,
+    original_prompt,
+    original_negative_prompt,
+    keep_checkpoint_in_memory,
+    keep_upscaler_in_memory,
+    need_sha256,
+    generated_sha256,
+    update_index)
 
 #endif  // __HELPERS_QUEUE_ITEM

@@ -102,9 +102,13 @@ bool TerminalApp::OnInit() {
             return false;
         }
     }
+    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id);
+    this->snowflakeGenerator = std::make_shared<sd_gui_utils::SnowflakeIDGenerator>(this->configData->server_id);
+
     if (configData->shared_memory_path.empty()) {
         configData->shared_memory_path = std::string(SHARED_MEMORY_PATH) + this->configData->server_id;
     }
+
     if (configData->logfile.empty() == false) {
         configData->logfile = wxFileName(configData->logfile).GetAbsolutePath();
         wxLogInfo("Logging to file: %s", configData->logfile);
@@ -395,7 +399,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     return false;
 }
 
-void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Packet& packet) {
+void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& packet) {
     if (packet.source_idx == -1) {
         this->sendLogEvent("Invalid source index", wxLOG_Error);
         return;
@@ -419,7 +423,17 @@ void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Pa
         this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }
 
-    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOBLIST) {
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
+        this->sendLogEvent("Received job list", wxLOG_Debug);
+        auto list     = this->queueManager->GetJobList();
+        auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST);
+        response.SetData(list);
+        this->socket->sendMsg(packet.source_idx, response);
+        this->sendLogEvent("Sent job list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+    }
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
+        this->sendLogEvent("Received job add", wxLOG_Debug);
+        auto data = packet.GetData<sd_gui_utils::RemoteQueueItem>();
     }
 }
 

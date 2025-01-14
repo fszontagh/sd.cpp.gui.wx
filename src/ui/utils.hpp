@@ -33,7 +33,7 @@ namespace sd_gui_utils {
 
     typedef struct VoidHolder {
         void* p1;  // eventhandler
-        void* p2;  // QM::QueueItem
+        void* p2;  // QueueItem
         void* p3;  // Others...
     } VoidHolder;
 

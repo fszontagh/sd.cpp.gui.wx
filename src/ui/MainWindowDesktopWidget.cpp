@@ -46,7 +46,7 @@ void MainWindowDesktopWidget::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
         QueueEvents event = (QueueEvents)std::stoi(content);
 
-        std::shared_ptr<QM::QueueItem> item = e.GetPayload<std::shared_ptr<QM::QueueItem>>();
+        std::shared_ptr<QueueItem> item = e.GetPayload<std::shared_ptr<QueueItem>>();
 
         size_t stepsSum  = 0;  // item->params.sample_steps * item->params.batch_count;
         size_t stepsDone = 0;  // item->stats.time_per_step.size();

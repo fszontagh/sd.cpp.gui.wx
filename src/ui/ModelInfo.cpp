@@ -95,7 +95,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::addRemoteModel(const sd_gui_uti
                 _z->folderGroupName             = this->GetFolderName(wxString::FromUTF8Unchecked(info.path), info.model_type, info.root_path, server);
                 _z->meta_file                   = meta_file.utf8_string();
                 _z->server_id                   = server->GetId();
-                *_z += info; // merge with the new info
+                *_z += info;  // merge with the new info
                 if (_z->sha256.empty()) {
                     auto localVer = this->findInfoByName(info.name);
                     if (localVer != nullptr && localVer->sha256.empty() == false) {
@@ -244,6 +244,66 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findModelByImageParams(const st
             if (check2 != nullptr) {
                 return check2;
             }
+        }
+    }
+    return nullptr;
+}
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findLocalModelOnRemote(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server) {
+    if (server->IsConnected() == false) {
+        return nullptr;
+    }
+    // this is a remote model too
+    if (model->server_id.empty() == false) {
+        return model;
+    }
+    auto server_id = server->GetId();
+    if (server_id.empty()) {
+        return nullptr;
+    }
+    for (const auto remoteModel : this->ModelInfos) {
+        // wrong server
+        if (remoteModel.second->server_id != server_id) {
+            continue;
+        }
+        // if we have sha256, use this
+        if (model->sha256.empty() == false) {
+            if (remoteModel.second->sha256 == model->sha256) {
+                return remoteModel.second;
+            }
+        }
+        // check if the name match
+        if (remoteModel.second->name == model->name) {
+            return remoteModel.second;
+        }
+    }
+    return nullptr;
+}
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findRemoteModelOnLocal(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server) {
+    if (server->IsConnected() == false) {
+        return nullptr;
+    }
+    // this is a local model too
+    if (model->server_id.empty() == true) {
+        return model;
+    }
+    auto server_id = server->GetId();
+    if (server_id.empty()) {
+        return nullptr;
+    }
+    for (const auto localModel : this->ModelInfos) {
+        // check if this model is a remote mode
+        if (localModel.second->server_id.empty() == false) {
+            continue;  // this is a remote model, skip
+        }
+        // if we have sha256, use this
+        if (model->sha256.empty() == false) {
+            if (localModel.second->sha256 == model->sha256) {
+                return localModel.second;
+            }
+        }
+        // check if the name match
+        if (localModel.second->name == model->name) {
+            return localModel.second;
         }
     }
     return nullptr;

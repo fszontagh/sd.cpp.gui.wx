@@ -44,17 +44,25 @@
 #include "libs/json.hpp"
 
 #include "ver.hpp"
+#include "helpers/base64.h"
 #include "helpers/DirTypes.h"
 #include "helpers/formatbytes.hpp"
 #include "helpers/sd.hpp"
 #include "sockets-cpp/TcpClient.h"
 #include "ui/ThreadEventTypes.hpp"
 
+
+#include "helpers/QueueItemStats.h"
+#include "helpers/QueueEvents.h"
+#include "helpers/QueueStatus.h"
+#include "network/RemoteQueueItem.h"
+
+#include "network/RemoteModelInfo.h"
+#include "helpers/QueueItem.h"
+#include "network/RemoteQueueItem.h"
+
 #include "network/sdServer.h"
 
-#include "helpers/QueueItem.h"
-#include "network/RemoteModelInfo.h"
-#include "network/RemoteQueueItem.h"
 #include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"
