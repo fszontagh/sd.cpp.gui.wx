@@ -1,4 +1,5 @@
 #include "TerminalApp.h"
+#include "libs/SnowFlakeIdGenerarot.hpp"
 #include "libs/subprocess.h"
 
 bool TerminalApp::OnInit() {
@@ -34,6 +35,29 @@ bool TerminalApp::OnInit() {
         wxLogError("Error parsing config file: %s", e.what());
         return false;
     }
+
+    if (this->configData->data_path.empty()) {
+        wxLogError("'data_path' is empty!");
+        return false;
+    }
+    if (wxDirExists(this->configData->data_path) == false) {
+        wxFileName ddir(this->configData->data_path);
+        if (ddir.DirExists() == false) {
+            ddir.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            wxLogInfo("Created data dir: %s", ddir.GetFullPath());
+        }
+    }
+    wxFileName ddirClients(this->configData->GetClientDataPath());
+    if (ddirClients.DirExists() == false) {
+        ddirClients.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+        wxLogInfo("Created clients data dir: %s", ddirClients.GetFullPath());
+    }
+    // create jobs data dir
+    wxFileName ddirJobs(this->configData->GetJobsPath());
+    if (ddirJobs.DirExists() == false) {
+        ddirJobs.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+        wxLogInfo("Created jobs data dir: %s", ddirJobs.GetFullPath());
+    }
     // set a random identifier to the server if not set in the config
     if (this->configData->authkey.empty()) {
         this->configData->authkey = sd_gui_utils::sha256_string_openssl(std::to_string(std::rand()) + this->configData->host + std::to_string(this->configData->port));
@@ -55,8 +79,12 @@ bool TerminalApp::OnInit() {
         }
     }
     if (this->configData->server_id.empty()) {
-        this->configData->server_id = std::to_string(std::rand());
-        this->configData->server_id = sd_gui_utils::sha256_string_openssl(this->configData->authkey + this->configData->host + this->configData->model_paths.checkpoints);
+        auto now                    = std::chrono::system_clock::now();
+        auto timestamp              = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+        this->configData->server_id = sd_gui_utils::sha256_string_openssl(std::to_string(timestamp) + this->configData->authkey + this->configData->host + this->configData->model_paths.checkpoints);
+        auto idGen                  = sd_gui_utils::SnowflakeIDGenerator(this->configData->server_id, this->configData->host, this->configData->port);
+        this->configData->server_id = idGen.generateID(timestamp);
+
         wxLogInfo("Generated server_id: %s", this->configData->server_id);
         // save into the config file
         try {
@@ -385,9 +413,13 @@ void TerminalApp::ProcessReceivedSocketPackages(const sd_gui_utils::networks::Pa
                                                            // TODO: implement server info to send server_id and server_name
 
         response.server_name = this->configData->server_name;
+        //        response.client_id = this->m_clientData
 
         this->socket->sendMsg(packet.source_idx, response);
         this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+    }
+
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOBLIST) {
     }
 }
 
@@ -540,6 +572,7 @@ void TerminalApp::CalcModelHashes() {
         model.second.hash_fullsize = model.second.size;
         this->currentHashingItem   = std::make_shared<sd_gui_utils::RemoteModelInfo>(model.second);
         model.second.sha256        = sd_gui_utils::sha256_file_openssl(model.second.remote_path.c_str(), (void*)this, TerminalApp::FileHashCallBack);
+        std::cout << std::endl;
         wxFile file;
         if (file.Open(hashFileName.GetFullPath(), wxFile::write)) {
             wxString fileContent = wxString::Format("%s\t%s", model.second.sha256, model.second.remote_path);

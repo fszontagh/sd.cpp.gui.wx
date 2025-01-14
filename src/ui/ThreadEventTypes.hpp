@@ -28,7 +28,8 @@ namespace sd_gui_utils {
         SERVER_AUTH_REQUEST,
         SERVER_ERROR,
         SERVER_MODEL_LIST_UPDATE,
-        SERVER_AUTH_RESPONSE
+        SERVER_AUTH_RESPONSE,
+        SERVER_JOBLIST_UPDATE
     };
 }
 #endif  // __UI_THREADEVENTSTYPES__

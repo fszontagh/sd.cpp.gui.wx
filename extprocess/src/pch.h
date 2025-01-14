@@ -29,7 +29,7 @@
 #include <wx/filename.h>
 #include "helpers/sd.hpp"
 #include "helpers/QueueItem.h"
-#include "network/RemoteQueueJobItem.h"
+#include "network/RemoteQueueItem.h"
 #include "network/packets.h"
 #include "helpers/sd.hpp"
 #include "helpers/sslUtils.hpp"

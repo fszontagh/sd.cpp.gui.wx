@@ -2145,7 +2145,7 @@ void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QM::QueueItem> it
 
     auto created_at = sd_gui_utils::formatUnixTimestampToDate(item->created_at);
 
-    data.push_back(wxVariant(std::to_string(item->id)));
+    data.push_back(wxVariant(wxString::Format("%lu", item->id)));
     data.push_back(wxVariant(created_at));
     data.push_back(wxVariant(modes_str[item->mode]));
     data.push_back(wxVariant(item->model));
@@ -3629,6 +3629,13 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             return;
         }
 
+        auto packet_id     = e.GetInt();
+        uint64_t client_id = server->GetClientIdFromPacket(packet_id);
+
+        if (client_id > 0) {
+            this->mapp->cfg->ServerUpdateClientId(server->GetInternalId(), client_id);
+        }
+
         this->writeLog(wxString::Format(_("Server auth response: %s - %s, requesting model list"), server->GetName(), content));
         server->RequestModelList();
         return;
@@ -3664,6 +3671,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             std::cout << "The wrong json: " << packet.GetData<std::string>().c_str() << std::endl;
         }
 
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_INFO_DOWNLOAD_IMAGES_DONE) {
@@ -3884,7 +3894,7 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
 
     if (token == "DOWNLOAD_FINISH") {
         auto payload = e.GetPayload<CivitAi::DownloadItem*>();
-        if (!payload)  {
+        if (!payload) {
             return;
         }
 
@@ -3948,7 +3958,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QM::Queu
     wxVector<wxVariant> data;
 
     data.push_back(wxVariant(_("ID")));
-    data.push_back(wxVariant(wxString::Format("%d", item->id)));
+    data.push_back(wxVariant(wxString::Format("%lu", item->id)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 

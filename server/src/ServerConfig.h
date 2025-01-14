@@ -43,7 +43,7 @@ struct ServerConfig {
     uint16_t port              = 8191;
     int max_clients            = 10;
     size_t max_request_size    = 1024 * 1024 * 1024;
-    unsigned int tcp_keepalive = 60;  // kep alive period
+    unsigned int tcp_keepalive = 30;  // kep alive period
     unsigned int cpu_cores     = 1;
     std::string logfile;
     backend_type backend = backend_type::AVX;
@@ -54,6 +54,22 @@ struct ServerConfig {
     std::string exprocess_binary_path;       // force to use this exprocess binary
     ModelPaths model_paths = {};
     std::string server_id;
+    std::string data_path = "";  // where to store client info, jobs and images
+
+    /// @brief Retrieves the absolute path to the server data directory.
+    /// @return A string representing the absolute path to the directory where client info, jobs, and images are stored.
+    const std::string GetServerDataPath() {
+        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator());
+        return p.GetAbsolutePath().ToStdString();
+    }
+    const std::string GetJobsPath() {
+        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator() + "jobs" + wxFileName::GetPathSeparator());
+        return p.GetAbsolutePath().ToStdString();
+    }
+    const std::string GetClientDataPath() {
+        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator() + "clients" + wxFileName::GetPathSeparator());
+        return p.GetAbsolutePath().ToStdString();
+    }
 };
 
 inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohmann_json_t) {
@@ -66,6 +82,7 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohma
     nlohmann_json_j["authkey"]              = nlohmann_json_t.authkey;
     nlohmann_json_j["unauthorized_timeout"] = nlohmann_json_t.unauthorized_timeout;
     nlohmann_json_j["server_id"]            = nlohmann_json_t.server_id;
+    nlohmann_json_j["data_path"]            = nlohmann_json_t.data_path;
     if (nlohmann_json_t.shared_memory_path.empty() == false) {
         nlohmann_json_j["shared_memory_path"] = nlohmann_json_t.shared_memory_path;
     }
@@ -87,6 +104,7 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
     nlohmann_json_t.max_request_size = nlohmann_json_j.value("max_request_size", nlohmann_json_default_obj.max_request_size);
     nlohmann_json_t.logfile          = nlohmann_json_j.value("logfile", nlohmann_json_default_obj.logfile);
     nlohmann_json_t.server_id        = nlohmann_json_j.value("server_id", nlohmann_json_default_obj.server_id);
+    nlohmann_json_t.data_path        = nlohmann_json_j.value("data_path", nlohmann_json_default_obj.data_path);
 
     std::string backend = nlohmann_json_j.value("backend", "avx");
     if (backend_str_to_type.find(backend) == backend_str_to_type.end()) {

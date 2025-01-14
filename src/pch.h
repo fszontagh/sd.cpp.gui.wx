@@ -54,7 +54,7 @@
 
 #include "helpers/QueueItem.h"
 #include "network/RemoteModelInfo.h"
-#include "network/RemoteQueueJobItem.h"
+#include "network/RemoteQueueItem.h"
 #include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"

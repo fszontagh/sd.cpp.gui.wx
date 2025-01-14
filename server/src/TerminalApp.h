@@ -34,13 +34,50 @@ public:
             }
         });
     }
+    inline void sendDisconnectEvent(SocketApp::clientInfo client) {
+        if (client.apikey.empty() || client.client_id == 0) {
+            return;
+        }
+        eventQueue.Push([this, client]() {
+            std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
+            nlohmann::json json        = client;
+            std::ofstream file(clientDataFile);
+            file << std::setw(4) << json << std::endl;
+            file.close();
+        });
+    }
+    inline void sendOnTimerEvent(const SocketApp::clientInfo &client) {
+        if (client.client_id == 0) {
+            return;
+        }
+        eventQueue.Push([this, client]() {
+            std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
+            nlohmann::json json        = client;
+            std::ofstream file(clientDataFile);
+            file << std::setw(4) << json << std::endl;
+            file.close();
+        });
+    }
+    inline SocketApp::clientInfo ReReadClientInfo(uint64_t client_id, bool delete_old_file = false) {
+        std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client_id) + ".json";
+        if (std::filesystem::exists(clientDataFile) == false) {
+            return SocketApp::clientInfo();
+        }
+        std::ifstream file(clientDataFile);
+        nlohmann::json json;
+        file >> json;
+        file.close();
+        if (delete_old_file) {
+            std::filesystem::remove(clientDataFile);
+        }
+        return json;
+    }
     std::shared_ptr<ServerConfig> configData = nullptr;
 
 private:
     void ExternalProcessRunner();
     void ProcessOutputThread();
     void ProcessLogQueue();
-    // process the messages from the shm
     bool ProcessEventHandler(std::string message);
     bool LoadModelFiles();
     void CalcModelHashes();

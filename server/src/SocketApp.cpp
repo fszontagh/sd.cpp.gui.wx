@@ -1,4 +1,5 @@
 #include "SocketApp.h"
+#include "libs/SnowFlakeIdGenerarot.hpp"
 SocketApp::SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent)
     : m_socketOpt({sockets::TX_BUFFER_SIZE, sockets::RX_BUFFER_SIZE, listenAddr}), m_server(*this, &m_socketOpt), parent(parent) {
     sockets::SocketRet ret = m_server.start(port);
@@ -32,11 +33,13 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
     } else {
         this->parent->sendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
     }
-    auto fsize          = sd_gui_utils::formatbytes(len);
-    wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s",idx, fsize.first, fsize.second);
+    auto fsize      = sd_gui_utils::formatbytes(len);
+    wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s", idx, fsize.first, fsize.second);
     this->parent->sendLogEvent(logmsg, wxLOG_Debug);
+    this->m_clientInfo.at(idx).tx += len;
 }
-void SocketApp::sendMsg(int idx, const sd_gui_utils::networks::Packet& packet) {
+void SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
+    packet.client_id   = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
     auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
     size_t packet_size = raw_packet.second;
     this->sendMsg(idx, reinterpret_cast<const char*>(&packet_size), sizeof(packet_size));
@@ -64,6 +67,7 @@ void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const c
         packet.source_idx = client;
 
         this->parseMsg(packet);
+        this->m_clientInfo.at(client).rx += this->expected_size;
 
         this->buffer.clear();
         this->expected_size = 0;
@@ -78,7 +82,9 @@ void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
         this->parent->sendLogEvent("Client " + std::to_string(client) + " connected from " + ipAddr + ":" + std::to_string(port));
         {
             std::lock_guard<std::mutex> guard(m_mutex);
-            this->m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime()};
+            // generate an id
+            auto idGen                 = sd_gui_utils::SnowflakeIDGenerator(std::to_string(client), ipAddr, port);
+            this->m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime(), "", 0, idGen.generateID(this->m_clientInfo.size())};
         }
         sd_gui_utils::networks::Packet auth_required_packet;
         auth_required_packet.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
@@ -91,7 +97,8 @@ void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const so
     this->parent->sendLogEvent("Client " + std::to_string(client) + " disconnected: " + ret.m_msg);
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        m_clientInfo.erase(client);
+        this->parent->sendDisconnectEvent(this->m_clientInfo.at(client));
+        this->m_clientInfo.erase(client);
     }
 }
 
@@ -112,6 +119,7 @@ void SocketApp::OnTimer() {
                 // keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
                 this->sendMsg(it->second.idx, keepAlivePacket);
                 this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port), wxLOG_Debug);
+                this->parent->sendOnTimerEvent(it->second);
             }
             ++it;
         }
@@ -121,6 +129,12 @@ void SocketApp::OnTimer() {
 void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
     // parse from cbor to struct Packet
     try {
+        // store the client id which is saved at the client if already connected once
+        if (packet.client_id > 0) {
+            auto oldInfo                                    = this->parent->ReReadClientInfo(packet.client_id, this->m_clientInfo[packet.source_idx].client_id != packet.client_id);
+            this->m_clientInfo[packet.source_idx].client_id = packet.client_id;
+            this->m_clientInfo[packet.source_idx].copyFrom(oldInfo);
+        }
         if (packet.version != SD_GUI_VERSION) {
             auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
             errorPacket.SetData("Version Mismatch, server: " + std::string(SD_GUI_VERSION) + ", client: " + packet.version);
@@ -129,6 +143,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
             this->DisconnectClient(packet.source_idx);
             return;
         }
+
         if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE) {
             this->parent->ProcessReceivedSocketPackages(packet);
         }
@@ -142,7 +157,11 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
 
                     if (this->parent->configData->authkey.compare(packetData) == 0) {
                         this->m_clientInfo[packet.source_idx].apikey = packetData;
-                        auto responsePacket                          = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
+                        if (packet.client_id > 0) {
+                            this->m_clientInfo[packet.source_idx].client_id = packet.client_id;
+                        }
+
+                        auto responsePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
                         responsePacket.SetData("Authentication done");
                         this->sendMsg(packet.source_idx, responsePacket);
                         this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
@@ -163,6 +182,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
 void SocketApp::DisconnectClient(int idx) {
     std::lock_guard<std::mutex> guard(m_mutex);
     if (this->m_clientInfo.contains(idx)) {
+        this->parent->sendDisconnectEvent(this->m_clientInfo[idx]);
         if (this->m_server.deleteClient(idx)) {
             this->m_clientInfo.erase(idx);
         }

@@ -93,8 +93,8 @@ namespace QM {
         inline wxString GetActualSpeed() {
             wxString speed = "";
             if (this->status == QueueStatus::MODEL_LOADING || this->mode == SDMode::CONVERT) {
-                int progress = (this->step / this->steps) * 100;
-                speed        = wxString::Format(this->time > 1.0f ? "%.2fs/it" : "%.2fit/s", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time));
+                // int progress = (this->step / this->steps) * 100;
+                speed = wxString::Format(this->time > 1.0f ? "%.2fs/it" : "%.2fit/s", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time));
             } else {
                 speed = wxString::Format(this->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time), this->step, this->steps);
             }
@@ -158,9 +158,9 @@ namespace QM {
     public:
         QueueManager(wxEvtHandler* eventHandler, const wxString& jobsdir);
         ~QueueManager();
-        int AddItem(const QM::QueueItem& _item, bool fromFile = false);
-        int AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);
-        int GetNextId() {
+        uint64_t AddItem(const QM::QueueItem& _item, bool fromFile = false);
+        uint64_t AddItem(std::shared_ptr<QM::QueueItem> _item, bool fromFile = false);
+        uint64_t GetNextId() {
             int id = this->GetCurrentUnixTimestamp(false);
             while (id <= this->lastId) {
                 id++;
@@ -169,7 +169,7 @@ namespace QM {
         };
         void UpdateItem(const QM::QueueItem& item);
         void UpdateItem(std::shared_ptr<QM::QueueItem> item);
-        std::shared_ptr<QM::QueueItem> GetItemPtr(int id);
+        std::shared_ptr<QM::QueueItem> GetItemPtr(uint64_t id);
         /**
          * @brief Get all the items in the queue as a string formatted like:
          *
@@ -177,7 +177,7 @@ namespace QM {
         std::shared_ptr<QM::QueueItem> GetItemPtr(const QM::QueueItem& item);
         const std::map<int, std::shared_ptr<QM::QueueItem>> getList();
         std::shared_ptr<QM::QueueItem> Duplicate(std::shared_ptr<QM::QueueItem> item);
-        std::shared_ptr<QM::QueueItem> Duplicate(int id);
+        std::shared_ptr<QM::QueueItem> Duplicate(uint64_t id);
         // @brief Update the item too then update the status. This will store the list of the generated images too
         void SetStatus(QueueStatus status, std::shared_ptr<QM::QueueItem>);
         void PauseAll();
@@ -186,10 +186,10 @@ namespace QM {
         void PauseItem(std::shared_ptr<QM::QueueItem> item);
         void SendEventToMainWindow(QueueEvents eventType, std::shared_ptr<QM::QueueItem> item = nullptr);
         void OnThreadMessage(wxThreadEvent& e);
-        void SaveJobToFile(int id);
+        void SaveJobToFile(uint64_t id);
         void SaveJobToFile(const QM::QueueItem& item);
         bool DeleteJob(const QM::QueueItem& item);
-        bool DeleteJob(int id);
+        bool DeleteJob(uint64_t id);
         bool IsRunning();
         inline void resetRunning(std::shared_ptr<QM::QueueItem> item, const std::string& reason) {
             if (this->QueueList.empty()) {
@@ -238,9 +238,9 @@ namespace QM {
         int GetCurrentUnixTimestamp(bool milliseconds = false);
         void LoadJobListFromDir();
         wxString jobsDir;
-        int lastId    = 0;
-        int lastExtId = 0;
-        int GetAnId();
+        uint64_t lastId    = 0;
+        uint64_t lastExtId = 0;
+        uint64_t GetAnId();
         // thread events handler, toupdate main window data table
         void onItemAdded(QM::QueueItem item);
         std::shared_ptr<QM::QueueItem> currentItem = nullptr;
@@ -250,7 +250,7 @@ namespace QM {
 
         wxEvtHandler* eventHandler;
         wxWindow* parent;
-        std::map<int, std::shared_ptr<QM::QueueItem>> QueueList;
+        std::map<uint64_t, std::shared_ptr<QM::QueueItem>> QueueList;
     };
 };
 

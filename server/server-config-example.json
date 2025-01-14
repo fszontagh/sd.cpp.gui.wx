@@ -20,6 +20,8 @@ FYI:
     "max_clients": 10,
     // the maximum interval in seconds to wait the client to send an authentication request
     "unauthorized_timeout": 4,
+    // where the connected client's info and image generation data (jobs, images) stored
+    "data_path": "/app/data",
     "model_paths": {
         "controlnet": "/app/modelscontrolnet",
         "embedding": "/app/modelsembeddings",

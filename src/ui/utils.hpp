@@ -374,13 +374,21 @@ namespace sd_gui_utils {
                     wxString id     = configBase->Read("Id", wxEmptyString);
                     int port        = configBase->Read("Port", 8191);
                     int internal_id = configBase->Read("InternalId", -1);
-                    wxString name   = configBase->Read("Name", wxEmptyString);
+
+                    wxString clientIdStr;
+                    uint64_t client_id = 0;
+                    if (this->configBase->Read("ClientId", &clientIdStr)) {
+                        client_id = std::stoull(clientIdStr.ToStdString());
+                    }
+
+                    wxString name = configBase->Read("Name", wxEmptyString);
 
                     sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
                     server->SetEnabled(enabled);
                     server->SetInternalId(internal_id);
                     server->SetId(id.ToStdString());
                     server->SetName(name.ToStdString());
+                    server->SetClientId(client_id);
                     this->AddTcpServer(server);
 
                     configBase->SetPath("..");
@@ -483,6 +491,17 @@ namespace sd_gui_utils {
                 }
             }
             std::cout << "ServerUpdateId done" << std::endl;
+        }
+        inline void ServerUpdateClientId(int internal_id, uint64_t newId) {
+            std::cout << "ServerUpdateClientId" << std::endl;
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                if ((*it)->GetInternalId() == internal_id) {
+                    (*it)->SetClientId(newId);
+                    break;
+                }
+            }
+            std::cout << "ServerUpdateClientId done" << std::endl;
         }
         inline void ServerChangeHost(int internal_id, const std::string& host) {
             std::cout << "ServerChangeHost" << std::endl;
@@ -735,6 +754,7 @@ namespace sd_gui_utils {
                     this->configBase->Write("InternalId", servers[i]->GetInternalId());
                     this->configBase->Write("Name", servers[i]->GetName());
                     this->configBase->Write("Id", wxString(servers[i]->GetId().c_str()));
+                    this->configBase->Write("ClientId", wxString::Format("%" PRIu64, servers[i]->GetClientId()));
                     this->configBase->SetPath("..");
                 }
                 this->configBase->SetPath(oldPath);

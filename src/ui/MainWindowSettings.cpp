@@ -244,7 +244,6 @@ void MainWindowSettings::OnDeleteServer(wxCommandEvent& event) {
         }
         this->m_serverList->DeleteItem(row);
         this->cfg->RemoveTcpServer(internal_id);
-
     }
     if (this->m_serverList->GetItemCount() > 0) {
         this->m_serverList->SelectRow(0);
@@ -327,7 +326,7 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
                 }
             }
         }
-        wxMessageDialog(this, _("Failed to save authkey")).ShowModal();
+        this->m_serverList->SetValue(wxEmptyString, row, col);
     }
 
     if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {

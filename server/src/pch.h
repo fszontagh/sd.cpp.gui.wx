@@ -19,16 +19,20 @@
 #include <wx/time.h>
 #include <wx/timer.h>
 
-
 #include "ver.hpp"
+
+#include "helpers/sd.hpp"
 #include "helpers/formatbytes.hpp"
+
 #include "EventQueue.h"
 #include "extprocess/config.hpp"
+#include "helpers/QueueItem.h"
+#include "network/RemoteQueueItem.h"
+
 #include "helpers/sslUtils.hpp"
 #include "libs/json.hpp"
 #include "network/RemoteModelInfo.h"
 #include "network/packets.h"
-
 
 #include "EventQueue.h"
 #include "ServerConfig.h"
@@ -37,4 +41,4 @@
 
 #include "ServerConfig.h"
 
-#include "libs/json.hpp"
+#include "SimpleQueueManager.hpp"

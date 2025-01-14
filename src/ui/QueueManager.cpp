@@ -5,7 +5,7 @@ QM::QueueManager::QueueManager(wxEvtHandler* eventHandler, const wxString& jobsd
     this->eventHandler = eventHandler;
     this->eventHandler->Bind(wxEVT_THREAD, &QueueManager::OnThreadMessage, this);
     this->jobsDir   = jobsdir;
-    this->QueueList = std::map<int, std::shared_ptr<QM::QueueItem>>();
+    this->QueueList = {};
     this->LoadJobListFromDir();
 }
 
@@ -15,7 +15,7 @@ QM::QueueManager::~QueueManager() {
     }
 }
 
-int QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
+uint64_t QM::QueueManager::AddItem(const QM::QueueItem& _item, bool fromFile) {
     std::lock_guard<std::mutex> lock(queueMutex);
     std::shared_ptr<QM::QueueItem> item = std::make_shared<QM::QueueItem>(_item);
     if (item->id == 0) {
@@ -63,7 +63,7 @@ void QM::QueueManager::UpdateItem(std::shared_ptr<QM::QueueItem> item) {
     }
 }
 
-std::shared_ptr<QM::QueueItem> QM::QueueManager::GetItemPtr(int id) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::GetItemPtr(uint64_t id) {
     std::lock_guard<std::mutex> lock(queueMutex);
     if (this->QueueList.find(id) == this->QueueList.end()) {
         return nullptr;
@@ -136,11 +136,11 @@ std::shared_ptr<QM::QueueItem> QM::QueueManager::Duplicate(std::shared_ptr<QM::Q
     this->AddItem(newitem);
     return newitem;
 }
-int QM::QueueManager::AddItem(std::shared_ptr<QM::QueueItem> item, bool fromFile) {
+uint64_t QM::QueueManager::AddItem(std::shared_ptr<QM::QueueItem> item, bool fromFile) {
     return this->AddItem(*item, fromFile);
 }
 
-std::shared_ptr<QM::QueueItem> QM::QueueManager::Duplicate(int id) {
+std::shared_ptr<QM::QueueItem> QM::QueueManager::Duplicate(uint64_t id) {
     if (this->QueueList.find(id) != this->QueueList.end()) {
         return this->Duplicate(this->QueueList[id]);
     }
@@ -305,7 +305,7 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     }
 }
 
-void QM::QueueManager::SaveJobToFile(int id) {
+void QM::QueueManager::SaveJobToFile(uint64_t id) {
     auto item = this->GetItemPtr(id);
     this->SaveJobToFile(*item);
 }
@@ -313,8 +313,8 @@ void QM::QueueManager::SaveJobToFile(int id) {
 void QM::QueueManager::SaveJobToFile(const QM::QueueItem& item) {
     try {
         nlohmann::json jsonfile(item);
-        wxString filename = this->jobsDir + wxFileName::GetPathSeparators() + wxString::Format("%d", item.id) + ".json";
-        wxFile file(filename, wxFile::write);
+        auto filename = wxFileName(wxString::Format("%s%slocal_%lu.json", this->jobsDir, wxFileName::GetPathSeparators(), item.id));
+        wxFile file(filename.GetAbsolutePath(), wxFile::write);
         file.Write(jsonfile.dump());
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
@@ -325,14 +325,14 @@ bool QM::QueueManager::DeleteJob(const QM::QueueItem& item) {
     return this->DeleteJob(item.id);
 }
 
-bool QM::QueueManager::DeleteJob(int id) {
+bool QM::QueueManager::DeleteJob(uint64_t id) {
     auto item = this->GetItemPtr(id);
     if (item->id == 0) {
         return false;
     }
-    wxString filename = this->jobsDir + wxFileName::GetPathSeparators() + wxString::Format("%d", item->id) + ".json";
-    if (wxFileName::FileExists(filename)) {
-        if (wxRemoveFile(filename)) {
+    auto filename = wxFileName(wxString::Format("%s%slocal_%lu.json", this->jobsDir, wxFileName::GetPathSeparators(), item->id));
+    if (wxFileName::FileExists(filename.GetAbsolutePath())) {
+        if (wxRemoveFile(filename.GetAbsolutePath())) {
             this->QueueList[item->id] = nullptr;
             this->QueueList.erase(item->id);
             return true;
@@ -409,8 +409,8 @@ void QM::QueueManager::LoadJobListFromDir() {
     }
 }
 
-int QM::QueueManager::GetAnId() {
-    int id = this->GetCurrentUnixTimestamp(false);
+uint64_t QM::QueueManager::GetAnId() {
+    uint64_t id = this->GetCurrentUnixTimestamp(false);
     while (id <= this->lastId) {
         id++;
     }

@@ -13,6 +13,7 @@ namespace sd_gui_utils {
         std::atomic<bool> needToRun{false};
         std::string server_id = "";
         int internal_id       = -1;
+        uint64_t client_id    = 0;
         std::string disconnect_reason;
         std::thread thread;
         std::shared_ptr<sd_gui_utils::networks::TcpClient> client = nullptr;
@@ -45,8 +46,8 @@ namespace sd_gui_utils {
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_AUTH) {
-                    std::string data = msg.GetData<std::string>();
-                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_AUTH_RESPONSE, this, data);
+                    // std::string data = msg.GetData<std::string>();
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_AUTH_RESPONSE, this, packet_id);
                     return;
                 }
             });
@@ -89,6 +90,22 @@ namespace sd_gui_utils {
         }
         std::string GetId() {
             return this->server_id;
+        }
+        uint64_t GetClientId() {
+            return this->client_id;
+        }
+        void SetClientId(uint64_t id) {
+            if (id == 0) {
+                return;
+            }
+            this->client_id = id;
+        }
+        uint64_t GetClientIdFromPacket(int packet_id) {
+            auto packet = this->GetPacket(packet_id);
+            if (packet.isValid() == false) {
+                return 0;
+            }
+            return packet.client_id;
         }
         wxString GetDisconnectReason() {
             // std::lock_guard<std::mutex> lock(this->mutex);
@@ -212,19 +229,22 @@ namespace sd_gui_utils {
             std::lock_guard<std::mutex> lock(this->mutex);
             Packet packet(Packet::Type::REQUEST_TYPE, Packet::Param::PARAM_AUTH);
             packet.SetData(data);
+            packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
 
         void SendPacket(sd_gui_utils::networks::Packet& packet) {
             std::lock_guard<std::mutex> lock(this->mutex);
+            packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
 
         void GetModelList() {
             std::lock_guard<std::mutex> lock(this->mutex);
-            auto modelListPacket  = sd_gui_utils::networks::Packet();
-            modelListPacket.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-            modelListPacket.param = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
+            auto modelListPacket      = sd_gui_utils::networks::Packet();
+            modelListPacket.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            modelListPacket.param     = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
+            modelListPacket.client_id = this->GetClientId();
             this->client->sendMsg(modelListPacket);
         }
         bool IsConnected() {
@@ -284,17 +304,30 @@ namespace sd_gui_utils {
             packet.type  = sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE;
             packet.param = sd_gui_utils::networks::Packet::Param::PARAM_AUTH;
             packet.SetData(token);
+            packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
         void RequestModelList() {
             std::this_thread::sleep_for(std::chrono::milliseconds(800));
-            auto packet  = sd_gui_utils::networks::Packet();
-            packet.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-            packet.param = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
+            packet.client_id = this->GetClientId();
+            this->client->sendMsg(packet);
+        }
+        void RequestJobList() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(800));
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOBLIST;
+            packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
         template <typename T>
         void SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "") {
+            if (!this->evt) {
+                return;
+            }
             wxThreadEvent* e = new wxThreadEvent();
             e->SetString(wxString::Format("%d:%s", (int)eventType, text));
             e->SetPayload(payload);
@@ -303,6 +336,9 @@ namespace sd_gui_utils {
 
         template <typename T>
         void SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, size_t packet_id, std::string text = "") {
+            if (!this->evt) {
+                return;
+            }
             wxThreadEvent* e = new wxThreadEvent();
             e->SetString(wxString::Format("%d:%s", (int)eventType, text));
             e->SetInt(packet_id);
@@ -316,6 +352,7 @@ namespace sd_gui_utils {
             nlohmann_json_j["port"]        = nlohmann_json_t.port;
             nlohmann_json_j["server_id"]   = nlohmann_json_t.server_id;
             nlohmann_json_j["internal_id"] = nlohmann_json_t.internal_id;
+            nlohmann_json_j["client_id"]   = nlohmann_json_t.client_id;
             nlohmann_json_j["enabled"]     = nlohmann_json_t.enabled.load();
         }
         inline void from_json(const nlohmann ::json& nlohmann_json_j, sdServer& nlohmann_json_t) {
@@ -326,6 +363,7 @@ namespace sd_gui_utils {
             nlohmann_json_t.port        = nlohmann_json_j.value("port", nlohmann_json_default_obj.port);
             nlohmann_json_t.server_id   = nlohmann_json_j.value("server_id", nlohmann_json_default_obj.server_id);
             nlohmann_json_t.internal_id = nlohmann_json_j.value("internal_id", nlohmann_json_default_obj.internal_id);
+            nlohmann_json_t.client_id   = nlohmann_json_j.value("client_id", nlohmann_json_default_obj.client_id);
             nlohmann_json_t.enabled.store(nlohmann_json_j.value("enabled", nlohmann_json_default_obj.enabled.load()));
         }
     };

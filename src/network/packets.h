@@ -20,7 +20,8 @@ namespace sd_gui_utils {
                 PARAM_ERROR,
                 PARAM_AUTH,
                 PARAM_MODEL_LIST,
-                PARAM_KEEPALIVE
+                PARAM_KEEPALIVE,
+                PARAM_JOBLIST
             };
 
             Packet(Type type, Param param)
@@ -35,6 +36,7 @@ namespace sd_gui_utils {
             int target_idx          = -1;
             std::string server_id   = "";
             std::string server_name = "";
+            uint64_t client_id      = 0;
             bool isValid() {
                 return this->type == sd_gui_utils::networks::Packet::Type::INVALID_TYPE ? false : true;
             }
@@ -92,7 +94,7 @@ namespace sd_gui_utils {
                         "Failed to convert Packet: " + std::string(e.what()) + "\nRaw data size: " + std::to_string(size));
                 }
             }
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Packet, type, param, version, data_size, data, server_id, server_name, source_idx, target_idx)
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Packet, type, param, version, data_size, data, server_id, server_name, source_idx, target_idx, client_id)
         };  // struct Packet
     }  // namespace networks
 }  // namespace sd_gui_utils
