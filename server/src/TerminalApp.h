@@ -59,6 +59,32 @@ public:
             file.close();
         });
     }
+    inline void JobQueueThread() {
+        while (this->queueNeedToRun.load()) {
+            bool running = false;
+            for (const auto& job : this->queueManager->GetJobList()) {
+                if (job.status & QueueStatusFlags::RUNNING_FLAG) {
+                    running = true;
+                    std::cout << "We have a running job: " << job.id << std::endl;
+                    break;
+                }
+            }
+            if (!running) {
+                for (const auto& job : this->queueManager->GetJobList()) {
+                    if (job.status == QueueStatus::PENDING) {
+                        const nlohmann::json j = job;
+                        char* data             = new char[j.dump().length() + 1];
+                        strcpy(data, j.dump().c_str());
+                        this->sharedMemoryManager->write(data, j.dump().length() + 1);
+                        this->sendLogEvent(wxString::Format("Job started: %llu", job.id));
+                        std::cout << "Job started: " << job.id << std::endl;
+                        break;
+                    }
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }
     inline SocketApp::clientInfo ReReadClientInfo(uint64_t client_id, bool delete_old_file = false) {
         std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client_id) + ".json";
         if (std::filesystem::exists(clientDataFile) == false) {
@@ -76,6 +102,7 @@ public:
     std::shared_ptr<ServerConfig> configData = nullptr;
 
 private:
+    std::atomic<bool> queueNeedToRun{true};
     void ExternalProcessRunner();
     void ProcessOutputThread();
     void ProcessLogQueue();
@@ -105,6 +132,23 @@ private:
             std::cout << "\r" << msg.ToStdString() << std::flush;
         }
     }
+    inline sd_gui_utils::RemoteModelInfo* GetModelByHash(const std::string sha2560) {
+        for (auto& model : this->modelFiles) {
+            if (model.second.sha256 == sha2560) {
+                return &model.second;
+            }
+        }
+        return nullptr;
+    }
+
+    inline std::string GetModelPathByHash(const std::string sha256) {
+        for (auto& model : this->modelFiles) {
+            if (model.second.sha256 == sha256) {
+                return model.first;
+            }
+        }
+        return "";
+    }
     std::thread logThread;
     std::atomic<bool> eventHanlderExit{false};
     std::shared_ptr<sd_gui_utils::RemoteModelInfo> currentHashingItem = nullptr;
@@ -112,7 +156,7 @@ private:
     std::atomic<wxULongLong> hashingProcessed{0};
 
     EventQueue eventQueue;
-    std::shared_ptr<SimpleQueueManager> queueManager = nullptr;
+    std::shared_ptr<SimpleQueueManager> queueManager                       = nullptr;
     std::shared_ptr<sd_gui_utils::SnowflakeIDGenerator> snowflakeGenerator = nullptr;
     std::vector<std::thread> threads;
     bool m_shouldExit                                        = false;

@@ -217,5 +217,3 @@ endif()
 
 include(cmake/stable_diffusion.cmake)
 include(cmake/cpack.cmake)
-
-set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "iwyu")

@@ -102,7 +102,7 @@ bool TerminalApp::OnInit() {
             return false;
         }
     }
-    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id);
+    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id, this->configData->GetJobsPath());
     this->snowflakeGenerator = std::make_shared<sd_gui_utils::SnowflakeIDGenerator>(this->configData->server_id);
 
     if (configData->shared_memory_path.empty()) {
@@ -220,6 +220,7 @@ int TerminalApp::OnExit() {
     if (this->subprocess != nullptr) {
         this->extProcessNeedToRun.store(false);
     }
+    this->queueNeedToRun.store(false);
 
     for (auto& thread : this->threads) {
         if (thread.joinable()) {
@@ -290,6 +291,8 @@ int TerminalApp::OnRun() {
 
     std::thread tr2(&TerminalApp::ExternalProcessRunner, this);
     this->threads.emplace_back(std::move(tr2));
+    std::thread tr4(&TerminalApp::JobQueueThread, this);
+    this->threads.emplace_back(std::move(tr4));
 
     return wxAppConsole::OnRun();
 }
@@ -388,9 +391,15 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     }
     try {
         nlohmann::json msg = nlohmann::json::parse(message);
-        sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
-        packet.SetData(message);
-        this->socket->sendMsg(0, packet);
+        auto item          = msg.get<QueueItem>();
+        std::cout << "Received ext proess update: " << item.id << " state: " << (int)item.status << std::endl;
+        if (this->queueManager->UpdateJob(item)) {
+            auto converted = item.convertToNetwork();
+            sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+            packet.SetData(converted);
+            this->socket->sendMsg(0, packet);  // send to everybody
+            return true;
+        }
 
     } catch (const std::exception& e) {
         this->sendLogEvent(e.what(), wxLOG_Error);
@@ -433,7 +442,49 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
         this->sendLogEvent("Received job add", wxLOG_Debug);
-        auto data = packet.GetData<sd_gui_utils::RemoteQueueItem>();
+        auto data      = packet.GetData<sd_gui_utils::RemoteQueueItem>();
+        auto converted = QueueItem::convertFromNetwork(data);
+        // set paths
+        converted.params.embeddings_path = this->configData->model_paths.embedding;
+        converted.params.lora_model_dir  = this->configData->model_paths.lora;
+        converted.params.model_path      = this->GetModelPathByHash(converted.params.model_path);
+        if (converted.params.model_path.empty()) {
+            wxLogError("Model not found: %s", converted.model);
+        }
+
+        if (converted.params.vae_path.empty() == false) {
+            const auto path = this->GetModelPathByHash(converted.params.vae_path);
+            if (path.empty() == false) {
+                converted.params.vae_path = path;
+            } else {
+                wxLogWarning("VAE Model not found: %s", converted.params.vae_path);
+            }
+        }
+        if (converted.params.diffusion_model_path.empty() == false) {
+            const auto path = this->GetModelPathByHash(converted.params.diffusion_model_path);
+            if (path.empty() == false) {
+                converted.params.diffusion_model_path = path;
+            } else {
+                wxLogWarning("Diffusion Model not found: %s", converted.params.diffusion_model_path);
+            }
+        }
+
+        if (converted.params.taesd_path.empty() == false) {
+            const auto path = this->GetModelPathByHash(converted.params.taesd_path);
+            if (path.empty() == false) {
+                converted.params.taesd_path = path;
+            } else {
+                wxLogWarning("TAESD Model not found: %s", converted.params.taesd_path);
+            }
+        }
+
+        this->queueManager->AddItem(converted);
+        const nlohmann::json j     = converted;
+        const nlohmann::json origj = data;
+        std::cout << "Got job: \n"
+                  << j.dump(4) << std::endl;
+        std::cout << "Orig: \n"
+                  << origj.dump(4) << std::endl;
     }
 }
 

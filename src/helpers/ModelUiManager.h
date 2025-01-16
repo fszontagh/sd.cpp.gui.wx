@@ -38,7 +38,7 @@ public:
     }
 };
 
-class TreeListManager {
+class ModelUiManager {
 public:
     class ColumnInfo {
     public:
@@ -53,13 +53,14 @@ public:
         wxString title;
     };
 
-    TreeListManager(wxTreeListCtrl* treeList) {
-        if (!treeList) {
-            throw std::invalid_argument("treeList cannot be null");
-        }
+    ModelUiManager(wxTreeListCtrl* treeList, sd_gui_utils::config* cfg)
+        : treeListCtrl(treeList), config(cfg) {
         auto comparator = new wxTreeListModelItemComparator();
-        treeListCtrl    = treeList;
         treeListCtrl->SetItemComparator(comparator);
+    }
+
+    void AddDirTypeSelector(wxChoice* choice, sd_gui_utils::DirTypes type) {
+        this->dirTypeSelectors[type] = choice;
     }
 
     void AppendColumn(const wxString& title, int width = wxCOL_WIDTH_AUTOSIZE, wxAlignment align = wxALIGN_LEFT, int flags = wxCOL_RESIZABLE) {
@@ -68,7 +69,7 @@ public:
         columns.push_back(info);
     }
 
-    void AddItem(sd_gui_utils::ModelFileInfo* item, bool select = false) {
+    void AddItem(sd_gui_utils::ModelFileInfo* item, bool select = false, sd_gui_utils::sdServer* server = nullptr) {
         wxTreeListItem parentItem = GetOrCreateParent(item->folderGroupName, item->server_id);
         wxString name             = wxString::FromUTF8Unchecked(item->name);
         if (!item->folderGroupName.empty()) {
@@ -88,10 +89,12 @@ public:
             treeListCtrl->UnselectAll();
             treeListCtrl->Select(newItem);
         }
+
+        this->AddOrRemoveModelByDirType(item);
     }
 
     template <typename T>
-    void AddItem(const wxString& title, const wxVector<TreeListManager::col>& item, const wxString& groupName = wxEmptyString, T* data = nullptr) {
+    void AddItem(const wxString& title, const wxVector<ModelUiManager::col>& item, const wxString& groupName = wxEmptyString, T* data = nullptr) {
         wxTreeListItem parentItem = GetOrCreateParent(groupName);
         wxTreeListItem newItem    = treeListCtrl->AppendItem(parentItem, title);
         if (data) {
@@ -225,12 +228,67 @@ public:
             }
         }
 
-        // auto list = this->GetItemsByServerId(serverId);
-        // for (const auto& item : list) {
-        //     if (item.IsOk()) {
-        //         this->treeListCtrl->DeleteItem(item);
-        //     }
-        // }
+        for (auto& selectors : this->dirTypeSelectors) {
+            auto choice = selectors.second;
+            for (auto i = 0; i < choice->GetCount(); i++) {
+                const auto modelinfo = static_cast<sd_gui_utils::ModelFileInfo*>(choice->GetClientData(i));
+                if (modelinfo && modelinfo->server_id.empty() == false && modelinfo->server_id == serverId) {
+                    choice->Delete(i);
+                }
+            }
+        }
+    }
+
+    sd_gui_utils::ModelFileInfo* GetModelByItem(const wxTreeListItem item) {
+        auto data = static_cast<ModelFileInfoData*>(treeListCtrl->GetItemData(item));
+        if (data) {
+            return data->GetFileInfo();
+        }
+        return nullptr;
+    }
+
+    sd_gui_utils::ModelFileInfo* SetSelectedAsFavorite(bool state, sd_gui_utils::sdServer* server = nullptr) {
+        wxTreeListItems selections;
+        if (this->treeListCtrl->GetSelections(selections) == 0) {
+            return nullptr;
+        }
+        auto item  = selections.front();
+        auto model = this->GetModelByItem(item);
+        if (model == nullptr) {
+            return nullptr;
+        }
+
+        wxString name = wxString::FromUTF8Unchecked(model->name);
+        if (state) {
+            model->tags = model->tags | sd_gui_utils::ModelInfoTag::Favorite;
+            name        = wxString::Format("%s %s", _("[F] "), name);
+            this->ChangeText(item, name, 0);
+        } else {
+            this->ChangeText(item, name, 0);
+            model->tags = model->tags & ~sd_gui_utils::ModelInfoTag::Favorite;
+        }
+        this->SelectItemByModelPath(model->path);
+
+        return model;
+    }
+
+    void ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info, sd_gui_utils::sdServer* server = nullptr) {
+        if (info == nullptr) {
+            return;
+        }
+        if (this->dirTypeSelectors.contains(info->model_type) == true) {
+            auto selector = this->dirTypeSelectors.at(info->model_type);
+            for (auto i = 0; i < selector->GetCount(); i++) {
+                auto clientData = static_cast<sd_gui_utils::ModelFileInfo*>(selector->GetClientData(i));
+                if (clientData && clientData == info) {
+                    selector->SetSelection(i);
+                    return;
+                }
+            }
+        }
+
+        // add the model if not found
+        this->AddOrRemoveModelByDirType(info);
     }
 
     std::vector<wxTreeListItem> GetParentsByServerId(const std::string& server_id) {
@@ -286,26 +344,60 @@ public:
         treeListCtrl->DeleteAllItems();
         parentMap.clear();
     }
+    void AddOrRemoveModelByDirType(sd_gui_utils::ModelFileInfo* model) {
+        if (!this->dirTypeSelectors.contains(model->model_type)) {
+            return;
+        }
+
+        auto selector = this->dirTypeSelectors.at(model->model_type);
+
+        wxString name = wxString::FromUTF8(model->name);
+
+        if (model->server_id.empty() == false) {
+            auto srv = this->config->GetTcpServer(model->server_id);
+            if (srv) {
+                name = wxString::Format("%s %s", srv->GetName(), name);
+            }
+        }
+
+        // remove all items if not favorites if only favorites required
+        if (this->config->favorite_models_only && model->model_type == sd_gui_utils::DirTypes::CHECKPOINT) {
+            for (int i = 1; i < selector->GetCount(); i++) {
+                auto clientData = static_cast<sd_gui_utils::ModelFileInfo*>(selector->GetClientData(i));
+                if (clientData && sd_gui_utils::HasTag(clientData->tags, sd_gui_utils::ModelInfoTag::Favorite) == false) {
+                    selector->Delete(i);
+                    if (clientData->path == model->path) {  // we just deleted the model, no more job
+                        return;
+                    }
+                }
+            }
+            if (sd_gui_utils::HasTag(model->tags, sd_gui_utils::ModelInfoTag::Favorite)) {
+                selector->Append(name, model);
+                return;
+            }
+            return;
+        }
+
+        // check if we already have an inserted. If yes, then just update
+        for (int i = 1; i < selector->GetCount(); i++) {
+            auto clientData = static_cast<sd_gui_utils::ModelFileInfo*>(selector->GetClientData(i));
+            if (clientData && clientData->path == model->path) {
+                selector->SetString(i, name);
+                selector->SetClientData(i, model);
+                return;
+            }
+        }
+
+        selector->Append(name, model);
+    }
 
 private:
-    wxTreeListCtrl* treeListCtrl;
-    wxVector<TreeListManager::ColumnInfo> columns;
+    wxTreeListCtrl* treeListCtrl = nullptr;
+    std::unordered_map<sd_gui_utils::DirTypes, wxChoice*> dirTypeSelectors;
+    sd_gui_utils::config* config = nullptr;
+    wxVector<ModelUiManager::ColumnInfo> columns;
     std::map<wxString, wxTreeListItem> parentMap;
 
-    /**
-     * Retrieves or creates the parent wxTreeListItem for a given folder group name.
-     *
-     * This function takes a folder group name, which may consist of multiple segments
-     * separated by separator character, and ensures that each segment has a corresponding wxTreeListItem
-     * in the tree. If the specified folder group name is empty, it returns the root item.
-     * For each segment, it checks if a corresponding item already exists; if not, it creates
-     * a new item and inserts it into the tree. The function returns the wxTreeListItem of
-     * the last segment in the folder group name.
-     *
-     * @param folderGroupName A string representing the hierarchical folder group name,
-     *                        where segments are separated by separator character.
-     * @return The wxTreeListItem corresponding to the last segment of the folder group name.
-     */
     wxTreeListItem GetOrCreateParent(const std::string& folderGroupName, std::string server_id = "") {
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();

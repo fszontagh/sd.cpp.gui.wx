@@ -7,9 +7,9 @@ namespace QM {
     public:
         QueueManager(wxEvtHandler* eventHandler, const wxString& jobsdir);
         ~QueueManager();
-        uint64_t AddItem(const QueueItem& _item, bool fromFile = false);
-        uint64_t AddItem(std::shared_ptr<QueueItem> _item, bool fromFile = false);
-        uint64_t GetNextId() {
+        auto AddItem(const QueueItem& _item, bool fromFile = false) -> uint64_t;
+        auto AddItem(std::shared_ptr<QueueItem> _item, bool fromFile = false) -> uint64_t;
+        auto GetNextId() -> uint64_t {
             int id = this->GetCurrentUnixTimestamp(false);
             while (id <= this->lastId) {
                 id++;
@@ -18,7 +18,7 @@ namespace QM {
         };
         void UpdateItem(const QueueItem& item);
         void UpdateItem(std::shared_ptr<QueueItem> item);
-        std::shared_ptr<QueueItem> GetItemPtr(uint64_t id);
+        auto GetItemPtr(uint64_t item_id) -> std::shared_ptr<QueueItem>;
         /**
          * @brief Get all the items in the queue as a string formatted like:
          *
@@ -35,11 +35,11 @@ namespace QM {
         void PauseItem(std::shared_ptr<QueueItem> item);
         void SendEventToMainWindow(QueueEvents eventType, std::shared_ptr<QueueItem> item = nullptr);
         void OnThreadMessage(wxThreadEvent& e);
-        void SaveJobToFile(uint64_t id);
+        void SaveJobToFile(uint64_t job_id);
         void SaveJobToFile(const QueueItem& item);
-        bool DeleteJob(const QueueItem& item);
-        bool DeleteJob(uint64_t id);
-        bool IsRunning();
+        auto DeleteJob(uint64_t job_id) -> bool;
+        auto DeleteJob(const QueueItem& item) -> bool;
+        auto IsRunning() -> bool;
         inline void resetRunning(std::shared_ptr<QueueItem> item, const std::string& reason) {
             if (this->QueueList.empty()) {
                 return;
@@ -84,14 +84,12 @@ namespace QM {
 
     private:
         std::mutex queueMutex;
-        int GetCurrentUnixTimestamp(bool milliseconds = false);
+        auto GetCurrentUnixTimestamp(bool milliseconds = false) -> int;
         void LoadJobListFromDir();
         wxString jobsDir;
         uint64_t lastId    = 0;
         uint64_t lastExtId = 0;
-        uint64_t GetAnId();
-        // thread events handler, toupdate main window data table
-        void onItemAdded(QueueItem item);
+        auto GetAnId() -> uint64_t;
         std::shared_ptr<QueueItem> currentItem = nullptr;
 
         // @brief check if something is running or not

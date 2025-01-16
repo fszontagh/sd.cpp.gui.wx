@@ -33,8 +33,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    bool needToRun = true;
-    int lastId     = 0;
+    bool needToRun  = true;
+    uint64_t lastId = 0;
     while (needToRun) {
         std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
 
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
                 try {
                     nlohmann::json j = nlohmann::json::parse(message);
                     auto item        = j.get<QueueItem>();
-                    if (item.id != lastId) {
+                    if (item.id != lastId && item.status == QueueStatus::PENDING) {
                         sharedMemory->clear();
                         std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
                         lastId = item.id;

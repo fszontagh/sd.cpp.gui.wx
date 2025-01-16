@@ -29,17 +29,21 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
         auto ret = m_server.sendClientMessage(idx, data, len);
         if (!ret.m_success) {
             this->parent->sendLogEvent("Send Error: " + ret.m_msg, wxLOG_Error);
+        } else {
+            this->m_clientInfo.at(idx).tx += len;
         }
     } else {
         this->parent->sendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
     }
     auto fsize      = sd_gui_utils::formatbytes(len);
-    wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s", idx, fsize.first, fsize.second);
-    this->parent->sendLogEvent(logmsg, wxLOG_Debug);
-    this->m_clientInfo.at(idx).tx += len;
+    //wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s", idx, fsize.first, fsize.second);
+    //this->parent->sendLogEvent(logmsg, wxLOG_Debug);
 }
 void SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
-    packet.client_id   = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
+    if (idx != 0 && this->m_clientInfo.contains(idx)) {
+        packet.client_id = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
+    }
+
     auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
     size_t packet_size = raw_packet.second;
     this->sendMsg(idx, reinterpret_cast<const char*>(&packet_size), sizeof(packet_size));
@@ -97,8 +101,10 @@ void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const so
     this->parent->sendLogEvent("Client " + std::to_string(client) + " disconnected: " + ret.m_msg);
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        this->parent->sendDisconnectEvent(this->m_clientInfo.at(client));
-        this->m_clientInfo.erase(client);
+        if (this->m_clientInfo.contains(client)) {
+            this->parent->sendDisconnectEvent(this->m_clientInfo.at(client));
+            this->m_clientInfo.erase(client);
+        }
     }
 }
 
@@ -130,9 +136,8 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
     // parse from cbor to struct Packet
     try {
         // store the client id which is saved at the client if already connected once
-        if (packet.client_id > 0) {
-            auto oldInfo                                    = this->parent->ReReadClientInfo(packet.client_id, this->m_clientInfo[packet.source_idx].client_id != packet.client_id);
-            this->m_clientInfo[packet.source_idx].client_id = packet.client_id;
+        if (packet.client_id > 0 && this->m_clientInfo.contains(packet.source_idx)) {
+            auto oldInfo = this->parent->ReReadClientInfo(packet.client_id, this->m_clientInfo[packet.source_idx].client_id != packet.client_id);
             this->m_clientInfo[packet.source_idx].copyFrom(oldInfo);
         }
         if (packet.version != SD_GUI_VERSION) {

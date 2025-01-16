@@ -8,10 +8,22 @@ public:
 
     // stdout/stderr captured by parent
     inline static void HandleSDLog(sd_log_level_t level, const char* text, void* data) {
-        if (level == SD_LOG_ERROR) {
-            std::cerr << text;
-        } else {
-            std::cout << text;
+        switch (level) {
+            case sd_log_level_t::SD_LOG_DEBUG: {
+                std::cout << "[DEBUG] " << text << std::endl;
+            } break;
+            case sd_log_level_t::SD_LOG_INFO: {
+                std::cout << "[INFO] " << text << std::endl;
+            } break;
+            case sd_log_level_t::SD_LOG_ERROR: {
+                std::cout << "[ERROR] " << text << std::endl;
+            } break;
+            case sd_log_level_t::SD_LOG_WARN: {
+                std::cout << "[WARN] " << text << std::endl;
+            } break;
+            default: {
+                std::cout << text << std::endl;
+            } break;
         }
     }
     inline static void HandleHashCallback(size_t readed, std::string hash, void* data) {
@@ -74,8 +86,8 @@ private:
     std::string error;
     sd_ctx_t* sd_ctx                                           = NULL;
     upscaler_ctx_t* upscale_ctx                                = nullptr;
-    std::shared_ptr<QueueItem> currentItem                 = nullptr;  //< shared pointer to current item>
-    std::shared_ptr<QueueItem> lastItem                    = nullptr;  //< shared pointer to last item>
+    std::shared_ptr<QueueItem> currentItem                     = nullptr;  //< shared pointer to current item>
+    std::shared_ptr<QueueItem> lastItem                        = nullptr;  //< shared pointer to last item>
     FreeSdCtxFunction freeSdCtxPtr                             = nullptr;
     Txt2ImgFunction txt2imgFuncPtr                             = nullptr;
     Img2ImgFunction img2imgFuncPtr                             = nullptr;

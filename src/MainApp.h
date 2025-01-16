@@ -65,11 +65,12 @@ public:
         wxRegion path(splash_bitmap);
 
         wxSplashScreen* splash = new wxSplashScreen(splash_bitmap,
-                                                    wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_TIMEOUT,
+                                                    wxSPLASH_CENTRE_ON_SCREEN | wxSPLASH_NO_TIMEOUT,
                                                     6000, nullptr, -1, wxDefaultPosition, wxDefaultSize,
                                                     wxNO_BORDER | wxSTAY_ON_TOP | wxFRAME_SHAPED);
         splash->SetShape(path);
         SetTopWindow(splash);
+        splash->Show();
 
         wxFileName f(wxStandardPaths::Get().GetExecutablePath());
         wxString appPath(f.GetPath());
@@ -135,6 +136,31 @@ public:
         }
         this->ChangeLocale(newLangName);
         this->mainFrame = new MainWindowUI(nullptr, this->dllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
+
+        // load models
+        this->mainFrame->LoadPresets();
+        this->mainFrame->LoadPromptTemplates();
+        this->mainFrame->loadModelList();
+        this->mainFrame->loadLoraList();
+        this->mainFrame->loadVaeList();
+        this->mainFrame->loadTaesdList();
+        this->mainFrame->loadControlnetList();
+        this->mainFrame->loadEsrganList();
+        this->mainFrame->loadEmbeddingList();
+        this->mainFrame->loadSchedulerList();
+        this->mainFrame->loadSamplerList();
+        this->mainFrame->loadTypeList();
+
+        if (this->cfg->initServerList(this->mainFrame->GetEventHandler())) {
+            if (this->cfg->servers.empty() == false) {
+                for (auto& server : this->cfg->ListRemoteServers()) {
+                    if (server->IsEnabled() == false) {
+                        continue;
+                    }
+                    server->StartServer();
+                }
+            }
+        }
         SetTopWindow(this->mainFrame);
         this->mainFrame->Show();
     };

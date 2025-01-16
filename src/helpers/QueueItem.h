@@ -1,9 +1,6 @@
 #ifndef __HELPERS_QUEUE_ITEM_
 #define __HELPERS_QUEUE_ITEM_
 
-
-
-
 inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
     {SDMode::TXT2IMG, "txt2img"},
     {SDMode::IMG2IMG, "img2img"},
@@ -124,8 +121,35 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         this->images.clear();
         return newItem;
     };
-    inline QueueItem convertFromNetwork() {
+    inline static QueueItem convertFromNetwork(const sd_gui_utils::RemoteQueueItem& item) {
+        QueueItem newItem(item);
+        int counter = 0;
+        for (const auto img : item.image_data) {
+            QueueItemImage image;
+            wxFileName fn;
+            wxFile file;
+            fn.AssignTempFileName("sd_gui_");
+            image.pathname = fn.GetFullPath();
+            auto data      = sd_gui_utils::base64_encode(img.rawData.data(), img.rawData.size());
+            file.Open(image.pathname, wxFile::write);
+            file.Write(data.data(), data.size());
+            file.Close();
+            image.type = img.type;
+            image.id   = counter;
+            newItem.images.push_back(image);
+            if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::INITIAL)) {
+                newItem.initial_image = image.pathname;
+            }
+            if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::MASK_USED)) {
+                newItem.mask_image = image.pathname;
+            }
+            if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::CONTROLNET)) {
+                newItem.params.control_image_path = image.pathname;
+            }
 
+            counter++;
+        }
+        return newItem;
     };
 };
 

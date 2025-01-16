@@ -15,9 +15,9 @@ QM::QueueManager::~QueueManager() {
     }
 }
 
-uint64_t QM::QueueManager::AddItem(const QueueItem& _item, bool fromFile) {
+auto QM::QueueManager::AddItem(const QueueItem& _item, bool fromFile) -> uint64_t {
     std::lock_guard<std::mutex> lock(queueMutex);
-    std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(_item);
+    const std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(_item);
 
     if (item->server.empty() == false) {
         size_t tmpid                 = this->RemoteQueueList.size();
@@ -46,7 +46,7 @@ uint64_t QM::QueueManager::AddItem(const QueueItem& _item, bool fromFile) {
 
     this->SendEventToMainWindow(QueueEvents::ITEM_ADDED, item);
 
-    if (this->isRunning == false && item->status == QueueStatus::PENDING) {
+    if (!this->isRunning && item->status == QueueStatus::PENDING) {
         this->currentItem = item;
         this->SendEventToMainWindow(QueueEvents::ITEM_START, item);
         this->isRunning = true;
@@ -70,12 +70,12 @@ void QM::QueueManager::UpdateItem(std::shared_ptr<QueueItem> item) {
     }
 }
 
-std::shared_ptr<QueueItem> QM::QueueManager::GetItemPtr(uint64_t id) {
+auto QM::QueueManager::GetItemPtr(uint64_t item_id) ->std::shared_ptr<QueueItem>{
     std::lock_guard<std::mutex> lock(queueMutex);
-    if (this->QueueList.find(id) == this->QueueList.end()) {
+    if (this->QueueList.find(item_id) == this->QueueList.end()) {
         return nullptr;
     } else {
-        return this->QueueList[id];
+        return this->QueueList[item_id];
     }
 }
 
@@ -184,7 +184,7 @@ void QM::QueueManager::RestartQueue() {
     if (!this->isRunning) {
         for (auto job : this->QueueList) {
             if (job.second->status == QueueStatus::PENDING) {
-                if (this->isRunning == false) {
+                if (!this->isRunning) {
                     this->isRunning   = true;
                     this->currentItem = job.second;
                     this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
@@ -229,15 +229,15 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     }
     auto msg = e.GetString();
 
-    wxString token   = msg.substr(0, msg.find(":"));
-    wxString content = msg.substr(msg.find(":") + 1);
+    wxString token   = msg.substr(0, msg.find(":", 0));
+    wxString content = msg.substr(msg.find(":", 0) + 1);
 
-    sd_gui_utils::ThreadEvents threadEvent = (sd_gui_utils::ThreadEvents)wxAtoi(token);
+    const auto threadEvent = (sd_gui_utils::ThreadEvents)wxAtoi(token);
 
     // only handle the QUEUE messages, what this class generate
     if (threadEvent == sd_gui_utils::ThreadEvents::QUEUE) {
-        QueueEvents event = (QueueEvents)wxAtoi(content);
-        auto payload      = e.GetPayload<std::shared_ptr<QueueItem>>();
+        const auto event = static_cast<QueueEvents>(wxAtoi(content));
+        auto payload     = e.GetPayload<std::shared_ptr<QueueItem>>();
         if (event == QueueEvents::ITEM_START) {
             this->SetStatus(QueueStatus::RUNNING, payload);
             this->isRunning   = true;
@@ -250,13 +250,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             this->currentItem = nullptr;
             // jump to the next item in queue
             // find waiting jobs
-            for (auto job : this->QueueList) {
-                if (job.second->status == QueueStatus::PENDING) {
-                    if (this->isRunning == false) {
-                        this->currentItem = job.second;
-                        this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
-                        this->isRunning = true;
-                    }
+            for (const auto& job : this->QueueList) {
+                if (job.second->status == QueueStatus::PENDING && !this->isRunning) {
+                    this->currentItem = job.second;
+                    this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
+                    this->isRunning = true;
                     break;
                 }
             }
@@ -271,13 +269,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             this->SetStatus(QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
-            for (auto job : this->QueueList) {
-                if (job.second->status == QueueStatus::PENDING) {
-                    if (this->isRunning == false) {
-                        this->currentItem = job.second;
-                        this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
-                        this->isRunning = true;
-                    }
+            for (const auto& job : this->QueueList) {
+                if (job.second->status == QueueStatus::PENDING && !this->isRunning) {
+                    this->currentItem = job.second;
+                    this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
+                    this->isRunning = true;
                     break;
                 }
             }
@@ -287,13 +283,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             this->SetStatus(QueueStatus::FAILED, payload);
             this->isRunning = false;
             // jump to the next
-            for (auto job : this->QueueList) {
-                if (job.second->status == QueueStatus::PENDING) {
-                    if (this->isRunning == false) {
-                        this->currentItem = job.second;
-                        this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
-                        this->isRunning = true;
-                    }
+            for (const auto& job : this->QueueList) {
+                if (job.second->status == QueueStatus::PENDING && !this->isRunning) {
+                    this->currentItem = job.second;
+                    this->SendEventToMainWindow(QueueEvents::ITEM_START, job.second);
+                    this->isRunning = true;
                     break;
                 }
             }
@@ -311,14 +305,14 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     }
 }
 
-void QM::QueueManager::SaveJobToFile(uint64_t id) {
-    auto item = this->GetItemPtr(id);
+void QM::QueueManager::SaveJobToFile(uint64_t job_id) {
+    auto item = this->GetItemPtr(job_id);
     this->SaveJobToFile(*item);
 }
 
 void QM::QueueManager::SaveJobToFile(const QueueItem& item) {
     try {
-        nlohmann::json jsonfile(item);
+        const nlohmann::json jsonfile(item);
         auto filename = wxFileName(wxString::Format("%s%slocal_%lu.json", this->jobsDir, wxFileName::GetPathSeparators(), item.id));
         wxFile file(filename.GetAbsolutePath(), wxFile::write);
         file.Write(jsonfile.dump());
@@ -327,12 +321,8 @@ void QM::QueueManager::SaveJobToFile(const QueueItem& item) {
     }
 }
 
-bool QM::QueueManager::DeleteJob(const QueueItem& item) {
-    return this->DeleteJob(item.id);
-}
-
-bool QM::QueueManager::DeleteJob(uint64_t id) {
-    auto item = this->GetItemPtr(id);
+auto QM::QueueManager::DeleteJob(uint64_t job_id) -> bool {
+    auto item = this->GetItemPtr(job_id);
     if (item->id == 0) {
         return false;
     }
@@ -346,20 +336,25 @@ bool QM::QueueManager::DeleteJob(uint64_t id) {
     }
     return false;
 }
-
-bool QM::QueueManager::IsRunning() {
+auto QM::QueueManager::DeleteJob(const QueueItem& item) -> bool {
+    return this->DeleteJob(item.id);
+}
+auto QM::QueueManager::IsRunning() -> bool {
     return this->isRunning;
 }
 
-int QM::QueueManager::GetCurrentUnixTimestamp(bool milliseconds) {
-    const auto p1 = std::chrono::system_clock::now();
-    auto duration = p1.time_since_epoch();
+auto QM::QueueManager::GetCurrentUnixTimestamp(bool milliseconds) -> int {
+    const auto sclock_now = std::chrono::system_clock::now();
+    auto duration         = sclock_now.time_since_epoch();
+
+    int millis = 0;
 
     if (milliseconds) {
-        return static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        millis = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
     } else {
-        return static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
+        millis = static_cast<int>(std::chrono::duration_cast<std::chrono::seconds>(duration).count());
     }
+    return millis;
 }
 
 void QM::QueueManager::LoadJobListFromDir() {
@@ -368,7 +363,7 @@ void QM::QueueManager::LoadJobListFromDir() {
         return;
     }
 
-    wxDir dir(this->jobsDir);
+    const wxDir dir(this->jobsDir);
     if (!dir.IsOpened()) {
         return;
     }
@@ -377,7 +372,7 @@ void QM::QueueManager::LoadJobListFromDir() {
     wxString filename;
     bool cont = dir.GetFirst(&filename, wxEmptyString, wxDIR_FILES);
     while (cont) {
-        wxFileName path(this->jobsDir, filename);
+        const wxFileName path(this->jobsDir, filename);
 
         if (path.IsFileReadable() && path.HasExt() && path.GetExt() == "json") {
             files.push_back(path);
@@ -395,7 +390,7 @@ void QM::QueueManager::LoadJobListFromDir() {
         std::ifstream f(path.GetFullPath().ToStdString());
 
         try {
-            nlohmann::json data                 = nlohmann::json::parse(f);
+            const nlohmann::json data       = nlohmann::json::parse(f);
             std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(data.get<QueueItem>());
             if (item->status == QueueStatus::RUNNING ||
                 item->status == QueueStatus::MODEL_LOADING ||
@@ -415,16 +410,11 @@ void QM::QueueManager::LoadJobListFromDir() {
     }
 }
 
-uint64_t QM::QueueManager::GetAnId() {
+auto QM::QueueManager::GetAnId() -> uint64_t {
     uint64_t id = this->GetCurrentUnixTimestamp(false);
     while (id <= this->lastId) {
         id++;
     }
     this->lastId = id;
     return id;
-}
-
-void QM::QueueManager::onItemAdded(QueueItem item) {
-    // this->parent->m_joblist
-    // auto dataTable = this->parent->m_joblist;
 }
