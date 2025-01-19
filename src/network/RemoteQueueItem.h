@@ -37,14 +37,15 @@ namespace sd_gui_utils {
 
         struct ItemImage {
             sd_gui_utils::ImageType type = sd_gui_utils::ImageType::GENERATED;
-            std::vector<unsigned char> rawData;
+            std::vector<unsigned char> rawData = {};
         };
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ItemImage, rawData, type)
 
         struct RemoteQueueItem {
             uint64_t id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0;
-            SDParams params      = SDParams();
-            QueueStatus status   = QueueStatus::PENDING;
-            QueueEvents event    = QueueEvents::ITEM_ADDED;
+            SDParams params    = SDParams();
+            QueueStatus status = QueueStatus::PENDING;
+            // QueueEvents event    = QueueEvents::ITEM_ADDED;
             QueueItemStats stats = QueueItemStats();
             int step = 0, steps = 0;
             size_t hash_fullsize = 0, hash_progress_size = 0;
@@ -74,7 +75,7 @@ namespace sd_gui_utils {
                                                         started_at,
                                                         params,
                                                         status,
-                                                        event,
+                                                        //  event,
                                                         stats,
                                                         step,
                                                         steps,

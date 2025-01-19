@@ -85,6 +85,7 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn32;
 		wxDataViewColumn* m_dataViewListColumn321;
 		wxDataViewColumn* m_dataViewListColumn3211;
+		wxDataViewColumn* m_dataViewListColumn32112;
 		wxDataViewColumn* m_dataViewListColumn32111;
 		wxDataViewColumn* m_dataViewListColumn321111;
 		wxDataViewColumn* m_dataViewListColumn3211111;

@@ -49,7 +49,9 @@ int main(int argc, char* argv[]) {
                 try {
                     nlohmann::json j = nlohmann::json::parse(message);
                     auto item        = j.get<QueueItem>();
-                    if (item.id != lastId && item.status == QueueStatus::PENDING) {
+                    if (item.id == 0) {
+                        std::cout << "[EXTPORCESS] Got a wrong id: 0" << std::endl;
+                    } else if (item.id != lastId && item.status == QueueStatus::PENDING) {
                         sharedMemory->clear();
                         std::cout << "[EXTPROCESS] New message: " << item.id << std::endl;
                         lastId = item.id;

@@ -14,12 +14,13 @@ public:
         uint16_t port;
         int idx;
         long connected_at;
+                long disconnected_at = 0;
         std::string apikey;
         long last_keepalive = 0;
         uint64_t client_id  = 0;
         uint64_t tx         = 0;
         uint64_t rx         = 0;
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(clientInfo, host, port, idx, connected_at, apikey, last_keepalive, client_id, tx, rx)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(clientInfo, host, port, idx, connected_at, disconnected_at, apikey, last_keepalive, client_id, tx, rx)
         inline void copyFrom(const SocketApp::clientInfo& other) {
             this->client_id = other.client_id;
             this->tx += other.tx;

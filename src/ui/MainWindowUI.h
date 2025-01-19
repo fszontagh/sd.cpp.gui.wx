@@ -132,23 +132,8 @@ public:
     void loadTypeList();
 
 private:
-    enum class queueJobRows : unsigned int {
-        ID = 0,
-        CREATED_AT,
-        TYPE,
-        MODEL,
-        SAMPLER,
-        SEED,
-        PROGRESS,
-        SPEED,
-        STATUS,
-        STATUS_MESSAGE,
-        SERVER,
-        N_COUNTER
-    };
-
     MainApp* mapp                                            = nullptr;
-    std::unique_ptr<ModelUiManager> treeListManager         = nullptr;
+    std::unique_ptr<ModelUiManager> modelUiManager          = nullptr;
     std::unique_ptr<DataViewListManager> dataViewListManager = nullptr;
 
     bool disableExternalProcessHandling               = false;
@@ -318,11 +303,6 @@ private:
 
     // start a thread to generate image
     void StartGeneration(std::shared_ptr<QueueItem> myJob);
-
-    // handle queue managers events, manipulate data table by events
-    void OnQueueItemManagerItemAdded(std::shared_ptr<QueueItem> item);
-    void OnQueueItemManagerItemUpdated(std::shared_ptr<QueueItem> item);
-    void OnQueueItemManagerItemStatusChanged(std::shared_ptr<QueueItem> item);
 
     template <typename T>
     static void SendThreadEvent(wxEvtHandler* eventHandler, QueueEvents eventType, const T& payload, std::string text = "");

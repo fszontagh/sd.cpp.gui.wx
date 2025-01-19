@@ -135,7 +135,7 @@ private:
 
         std::lock_guard<std::mutex> lock(this->itemMutex);
         this->currentItem->status     = status;
-        this->currentItem->event      = event;
+        //this->currentItem->event      = event;
         this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->currentItem->update_index++;
 

@@ -32,24 +32,24 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->Maximize();
     }
 
-    this->qmanager        = std::make_shared<QM::QueueManager>(this->GetEventHandler(), this->mapp->cfg->jobs);
-    this->ModelManager    = std::make_shared<ModelInfo::Manager>(this->mapp->cfg->datapath);
-    this->treeListManager = std::make_unique<ModelUiManager>(this->m_modelTreeList, this->mapp->cfg);
+    this->qmanager       = std::make_shared<QM::QueueManager>(this->GetEventHandler(), this->mapp->cfg->jobs);
+    this->ModelManager   = std::make_shared<ModelInfo::Manager>(this->mapp->cfg->datapath);
+    this->modelUiManager = std::make_unique<ModelUiManager>(this->m_modelTreeList, this->mapp->cfg);
 
-    this->treeListManager->AddDirTypeSelector(this->m_model, sd_gui_utils::DirTypes::CHECKPOINT);
-    this->treeListManager->AddDirTypeSelector(this->m_taesd, sd_gui_utils::DirTypes::TAESD);
-    this->treeListManager->AddDirTypeSelector(this->m_vae, sd_gui_utils::DirTypes::VAE);
-    this->treeListManager->AddDirTypeSelector(this->m_upscaler_model, sd_gui_utils::DirTypes::ESRGAN);
-    this->treeListManager->AddDirTypeSelector(this->m_controlnetModels, sd_gui_utils::DirTypes::CONTROLNET);
+    this->modelUiManager->AddDirTypeSelector(this->m_model, sd_gui_utils::DirTypes::CHECKPOINT);
+    this->modelUiManager->AddDirTypeSelector(this->m_taesd, sd_gui_utils::DirTypes::TAESD);
+    this->modelUiManager->AddDirTypeSelector(this->m_vae, sd_gui_utils::DirTypes::VAE);
+    this->modelUiManager->AddDirTypeSelector(this->m_upscaler_model, sd_gui_utils::DirTypes::ESRGAN);
+    this->modelUiManager->AddDirTypeSelector(this->m_controlnetModels, sd_gui_utils::DirTypes::CONTROLNET);
 
-    this->dataViewListManager = std::make_unique<DataViewListManager>(this->m_joblist, this->qmanager);
+    this->dataViewListManager = std::make_unique<DataViewListManager>(this->m_joblist, this->qmanager, this->mapp->cfg);
 
     this->m_modelTreeList->ClearColumns();
 
-    this->treeListManager->AppendColumn(_("Name"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
-    this->treeListManager->AppendColumn(_("Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
-    this->treeListManager->AppendColumn(_("Type"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
-    this->treeListManager->AppendColumn(_("Hash"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->modelUiManager->AppendColumn(_("Name"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->modelUiManager->AppendColumn(_("Size"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->modelUiManager->AppendColumn(_("Type"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
+    this->modelUiManager->AppendColumn(_("Hash"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
 
     this->m_modelTreeList->SetSortColumn(0, true);
 
@@ -177,7 +177,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window  | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
         if (0 != result) {
             wxMessageDialog errorDialog(this, _("An error occurred when trying to start external process. Please try again."), _("Error"), wxOK | wxICON_ERROR);
             errorDialog.ShowModal();
@@ -210,7 +210,7 @@ void MainWindowUI::onSettings(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onModelsRefresh(wxCommandEvent& event) {
-    this->treeListManager->CleanAll();
+    this->modelUiManager->CleanAll();
     this->loadModelList();
     this->loadLoraList();
     this->loadVaeList();
@@ -737,7 +737,7 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
     if (item.IsOk() == false) {
         return;
     }
-    auto modelInfo = this->treeListManager->FindItem(item);
+    auto modelInfo = this->modelUiManager->FindItem(item);
 
     wxMenu* menu = new wxMenu();
 
@@ -1555,7 +1555,7 @@ void MainWindowUI::OnDataModelTreeSelected(wxTreeListEvent& event) {
         return;
     }
     auto item      = selections.front();  // get the first
-    auto modelInfo = this->treeListManager->FindItem(item);
+    auto modelInfo = this->modelUiManager->FindItem(item);
 
     if (!modelInfo) {
         return;
@@ -1571,9 +1571,9 @@ void MainWindowUI::OnModelFavoriteChange(wxCommandEvent& event) {
     if (this->m_modelTreeList->GetSelections(selections) == 0) {
         return;
     }
-    auto model = this->treeListManager->SetSelectedAsFavorite(this->m_ModelFavorite->GetValue());
+    auto model = this->modelUiManager->SetSelectedAsFavorite(this->m_ModelFavorite->GetValue());
     if (model != nullptr) {
-        this->treeListManager->AddOrRemoveModelByDirType(model);
+        this->modelUiManager->AddOrRemoveModelByDirType(model);
         this->ModelManager->UpdateInfo(model);
     }
 }
@@ -2152,84 +2152,6 @@ void MainWindowUI::UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileIn
     this->m_modelDetailsImageList->SetScrollbar(wxVERTICAL, 0, 0, 0);
 }
 
-void MainWindowUI::OnQueueItemManagerItemAdded(std::shared_ptr<QueueItem> item) {
-    wxVector<wxVariant> data;
-
-    auto created_at = sd_gui_utils::formatUnixTimestampToDate(item->created_at);
-
-    data.push_back(wxVariant(wxString::Format("%lu", item->id)));
-    data.push_back(wxVariant(created_at));
-    data.push_back(wxVariant(modes_str[item->mode]));
-    data.push_back(wxVariant(item->model));
-
-    if (item->mode == SDMode::UPSCALE || item->mode == SDMode::CONVERT) {
-        data.push_back(wxVariant("--"));  // sample method
-        data.push_back(wxVariant("--"));  // seed
-    } else {
-        data.push_back(wxVariant(sd_gui_utils::samplerUiName.at(item->params.sample_method)));
-        data.push_back(wxVariant(std::to_string(item->params.seed)));
-    }
-
-    data.push_back(item->status == QueueStatus::DONE ? 100 : 1);  // progressbar
-    // calculate the item average speed frrom item->stats in step / seconds or seconds / step
-
-    wxString speed = wxString::Format(item->stats.time_avg > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->stats.time_avg > 1.0f || item->stats.time_avg == 0 ? item->stats.time_avg : (1.0f / item->stats.time_avg), item->step, item->steps);
-    data.push_back(wxString(speed));                                                    // speed
-    data.push_back(wxVariant(wxGetTranslation(QueueStatus_GUI_str.at(item->status))));  // status
-    data.push_back(wxVariant(item->status_message));
-
-    if (item->server.empty() == false) {
-        auto srv = this->mapp->cfg->GetTcpServer(item->server);
-        if (srv != nullptr) {
-            data.push_back(wxVariant(srv->GetName()));
-        } else {
-            data.push_back(wxVariant(_("deleted server")));
-        }
-    } else {
-        data.push_back(wxVariant(_("local")));
-    }
-
-    auto store = this->m_joblist->GetStore();
-
-    if (data.size() != (unsigned int)queueJobRows::N_COUNTER) {
-        return;
-    }
-    store->PrependItem(data, wxUIntPtr(item->id));
-    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
-}
-
-void MainWindowUI::OnQueueItemManagerItemUpdated(std::shared_ptr<QueueItem> item) {
-    // update column
-    auto store             = this->m_joblist->GetStore();
-    wxString speed         = wxString::Format(item->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", item->time > 1.0f || item->time == 0 ? item->time : (1.0f / item->time), item->step, item->steps);
-    float current_progress = 0.f;
-
-    if (item->step > 0 && item->steps > 0) {
-        current_progress = 100.f * (static_cast<float>(item->step) /
-                                    static_cast<float>(item->steps));
-    }
-    if (item->step == item->steps) {
-        current_progress = 100.f;
-    }
-
-    for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-        auto currentItem                 = store->GetItem(i);
-        auto id                          = store->GetItemData(currentItem);
-        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
-        if (qitem->id == item->id) {
-            store->SetValueByRow(static_cast<int>(current_progress), i, (int)queueJobRows::PROGRESS);
-            store->SetValueByRow(speed, i, (int)queueJobRows::SPEED);
-            store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
-            store->RowValueChanged(i, (int)queueJobRows::SPEED);
-            this->m_joblist->Refresh();
-            this->m_joblist->Update();
-            break;
-        }
-    }
-
-    return;
-}
-
 MainWindowUI::~MainWindowUI() {
     if (this->civitwindow != nullptr) {
         this->civitwindow->Destroy();
@@ -2295,13 +2217,13 @@ MainWindowUI::~MainWindowUI() {
 void MainWindowUI::loadControlnetList() {
     this->LoadFileList(sd_gui_utils::DirTypes::CONTROLNET);
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadEmbeddingList() {
     this->LoadFileList(sd_gui_utils::DirTypes::EMBEDDING);
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
@@ -2317,7 +2239,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
     }
 
     auto item      = selections.front();  // get the first
-    auto modelinfo = this->treeListManager->FindItem(item);
+    auto modelinfo = this->modelUiManager->FindItem(item);
 
     wxString shortname;
     // only allow the id 106, because no model needed to it
@@ -2354,7 +2276,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
                 return;
             }
             wxTreeListItem selected = selections.front();
-            wxString basePath       = this->treeListManager->findParentPath(selected, this->mapp->cfg);
+            wxString basePath       = this->modelUiManager->findParentPath(selected, this->mapp->cfg);
 
             if (basePath == wxEmptyString) {
                 return;
@@ -2491,7 +2413,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
                         }
                     }
                 }
-                this->treeListManager->RemoveItem(modelinfo->path);
+                this->modelUiManager->RemoveItem(modelinfo->path);
                 this->ModelManager->deleteModel(modelinfo->path);
             }
         } break;
@@ -2501,7 +2423,7 @@ void MainWindowUI::OnModelListPopUpClick(wxCommandEvent& evt) {
             } else {
                 wxTreeListItems selections;
                 if (this->m_modelTreeList->GetSelections(selections) > 0) {
-                    wxString path = this->treeListManager->findParentPath(selections.front(), this->mapp->cfg);
+                    wxString path = this->modelUiManager->findParentPath(selections.front(), this->mapp->cfg);
                     if (path != wxEmptyString) {
                         wxLaunchDefaultApplication(path);
                     }
@@ -2600,19 +2522,19 @@ void MainWindowUI::loadVaeList() {
     this->LoadFileList(sd_gui_utils::DirTypes::VAE);
     this->m_vae->SetToolTip(this->m_vae->GetStringSelection());
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadEsrganList() {
     this->LoadFileList(sd_gui_utils::DirTypes::ESRGAN);
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::loadTaesdList() {
     this->LoadFileList(sd_gui_utils::DirTypes::TAESD);
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 wxString MainWindowUI::paramsToImageComment(const QueueItem& myItem) {
@@ -2847,38 +2769,38 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         if (type == sd_gui_utils::DirTypes::CHECKPOINT) {
             auto model_info = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (model_info) {
-                this->treeListManager->AddItem(model_info);
+                this->modelUiManager->AddItem(model_info);
             }
 
         } else if (type == sd_gui_utils::DirTypes::LORA) {
             auto lora = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (lora) {
-                this->treeListManager->AddItem(lora);
+                this->modelUiManager->AddItem(lora);
             }
         } else if (type == sd_gui_utils::DirTypes::EMBEDDING) {
             auto embedding = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (embedding) {
-                this->treeListManager->AddItem(embedding);
+                this->modelUiManager->AddItem(embedding);
             }
 
         } else if (type == sd_gui_utils::DirTypes::CONTROLNET) {
             auto controlnet = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (controlnet) {
-                this->treeListManager->AddItem(controlnet);
+                this->modelUiManager->AddItem(controlnet);
                 // this->m_controlnetModels->Append(controlnet->name, controlnet);
             }
 
         } else if (type == sd_gui_utils::DirTypes::ESRGAN) {
             auto esrgan = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (esrgan) {
-                this->treeListManager->AddItem(esrgan);
+                this->modelUiManager->AddItem(esrgan);
                 // this->m_upscaler_model->Append(esrgan->name, esrgan);
             }
 
         } else if (type == sd_gui_utils::DirTypes::VAE) {
             auto vae = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (vae) {
-                this->treeListManager->AddItem(vae);
+                this->modelUiManager->AddItem(vae);
                 // this->m_vae->Append(vae->name, vae);
             }
 
@@ -2913,7 +2835,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         } else if (type == sd_gui_utils::DirTypes::TAESD) {
             auto taesd = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (taesd) {
-                this->treeListManager->AddItem(taesd);
+                this->modelUiManager->AddItem(taesd);
                 // this->m_taesd->Append(taesd->name, taesd);
             }
         }
@@ -2960,7 +2882,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
 void MainWindowUI::loadLoraList() {
     this->LoadFileList(sd_gui_utils::DirTypes::LORA);
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
@@ -3363,27 +3285,6 @@ void MainWindowUI::ModelStandaloneHashingCallback(size_t readed_size, std::strin
     }
 }
 
-void MainWindowUI::OnQueueItemManagerItemStatusChanged(std::shared_ptr<QueueItem> item) {
-    auto store = this->m_joblist->GetStore();
-
-    for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-        auto currentItem                 = store->GetItem(i);
-        auto id                          = store->GetItemData(currentItem);
-        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
-        if (qitem->id == item->id) {
-            store->SetValueByRow(wxVariant(wxGetTranslation(QueueStatus_GUI_str.at(item->status))), i, (int)queueJobRows::STATUS);
-            store->RowValueChanged(i, (int)queueJobRows::STATUS);
-
-            store->SetValueByRow(wxVariant(item->status_message), i, (int)queueJobRows::STATUS_MESSAGE);
-            store->RowValueChanged(i, (int)queueJobRows::STATUS_MESSAGE);
-
-            break;
-        }
-    }
-    this->m_joblist->Refresh();
-    this->m_joblist->Update();
-}
-
 void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     e.Skip();
 
@@ -3427,7 +3328,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             case QueueEvents::ITEM_ADDED: {
                 if (item->server.empty()) {
                     this->UpdateJobInfoDetailsFromJobQueueList(item);
-                    this->OnQueueItemManagerItemAdded(item);
+                    this->dataViewListManager->AddItem(item);
+                    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
                 } else {
                     auto srv = this->mapp->cfg->GetTcpServer(item->server);
                     srv->SendQueueJob(item->convertToNetwork());
@@ -3437,12 +3339,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 // item status changed
             case QueueEvents::ITEM_STATUS_CHANGED: {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
-                this->OnQueueItemManagerItemStatusChanged(item);
+                this->dataViewListManager->UpdateColumns(DataViewListManager::queueJobColumns::STATUS | DataViewListManager::queueJobColumns::STATUS_MESSAGE, item);
                 this->UpdateCurrentProgress(item, event);
             } break;
                 // item updated... -> set the progress bar in the queue
             case QueueEvents::ITEM_UPDATED: {
-                this->OnQueueItemManagerItemUpdated(item);
+                this->dataViewListManager->UpdateColumns(DataViewListManager::queueJobColumns::PROGRESS | DataViewListManager::queueJobColumns::SPEED, item);
                 this->UpdateCurrentProgress(item, event);
             } break;
                 // this is just the item start, if no mode
@@ -3489,7 +3391,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                     if (wxFileExists(item->params.output_path)) {
                         auto newModel = this->ModelManager->addModel(item->params.output_path, sd_gui_utils::DirTypes::CHECKPOINT, this->mapp->cfg->model);
                         if (newModel) {
-                            this->treeListManager->AddItem(newModel, true);
+                            this->modelUiManager->AddItem(newModel, true);
                         }
                     }
                 } else {
@@ -3594,7 +3496,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Server disconnected: %s %s"), server->GetName(), content));
         // remove from m_server too
-        for (size_t i = 1; i < this->m_server->GetCount(); i++) {
+        for (size_t i = this->m_server->GetCount() - 1; i >= 0; i--) {
             auto _srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
             if (_srv && _srv == server) {
                 this->m_server->Delete(i);
@@ -3608,7 +3510,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->m_server->Show(false);
             this->m_server->GetParent()->Layout();
         }
-        this->treeListManager->DeleteByServerId(server->GetId());
+        this->modelUiManager->DeleteByServerId(server->GetId());
+        this->dataViewListManager->RemoveRemoteItems(server->GetId());
+        this->qmanager->RemoveRemoteItems(server->GetId());
         this->ModelManager->UnloadModelsByServer(server);
         return;
     }
@@ -3618,6 +3522,30 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE) {
+        std::cout << "SERVER_JOBLIST_UPDATE" << std::endl;
+        auto payload = e.GetPayload<std::vector<sd_gui_utils::RemoteQueueItem>>();
+
+        for (const auto& job : payload) {
+            auto newItem     = QueueItem::convertFromNetwork(job);
+            auto item_id     = this->qmanager->AddItem(newItem, false, true);
+            auto item        = this->qmanager->GetItemPtr(item_id);
+            nlohmann::json j = *item;
+            this->dataViewListManager->AddItem(item);
+        }
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE) {
+        auto payload = e.GetPayload<QueueItem>();
+        // this will add the item if not exists
+        auto addedItem = this->qmanager->UpdateItem(payload);
+
+        if (addedItem) {
+            if (!this->dataViewListManager->ItemExists(addedItem->id)) {
+                this->dataViewListManager->AddItem(addedItem);
+            }
+            this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
+        }
+        return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_AUTH_REQUEST) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
@@ -3645,9 +3573,18 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         if (client_id > 0) {
             this->mapp->cfg->ServerUpdateClientId(server->GetInternalId(), client_id);
         }
+        const std::string server_name = server->GetServerNameFromPacket(packet_id);
+        if (!server_name.empty()) {
+            this->mapp->cfg->ServerChangeName(server->GetInternalId(), server_name);
+        }
+        const std::string server_id = server->GetServerIdFromPacket(packet_id);
+        if (server_id.empty() == false) {
+            this->mapp->cfg->ServerUpdateId(server->GetInternalId(), server_id);
+        }
 
-        this->writeLog(wxString::Format(_("Server auth response: %s - %s, requesting model list"), server->GetName(), content));
+        this->writeLog(wxString::Format(_("Server auth response: %s"), server->GetName()));
         server->RequestModelList();
+        server->RequestJobList();
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE) {
@@ -3661,8 +3598,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->writeLog("Got invalid packet from server: " + server->GetName());
             return;
         }
-        this->mapp->cfg->ServerUpdateId(server->GetInternalId(), packet.server_id);      // update the server id before loading the model list
-        this->mapp->cfg->ServerChangeName(server->GetInternalId(), packet.server_name);  // TODO: implement server info packet to update these
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
             for (const auto& item : list) {
@@ -3673,7 +3608,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 if (newItem == nullptr) {
                     continue;
                 }
-                this->treeListManager->AddItem(newItem, false, server);
+                this->modelUiManager->AddItem(newItem, false, server);
             }
 
             this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
@@ -3693,7 +3628,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         wxTreeListItems selections;
         if (this->m_modelTreeList->GetSelections(selections) > 0) {
             wxTreeListItem item = selections.front();  // get the first
-            auto selectedModel  = this->treeListManager->FindItem(item);
+            auto selectedModel  = this->modelUiManager->FindItem(item);
             if (!selectedModel) {
                 return;
             }
@@ -3705,17 +3640,17 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_START || threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_UPDATE) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        this->treeListManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
+        this->modelUiManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_UPDATE) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        this->treeListManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
+        this->modelUiManager->ChangeText(modelinfo->path, wxString::Format(_("Moving: %s%%"), modelinfo->move_progress), 1);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::MODEL_MOVE_FAILED) {
         sd_gui_utils::ModelFileInfo* modelinfo = e.GetPayload<sd_gui_utils::ModelFileInfo*>();
-        this->treeListManager->ChangeText(modelinfo->path, modelinfo->size_f, 1);
+        this->modelUiManager->ChangeText(modelinfo->path, modelinfo->size_f, 1);
         this->writeLog(wxString::Format(_("Model move error: %s\n"), modelinfo->name));
         return;
     }
@@ -3774,8 +3709,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         if (_m != 0) {
             current_progress = static_cast<int>((_x * 100) / _m);
         }
-        this->treeListManager->UpdateItem(modelinfo);
-        this->treeListManager->ChangeText(modelinfo->path, wxString::Format("%u%% (%.2f %s/%.2f %s)", current_progress, _hr1.first, _hr1.second.c_str(), _hr2.first, _hr2.second.c_str()), 3);
+        this->modelUiManager->UpdateItem(modelinfo);
+        this->modelUiManager->ChangeText(modelinfo->path, wxString::Format("%u%% (%.2f %s/%.2f %s)", current_progress, _hr1.first, _hr1.second.c_str(), _hr2.first, _hr2.second.c_str()), 3);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE) {
@@ -3789,7 +3724,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         file.close();
         modelinfo->hash_progress_size = 0;
         modelinfo->hash_fullsize      = 0;
-        this->treeListManager->ChangeText(modelinfo->path, modelinfo->sha256.substr(0, 10), 3);
+        this->modelUiManager->ChangeText(modelinfo->path, modelinfo->sha256.substr(0, 10), 3);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
@@ -3802,30 +3737,19 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_PROGRESS, modelinfo);
         }
 
-        // update column
-        auto store           = this->m_joblist->GetStore();
-        size_t _x            = myjob->hash_progress_size;
-        size_t _m            = myjob->hash_fullsize;
-        int current_progress = 0;
-        auto _hr1            = sd_gui_utils::formatbytes(_x);
-        auto _hr2            = sd_gui_utils::formatbytes(_m);
+        this->dataViewListManager->UpdateColumn(DataViewListManager::queueJobColumns::PROGRESS, myjob, [myjob]() {
+            size_t _x            = myjob->hash_progress_size;
+            size_t _m            = myjob->hash_fullsize;
+            int current_progress = 0;
+            auto _hr1            = sd_gui_utils::formatbytes(_x);
+            auto _hr2            = sd_gui_utils::formatbytes(_m);
 
-        if (_m != 0) {
-            current_progress = static_cast<int>((_x * 100) / _m);
-        }
-
-        for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-            auto currentItem                 = store->GetItem(i);
-            auto id                          = store->GetItemData(currentItem);
-            std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
-            if (qitem->id == myjob->id) {
-                store->SetValueByRow(current_progress, i, (int)queueJobRows::PROGRESS);
-                store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
-                this->m_joblist->Refresh();
-                this->m_joblist->Update();
-                break;
+            if (_m != 0) {
+                current_progress = static_cast<int>((_x * 100) / _m);
             }
-        }
+
+            return wxVariant(current_progress);
+        });
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_DONE) {
@@ -3839,22 +3763,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->SendThreadEvent(this->GetEventHandler(), sd_gui_utils::ThreadEvents::STANDALONE_HASHING_DONE, modelinfo);
         }
 
-        // update column
-        auto store = this->m_joblist->GetStore();
+        this->dataViewListManager->UpdateColumn(DataViewListManager::queueJobColumns::PROGRESS, myjob, []() {
+            return wxVariant(0);
+        });
 
-        for (unsigned int i = 0; i < store->GetItemCount(); i++) {
-            auto currentItem                 = store->GetItem(i);
-            auto id                          = store->GetItemData(currentItem);
-            std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
-            if (qitem->id == myjob->id) {
-                store->SetValueByRow(0, i, (int)queueJobRows::PROGRESS);
-                store->RowValueChanged(i, (int)queueJobRows::PROGRESS);
-                this->m_joblist->Refresh();
-                this->m_joblist->Update();
-                break;
-            }
-        }
-        this->ModelManager->getIntoPtr(myjob->params.model_path)->hash_progress_size = 0;
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::GENERATION_PROGRESS) {
@@ -3911,7 +3823,7 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
         wxString basepath = this->mapp->cfg->getPathByDirType(payload->dirType);
 
         auto newinfo = this->ModelManager->addModel(name, payload->dirType, basepath);
-        this->treeListManager->AddItem(newinfo, true);
+        this->modelUiManager->AddItem(newinfo, true);
 
         auto title   = _("Model download finished");
         auto message = wxString::Format(_("The model download is finished: %s"), name);
@@ -4592,7 +4504,7 @@ void MainWindowUI::loadModelList() {
     this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
 
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
-    this->treeListManager->SelectItemByModelPath(lastSelection.utf8_string());
+    this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
 }
 
 void MainWindowUI::OnExit(wxEvent& event) {
@@ -4838,10 +4750,7 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
             std::cerr << "[GUI] Could not find item " << item.id << std::endl;
             return false;
         }
-        if (itemPtr->event == QueueEvents::ITEM_FAILED) {
-            std::cerr << "[GUI] Item " << item.id << " QueueEvents::ITEM_FAILED" << std::endl;
-            // return true;
-        }
+
         if (itemPtr->status == QueueStatus::FAILED) {
             std::cerr << "[GUI] Item " << item.id << " QueueStatus::FAILED, skipping" << std::endl;
             return true;
@@ -4849,24 +4758,20 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
         // mutex lock
         std::lock_guard<std::mutex> lock(this->mutex);
 
-        if (itemPtr->update_index != item.update_index || itemPtr->event != item.event) {
-            if (BUILD_TYPE == "Debug") {
-                std::cout << "[GUI] Item " << item.id << " was updated, event: " << QueueEvents_str.at(item.event) << std::endl;
-            }
-
+        if (itemPtr->update_index != item.update_index) {
             *itemPtr = item;
 
             if (!itemPtr->rawImages.empty()) {
                 this->handleSdImages(itemPtr, this->GetEventHandler());
             }
-            if (itemPtr->event == QueueEvents::ITEM_FAILED) {
+            if (itemPtr->status == QueueStatus::FAILED) {
                 if (this->extprocessLastError.empty() == false) {
                     itemPtr->status_message   = this->extprocessLastError;
                     this->extprocessLastError = "";
                 }
             }
 
-            this->qmanager->SendEventToMainWindow(itemPtr->event, itemPtr);
+            this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, itemPtr);
             return true;
         }
 
@@ -5023,7 +4928,7 @@ void MainWindowUI::ProcessCheckThread() {
         const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
         this->subprocess           = new subprocess_s();
 
-        int result = subprocess_create(command_line, subprocess_option_no_window  | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+        int result = subprocess_create(command_line, subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
         if (0 != result) {
             {
                 wxThreadEvent* event = new wxThreadEvent();

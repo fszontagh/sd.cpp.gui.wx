@@ -416,7 +416,6 @@ namespace sd_gui_utils {
         }
 
         inline sd_gui_utils::sdServer* GetTcpServer(int internal_id) {
-            std::cout << "GetTcpServer id: " << internal_id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 if ((*it)->GetInternalId() == internal_id) {
@@ -424,19 +423,15 @@ namespace sd_gui_utils {
                     return *it;
                 }
             }
-            std::cout << "GetTcpServer done nullptr" << std::endl;
             return nullptr;
         }
         inline sd_gui_utils::sdServer* GetTcpServer(std::string server_id) {
-            std::cout << "GetTcpServer id: " << server_id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 if ((*it)->GetId() == server_id) {
-                    std::cout << "GetTcpServer done" << std::endl;
                     return *it;
                 }
             }
-            std::cout << "GetTcpServer done nullptr" << std::endl;
             return nullptr;
         }
         inline void AddTcpServer(sd_gui_utils::sdServer* server) {

@@ -48,7 +48,7 @@ namespace sd_gui_utils {
             template <typename T>
             inline void SetData(const T& j) {
                 try {
-                    nlohmann::json json_obj = j;
+                    const nlohmann::json json_obj = j;
                     std::string json_str    = json_obj.dump();
                     this->data              = std::vector<uint8_t>(json_str.begin(), json_str.end());
                     this->data_size         = this->data.size();

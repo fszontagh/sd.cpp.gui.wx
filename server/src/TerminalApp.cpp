@@ -203,6 +203,8 @@ bool TerminalApp::OnInit() {
     }
     // let the hashing begin
     this->CalcModelHashes();
+    this->queueManager->LoadJobListFromDir();
+    wxLogInfo("QueueManager loaded %" PRIu64 " jobs", this->queueManager->GetJobCount());
 
     this->extProcessParams.Add(this->configData->shared_memory_path);
     this->extProcessNeedToRun.store(true);
@@ -250,9 +252,7 @@ int TerminalApp::OnExit() {
 
 int TerminalApp::OnRun() {
     this->logThread = std::thread(&TerminalApp::ProcessLogQueue, this);
-
-    std::thread tr3(&TerminalApp::ProcessOutputThread, this);
-    this->threads.emplace_back(std::move(tr3));
+    this->threads.emplace_back(&TerminalApp::ProcessOutputThread, this);
 
     std::thread tr([this]() {
         while (this->eventHandlerReady.load() == false) {
@@ -289,10 +289,8 @@ int TerminalApp::OnRun() {
 
     this->threads.emplace_back(std::move(tr));
 
-    std::thread tr2(&TerminalApp::ExternalProcessRunner, this);
-    this->threads.emplace_back(std::move(tr2));
-    std::thread tr4(&TerminalApp::JobQueueThread, this);
-    this->threads.emplace_back(std::move(tr4));
+    this->threads.emplace_back(&TerminalApp::ExternalProcessRunner, this);
+    this->threads.emplace_back(&TerminalApp::JobQueueThread, this);
 
     return wxAppConsole::OnRun();
 }
@@ -327,8 +325,8 @@ void TerminalApp::ExternalProcessRunner() {
         this->sendLogEvent("Subprocess already running", wxLOG_Error);
         return;
     }
-    std::vector<const char*> command_line;
-    command_line.push_back(this->extprocessCommand.c_str());
+    std::vector<const char*> command_line = {this->extprocessCommand.c_str()};
+    // command_line.push_back(this->extprocessCommand.c_str());
     wxString params = this->extprocessCommand;
 
     int counter = 1;
@@ -351,7 +349,7 @@ void TerminalApp::ExternalProcessRunner() {
         return;
     }
     this->extprocessIsRunning.store(true);
-    this->sendLogEvent(wxString::Format("Subprocess created: %d", result), wxLOG_Info);
+    this->sendLogEvent(wxString::Format("%s:%d Subprocess created: %d", __FILE__, __LINE__, result), wxLOG_Info);
 
     while (this->extProcessNeedToRun.load() == true) {
         if (subprocess_alive(this->subprocess) == 0) {
@@ -365,7 +363,7 @@ void TerminalApp::ExternalProcessRunner() {
                 return;
             }
             this->extprocessIsRunning.store(false);
-            this->sendLogEvent(wxString::Format("Subprocess created: %d", result), wxLOG_Info);
+            this->sendLogEvent(wxString::Format("%s:%d Subprocess created: %d", __FILE__, __LINE__, result), wxLOG_Info);
         }
         // handle shared memory
 
@@ -381,6 +379,7 @@ void TerminalApp::ExternalProcessRunner() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    this->sendLogEvent("Subprocess stopped", wxLOG_Error);
     this->extprocessIsRunning.store(false);
     subprocess_terminate(this->subprocess);
 }
@@ -389,23 +388,9 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
     if (message.empty()) {
         return false;
     }
-    try {
-        nlohmann::json msg = nlohmann::json::parse(message);
-        auto item          = msg.get<QueueItem>();
-        std::cout << "Received ext proess update: " << item.id << " state: " << (int)item.status << std::endl;
-        if (this->queueManager->UpdateJob(item)) {
-            auto converted = item.convertToNetwork();
-            sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-            packet.SetData(converted);
-            this->socket->sendMsg(0, packet);  // send to everybody
-            return true;
-        }
+    this->itemUpdateEvent(message);
 
-    } catch (const std::exception& e) {
-        this->sendLogEvent(e.what(), wxLOG_Error);
-    }
-
-    return false;
+    return true;
 }
 
 void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& packet) {
@@ -422,19 +407,13 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
             list.emplace_back(model.second);
         }
         response.SetData(list);
-        response.server_id = this->configData->server_id;  // send the server id to identify the server from the model on client side
-                                                           // TODO: implement server info to send server_id and server_name
-
-        response.server_name = this->configData->server_name;
-        //        response.client_id = this->m_clientData
-
         this->socket->sendMsg(packet.source_idx, response);
         this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }
 
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
         this->sendLogEvent("Received job list", wxLOG_Debug);
-        auto list     = this->queueManager->GetJobList();
+        auto list     = this->queueManager->GetJobListCopy();
         auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST);
         response.SetData(list);
         this->socket->sendMsg(packet.source_idx, response);
@@ -479,12 +458,6 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         }
 
         this->queueManager->AddItem(converted);
-        const nlohmann::json j     = converted;
-        const nlohmann::json origj = data;
-        std::cout << "Got job: \n"
-                  << j.dump(4) << std::endl;
-        std::cout << "Orig: \n"
-                  << origj.dump(4) << std::endl;
     }
 }
 

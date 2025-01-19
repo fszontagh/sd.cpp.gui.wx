@@ -41,13 +41,22 @@ namespace sd_gui_utils {
                     return;
                 }
                 if (msg.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
-                    this->SetId(msg.server_id);  // update the server's id
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, this, packet_id);
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_AUTH) {
-                    // std::string data = msg.GetData<std::string>();
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_AUTH_RESPONSE, this, packet_id);
+                    return;
+                }
+                if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_LIST) {
+                    auto list = msg.GetData<std::vector<RemoteQueueItem>>();
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE, list);
+                    return;
+                }
+                if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_UPDATE) {
+                    auto job = msg.GetData<RemoteQueueItem>();
+                    //this->SendThreadEvent(sd_gui_utils::ThreadEvents::QUEUE, QueueItem::convertFromNetwork(job));
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
                     return;
                 }
             });
@@ -107,6 +116,20 @@ namespace sd_gui_utils {
                 return 0;
             }
             return packet.client_id;
+        }
+        std::string GetServerNameFromPacket(int packet_id) {
+            auto packet = this->GetPacket(packet_id);
+            if (packet.isValid() == false) {
+                return "";
+            }
+            return packet.server_name;
+        }
+        std::string GetServerIdFromPacket(int packet_id) {
+            auto packet = this->GetPacket(packet_id);
+            if (packet.isValid() == false) {
+                return "";
+            }
+            return packet.server_id;
         }
         wxString GetDisconnectReason() {
             // std::lock_guard<std::mutex> lock(this->mutex);

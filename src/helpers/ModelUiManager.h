@@ -230,7 +230,7 @@ public:
 
         for (auto& selectors : this->dirTypeSelectors) {
             auto choice = selectors.second;
-            for (auto i = 0; i < choice->GetCount(); i++) {
+            for (int i = choice->GetCount() - 1; i >= 0; i--) {
                 const auto modelinfo = static_cast<sd_gui_utils::ModelFileInfo*>(choice->GetClientData(i));
                 if (modelinfo && modelinfo->server_id.empty() == false && modelinfo->server_id == serverId) {
                     choice->Delete(i);

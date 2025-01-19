@@ -1,6 +1,7 @@
 #ifndef _SERVER_TERMINALAPP_H
 #define _SERVER_TERMINALAPP_H
 
+#include <cinttypes>
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/SnowFlakeIdGenerarot.hpp"
@@ -59,27 +60,59 @@ public:
             file.close();
         });
     }
+    inline void itemUpdateEvent(std::string message) {
+        eventQueue.Push([this, message]() {
+            try {
+                nlohmann::json msg = nlohmann::json::parse(message);
+                auto item          = msg.get<QueueItem>();
+                if (this->queueManager->UpdateJob(item)) {
+                    auto converted = item.convertToNetwork();
+                    sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                    packet.SetData(converted);
+                    this->socket->sendMsg(0, packet);  // send to everybody
+                }
+
+            } catch (const std::exception& e) {
+                this->sendLogEvent(e.what(), wxLOG_Error);
+            }
+        });
+    }
+    inline void itemUpdateEvent(std::shared_ptr<QueueItem> item) {
+        eventQueue.Push([this, item]() {
+            if (this->queueManager->UpdateJob(*item)) {
+                auto converted = item->convertToNetwork();
+                sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                packet.SetData(converted);
+                this->socket->sendMsg(0, packet);  // send to everybody
+            }
+        });
+    }
     inline void JobQueueThread() {
         while (this->queueNeedToRun.load()) {
-            bool running = false;
-            for (const auto& job : this->queueManager->GetJobList()) {
-                if (job.status & QueueStatusFlags::RUNNING_FLAG) {
-                    running = true;
-                    std::cout << "We have a running job: " << job.id << std::endl;
-                    break;
-                }
-            }
-            if (!running) {
-                for (const auto& job : this->queueManager->GetJobList()) {
-                    if (job.status == QueueStatus::PENDING) {
-                        const nlohmann::json j = job;
+            if (this->queueManager->GetCurrentJob() == nullptr) {
+                auto joblist = this->queueManager->GetJobList();
+                for (auto it = joblist.begin(); it != joblist.end(); it++) {
+                    if ((*it)->status == QueueStatus::PENDING) {
+                        const nlohmann::json j = *(*it);
                         char* data             = new char[j.dump().length() + 1];
                         strcpy(data, j.dump().c_str());
                         this->sharedMemoryManager->write(data, j.dump().length() + 1);
-                        this->sendLogEvent(wxString::Format("Job started: %llu", job.id));
-                        std::cout << "Job started: " << job.id << std::endl;
+                        this->sendLogEvent(wxString::Format("Job started: %llu", (*it)->id));
+                        std::cout << "Job started: " << (*it)->id << std::endl;
+                        this->queueManager->SetCurrentJob(*it);
+                        delete[] data;
                         break;
                     }
+                }
+            } else {
+                if (this->extprocessIsRunning.load() == false) {
+                    auto current = this->queueManager->GetCurrentJob();
+                    current->status = QueueStatus::FAILED;
+                    this->itemUpdateEvent(current);
+                    this->queueManager->DeleteCurrentJob();
+                }
+                if ((this->queueManager->GetCurrentJob()->status & QueueStatusFlags::RUNNING_FLAG) == false) {
+                    this->queueManager->SetCurrentJob(nullptr);
                 }
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));

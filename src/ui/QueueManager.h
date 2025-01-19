@@ -7,8 +7,9 @@ namespace QM {
     public:
         QueueManager(wxEvtHandler* eventHandler, const wxString& jobsdir);
         ~QueueManager();
-        auto AddItem(const QueueItem& _item, bool fromFile = false) -> uint64_t;
-        auto AddItem(std::shared_ptr<QueueItem> _item, bool fromFile = false) -> uint64_t;
+        auto AddItem(const QueueItem& _item, bool fromFile = false, bool from_remote = false) -> uint64_t;
+        auto AddItem(std::shared_ptr<QueueItem> _item, bool fromFile = false, bool from_remote = false) -> uint64_t;
+        void RemoveRemoteItems(const std::string &server_id);
         auto GetNextId() -> uint64_t {
             int id = this->GetCurrentUnixTimestamp(false);
             while (id <= this->lastId) {
@@ -16,7 +17,7 @@ namespace QM {
             }
             return id;
         };
-        void UpdateItem(const QueueItem& item);
+        std::shared_ptr<QueueItem> UpdateItem(const QueueItem& item);
         void UpdateItem(std::shared_ptr<QueueItem> item);
         auto GetItemPtr(uint64_t item_id) -> std::shared_ptr<QueueItem>;
         /**

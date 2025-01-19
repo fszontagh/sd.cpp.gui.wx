@@ -19,22 +19,13 @@ namespace QueueStatusFlags {
     constexpr int REQUEUEABLE_FLAG = (RUNNING | HASHING);
 };
 
-inline const char* QueueStatus_str[] = {
-    _("pending"),
-    _("running"),
-    _("paused"),
-    _("failed"),
-    _("model loading..."),
-    _("finished"),
-    _("model hashing...")};
-
 inline const std::unordered_map<QueueStatus, wxString> QueueStatus_GUI_str = {
-    {QueueStatus::PENDING, "pending"},
-    {QueueStatus::RUNNING, "running"},
-    {QueueStatus::PAUSED, "paused"},
-    {QueueStatus::FAILED, "failed"},
-    {QueueStatus::MODEL_LOADING, "model loading..."},
-    {QueueStatus::DONE, "finished"},
-    {QueueStatus::HASHING, "model hashing..."}};
+    {QueueStatus::PENDING, _("pending")},
+    {QueueStatus::RUNNING, _("running")},
+    {QueueStatus::PAUSED, _("paused")},
+    {QueueStatus::FAILED, _("failed")},
+    {QueueStatus::MODEL_LOADING, _("model loading...")},
+    {QueueStatus::DONE, _("finished")},
+    {QueueStatus::HASHING, _("model hashing...")}};
 
 #endif  // __SDGUI_HELPERS_QUEUE_STATUS__
