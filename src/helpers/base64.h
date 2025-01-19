@@ -1,25 +1,32 @@
 #ifndef _BASE64_H_
 #define _BASE64_H_
 
+#include <fstream>
+#include <sstream>
+
 namespace sd_gui_utils {
-    static const std::string base64_chars =
+
+    // Base64 karakterkészlet
+    const std::string base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz"
         "0123456789+/";
 
-    static inline bool is_base64(unsigned char c) {
+    // Kódolás segédfüggvények
+    inline bool is_base64(unsigned char c) {
         return (isalnum(c) || (c == '+') || (c == '/'));
     }
 
-    inline std::string base64_encode(unsigned char const* buf, unsigned int bufLen) {
+    // Base64 kódolás
+    inline std::string Base64Encode(const unsigned char* bytes_to_encode, size_t in_len) {
         std::string ret;
         int i = 0;
         int j = 0;
         unsigned char char_array_3[3];
         unsigned char char_array_4[4];
 
-        while (bufLen--) {
-            char_array_3[i++] = *(buf++);
+        while (in_len--) {
+            char_array_3[i++] = *(bytes_to_encode++);
             if (i == 3) {
                 char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
                 char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
@@ -51,7 +58,8 @@ namespace sd_gui_utils {
         return ret;
     }
 
-    inline std::vector<unsigned char> base64_decode(std::string const& encoded_string) {
+    // Base64 dekódolás
+    inline std::vector<unsigned char> Base64Decode(const std::string& encoded_string) {
         int in_len = encoded_string.size();
         int i      = 0;
         int j      = 0;
@@ -93,5 +101,30 @@ namespace sd_gui_utils {
 
         return ret;
     }
-}
-#endif
+
+    // Fájlok kezelése
+    inline bool EncodeFileToBase64(const std::string& inputFilePath, std::string& outputBase64) {
+        std::ifstream file(inputFilePath, std::ios::binary);
+        if (!file.is_open())
+            return false;
+
+        std::ostringstream buffer;
+        buffer << file.rdbuf();
+        std::string fileData = buffer.str();
+        outputBase64         = Base64Encode(reinterpret_cast<const unsigned char*>(fileData.data()), fileData.size());
+        return true;
+    }
+
+    inline bool DecodeBase64ToFile(const std::string& inputBase64, const std::string& outputFilePath) {
+        auto decodedData = Base64Decode(inputBase64);
+        std::ofstream file(outputFilePath, std::ios::binary);
+        if (!file.is_open())
+            return false;
+
+        file.write(reinterpret_cast<const char*>(decodedData.data()), decodedData.size());
+        return true;
+    }
+
+}  // namespace sd_gui_utils
+
+#endif  // _BASE64_H_

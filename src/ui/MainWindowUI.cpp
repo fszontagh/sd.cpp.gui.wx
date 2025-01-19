@@ -3543,7 +3543,12 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             if (!this->dataViewListManager->ItemExists(addedItem->id)) {
                 this->dataViewListManager->AddItem(addedItem);
             }
-            this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
+
+            if (addedItem->status == QueueStatus::DONE) {
+                this->handleSdImages(addedItem, this->GetEventHandler());
+            } else {
+                this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
+            }
         }
         return;
     }

@@ -92,44 +92,25 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     inline sd_gui_utils::RemoteQueueItem convertToNetwork() {
         sd_gui_utils::RemoteQueueItem newItem(*this);
         for (const auto img : this->images) {
-            // read int the file img.pathname
-            wxFile file;
-            if (!file.Open(img.pathname, wxFile::read)) {
+            std::string encoded;
+            if (sd_gui_utils::EncodeFileToBase64(img.pathname, encoded) == false) {
                 continue;
             }
-
-            wxString content;
-            if (!file.ReadAll(&content)) {
-                file.Close();
-                continue;
-            }
-            file.Close();
-
-            auto base64_decoded = sd_gui_utils::base64_decode(content.ToStdString());
 
             sd_gui_utils::networks::ItemImage itemImage;
-            itemImage.rawData = std::vector<unsigned char>(base64_decoded.data(), base64_decoded.data() + base64_decoded.size());
+            itemImage.rawData = std::vector<unsigned char>(encoded.begin(), encoded.end());
             itemImage.type    = img.type;
             newItem.image_data.push_back(itemImage);
         }
         this->images.clear();
         for (const auto img : this->rawImages) {
-            std::cout << "[CONVERT] " << img << std::endl;
-            wxFile file;
-            if (!file.Open(img, wxFile::read)) {
-                std::cout << "[CONVERT] " << img << " failed" << std::endl;
+            std::string encoded;
+            if (sd_gui_utils::EncodeFileToBase64(img, encoded) == false) {
                 continue;
             }
-            wxString content;
-            if (!file.ReadAll(&content)) {
-                std::cout << "[CONVERT] " << img << " failed to readall" << std::endl;
-                file.Close();
-                continue;
-            }
-            file.Close();
-            auto base64_decoded = sd_gui_utils::base64_decode(content.ToStdString());
+
             sd_gui_utils::networks::ItemImage itemImage;
-            itemImage.rawData = std::vector<unsigned char>(base64_decoded.data(), base64_decoded.data() + base64_decoded.size());
+            itemImage.rawData = std::vector<unsigned char>(encoded.begin(), encoded.end());
             itemImage.type    = sd_gui_utils::ImageType::GENERATED;
             newItem.image_data.push_back(itemImage);
         }
@@ -139,26 +120,28 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         QueueItem newItem(item);
         int counter = 0;
         for (const auto img : item.image_data) {
+            std::cout << "[CONVERT] " << img.rawData.size() << " type: " << (int)img.type << std::endl;
             QueueItemImage image;
             wxFileName fn;
-            wxFile file;
             fn.AssignTempFileName("sd_gui_");
-            image.pathname = fn.GetFullPath();
-            auto data      = sd_gui_utils::base64_encode(img.rawData.data(), img.rawData.size());
-            file.Open(image.pathname, wxFile::write);
-            file.Write(data.data(), data.size());
-            file.Close();
+            image.pathname   = fn.GetFullPath();
+            std::string data = std::string(img.rawData.begin(), img.rawData.end());
+            if (sd_gui_utils::DecodeBase64ToFile(data, image.pathname) == false) {
+                continue;
+            }
             image.type = img.type;
             image.id   = counter;
-            newItem.images.push_back(image);
+            // newItem.images.push_back(image);
             if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::INITIAL)) {
                 newItem.initial_image = image.pathname;
-            }
-            if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::MASK_USED)) {
+            } else if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::MASK_USED)) {
                 newItem.mask_image = image.pathname;
-            }
-            if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::CONTROLNET)) {
+            } else if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::CONTROLNET)) {
                 newItem.params.control_image_path = image.pathname;
+            } else if (sd_gui_utils::hasImageType(image.type, sd_gui_utils::ImageType::GENERATED)) {
+                newItem.rawImages.push_back(image.pathname);
+            } else {
+                newItem.images.push_back(image);
             }
 
             counter++;

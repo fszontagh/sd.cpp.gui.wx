@@ -412,12 +412,14 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
     }
 
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
-        this->sendLogEvent("Received job list", wxLOG_Debug);
-        auto list     = this->queueManager->GetJobListCopy();
-        auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST);
-        response.SetData(list);
-        this->socket->sendMsg(packet.source_idx, response);
-        this->sendLogEvent("Sent job list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+        this->threads.emplace_back(std::thread([this, packet]() {
+            this->sendLogEvent("Received job list request", wxLOG_Debug);
+            auto list     = this->queueManager->GetJobListCopy();
+            auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST);
+            response.SetData(list);
+            this->socket->sendMsg(packet.source_idx, response);
+            this->sendLogEvent("Sent job list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+        }));
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
         this->sendLogEvent("Received job add", wxLOG_Debug);

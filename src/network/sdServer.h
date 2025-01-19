@@ -18,6 +18,7 @@ namespace sd_gui_utils {
         std::thread thread;
         std::shared_ptr<sd_gui_utils::networks::TcpClient> client = nullptr;
         wxEvtHandler* evt                                         = nullptr;
+        std::vector<std::thread> threads;
         bool IsOk() const { return !host.empty() && port > 0; }
         mutable std::mutex mutex;
         void initCallbacks() {
@@ -50,13 +51,23 @@ namespace sd_gui_utils {
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_LIST) {
                     auto list = msg.GetData<std::vector<RemoteQueueItem>>();
-                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE, list);
+                    this->threads.emplace_back(std::thread([this, list]() {
+                        for (const auto& item : list) {
+                            auto nitem = QueueItem::convertFromNetwork(item);
+                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, nitem);
+                        }
+                    }));
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_UPDATE) {
                     auto job = msg.GetData<RemoteQueueItem>();
-                    //this->SendThreadEvent(sd_gui_utils::ThreadEvents::QUEUE, QueueItem::convertFromNetwork(job));
-                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
+                    if (job.status == QueueStatus::DONE) {
+                        this->threads.push_back(std::thread([this, job]() {
+                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
+                        }));
+                    } else {
+                        this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
+                    }
                     return;
                 }
             });
@@ -321,6 +332,11 @@ namespace sd_gui_utils {
         sdServer()                           = default;
         ~sdServer() {
             std::cout << "sdServer: destructor" << std::endl;
+            for (auto& thread : this->threads) {
+                if (thread.joinable()) {
+                    thread.join();
+                }
+            }
             this->Stop();
         }
 

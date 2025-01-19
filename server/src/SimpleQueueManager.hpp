@@ -51,11 +51,11 @@ public:
         std::lock_guard<std::mutex> lock(this->mutex);
         this->currentItem = nullptr;
     }
-    std::vector<QueueItem> GetJobListCopy() {
+    std::vector<sd_gui_utils::RemoteQueueItem> GetJobListCopy() {
         std::lock_guard<std::mutex> lock(this->mutex);
-        std::vector<QueueItem> list;
+        std::vector<sd_gui_utils::RemoteQueueItem> list;
         for (const auto& item : this->jobs) {
-            list.push_back(*item);
+            list.push_back(item->convertToNetwork());
         }
         return list;
     }

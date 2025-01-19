@@ -133,7 +133,7 @@ public:
 
 private:
     MainApp* mapp                                            = nullptr;
-    std::unique_ptr<ModelUiManager> modelUiManager          = nullptr;
+    std::unique_ptr<ModelUiManager> modelUiManager           = nullptr;
     std::unique_ptr<DataViewListManager> dataViewListManager = nullptr;
 
     bool disableExternalProcessHandling               = false;
