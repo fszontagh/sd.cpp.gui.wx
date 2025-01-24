@@ -45,18 +45,30 @@ namespace sd_gui_utils {
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_MODEL_LIST_UPDATE, this, packet_id);
                     return;
                 }
+                if (msg.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE) {
+                    auto delete_data = msg.GetData<sd_gui_utils::networks::DeleteResponse>();
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_DELETE, delete_data, packet_id);
+                    return;
+                }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_AUTH) {
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_AUTH_RESPONSE, this, packet_id);
                     return;
                 }
+                if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_IMAGE_LIST) {
+                }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_LIST) {
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_START, nullptr);
                     auto list = msg.GetData<std::vector<RemoteQueueItem>>();
-                    this->threads.emplace_back(std::thread([this, list]() {
-                        for (const auto& item : list) {
+                    for (const auto& item : list) {
+                        this->threads.emplace_back(std::thread([this, item]() {
+                            if (this->needToRun.load() == false) {
+                                return;
+                            }
                             auto nitem = QueueItem::convertFromNetwork(item);
                             this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, nitem);
-                        }
-                    }));
+                        }));
+                    }
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_FINISHED, this);
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_UPDATE) {
@@ -68,6 +80,12 @@ namespace sd_gui_utils {
                     } else {
                         this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
                     }
+                    return;
+                }
+                if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_IMAGE_LIST) {
+                    auto image_list = msg.GetData<std::vector<ImageInfo>>();
+                    this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE, image_list);
+
                     return;
                 }
             });
@@ -146,6 +164,15 @@ namespace sd_gui_utils {
             // std::lock_guard<std::mutex> lock(this->mutex);
             return wxString::FromUTF8Unchecked(this->disconnect_reason);
         }
+        bool DeleteJob(uint64_t job_id) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::DELETE_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE;
+            packet.client_id = this->client_id;
+            packet.SetData(job_id);
+            this->client->sendMsg(packet);
+            return true;
+        }
         bool IsEnabled() const { return this->enabled.load(); }
         void SetAuthKeyState(bool state) { this->authkey = state; }
         bool GetAuthKeyState() const { return this->authkey; }
@@ -157,6 +184,11 @@ namespace sd_gui_utils {
             this->needToRun.store(false);
             if (this->thread.joinable()) {
                 this->thread.join();
+            }
+            for (auto& thread : this->threads) {
+                if (thread.joinable()) {
+                    thread.join();
+                }
             }
         }
 
@@ -250,8 +282,10 @@ namespace sd_gui_utils {
                         }
 
                         tries++;
-                        std::cout << "sdServer: trying to connect: " << tries << " sleeping 1s" << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(5));
+                        std::cout << "sdServer: trying to connect: " << tries << " sleeping 5s" << std::endl;
+                        if (this->needToRun.load()) {
+                            std::this_thread::sleep_for(std::chrono::seconds(5));
+                        }
 
                         if (tries > 10) {
                             tries = 1;
@@ -332,11 +366,6 @@ namespace sd_gui_utils {
         sdServer()                           = default;
         ~sdServer() {
             std::cout << "sdServer: destructor" << std::endl;
-            for (auto& thread : this->threads) {
-                if (thread.joinable()) {
-                    thread.join();
-                }
-            }
             this->Stop();
         }
 
@@ -364,11 +393,39 @@ namespace sd_gui_utils {
             packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
+        void DuplicateJob(uint64_t job_id) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE;
+            packet.client_id = this->GetClientId();
+            packet.SetData(job_id);
+            this->client->sendMsg(packet);
+        }
+        void ResumeJob(uint64_t job_id) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME;
+            packet.client_id = this->GetClientId();
+            packet.SetData(job_id);
+            this->client->sendMsg(packet);
+        }
+        void RequestImages(uint64_t job_id) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST;
+            packet.client_id = this->GetClientId();
+            packet.SetData(job_id);
+            this->client->sendMsg(packet);
+        }
         template <typename T>
         void SendThreadEvent(sd_gui_utils::ThreadEvents eventType, const T& payload, std::string text = "") {
             if (!this->evt) {
                 return;
             }
+            if (!wxTheApp->IsMainLoopRunning()) {
+                return;
+            }
+
             wxThreadEvent* e = new wxThreadEvent();
             e->SetString(wxString::Format("%d:%s", (int)eventType, text));
             e->SetPayload(payload);

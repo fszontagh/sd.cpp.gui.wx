@@ -9,7 +9,7 @@ namespace QM {
         ~QueueManager();
         auto AddItem(const QueueItem& _item, bool fromFile = false, bool from_remote = false) -> uint64_t;
         auto AddItem(std::shared_ptr<QueueItem> _item, bool fromFile = false, bool from_remote = false) -> uint64_t;
-        void RemoveRemoteItems(const std::string &server_id);
+        void RemoveRemoteItems(const std::string& server_id);
         auto GetNextId() -> uint64_t {
             int id = this->GetCurrentUnixTimestamp(false);
             while (id <= this->lastId) {
@@ -20,10 +20,6 @@ namespace QM {
         std::shared_ptr<QueueItem> UpdateItem(const QueueItem& item);
         void UpdateItem(std::shared_ptr<QueueItem> item);
         auto GetItemPtr(uint64_t item_id) -> std::shared_ptr<QueueItem>;
-        /**
-         * @brief Get all the items in the queue as a string formatted like:
-         *
-         */
         std::shared_ptr<QueueItem> GetItemPtr(const QueueItem& item);
         const std::map<int, std::shared_ptr<QueueItem>> getList();
         std::shared_ptr<QueueItem> Duplicate(std::shared_ptr<QueueItem> item);
@@ -41,6 +37,7 @@ namespace QM {
         auto DeleteJob(uint64_t job_id) -> bool;
         auto DeleteJob(const QueueItem& item) -> bool;
         auto IsRunning() -> bool;
+        auto GetMutex() -> std::mutex& { return this->queueMutex; }
         inline void resetRunning(std::shared_ptr<QueueItem> item, const std::string& reason) {
             if (this->QueueList.empty()) {
                 return;
@@ -99,7 +96,6 @@ namespace QM {
         wxEvtHandler* eventHandler;
         wxWindow* parent;
         std::map<uint64_t, std::shared_ptr<QueueItem>> QueueList;
-        std::map<uint64_t, std::shared_ptr<QueueItem>> RemoteQueueList;
     };
 };
 

@@ -320,38 +320,39 @@ namespace sd_gui_utils {
 
     public:
         std::vector<sd_gui_utils::sdServer*> servers;
-        wxString model                     = "";
-        wxString vae                       = "";
-        wxString lora                      = "";
-        wxString embedding                 = "";
-        wxString taesd                     = "";
-        wxString esrgan                    = "";
-        wxString presets                   = "";
-        wxString prompt_templates          = "";
-        wxString output                    = "";
-        wxString jobs                      = "";
-        wxString controlnet                = "";
-        wxString datapath                  = "";
-        wxString tmppath                   = "";
-        wxString thumbs_path               = "";
-        wxString language                  = "en";
-        wxString output_filename_format    = "[mode]_[jobid]_[seed]_[width]x[height]";
-        bool keep_model_in_memory          = true;
-        bool save_all_image                = true;
-        bool auto_gen_hash                 = true;
-        int n_threads                      = 2;
-        imageTypes image_type              = imageTypes::JPG;
-        unsigned int image_quality         = 90;
-        unsigned int png_compression_level = 0;
-        bool show_notifications            = true;
-        int notification_timeout           = 60;
-        bool enable_civitai                = true;
-        wxString lastImageInfoPath         = "";
-        wxString lastImg2ImgPath           = "";
-        wxString lastUpscalerPath          = "";
-        bool widgetVisible                 = false;
-        int mainSashPose                   = 320;
-        bool favorite_models_only          = false;
+        wxString model                          = "";
+        wxString vae                            = "";
+        wxString lora                           = "";
+        wxString embedding                      = "";
+        wxString taesd                          = "";
+        wxString esrgan                         = "";
+        wxString presets                        = "";
+        wxString prompt_templates               = "";
+        wxString output                         = "";
+        wxString jobs                           = "";
+        wxString controlnet                     = "";
+        wxString datapath                       = "";
+        wxString tmppath                        = "";
+        wxString thumbs_path                    = "";
+        wxString language                       = "en";
+        wxString output_filename_format         = "[mode]_[jobid]_[seed]_[width]x[height]";
+        bool keep_model_in_memory               = true;
+        bool save_all_image                     = true;
+        bool auto_gen_hash                      = true;
+        int n_threads                           = 2;
+        imageTypes image_type                   = imageTypes::JPG;
+        unsigned int image_quality              = 90;
+        unsigned int png_compression_level      = 0;
+        bool show_notifications                 = true;
+        int notification_timeout                = 60;
+        bool enable_civitai                     = true;
+        wxString lastImageInfoPath              = "";
+        wxString lastImg2ImgPath                = "";
+        wxString lastUpscalerPath               = "";
+        bool widgetVisible                      = false;
+        int mainSashPose                        = 320;
+        bool favorite_models_only               = false;
+        bool remote_download_images_immediately = false;  // false: download job images on job item select | true: download job images immediately
 
         bool initServerList(wxEvtHandler* eventHandler) {
             auto it = this->servers.begin();
@@ -613,33 +614,34 @@ namespace sd_gui_utils {
             this->thumbs_path = thumbs_path;
             this->tmppath     = tmp_path;
 
-            this->lora                   = config->Read("/paths/lora", lora_path);
-            this->model                  = config->Read("/paths/model", model_path);
-            this->vae                    = config->Read("/paths/vae", vae_path);
-            this->embedding              = config->Read("/paths/embedding", embedding_path);
-            this->taesd                  = config->Read("/paths/taesd", taesd_path);
-            this->esrgan                 = config->Read("/paths/esrgan", esrgan_path);
-            this->controlnet             = config->Read("/paths/controlnet", controlnet_path);
-            this->presets                = config->Read("/paths/presets", presets_path);
-            this->prompt_templates       = config->Read("/paths/prompt_templates", prompt_templates_path);
-            this->jobs                   = config->Read("/paths/jobs", jobs_path);
-            this->output                 = config->Read("/paths/output", imagespath);
-            this->keep_model_in_memory   = config->Read("/keep_model_in_memory", this->keep_model_in_memory);
-            this->save_all_image         = config->Read("/save_all_image", this->save_all_image);
-            this->n_threads              = config->Read("/n_threads", cores());
-            this->show_notifications     = config->ReadBool("/show_notification", this->show_notifications);
-            this->notification_timeout   = config->Read("/notification_timeout", this->notification_timeout);
-            this->image_quality          = config->Read("/image_quality", this->image_quality);
-            this->enable_civitai         = config->ReadBool("/enable_civitai", this->enable_civitai);
-            this->language               = config->Read("/language", wxUILocale::GetSystemLocaleId().GetLanguage());
-            this->output_filename_format = config->Read("/output_filename_format", this->output_filename_format);
-            this->lastImageInfoPath      = config->Read("/lastImageInfoPath", this->lastImageInfoPath);
-            this->lastImg2ImgPath        = config->Read("/lastImg2ImgPath", this->lastImg2ImgPath);
-            this->lastUpscalerPath       = config->Read("/lastUpscalerPath", this->lastUpscalerPath);
-            this->auto_gen_hash          = config->ReadBool("/auto_gen_hash", this->auto_gen_hash);
-            this->widgetVisible          = config->ReadBool("/widgetVisible", this->widgetVisible);
-            this->mainSashPose           = config->Read("/mainSashPose", this->mainSashPose);
-            this->favorite_models_only   = config->ReadBool("/favorite_models_only", this->favorite_models_only);
+            this->lora                               = config->Read("/paths/lora", lora_path);
+            this->model                              = config->Read("/paths/model", model_path);
+            this->vae                                = config->Read("/paths/vae", vae_path);
+            this->embedding                          = config->Read("/paths/embedding", embedding_path);
+            this->taesd                              = config->Read("/paths/taesd", taesd_path);
+            this->esrgan                             = config->Read("/paths/esrgan", esrgan_path);
+            this->controlnet                         = config->Read("/paths/controlnet", controlnet_path);
+            this->presets                            = config->Read("/paths/presets", presets_path);
+            this->prompt_templates                   = config->Read("/paths/prompt_templates", prompt_templates_path);
+            this->jobs                               = config->Read("/paths/jobs", jobs_path);
+            this->output                             = config->Read("/paths/output", imagespath);
+            this->keep_model_in_memory               = config->Read("/keep_model_in_memory", this->keep_model_in_memory);
+            this->save_all_image                     = config->Read("/save_all_image", this->save_all_image);
+            this->n_threads                          = config->Read("/n_threads", cores());
+            this->show_notifications                 = config->ReadBool("/show_notification", this->show_notifications);
+            this->notification_timeout               = config->Read("/notification_timeout", this->notification_timeout);
+            this->image_quality                      = config->Read("/image_quality", this->image_quality);
+            this->enable_civitai                     = config->ReadBool("/enable_civitai", this->enable_civitai);
+            this->language                           = config->Read("/language", wxUILocale::GetSystemLocaleId().GetLanguage());
+            this->output_filename_format             = config->Read("/output_filename_format", this->output_filename_format);
+            this->lastImageInfoPath                  = config->Read("/lastImageInfoPath", this->lastImageInfoPath);
+            this->lastImg2ImgPath                    = config->Read("/lastImg2ImgPath", this->lastImg2ImgPath);
+            this->lastUpscalerPath                   = config->Read("/lastUpscalerPath", this->lastUpscalerPath);
+            this->auto_gen_hash                      = config->ReadBool("/auto_gen_hash", this->auto_gen_hash);
+            this->widgetVisible                      = config->ReadBool("/widgetVisible", this->widgetVisible);
+            this->mainSashPose                       = config->Read("/mainSashPose", this->mainSashPose);
+            this->favorite_models_only               = config->ReadBool("/favorite_models_only", this->favorite_models_only);
+            this->remote_download_images_immediately = config->ReadBool("/remote/download_images_immediately", this->remote_download_images_immediately);
 
             auto saved_image_type = config->Read("/image_type", "JPG");
 
@@ -730,6 +732,7 @@ namespace sd_gui_utils {
                 this->configBase->Write("/widgetVisible", this->widgetVisible);
                 this->configBase->Write("/mainSashPose", this->mainSashPose);
                 this->configBase->Write("/favorite_models_only", this->favorite_models_only);
+                this->configBase->Write("/remote/download_images_immediately", this->remote_download_images_immediately);
                 this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
                 this->configBase->Write("/png_compression_level", this->png_compression_level);
 
@@ -766,8 +769,7 @@ namespace sd_gui_utils {
         }
     };
 
-    inline std::string
-    formatUnixTimestampToDate(long timestamp) {
+    inline std::string formatUnixTimestampToDate(long timestamp) {
         std::time_t time  = static_cast<std::time_t>(timestamp);
         std::tm* timeinfo = std::localtime(&time);
 
@@ -776,7 +778,8 @@ namespace sd_gui_utils {
            << (timeinfo->tm_mon + 1) << "-" << std::setw(2) << std::setfill('0')
            << timeinfo->tm_mday << " " << std::setw(2) << std::setfill('0')
            << timeinfo->tm_hour << ":" << std::setw(2) << std::setfill('0')
-           << timeinfo->tm_min;
+           << timeinfo->tm_min << ":" << std::setw(2) << std::setfill('0')
+           << timeinfo->tm_sec;  // Másodperc hozzáadása
 
         return ss.str();
     }
@@ -1091,6 +1094,52 @@ namespace sd_gui_utils {
 
         return fileName.GetFullPath();
     }
+    inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
+        wxDateTime localTime = wxDateTime::Now();
+
+        auto day     = localTime.Format(wxT("%d"));
+        auto month   = localTime.Format(wxT("%m"));
+        auto year    = localTime.Format(wxT("%Y"));
+        auto hours   = localTime.Format(wxT("%H"));
+        auto minutes = localTime.Format(wxT("%M"));
+        auto seconds = localTime.Format(wxT("%S"));
+
+        std::unordered_map<std::string, std::string> tags = {
+            {"[year]", year.ToStdString()},
+            {"[month]", month.ToStdString()},
+            {"[day]", day.ToStdString()},
+            {"[hours]", hours.ToStdString()},
+            {"[minutes]", minutes.ToStdString()},
+            {"[seconds]", seconds.ToStdString()},
+            {"[finished_at]", std::to_string(item.finished_at)},
+            {"[created_at]", std::to_string(item.created_at)},
+            {"[updated_at]", std::to_string(item.updated_at)},
+            {"[jobid]", std::to_string(item.id)},
+            {"[seed]", std::to_string(item.params.seed)},
+            {"[batch]", std::to_string(item.params.batch_count)},
+            {"[width]", std::to_string(item.params.width)},
+            {"[height]", std::to_string(item.params.height)},
+            {"[mode]", modes_str[item.mode]},
+            {"[model]", item.model},
+            {"[model_sha256]", item.sha256},
+            {"[steps]", std::to_string(item.step)},
+            {"[steps_total]", std::to_string(item.steps)},
+            {"[cfg_scale]", std::to_string(item.params.cfg_scale)},
+            {"[denoising_strength]", std::to_string(item.params.strength)},
+        };
+
+        wxString result = format;
+
+        for (const auto& [tag, value] : tags) {
+            size_t pos = 0;
+            while ((pos = result.find(tag, pos)) != std::string::npos) {
+                result.replace(pos, tag.length(), value);
+                pos += value.length();
+            }
+        }
+
+        return result;
+    }
 
     /**
      * Creates a unique file path by combining the given filename, extension, and folder path.
@@ -1199,6 +1248,16 @@ namespace sd_gui_utils {
 
     private:
         int m_id;
+    };
+
+    class StringClientData : public wxClientData {
+    public:
+        StringClientData(std::string str)
+            : m_str(str) { ; }
+        std::string getStr() const { return m_str; }
+
+    private:
+        std::string m_str;
     };
 
     struct wxPointDouble {

@@ -10,38 +10,68 @@ public:
         std::lock_guard<std::mutex> lock(this->mutex);
         return this->jobs.size();
     }
+    uint64_t GenerateNextId() {
+        std::lock_guard<std::mutex> lock(this->mutex);
 
-    void AddItem(QueueItem& newItem) {
+        auto id = this->generator.generateID(this->jobs.size());
+        // auto id = this->jobs.end()->first
+
+        while (id < this->lastID) {
+            id = this->lastID + 1;
+        }
+        return id;
+    }
+    std::shared_ptr<QueueItem> DuplicateItem(uint64_t job_id) {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->jobs.contains(job_id)) {
+            auto oldJob            = this->jobs.at(job_id);
+            auto newJob            = std::make_shared<QueueItem>(*oldJob);
+            newJob->id             = this->GenerateNextId();
+            newJob->status         = QueueStatus::PAUSED;
+            newJob->created_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            newJob->server         = this->server_id;
+            newJob->RemoveGeneratedImages(); // clean up generated images
+            this->jobs[newJob->id] = newJob;
+            this->lastID           = (this->lastID < newJob->id) ? newJob->id : this->lastID;
+            this->StoreJobInFile(newJob);
+            return newJob;
+        }
+        return nullptr;
+    }
+
+    std::shared_ptr<QueueItem> AddItem(QueueItem& newItem) {
         std::lock_guard<std::mutex> lock(this->mutex);
         std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(newItem);
         if (item->id == 0) {
-            auto id = this->generator.generateID(this->jobs.size());
-
-            while (id < this->lastID) {
-                id = this->lastID + 1;
-            }
-
+            auto id  = this->GenerateNextId();
             item->id = id;
         }
-        wxString output_file_prefix = wxString::Format("%s%slocal_%lu", this->jobs_path, wxFileName::GetPathSeparators(), item->id);
-        item->params.output_path    = wxFileName::CreateTempFileName(output_file_prefix).ToStdString();
-        item->status                = QueueStatus::PENDING;
-        // item->event                 = QueueEvents::ITEM_ADDED;
+        item->status     = QueueStatus::PENDING;
         item->created_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         item->server     = this->server_id;
         std::cout << "Item added: " << item->id << std::endl;
-        this->jobs.push_back(item);
-        {
-            this->StoreJobInFile(item->id);
-        }
+        this->jobs[item->id] = item;
+        this->lastID         = (this->lastID < item->id) ? item->id : this->lastID;
+
+        this->StoreJobInFile(this->jobs[item->id]);
+        return this->jobs[item->id];
     }
-    std::vector<std::shared_ptr<QueueItem>> GetJobList() {
+    std::map<uint64_t, std::shared_ptr<QueueItem>> GetJobList() {
         std::lock_guard<std::mutex> lock(this->mutex);
         return this->jobs;
     }
     std::shared_ptr<QueueItem> GetCurrentJob() {
         std::lock_guard<std::mutex> lock(this->mutex);
         return this->currentItem;
+    }
+    std::shared_ptr<QueueItem> GetNextPendingJob() {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        for (auto it = this->jobs.begin(); it != this->jobs.end(); it++) {
+            if ((*it).second->status == QueueStatus::PENDING) {
+                return (*it).second;
+            }
+        }
+        return nullptr;
     }
     void SetCurrentJob(std::shared_ptr<QueueItem> item) {
         std::lock_guard<std::mutex> lock(this->mutex);
@@ -51,40 +81,63 @@ public:
         std::lock_guard<std::mutex> lock(this->mutex);
         this->currentItem = nullptr;
     }
-    std::vector<sd_gui_utils::RemoteQueueItem> GetJobListCopy() {
+    std::vector<QueueItem> GetJobListCopy() {
         std::lock_guard<std::mutex> lock(this->mutex);
-        std::vector<sd_gui_utils::RemoteQueueItem> list;
+        std::vector<QueueItem> list;
         for (const auto& item : this->jobs) {
-            list.push_back(item->convertToNetwork());
+            list.insert(list.begin(), *item.second);  // add to reverse order :)
         }
         return list;
     }
-    auto UpdateJob(QueueItem& item) -> bool {
-        // lock this->mutex
+    auto UpdateCurrentJob(QueueItem& item, const std::string& target_dir) -> bool {
         std::lock_guard<std::mutex> lock(this->mutex);
-        for (auto& job : this->jobs) {
-            if (job->id == item.id && (item.update_index != job->update_index || item.status != job->status)) {
-                *job = item;
-                {
-                    this->StoreJobInFile(item.id);
+
+        if (this->jobs.contains(item.id)) {
+            auto j = this->jobs[item.id];
+            if (item.status == QueueStatus::PENDING) {
+                return false;
+            }
+            if (j->IsUpdated(item)) {
+                auto oldJob = *j;
+                *j          = item;
+
+                if (j->status == QueueStatus::DONE) {
+                    j->prepareImagesForClients(target_dir);  // convert images to base64 and generate image ID
+                    if (this->currentItem && this->currentItem->id == oldJob.id) {
+                        this->currentItem = nullptr;
+                    }
                 }
-                if (job->status == QueueStatus::DONE) {
-                    this->currentItem = nullptr;
-                }
+                this->StoreJobInFile(j);
                 return true;
             }
+            return false;
         }
-        return false;
+
         std::cout << "No item updated with id: " << item.id << std::endl;
+        return false;
     }
 
-    auto GetItem(uint64_t id) -> std::shared_ptr<QueueItem> {
-        // lock this->mutex
-        // std::lock_guard<std::mutex> lock(this->mutex);
-        for (auto& job : this->jobs) {
-            if (job->id == id) {
-                return job;
+    auto DeleteItem(uint64_t item_id, std::string& error_str) -> bool {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->jobs.contains(item_id)) {
+            if (this->currentItem != nullptr && this->currentItem->id == item_id) {
+                error_str = _("Cannot delete current job");
+                return false;
             }
+            this->jobs.erase(item_id);
+            // delete the json file, don't throw error if not found TODO: better handle this situation
+            wxFileName jobFile(this->jobs_path, wxString::Format("local_%" PRIu64 ".json", item_id));
+            if (wxFileExists(jobFile.GetAbsolutePath())) {
+                wxRemoveFile(jobFile.GetAbsolutePath());
+            }
+            return true;
+        }
+        error_str = _("Item not found");
+        return false;
+    }
+    auto GetItem(uint64_t id) -> std::shared_ptr<QueueItem> {
+        if (this->jobs.contains(id)) {
+            return this->jobs.at(id);
         }
         return nullptr;
     }
@@ -119,26 +172,30 @@ public:
                 wxString data;
                 file.ReadAll(&data);
                 file.Close();
-                const nlohmann::json jsondata = nlohmann::json::parse(data);
-                auto item                     = std::make_shared<QueueItem>(jsondata.get<QueueItem>());
-                bool need_update              = false;
-                if (item->id != 0) {
-                    if (item->status & QueueStatusFlags::RUNNING_FLAG) {
-                        item->status     = QueueStatus::FAILED;
-                        item->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                        need_update      = true;
-                        std::cout << "Changed job id status to failed:  " << item->id << std::endl;
+                try {
+                    const nlohmann::json jsondata = nlohmann::json::parse(data);
+                    auto item                     = std::make_shared<QueueItem>(jsondata.get<QueueItem>());
+                    bool need_update              = false;
+                    if (item->id != 0) {
+                        if (item->status & QueueStatusFlags::RUNNING_FLAG) {
+                            item->status     = QueueStatus::FAILED;
+                            item->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                            need_update      = true;
+                            wxLogInfo("Changed job id status to failed:  %" PRIu64, item->id);
+                        }
+                        if (item->status == QueueStatus::PENDING) {
+                            item->status = QueueStatus::PAUSED;
+                            wxLogInfo("Chenged job id status to paused: %" PRIu64, item->id);
+                            need_update = true;
+                        }
+                        this->jobs[item->id] = item;
+                        this->lastID         = this->lastID < item->id ? item->id : this->lastID;
+                        if (need_update) {
+                            this->StoreJobInFile(item);
+                        }
                     }
-                    if (item->status == QueueStatus::PENDING) {
-                        item->status = QueueStatus::PAUSED;
-                        std::cout << "Chenged job id status to paused: " << item->id << std::endl;
-                        need_update = true;
-                    }
-                    this->jobs.push_back(item);
-                    this->lastID = item->id;
-                    if (need_update) {
-                        this->StoreJobInFile(item->id);
-                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Error parsing json: " << fn.GetAbsolutePath() << " - " << e.what() << std::endl;
                 }
             }
             cont = dir.GetNext(&path);
@@ -148,23 +205,18 @@ public:
 private:
     // mutex
     std::mutex mutex;
-    std::vector<std::shared_ptr<QueueItem>> jobs;
+    std::map<uint64_t, std::shared_ptr<QueueItem>> jobs;
     std::string server_id, jobs_path;
     sd_gui_utils::SnowflakeIDGenerator generator;
     uint64_t lastID                        = 0;
     std::shared_ptr<QueueItem> currentItem = nullptr;
-    void StoreJobInFile(uint64_t item_id) {
-        if (item_id == 0) {
-            return;
-        }
-
-        auto item = this->GetItem(item_id);
-        if (item->id == 0) {
+    void StoreJobInFile(std::shared_ptr<QueueItem> item) {
+        if (!item || item->id == 0) {
             return;
         }
         try {
             const nlohmann::json jsondata = *item;
-            const auto filepath           = wxString::Format("%s%slocal_%lu.json", this->jobs_path, wxFileName::GetPathSeparators(), item_id);
+            const auto filepath           = wxString::Format("%s%slocal_%" PRIu64 ".json", this->jobs_path, wxFileName::GetPathSeparators(), item->id);
             wxFileName fn(filepath);
             wxFile file;
             if (file.Open(fn.GetAbsolutePath(), wxFile::write)) {

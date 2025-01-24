@@ -230,18 +230,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer78;
 	bSizer78 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_splitter2 = new wxSplitterWindow( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
-	m_splitter2->SetSashGravity( 1 );
-	m_splitter2->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
-	m_splitter2->SetMinimumPaneSize( 200 );
-
-	m_panel14 = new wxPanel( m_splitter2, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_panel14->SetMinSize( wxSize( 300,-1 ) );
-
-	wxBoxSizer* bSizer79;
-	bSizer79 = new wxBoxSizer( wxVERTICAL );
-
-	m_joblist = new wxDataViewListCtrl( m_panel14, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_MULTIPLE|wxDV_ROW_LINES|wxDV_VERT_RULES );
+	m_joblist = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_MULTIPLE|wxDV_ROW_LINES|wxDV_VERT_RULES );
 	m_joblist->SetExtraStyle( wxWS_EX_VALIDATE_RECURSIVELY );
 
 	m_dataViewListColumn32 = m_joblist->AppendTextColumn( _("Id"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
@@ -255,14 +244,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_dataViewListColumn321111111 = m_joblist->AppendTextColumn( _("Speed"), wxDATAVIEW_CELL_INERT, 110, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn3211111111 = m_joblist->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_ACTIVATABLE, 150, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn32111111111 = m_joblist->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	bSizer79->Add( m_joblist, 1, wxEXPAND, 5 );
-
-
-	m_panel14->SetSizer( bSizer79 );
-	m_panel14->Layout();
-	bSizer79->Fit( m_panel14 );
-	m_splitter2->Initialize( m_panel14 );
-	bSizer78->Add( m_splitter2, 1, wxEXPAND, 5 );
+	bSizer78->Add( m_joblist, 1, wxEXPAND, 5 );
 
 
 	bSizer17->Add( bSizer78, 2, wxEXPAND, 5 );
@@ -273,9 +255,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_scrolledWindow41 = new wxScrolledWindow( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( -1,280 ), wxBORDER_THEME|wxHSCROLL );
 	m_scrolledWindow41->SetScrollRate( 5, 5 );
 	bSizer8911 = new wxBoxSizer( wxHORIZONTAL );
-
-	m_bitmap6 = new wxStaticBitmap( m_scrolledWindow41, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer8911->Add( m_bitmap6, 0, wxALL, 5 );
 
 
 	m_scrolledWindow41->SetSizer( bSizer8911 );
@@ -1564,6 +1543,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	this->Centre( wxBOTH );
 
 	// Connect Events
+	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( mainUI::OnClose ) );
 	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
 	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
@@ -1692,6 +1672,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 mainUI::~mainUI()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( mainUI::OnClose ) );
 	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
 	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
@@ -2309,6 +2290,20 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* bSizer105;
 	bSizer105 = new wxBoxSizer( wxVERTICAL );
 
+	wxStaticBoxSizer* sbSizer1;
+	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( m_serversPanel, wxID_ANY, _("Remote settings") ), wxHORIZONTAL );
+
+	wxString m_remote_imageDownloadChoices[] = { _("On job select"), _("After job download") };
+	int m_remote_imageDownloadNChoices = sizeof( m_remote_imageDownloadChoices ) / sizeof( wxString );
+	m_remote_imageDownload = new wxRadioBox( sbSizer1->GetStaticBox(), wxID_ANY, _("Image downloads"), wxDefaultPosition, wxDefaultSize, m_remote_imageDownloadNChoices, m_remote_imageDownloadChoices, 1, 0 );
+	m_remote_imageDownload->SetSelection( 0 );
+	m_remote_imageDownload->SetToolTip( _("On Job Select: Images are downloaded only when a job is selected. Downloaded images are cached, so the download happens only the first time a job is selected. This option ensures that only images for selected jobs are downloaded, reducing unnecessary downloads. However, images won't appear immediately and may take a moment to load.\n\nAfter Job Download: All images are downloaded from the server as soon as the job metadata is retrieved. Once the app connects to the server and receives the job list, it begins downloading images for all jobs. This allows images to be immediately available when selecting a job. However, if there are many jobs with associated images, this process can take a long time, delay the job list display, and result in high bandwidth usage.") );
+
+	sbSizer1->Add( m_remote_imageDownload, 0, wxALL, 5 );
+
+
+	bSizer105->Add( sbSizer1, 0, wxEXPAND, 5 );
+
 	wxBoxSizer* bSizer106;
 	bSizer106 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -2418,6 +2413,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_output_filename_format->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( Settings::OnOutputFilenameText ), NULL, this );
 	m_show_notifications->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
+	m_remote_imageDownload->Connect( wxEVT_COMMAND_RADIOBOX_SELECTED, wxCommandEventHandler( Settings::OnRemoteImageDownload ), NULL, this );
 	m_deleteServer->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnDeleteServer ), NULL, this );
 	m_serverEnable->Connect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( Settings::OnServerEnableToggle ), NULL, this );
 	m_serverList->Connect( wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler( Settings::OnServerListEditingDone ), NULL, this );
@@ -2464,6 +2460,7 @@ Settings::~Settings()
 	m_output_filename_format->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( Settings::OnOutputFilenameText ), NULL, this );
 	m_show_notifications->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( Settings::onShowNotificationCheck ), NULL, this );
 	m_bpButton15->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnCivitaiHelpButton ), NULL, this );
+	m_remote_imageDownload->Disconnect( wxEVT_COMMAND_RADIOBOX_SELECTED, wxCommandEventHandler( Settings::OnRemoteImageDownload ), NULL, this );
 	m_deleteServer->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnDeleteServer ), NULL, this );
 	m_serverEnable->Disconnect( wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, wxCommandEventHandler( Settings::OnServerEnableToggle ), NULL, this );
 	m_serverList->Disconnect( wxEVT_COMMAND_DATAVIEW_ITEM_EDITING_DONE, wxDataViewEventHandler( Settings::OnServerListEditingDone ), NULL, this );

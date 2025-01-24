@@ -18,6 +18,7 @@
 #include <wx/textfile.h>
 #include <wx/time.h>
 #include <wx/timer.h>
+#include <wx/image.h>
 
 #include "ver.hpp"
 
@@ -27,7 +28,7 @@
 #include "EventQueue.h"
 #include "extprocess/config.hpp"
 
-
+#include "helpers/sslUtils.hpp"
 #include "helpers/base64.h"
 #include "helpers/QueueStatus.h"
 #include "helpers/QueueEvents.h"
@@ -36,7 +37,7 @@
 #include "helpers/QueueItem.h"
 
 #include "ServerConfig.h"
-#include "helpers/sslUtils.hpp"
+
 #include "libs/json.hpp"
 #include "network/RemoteModelInfo.h"
 #include "network/packets.h"

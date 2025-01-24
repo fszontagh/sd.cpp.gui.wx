@@ -39,7 +39,7 @@ public:
     void onClientDisconnect(const sockets::ClientHandle& client, const sockets::SocketRet& ret);
 
     void sendMsg(int idx, const char* data, size_t len);
-    void sendMsg(int idx, sd_gui_utils::networks::Packet& packet);
+    size_t sendMsg(int idx, sd_gui_utils::networks::Packet& packet);
     void DisconnectClient(int idx);
     void parseMsg(sd_gui_utils::networks::Packet& packet);
     inline bool isRunning() { return this->needToRun.load() == true; }

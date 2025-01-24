@@ -27,9 +27,11 @@
 #include <wx/string.h>
 #include <wx/translation.h>
 #include <wx/filename.h>
+#include <wx/image.h>
 
 
 #include "helpers/sd.hpp"
+#include "helpers/sslUtils.hpp"
 #include "helpers/base64.h"
 #include "helpers/QueueEvents.h"
 #include "helpers/QueueStatus.h"
@@ -38,8 +40,7 @@
 #include "helpers/QueueItem.h"
 
 #include "network/packets.h"
-#include "helpers/sd.hpp"
-#include "helpers/sslUtils.hpp"
+
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "ui/QueueManager.h"

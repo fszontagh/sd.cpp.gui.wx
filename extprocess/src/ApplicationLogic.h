@@ -8,21 +8,25 @@ public:
 
     // stdout/stderr captured by parent
     inline static void HandleSDLog(sd_log_level_t level, const char* text, void* data) {
+        std::string msg = std::string(text);
+        if (msg.empty()) {
+            return;
+        }
         switch (level) {
             case sd_log_level_t::SD_LOG_DEBUG: {
-                std::cout << "[DEBUG] " << text << std::endl;
+                std::cout << "[DEBUG] " << msg << std::endl;
             } break;
             case sd_log_level_t::SD_LOG_INFO: {
-                std::cout << "[INFO] " << text << std::endl;
+                std::cout << "[INFO] " << msg << std::endl;
             } break;
             case sd_log_level_t::SD_LOG_ERROR: {
-                std::cout << "[ERROR] " << text << std::endl;
+                std::cout << "[ERROR] " << msg << std::endl;
             } break;
             case sd_log_level_t::SD_LOG_WARN: {
-                std::cout << "[WARN] " << text << std::endl;
+                std::cout << "[WARN] " << msg << std::endl;
             } break;
             default: {
-                std::cout << text << std::endl;
+                std::cout << msg << std::endl;
             } break;
         }
     }
@@ -134,8 +138,8 @@ private:
         }
 
         std::lock_guard<std::mutex> lock(this->itemMutex);
-        this->currentItem->status     = status;
-        //this->currentItem->event      = event;
+        this->currentItem->status = status;
+        // this->currentItem->event      = event;
         this->currentItem->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->currentItem->update_index++;
 

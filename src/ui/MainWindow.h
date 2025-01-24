@@ -29,9 +29,8 @@
 #include <wx/gauge.h>
 #include <wx/panel.h>
 #include <wx/dataview.h>
-#include <wx/splitter.h>
-#include <wx/statbmp.h>
 #include <wx/scrolwin.h>
+#include <wx/statbmp.h>
 #include <wx/notebook.h>
 #include <wx/filepicker.h>
 #include <wx/checkbox.h>
@@ -39,14 +38,16 @@
 #include <wx/slider.h>
 #include <wx/textctrl.h>
 #include <wx/html/htmlwin.h>
+#include <wx/splitter.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
+#include <wx/radiobox.h>
+#include <wx/statbox.h>
 #include <wx/valgen.h>
 #include <wx/dialog.h>
-#include <wx/radiobox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -79,8 +80,6 @@ class mainUI : public wxFrame
 		wxButton* m_pause_jobs;
 		wxButton* m_delete_all_jobs;
 		wxStaticText* m_static_number_of_jobs;
-		wxSplitterWindow* m_splitter2;
-		wxPanel* m_panel14;
 		wxDataViewListCtrl* m_joblist;
 		wxDataViewColumn* m_dataViewListColumn32;
 		wxDataViewColumn* m_dataViewListColumn321;
@@ -94,7 +93,6 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn3211111111;
 		wxDataViewColumn* m_dataViewListColumn32111111111;
 		wxScrolledWindow* m_scrolledWindow41;
-		wxStaticBitmap* m_bitmap6;
 		wxStaticText* m_staticText64;
 		wxDataViewListCtrl* m_joblist_item_details;
 		wxDataViewColumn* m_dataViewListColumn1;
@@ -266,6 +264,7 @@ class mainUI : public wxFrame
 		wxStatusBar* m_statusBar166;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void onSettings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }
@@ -375,12 +374,6 @@ class mainUI : public wxFrame
 
 		~mainUI();
 
-		void m_splitter2OnIdle( wxIdleEvent& )
-		{
-			m_splitter2->SetSashPosition( -200 );
-			m_splitter2->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter2OnIdle ), NULL, this );
-		}
-
 		void m_splitter4OnIdle( wxIdleEvent& )
 		{
 			m_splitter4->SetSashPosition( 0 );
@@ -457,6 +450,7 @@ class Settings : public wxFrame
 		wxTextCtrl* m_civitai_api_key;
 		wxBitmapButton* m_bpButton15;
 		wxPanel* m_serversPanel;
+		wxRadioBox* m_remote_imageDownload;
 		wxButton* m_deleteServer;
 		wxToggleButton* m_serverEnable;
 		wxDataViewListCtrl* m_serverList;
@@ -480,6 +474,7 @@ class Settings : public wxFrame
 		virtual void OnOutputFilenameText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onShowNotificationCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCivitaiHelpButton( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnRemoteImageDownload( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDeleteServer( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnServerEnableToggle( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnServerListEditingDone( wxDataViewEvent& event ) { event.Skip(); }

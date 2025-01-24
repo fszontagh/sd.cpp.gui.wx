@@ -1,7 +1,7 @@
 #include "SocketApp.h"
 #include "libs/SnowFlakeIdGenerarot.hpp"
 SocketApp::SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent)
-    : m_socketOpt({sockets::TX_BUFFER_SIZE, sockets::RX_BUFFER_SIZE, listenAddr}), m_server(*this, &m_socketOpt), parent(parent) {
+    : m_socketOpt({sd_gui_utils::TCP_TX_BUFFER_SIZE, sd_gui_utils::TCP_RX_BUFFER_SIZE, listenAddr}), m_server(*this, &m_socketOpt), parent(parent) {
     sockets::SocketRet ret = m_server.start(port);
     if (ret.m_success) {
         this->parent->sendLogEvent("Server started on  " + std::string(listenAddr) + ":" + std::to_string(port));
@@ -39,43 +39,68 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
     // wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s", idx, fsize.first, fsize.second);
     // this->parent->sendLogEvent(logmsg, wxLOG_Debug);
 }
-void SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
+size_t SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
     if (idx != 0 && this->m_clientInfo.contains(idx)) {
         packet.client_id = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
     }
 
     auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
     size_t packet_size = raw_packet.second;
-    this->sendMsg(idx, reinterpret_cast<const char*>(&packet_size), sizeof(packet_size));
-    this->sendMsg(idx, raw_packet.first, raw_packet.second);
+
+    char size_header[sd_gui_utils::networks::PACKET_SIZE_LENGTH] = {0};
+    memcpy(size_header, &packet_size, sizeof(packet_size));
+
+    std::vector<char> full_packet(sd_gui_utils::networks::PACKET_SIZE_LENGTH + raw_packet.second);
+    memcpy(full_packet.data(), size_header, sd_gui_utils::networks::PACKET_SIZE_LENGTH);                           // Header másolása
+    memcpy(full_packet.data() + sd_gui_utils::networks::PACKET_SIZE_LENGTH, raw_packet.first, raw_packet.second);  // Adat másolása
+
+    this->sendMsg(idx, full_packet.data(), full_packet.size());
+
     delete[] raw_packet.first;
+    return packet_size;
 }
 
 void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const char* data, size_t size) {
-    if (this->expected_size == 0 && size >= sizeof(size_t)) {
-        memcpy(&this->expected_size, data, sizeof(this->expected_size));
+    while (size > 0) {
+        if (this->expected_size == 0) {
 
-        size -= sizeof(this->expected_size);
-        data += sizeof(this->expected_size);
+            if (size >= sd_gui_utils::networks::PACKET_SIZE_LENGTH) {
+                memcpy(&this->expected_size, data, sd_gui_utils::networks::PACKET_SIZE_LENGTH);
 
-        if (size > 0) {
-            this->buffer.insert(this->buffer.end(), data, data + size);
+                size -= sd_gui_utils::networks::PACKET_SIZE_LENGTH;
+                data += sd_gui_utils::networks::PACKET_SIZE_LENGTH;
+                this->parent->sendLogEvent("Received packet expected size: " + std::to_string(this->expected_size), wxLOG_Debug);
+            } else {
+                this->buffer.insert(this->buffer.end(), data, data + size);
+                break;
+            }
         }
-        this->parent->sendLogEvent("Received packet expected size: " + std::to_string(this->expected_size), wxLOG_Debug);
-    } else if (this->expected_size > 0) {
-        this->buffer.insert(this->buffer.end(), data, data + size);
+
+        size_t remaining_size = this->expected_size - this->buffer.size();
+
+        if (size >= remaining_size) {
+
+            this->buffer.insert(this->buffer.end(), data, data + remaining_size);
+
+            auto packet       = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
+            packet.source_idx = client;
+            this->parseMsg(packet);
+            this->m_clientInfo.at(client).rx += this->expected_size;
+
+            this->buffer.clear();
+            this->expected_size = 0;
+
+            size -= remaining_size;
+            data += remaining_size;
+        } else {
+            this->buffer.insert(this->buffer.end(), data, data + size);
+            break;
+        }
     }
 
-    if (this->buffer.size() == this->expected_size && this->expected_size > 0) {
-        auto packet       = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
-        packet.source_idx = client;
-
-        this->parseMsg(packet);
-        this->m_clientInfo.at(client).rx += this->expected_size;
-
-        this->buffer.clear();
-        this->expected_size = 0;
-    }
+    std::cout << "SocketApp::onReceiveClientData Expected size: " << this->expected_size
+              << " Remaining size: " << size
+              << " Buffer size: " << this->buffer.size() << std::endl;
 }
 
 void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
@@ -125,8 +150,8 @@ void SocketApp::OnTimer() {
                 it->second.last_keepalive = wxGetLocalTime();
                 auto keepAlivePacket      = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
                 // keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
-                this->sendMsg(it->second.idx, keepAlivePacket);
-                this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port), wxLOG_Debug);
+                auto packet_size = this->sendMsg(it->second.idx, keepAlivePacket);
+                this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port) + " packet size: " + std::to_string(packet_size) + "", wxLOG_Debug);
                 this->parent->sendOnTimerEvent(it->second);
             }
             ++it;
@@ -151,7 +176,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
             return;
         }
 
-        if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE) {
+        if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE || packet.type == sd_gui_utils::networks::Packet::Type::DELETE_TYPE) {
             this->parent->ProcessReceivedSocketPackages(packet);
         }
         // handle the response to the auth request
@@ -172,8 +197,8 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
 
                         auto responsePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
                         responsePacket.SetData("Authentication done");
-                        responsePacket.server_id = this->parent->configData->server_id;
-                        responsePacket.client_id = this->m_clientInfo[packet.source_idx].client_id;
+                        responsePacket.server_id   = this->parent->configData->server_id;
+                        responsePacket.client_id   = this->m_clientInfo[packet.source_idx].client_id;
                         responsePacket.server_name = this->parent->configData->server_name;
                         this->sendMsg(packet.source_idx, responsePacket);
                         this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);

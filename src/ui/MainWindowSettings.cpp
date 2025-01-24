@@ -387,6 +387,10 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
         }
     }
 }
+
+void MainWindowSettings::OnRemoteImageDownload(wxCommandEvent& event) {
+    this->cfg->remote_download_images_immediately = this->m_remote_imageDownload->GetSelection() == 1;
+}
 void MainWindowSettings::ChangeRemoteServer(const wxString& value, ServerListColumns col, int row) {
     this->m_serverList->SetValue(value, row, col);
 }

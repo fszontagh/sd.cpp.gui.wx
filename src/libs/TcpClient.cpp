@@ -52,29 +52,53 @@ namespace sd_gui_utils {
         }
 
         void TcpClient::onReceiveData(const char* data, size_t size) {
-            if (this->expected_size == 0 && size >= sizeof(size_t)) {
-                memcpy(&this->expected_size, data, sizeof(this->expected_size));
+            while (size > 0) {
+                if (this->expected_size == 0) {
+                    // Ellenőrizzük, hogy elegendő adat érkezett-e a csomag méretének kiolvasásához
+                    if (size >= sd_gui_utils::networks::PACKET_SIZE_LENGTH) {
+                        memcpy(&this->expected_size, data, sd_gui_utils::networks::PACKET_SIZE_LENGTH);
 
-                size -= sizeof(this->expected_size);
-                data += sizeof(this->expected_size);
-                if (size > 0) {
-                    this->buffer.insert(this->buffer.end(), data, data + size);
+                        size -= sd_gui_utils::networks::PACKET_SIZE_LENGTH;
+                        data += sd_gui_utils::networks::PACKET_SIZE_LENGTH;
+                    } else {
+
+                        this->buffer.insert(this->buffer.end(), data, data + size);
+                        break;
+                    }
                 }
-                std::cout << "Expected size: " << this->expected_size << "\n";
-            } else if (this->expected_size > 0) {
-                this->buffer.insert(this->buffer.end(), data, data + size);
+
+
+                size_t remaining_size = this->expected_size - this->buffer.size();
+
+                if (size >= remaining_size) {
+                    // Teljes csomag érkezett meg vagy több adat van a szükségesnél
+                    this->buffer.insert(this->buffer.end(), data, data + remaining_size);
+
+                    // Csomag feldolgozása
+                    auto packet = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
+                    this->HandlePackets(packet);
+
+
+                    this->buffer.clear();
+                    this->expected_size = 0;
+
+                    size -= remaining_size;
+                    data += remaining_size;
+                } else {
+
+                    this->buffer.insert(this->buffer.end(), data, data + size);
+                    break;
+                }
             }
 
-            if (this->buffer.size() == this->expected_size && this->expected_size > 0) {
-                auto packet = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
 
-                this->HandlePackets(packet);
-                this->buffer.clear();
-                this->expected_size = 0;
-            }
+            std::cout << "TcpClient::onReceiveData Expected size: " << this->expected_size
+                      << " Remaining size: " << size
+                      << " Buffer size: " << this->buffer.size() << std::endl;
         }
+
         void TcpClient::HandlePackets(Packet& packet) {
-            std::cout << "Handling packet: " << (int)packet.type << " Param:" << (int)packet.param << "\n";
+            std::cout << "Handling packet: " << sd_gui_utils::networks::PacketType2str.at(packet.type) << " Param: " << sd_gui_utils::networks::PacketParam2str.at(packet.param) << "\n";
             if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
                 if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_ERROR) {
                     this->disconnect_reason = packet.GetData<std::string>();
@@ -141,10 +165,16 @@ namespace sd_gui_utils {
         }
 
         void TcpClient::sendMsg(const sd_gui_utils::networks::Packet& packet) {
-            auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
-            size_t packet_size = raw_packet.second;
-            this->sendMsg(reinterpret_cast<const char*>(&packet_size), sizeof(packet_size));
-            this->sendMsg(raw_packet.first, raw_packet.second);
+            auto raw_packet                                              = sd_gui_utils::networks::Packet::Serialize(packet);
+            size_t packet_size                                           = raw_packet.second;
+            char size_header[sd_gui_utils::networks::PACKET_SIZE_LENGTH] = {0};
+            memcpy(size_header, &packet_size, sizeof(packet_size));
+            std::vector<char> full_packet(sd_gui_utils::networks::PACKET_SIZE_LENGTH + raw_packet.second);
+            memcpy(full_packet.data(), size_header, sd_gui_utils::networks::PACKET_SIZE_LENGTH);                           // Header másolása
+            memcpy(full_packet.data() + sd_gui_utils::networks::PACKET_SIZE_LENGTH, raw_packet.first, raw_packet.second);  // Adat másolása
+
+            this->sendMsg(full_packet.data(), full_packet.size());
+
             delete[] raw_packet.first;
         }
     }

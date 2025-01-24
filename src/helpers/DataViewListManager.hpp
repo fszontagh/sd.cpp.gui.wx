@@ -52,10 +52,41 @@ public:
                 continue;
             }
             if (row != wxNOT_FOUND && job_item->status & QueueStatusFlags::DELETABLE_FLAG) {
-                this->queueManager->DeleteJob(job_id);
-                parent->DeleteItem(row);
+                this->DeleteItem(job_id);
+                // this->queueManager->DeleteJob(job_id);
+                // parent->DeleteItem(row);
             }
         }
+    }
+    void DeleteItems(std::vector<wxDataViewItem> items) {
+        wxDataViewItemArray selected_items;
+        for (const auto& item : items) {
+            selected_items.Add(item);
+        }
+        this->DeleteItems(selected_items);
+    }
+
+    /// \brief Delete an item from the dataview and the queue manager
+    /// \param job_id The id of the job to delete
+    /// \details This function will delete the item from the dataview and the queue manager by iterating through all the items in the dataview and checking if the id matches.
+    void DeleteItem(uint64_t job_id) {
+        for (int i = this->parent->GetItemCount() - 1; i >= 0; i--) {
+            auto item = this->parent->RowToItem(i);
+            auto id   = this->parent->GetItemData(item);
+            if (id == job_id) {
+                this->parent->DeleteItem(i);
+                this->queueManager->DeleteJob(job_id);
+            }
+        }
+    }
+
+    std::vector<uint64_t> GetSelectedItemsId(wxDataViewItemArray selected_items) {
+        std::vector<uint64_t> list;
+        for (const auto& item : selected_items) {
+            auto job_id    = store->GetItemData(item);
+            list.emplace_back(job_id);
+        }
+        return list;
     }
 
     std::shared_ptr<QueueItem> GetQueueItem(const unsigned int row) {
@@ -106,7 +137,7 @@ public:
             }
         }
 
-        data.push_back(wxVariant(wxString::Format("%lu", item->id)));
+        data.push_back(wxVariant(wxString::Format("%" PRIu64, item->id)));
         data.push_back(wxVariant(created_at));
         data.push_back(wxVariant(modes_str[item->mode]));
         data.push_back(wxVariant(serverName));

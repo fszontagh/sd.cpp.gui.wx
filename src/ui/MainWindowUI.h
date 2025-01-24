@@ -23,6 +23,7 @@ class MainApp;
 class MainWindowUI : public mainUI {
 protected:
     // Handlers for UI events.
+    void OnClose(wxCloseEvent& event) override;
     void onSettings(wxCommandEvent& event) override;
     void onModelsRefresh(wxCommandEvent& event) override;
     void OnAboutButton(wxCommandEvent& event) override;
@@ -199,6 +200,7 @@ private:
     void ChangeGuiFromQueueItem(const QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item);
+    void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
     void ProcessOutputThread();
@@ -322,53 +324,6 @@ private:
     void deInitLog();
     void writeLog(const wxString& msg, bool writeIntoGui = true, bool debug = false);
     void writeLog(const std::string& message);
-
-    inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
-        wxDateTime localTime = wxDateTime::Now();
-
-        auto day     = localTime.Format(wxT("%d"));
-        auto month   = localTime.Format(wxT("%m"));
-        auto year    = localTime.Format(wxT("%Y"));
-        auto hours   = localTime.Format(wxT("%H"));
-        auto minutes = localTime.Format(wxT("%M"));
-        auto seconds = localTime.Format(wxT("%S"));
-
-        std::unordered_map<std::string, std::string> tags = {
-            {"[year]", year.ToStdString()},
-            {"[month]", month.ToStdString()},
-            {"[day]", day.ToStdString()},
-            {"[hours]", hours.ToStdString()},
-            {"[minutes]", minutes.ToStdString()},
-            {"[seconds]", seconds.ToStdString()},
-            {"[finished_at]", std::to_string(item.finished_at)},
-            {"[created_at]", std::to_string(item.created_at)},
-            {"[updated_at]", std::to_string(item.updated_at)},
-            {"[jobid]", std::to_string(item.id)},
-            {"[seed]", std::to_string(item.params.seed)},
-            {"[batch]", std::to_string(item.params.batch_count)},
-            {"[width]", std::to_string(item.params.width)},
-            {"[height]", std::to_string(item.params.height)},
-            {"[mode]", modes_str[item.mode]},
-            {"[model]", item.model},
-            {"[model_sha256]", item.sha256},
-            {"[steps]", std::to_string(item.step)},
-            {"[steps_total]", std::to_string(item.steps)},
-            {"[cfg_scale]", std::to_string(item.params.cfg_scale)},
-            {"[denoising_strength]", std::to_string(item.params.strength)},
-        };
-
-        wxString result = format;
-
-        for (const auto& [tag, value] : tags) {
-            size_t pos = 0;
-            while ((pos = result.find(tag, pos)) != std::string::npos) {
-                result.replace(pos, tag.length(), value);
-                pos += value.length();
-            }
-        }
-
-        return result;
-    }
 };
 
 #endif  // __MainWindowUI__

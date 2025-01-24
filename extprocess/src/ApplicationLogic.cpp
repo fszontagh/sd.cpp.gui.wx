@@ -170,7 +170,7 @@ void ApplicationLogic::processMessage(QueueItem& item) {
     }
 
     // set the steps
-    this->currentItem->step = 0;
+    this->currentItem->step  = 0;
     this->currentItem->steps = 1;
 
     this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
@@ -535,6 +535,11 @@ bool ApplicationLogic::loadSdModel() {
         return this->upscale_ctx != NULL;
     }
     if (this->currentItem->mode == SDMode::TXT2IMG || this->currentItem->mode == SDMode::IMG2IMG) {
+        if (this->currentItem->params.model_path.empty() && this->currentItem->params.model_path.empty()) {
+            std::cerr << "Empty model!";
+            this->currentItem->status_message = _("Empty model!");
+            return false;
+        }
         if (this->currentItem->params.model_path == "") {
             std::cout << "Loading sd model: " << this->currentItem->params.diffusion_model_path << std::endl;
         } else {

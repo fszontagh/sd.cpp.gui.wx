@@ -1,6 +1,20 @@
 #include "MainWindowUI.h"
+
+#ifndef APP_PNG_H
 #include "embedded_files/app_icon.h"
+#endif
+
+#ifndef BLANKIMAGE_PNG_H
 #include "embedded_files/blankimage.png.h"
+#endif
+
+#ifndef DELETED_PNG_H
+#include "embedded_files/deleted.png.h"
+#endif
+
+#ifndef CLOUD_DOWNLOAD_PNG_H
+#include "embedded_files/cloud_download.png.h"
+#endif
 
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
@@ -52,6 +66,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     this->modelUiManager->AppendColumn(_("Hash"), wxCOL_WIDTH_AUTOSIZE, wxALIGN_LEFT, wxCOL_RESIZABLE | wxCOL_SORTABLE);
 
     this->m_modelTreeList->SetSortColumn(0, true);
+    this->m_joblist->GetColumn(1)->SetSortOrder(false);
 
     this->initLog();
     Bind(wxEVT_THREAD, &MainWindowUI::OnThreadMessage, this);
@@ -191,7 +206,9 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
         this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
     }
 }
-
+void MainWindowUI::OnClose(wxCloseEvent& event) {
+    event.Skip();
+}
 void MainWindowUI::onSettings(wxCommandEvent& event) {
     if (this->qmanager->IsRunning()) {
         wxMessageDialog(this, _("Please wait to finish the currently running jobs!")).ShowModal();
@@ -591,9 +608,29 @@ void MainWindowUI::OnJobListItemKeyDown(wxKeyEvent& event) {
     {
         wxDataViewListCtrl* dataView = static_cast<wxDataViewListCtrl*>(event.GetEventObject());
         wxDataViewItemArray itemsToDelete;
-
         dataView->GetSelections(itemsToDelete);
-        this->dataViewListManager->DeleteItems(itemsToDelete);
+
+        auto list = dataViewListManager->GetSelectedItemsId(itemsToDelete);
+
+        for (auto id : list) {
+            auto jobitem = this->qmanager->GetItemPtr(id);
+            if (jobitem) {
+                if ((jobitem->status & QueueStatusFlags::DELETABLE_FLAG) == false) {
+                    continue;
+                }
+                if (jobitem->server.empty()) {
+                    this->dataViewListManager->DeleteItem(id);
+                } else {
+                    auto srv = this->mapp->cfg->GetTcpServer(jobitem->server);
+                    if (srv) {
+                        srv->DeleteJob(id);
+                    }
+                }
+            }
+        }
+
+        // dataView->GetSelections(itemsToDelete);
+        // this->dataViewListManager->DeleteItems(itemsToDelete);
         this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
     }
     event.Skip();
@@ -650,13 +687,23 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, rows_to_del, items_to_del](wxCommandEvent& event) {
                     // unselect all before delete
                     this->m_joblist->SetSelections(wxDataViewItemArray());
-                    for (int i = 0; i < items_to_del.size(); i++) {
-                        this->qmanager->DeleteJob(items_to_del[i]);
-                        auto row = this->m_joblist->ItemToRow(rows_to_del[i]);
-                        if (row != wxNOT_FOUND) {
-                            this->m_joblist->DeleteItem(row);
+                    for (auto id : items_to_del) {
+                        auto jobitem = this->qmanager->GetItemPtr(id);
+                        if (jobitem) {
+                            if ((jobitem->status & QueueStatusFlags::DELETABLE_FLAG) == false) {
+                                continue;
+                            }
+                            if (jobitem->server.empty()) {
+                                this->dataViewListManager->DeleteItem(id);
+                            } else {
+                                auto srv = this->mapp->cfg->GetTcpServer(jobitem->server);
+                                if (srv && srv->IsConnected()) {
+                                    srv->DeleteJob(id);
+                                }
+                            }
                         }
                     }
+                    // this->dataViewListManager->DeleteItems(rows_to_del);
                     this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
                     event.Skip();
                 });
@@ -693,13 +740,13 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 menu->Append(4, _("Copy prompts to img2img"));
                 menu->Append(5, wxString::Format(_("Select model %s"), qitem->model));
 
-                if (qitem->images.size() > 0) {
+                if (qitem->image_info.size() > 0) {
                     menu->Append(6, _("Send the last image to the Upscale tab"));
                     menu->Append(7, _("Send the last image to the img2img tab"));
                 }
             }
             if (qitem->mode == SDMode::UPSCALE) {
-                if (qitem->images.size() > 0) {
+                if (qitem->image_info.size() > 0) {
                     menu->Append(6, wxString::Format(_("Upscale again")));
                 }
             }
@@ -1010,10 +1057,30 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             wxLogError(_("No upscaler model found!"));
             return;
         }
+        wxString esrganPath = esrganModel->path;
+        wxString modelName  = esrganModel->path;
+
         std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>();
-        item->model                     = this->m_upscaler_model->GetStringSelection().utf8_string();
+
+        if (this->m_server->GetSelection() > 0) {
+            int id = this->m_server->GetSelection();
+            if (id != wxNOT_FOUND) {
+                auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
+                if (server != nullptr) {
+                    if (server->IsConnected() == true) {
+                        item->server = server->GetId();
+                        modelName.Replace(item->server + ":", "");
+                        esrganPath = esrganModel->sha256;
+                    } else {
+                        errorlist.Add(wxString::Format(_("The selected server (%s) not connected"), server->GetName()));
+                    }
+                }
+            }
+        }
+
+        item->model                     = wxFileName(modelName).GetFullName();
         item->mode                      = type;
-        item->params.esrgan_path        = esrganModel->path;
+        item->params.esrgan_path        = esrganPath;
         item->initial_image             = this->m_upscaler_filepicker->GetPath();
         item->params.mode               = SDMode::UPSCALE;
         item->params.n_threads          = this->mapp->cfg->n_threads;
@@ -1024,21 +1091,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.schedule = static_cast<schedule_t>(sClientData->getId());
 
         // if (this->mapp->cfg->save_all_image) {
-        item->images.emplace_back(QueueItemImage({item->initial_image, sd_gui_utils::networks::ImageType::INITIAL}));
+        // item->images.emplace_back(QueueItemImage({item->initial_image, sd_gui_utils::networks::ImageType::INITIAL}));
+        item->image_info.emplace_back(sd_gui_utils::networks::ImageType::INITIAL, item->initial_image);
         //}
-        if (this->m_server->GetSelection() > 0) {
-            int id = this->m_server->GetSelection();
-            if (id != wxNOT_FOUND) {
-                auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(id));
-                if (server != nullptr) {
-                    if (server->IsConnected() == true) {
-                        item->server = server->GetId();
-                    } else {
-                        errorlist.Add(wxString::Format(_("The selected server (%s) not connected"), server->GetName()));
-                    }
-                }
-            }
-        }
+
         if (errorlist.size() > 0) {
             wxString error_strs;
             for (const auto str : errorlist) {
@@ -1238,24 +1294,24 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.negative_prompt = this->m_neg_prompt2->GetValue().utf8_string();
         wxImage originalImage        = this->inpaintHelper->GetOriginalImage();
         wxImage initialImage         = this->inpaintHelper->GetOriginalImage();
-        wxFileName initialImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("initial_image_" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        wxFileName initialImageName(this->mapp->cfg->tmppath, wxString::Format("initial_image_%" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
         initialImageName.SetExt("png");
-        wxFileName originalImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("original_image_" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        wxFileName originalImageName(this->mapp->cfg->tmppath, wxString::Format("original_image_%" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
         originalImageName.SetExt("png");
-        wxFileName maskImagename(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("inpaint_mask_image_" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        wxFileName maskImagename(this->mapp->cfg->tmppath, wxString::Format("inpaint_mask_image_%" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
         maskImagename.SetExt("png");
-        wxFileName outpaintMaskImageName(this->mapp->cfg->tmppath + wxFileName::GetPathSeparators() + wxString::Format("outpaint_mask_image_" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
+        wxFileName outpaintMaskImageName(this->mapp->cfg->tmppath, wxString::Format("outpaint_mask_image_%" PRIu64 "_%sx%s", this->qmanager->GetNextId(), this->m_width->GetValue(), this->m_height->GetValue()));
         outpaintMaskImageName.SetExt("png");
 
         if (this->inpaintHelper->inPaintImageLoaded() == true) {
             auto maskImage = this->inpaintHelper->GetMaskImage();
             if (this->inpaintHelper->inPaintCanvasEmpty() == false) {
                 maskImage.SaveFile(maskImagename.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                sd_gui_utils::networks::ImageType _type = sd_gui_utils::networks::ImageType::MASK_INPAINT | sd_gui_utils::networks::ImageType::TMP | sd_gui_utils::networks::ImageType::MASK;
+                sd_gui_utils::networks::ImageType _type = sd_gui_utils::networks::ImageType::MASK_INPAINT | sd_gui_utils::networks::ImageType::MOVEABLE | sd_gui_utils::networks::ImageType::MASK;
                 if (this->inpaintHelper->isOutPainted() == false) {
                     _type |= sd_gui_utils::networks::ImageType::MASK_USED;
                 }
-                item->images.emplace_back(QueueItemImage({maskImagename.GetAbsolutePath(), _type}));
+                item->image_info.emplace_back(_type, maskImagename.GetAbsolutePath());
                 item->mask_image = maskImagename.GetAbsolutePath();
             }
             if (this->inpaintHelper->isOutPainted()) {
@@ -1272,16 +1328,28 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 outPaintedMaskImage.SaveFile(outpaintMaskImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
 
                 originalImage.SaveFile(originalImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                item->images.emplace_back(QueueItemImage({initialImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::TMP}));
-                item->images.emplace_back(QueueItemImage({originalImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::ORIGINAL | sd_gui_utils::networks::ImageType::TMP}));
-                item->images.emplace_back(QueueItemImage({outpaintMaskImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::MASK_OUTPAINT | sd_gui_utils::networks::ImageType::MASK | sd_gui_utils::networks::ImageType::MASK_USED | sd_gui_utils::networks::ImageType::TMP}));
+
+                item->image_info.emplace_back(
+                    sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE,
+                    initialImageName.GetAbsolutePath());
+
+                item->image_info.emplace_back(
+                    sd_gui_utils::networks::ImageType::ORIGINAL | sd_gui_utils::networks::ImageType::COPYABLE,
+                    originalImageName.GetAbsolutePath());
+
+                item->image_info.emplace_back(
+                    sd_gui_utils::networks::ImageType::MASK_OUTPAINT | sd_gui_utils::networks::ImageType::MASK | sd_gui_utils::networks::ImageType::MASK_USED | sd_gui_utils::networks::ImageType::MOVEABLE,
+                    outpaintMaskImageName.GetAbsolutePath());
+
                 item->mask_image = outpaintMaskImageName.GetAbsolutePath();
             } else {
                 originalImage.SaveFile(initialImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
-                item->images.emplace_back(QueueItemImage({initialImageName.GetAbsolutePath(), sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::TMP}));
+                item->image_info.emplace_back(
+                    sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE,
+                    initialImageName.GetAbsolutePath());
             }
-            item->initial_image = initialImageName.GetAbsolutePath();
         }
+        item->initial_image = initialImageName.GetAbsolutePath();
     }
 
     item->params.cfg_scale    = static_cast<float>(this->m_cfg->GetValue());
@@ -1310,9 +1378,15 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 errorlist.Add(_("The selected controlnet model not available on the selected server!"));
             } else {
                 item->params.controlnet_path = controlnetModel->path;
+                if (item->server.empty() == false) {
+                    item->params.controlnet_path = controlnetModel->sha256;
+                }
 
                 if (this->m_controlnetImageOpen->GetPath().length() > 0) {
                     item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
+                    item->image_info.emplace_back(
+                        sd_gui_utils::networks::ImageType::CONTROLNET | sd_gui_utils::networks::ImageType::COPYABLE,
+                        item->params.control_image_path);
                 }
             }
         }
@@ -1328,15 +1402,6 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     item->params.vae_tiling = this->m_vae_tiling->GetValue();
 
     item->mode = type;
-
-    if (type == SDMode::IMG2IMG) {
-        if (this->m_img2imgOpen->GetPath().empty() == false && wxFileName(this->m_img2imgOpen->GetPath()).Exists() && item->initial_image.empty()) {
-            item->initial_image = this->m_img2imgOpen->GetPath().utf8_string();
-            // if (this->mapp->cfg->save_all_image) {
-            item->images.emplace_back(QueueItemImage({item->initial_image, sd_gui_utils::networks::ImageType::INITIAL}));
-            //}
-        }
-    }
 
     if (item->params.seed == -1) {
         item->params.seed = sd_gui_utils::generateRandomInt(100000000, this->m_seed->GetMax());
@@ -1829,20 +1894,20 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
             this->slgScale->SetValue(item.params.slg_scale);
         }
     }
-    if (item.mode == SDMode::IMG2IMG) {
-        for (const auto& img : item.images) {
-            if (wxFileExists(wxString::FromUTF8Unchecked(img.pathname)) == false) {
-                continue;
-            }
-            if (img.type == sd_gui_utils::networks::ImageType::INITIAL) {
-                // TODO send image to img2img
-            }
-            if (img.type == sd_gui_utils::networks::ImageType::MASK) {
-                // load mask from file
-            }
-        }
-    }
-
+    /*  if (item.mode == SDMode::IMG2IMG) {
+          for (const auto& img : item.images) {
+              if (wxFileExists(wxString::FromUTF8Unchecked(img.pathname)) == false) {
+                  continue;
+              }
+              if (img.type == sd_gui_utils::networks::ImageType::INITIAL) {
+                  // TODO send image to img2img
+              }
+              if (img.type == sd_gui_utils::networks::ImageType::MASK) {
+                  // load mask from file
+              }
+          }
+      }
+  */
     if (!item.params.model_path.empty() && std::filesystem::exists(item.params.model_path)) {
         sd_gui_utils::ModelFileInfo* model = this->ModelManager->getIntoPtr(item.params.model_path);
         if (model != nullptr) {
@@ -2463,8 +2528,19 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
         */
 
         switch (tu) {
-            case 1:
+            case 1: {
+                if (qitem->server.empty() == false) {
+                    auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
+                    if (srv) {
+                        if (srv->IsEnabled() && srv->IsConnected()) {
+                            srv->DuplicateJob(qitem->id);
+                            return;
+                        }
+                    }
+                    return;
+                }
                 this->qmanager->Duplicate(qitem);
+            }
             case 2:
                 this->ChangeGuiFromQueueItem(*qitem);
                 break;
@@ -2490,12 +2566,12 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 }
             } break;
             case 6: {
-                this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
-                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname));
+                this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
+                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
                 this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);  // switch to the upscaler
             } break;
             case 7: {
-                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->images.back().pathname), true);
+                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename), true);
             } break;
             case 8: {
                 if (qitem->status == QueueStatus::PAUSED) {
@@ -2508,10 +2584,15 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
                 }
             } break;
             case 99: {
-                if (this->qmanager->DeleteJob(qitem->id)) {
-                    store->DeleteItem(currentRow);
-                    this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+                if (qitem->server.empty() == false) {
+                    auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
+                    if (srv && srv->IsConnected()) {
+                        srv->DeleteJob(qitem->id);
+                    }
+                } else {
+                    this->dataViewListManager->DeleteItem(qitem->id);
                 }
+                this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
             } break;
         }
         return;
@@ -2550,9 +2631,11 @@ wxString MainWindowUI::paramsToImageComment(const QueueItem& myItem) {
     wxString sha256;
 
     if (!myItem.params.model_path.empty()) {
-        modelPath      = wxFileName(myItem.params.model_path);
         auto modelInfo = this->ModelManager->getIntoPtr(myItem.params.model_path);
-        sha256         = wxString::FromUTF8(modelInfo->sha256);
+        if (modelInfo) {
+            modelPath = wxFileName(modelInfo->path);
+            sha256    = wxString::FromUTF8(modelInfo->sha256);
+        }
         if (sha256.empty() == false) {
             sha256 = sha256.substr(0, 10);
         }
@@ -3332,7 +3415,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                     this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
                 } else {
                     auto srv = this->mapp->cfg->GetTcpServer(item->server);
-                    srv->SendQueueJob(item->convertToNetwork());
+                    srv->SendQueueJob(item->convertToNetwork(false));
                     this->writeLog(wxString::Format(_("Job added to %s"), srv->GetName()), true);
                 }
             } break;
@@ -3521,21 +3604,28 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->writeLog(wxString::Format(_("Server error: %s - %s - %s"), server->GetName(), server->GetDisconnectReason(), content));
         return;
     }
-    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE) {
-        std::cout << "SERVER_JOBLIST_UPDATE" << std::endl;
-        auto payload = e.GetPayload<std::vector<sd_gui_utils::RemoteQueueItem>>();
-
-        for (const auto& job : payload) {
-            auto newItem     = QueueItem::convertFromNetwork(job);
-            auto item_id     = this->qmanager->AddItem(newItem, false, true);
-            auto item        = this->qmanager->GetItemPtr(item_id);
-            nlohmann::json j = *item;
-            this->dataViewListManager->AddItem(item);
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_START) {
+        this->writeLog(_("Server job list update started"), true);
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_FINISHED) {
+        this->writeLog(_("Server job list update finished"), true);
+        return;
+    }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_DELETE) {
+        auto resp = e.GetPayload<sd_gui_utils::DeleteResponse>();
+        if (resp.state == true) {
+            this->dataViewListManager->DeleteItem(resp.job_id);
+            this->writeLog(wxString::Format(_("Server job delete: %" PRIu64), resp.job_id), true);
+        } else {
+            this->writeLog(wxString::Format(_("Server job delete error: %" PRIu64 " - %s"), resp.job_id, resp.error), true);
         }
+        this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE) {
         auto payload = e.GetPayload<QueueItem>();
+        this->writeLog(wxString::Format(_("Server job update: %" PRIu64), payload.id), true);
         // this will add the item if not exists
         auto addedItem = this->qmanager->UpdateItem(payload);
 
@@ -3544,10 +3634,30 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->dataViewListManager->AddItem(addedItem);
             }
 
-            if (addedItem->status == QueueStatus::DONE) {
-                this->handleSdImages(addedItem, this->GetEventHandler());
-            } else {
-                this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
+            if (addedItem->status == QueueStatus::DONE) {  // image list is sent when job is done
+                // if (this->mapp->cfg->remote_download_images_immediately && addedItem->image_info.size() > 0) {
+                //     auto srv = this->mapp->cfg->GetTcpServer(addedItem->server);
+                //     if (srv && srv->IsConnected()) {
+                //         srv->RequestImages(addedItem->id);
+                //     }
+                // }
+            }
+            this->handleSdImages(addedItem, this->GetEventHandler());
+            this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
+        }
+        return;
+    }
+
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE) {
+        auto imagelist = e.GetPayload<std::vector<sd_gui_utils::networks::ImageInfo>>();
+        if (imagelist.size() > 0) {
+            auto jobitem = this->qmanager->GetItemPtr(imagelist.front().jobid);
+            if (jobitem) {
+                jobitem->image_info = imagelist;
+                auto updatedItem    = this->handleSdImages(jobitem, this->GetEventHandler());
+                if (this->qmanager->UpdateItem(*updatedItem)) {
+                    this->UpdateJobImagePreviews(updatedItem);
+                }
             }
         }
         return;
@@ -3846,8 +3956,8 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
 }
 
 void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item) {
+    this->m_joblist_item_details->DeleteAllItems();
     if (item == nullptr) {
-        this->m_joblist_item_details->DeleteAllItems();
         if (this->previewImageList != nullptr && this->previewImageList->RemoveAll()) {
             this->previewImageList->Destroy();
             this->previewImageList = nullptr;
@@ -3874,12 +3984,6 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
     if (store_item != item) {
         return;
     }
-
-    this->m_joblist_item_details->DeleteAllItems();
-    for (auto _t : this->jobImagePreviews) {
-        _t->Destroy();
-    }
-    this->jobImagePreviews.clear();
 
     wxVector<wxVariant> data;
 
@@ -4180,23 +4284,65 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
             data.clear();
         }
     }
-    int index = 0;
-    for (auto img : item->images) {
-        if (std::filesystem::exists(img.pathname)) {
-            auto resized = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.pathname), 256, 256, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
-            img.id       = index;
+    this->UpdateJobImagePreviews(item);
+}
 
+void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
+    if (item == nullptr) {
+        return;
+    }
+    auto selected_row = this->m_joblist->GetSelectedRow();
+    if (selected_row != wxNOT_FOUND) {
+        auto selected_item = this->dataViewListManager->GetQueueItem(selected_row);
+        if (item && item->id != selected_item->id) {
+            return;
+        }
+    }
+
+    for (auto _t : this->jobImagePreviews) {
+        _t->Destroy();
+    }
+    this->jobImagePreviews.clear();
+    if (item->image_info.empty()) {
+        return;
+    }
+    int index = 0;
+    for (auto img : item->image_info) {
+        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx, index: %d"), img.width, img.height, index);
+        if (!std::filesystem::exists(img.target_filename)) {
+            if (img.server_id.empty() == false) {
+                wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, cloud_download_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+                bitmap->SetToolTip(tooltip);
+                this->bSizer8911->Add(bitmap, 0, wxALL, 2);
+                this->jobImagePreviews.emplace_back(bitmap);
+                if (this->mapp->cfg->remote_download_images_immediately == false) {
+                    auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
+                    if (srv) {
+                        srv->RequestImages(img.jobid);
+                        bitmap->SetClientObject(new sd_gui_utils::StringClientData(img.id));
+                    }
+                }
+            } else {
+                wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+                bitmap->SetToolTip(tooltip);
+                this->bSizer8911->Add(bitmap, 0, wxALL, 2);
+                this->jobImagePreviews.emplace_back(bitmap);
+            }
+
+        } else {
+            auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.target_filename), 256, 256, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
             wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
+            bitmap->SetToolTip(tooltip);
             bitmap->Hide();
             this->bSizer8911->Add(bitmap, 0, wxALL, 2);
             bitmap->Show();
             this->jobImagePreviews.emplace_back(bitmap);
             bitmap->Bind(wxEVT_LEFT_DCLICK, [img](wxMouseEvent& event) {
-                wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.pathname));
+                wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
                 event.Skip();
             });
             // rightclick
-            bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, item, this](wxMouseEvent& event) {
+            bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, item, this, index](wxMouseEvent& event) {
                 event.Skip();
                 wxMenu* menu = new wxMenu();
                 // menu->Append(99,tooltip);
@@ -4205,7 +4351,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
                 menu->Append(7, _("Open parent folder"));
                 if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
                     menu->AppendSeparator();
-                    menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + img.id));
+                    menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + index));
                     menu->Append(1, _("Copy prompts to text2img"));
                     menu->Append(2, _("Copy prompts to img2img"));
                     menu->Append(3, _("Send the image to img2img"));
@@ -4225,12 +4371,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
                     menu->Append(9, _("Send image to img2img mask"));
                 }
 
-                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item](wxCommandEvent& evt) {
+                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item, index](wxCommandEvent& evt) {
                     evt.Skip();
                     auto id = evt.GetId();
                     switch (id) {
                         case 0: {
-                            this->m_seed->SetValue(item->params.seed + img.id);
+                            this->m_seed->SetValue(item->params.seed + index);
                         } break;
                         case 1: {
                             this->m_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
@@ -4241,24 +4387,24 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
                             this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
                         } break;
                         case 3: {
-                            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.pathname), true);
+                            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.target_filename), true);
                             this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG);
                         } break;
                         case 5: {
-                            this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.pathname));
+                            this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
                             this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
                         } break;
                         case 6: {
-                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.pathname));
+                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
                         } break;
                         case 7: {
-                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.pathname).parent_path().string()));
+                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.target_filename).parent_path().string()));
                         } break;
                         case 8: {
-                            this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.pathname));
+                            this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
                         } break;
                         case 9: {
-                            this->m_inpaintOpenMask->SetPath(wxString::FromUTF8Unchecked(img.pathname));
+                            this->m_inpaintOpenMask->SetPath(wxString::FromUTF8Unchecked(img.target_filename));
                             // i never used like this, but trigger the event:
                             wxFileDirPickerEvent event(wxEVT_FILEPICKER_CHANGED, this->m_inpaintOpenMask, this->m_inpaintOpenMask->GetId(), this->m_inpaintOpenMask->GetPath());
                             event.SetEventObject(this->m_inpaintOpenMask);
@@ -4278,10 +4424,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
     }
     this->m_scrolledWindow41->FitInside();
 }
-
-std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> itemPtr, wxEvtHandler* eventHandler) {
+std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> item, wxEvtHandler* eventHandler) {
+    std::lock_guard<std::mutex> lock(this->qmanager->GetMutex());
     wxString extension = ".jpg";
     auto imgHandler    = wxBITMAP_TYPE_JPEG;
+
     if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
         extension  = ".png";
         imgHandler = wxBITMAP_TYPE_PNG;
@@ -4290,13 +4437,19 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
+    const auto baseFileName = sd_gui_utils::formatFileName(*item, this->mapp->cfg->output_filename_format);
 
-    const auto baseFileName = this->formatFileName(*itemPtr, this->mapp->cfg->output_filename_format);
-    wxString baseFullName   = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+    wxString baseFullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+    std::vector<sd_gui_utils::networks::ImageInfo> needExif;
     // the raw images are the generated images. Only presents when the generation is done without errors
-    for (auto rimage : itemPtr->rawImages) {
+    for (const auto& rimage : item->rawImages) {
         // regenerate name, if multiple image generated, this check if exists
         wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+        if (wxFileExists(fullName)) {
+            item->image_info.emplace_back(sd_gui_utils::networks::ImageType::GENERATED, fullName);
+            continue;
+        }
+
         wxImage* rawImage = new wxImage(0, 0);
 
         if (imgHandler == wxBITMAP_TYPE_PNG) {
@@ -4308,87 +4461,101 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         rawImage->SetLoadFlags(rawImage->GetLoadFlags() & ~wxImage::Load_Verbose);
         if (!rawImage->LoadFile(wxString::FromUTF8Unchecked(rimage))) {
-            itemPtr->status_message = _("Invalid image from diffusion: ") + rimage;
-            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, itemPtr);
+            item->status_message = _("Invalid image from diffusion: ") + rimage;
+            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, item);
             delete rawImage;
-            return itemPtr;
+            return item;
         }
 
         rawImage->SetOption(wxIMAGE_OPTION_FILENAME, baseFileName);
         rawImage->SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
         if (!rawImage->SaveFile(fullName, imgHandler)) {
-            itemPtr->status_message = wxString::Format(_("Failed to save image into %s"), fullName).utf8_string();
-            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, itemPtr);
+            item->status_message = wxString::Format(_("Failed to save image into %s"), fullName).utf8_string();
+            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, item);
             delete rawImage;
-            return itemPtr;
+            return item;
         }
         // add the generated image to the job
-        itemPtr->images.emplace_back(QueueItemImage(fullName, sd_gui_utils::networks::ImageType::GENERATED));
+        item->image_info.emplace_back(sd_gui_utils::networks::ImageType::GENERATED, fullName);
     }
 
     // handle other images too
 
     // save controlnet image if present and save_all_image is enabled
-    if (itemPtr->params.control_image_path.length() > 0 && this->mapp->cfg->save_all_image) {
+    if (item->params.control_image_path.length() > 0 && this->mapp->cfg->save_all_image) {
         wxString ctrlFilename = sd_gui_utils::AppendSuffixToFileName(baseFullName, "control");
-        wxImage _ctrlimg(itemPtr->params.control_image_path);
-        _ctrlimg.SaveFile(ctrlFilename);
-        itemPtr->images.emplace_back(QueueItemImage({ctrlFilename, sd_gui_utils::networks::ImageType::CONTROLNET}));
+        if (!wxFileExists(ctrlFilename)) {
+            wxImage _ctrlimg(item->params.control_image_path);
+            _ctrlimg.SaveFile(ctrlFilename);
+        }
+        // item->images.emplace_back(QueueItemImage({ctrlFilename, sd_gui_utils::networks::ImageType::CONTROLNET}));
+        item->image_info.emplace_back(sd_gui_utils::networks::ImageType::CONTROLNET, ctrlFilename);
     }
 
     // handle other images, this images come from the img2img or upscale
-    for (auto& img : itemPtr->images) {
-        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::TMP)) {
-            wxString nameSuffix = "";
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_INPAINT)) {
-                nameSuffix = "_inpaint_mask";
-            }
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_OUTPAINT)) {
-                nameSuffix = "_outpaint_mask";
-            }
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
-                nameSuffix = "_initial";
-            }
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
-                nameSuffix = "_original";
-            }
-            if (nameSuffix.empty()) {
-                continue;
-            }
-            wxFileName newImage(baseFullName);
-            wxFileName origName(img.pathname);
-            newImage.SetExt(origName.GetExt());
-            newImage.SetName(newImage.GetName() + nameSuffix);
-            // move the tmp file into the base path
-            wxRenameFile(img.pathname, newImage.GetAbsolutePath());
-            img.pathname = newImage.GetAbsolutePath();
-            // update the item's paths too
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
-                itemPtr->mask_image = newImage.GetAbsolutePath();
-            }
-            if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
-                itemPtr->initial_image = newImage.GetAbsolutePath();
+    for (auto& img : item->image_info) {
+        wxString nameSuffix = "";
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_INPAINT)) {
+            nameSuffix = "_inpaint_mask";
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_OUTPAINT)) {
+            nameSuffix = "_outpaint_mask";
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
+            nameSuffix = "_initial";
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
+            nameSuffix = "_original";
+        }
+        if (nameSuffix.empty()) {
+            // continue;
+        }
+
+        wxFileName newImage(baseFullName);
+        wxFileName origName(img.target_filename);
+        newImage.SetExt(origName.GetExt());
+        newImage.SetName(newImage.GetName() + nameSuffix);
+
+        if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::MOVEABLE_FLAG, img.type)) {
+            if (wxFileExists(img.target_filename) && !wxFileExists(newImage.GetAbsolutePath())) {
+                wxRenameFile(img.target_filename, newImage.GetAbsolutePath());
             }
         }
-    }
-    this->qmanager->UpdateItem(itemPtr);
 
-    // iterate over agan, save meta data
-    for (auto& img : itemPtr->images) {
+        if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::COPYABLE_FLAG, img.type)) {
+            if (wxFileExists(img.target_filename) && !wxFileExists(newImage.GetAbsolutePath())) {
+                wxCopyFile(img.target_filename, newImage.GetAbsolutePath());
+            }
+        }
+
+        img.target_filename = newImage.GetAbsolutePath();
+        // update the item's paths too
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
+            item->mask_image = newImage.GetAbsolutePath();
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
+            item->initial_image = newImage.GetAbsolutePath();
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
+            needExif.emplace_back(img);
+        }
+    }
+
+    for (const auto& img : needExif) {
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             //
             if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
-                std::string comment = this->paramsToImageComment(*itemPtr).utf8_string();
+                std::string comment = this->paramsToImageComment(*item).utf8_string();
 
                 if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
                     std::unordered_map<wxString, wxString> _pngData = {
                         {"parameters", comment},
                         {"Software", EXIF_SOFTWARE}};
-                    sd_gui_utils::WriteMetadata(img.pathname, _pngData, true);
-                    return itemPtr;
+                    sd_gui_utils::WriteMetadata(img.target_filename, _pngData, true);
+                    return item;
                 }
                 try {
-                    auto image = Exiv2::ImageFactory::open(img.pathname);
+                    auto image = Exiv2::ImageFactory::open(img.target_filename);
                     image->readMetadata();
                     Exiv2::ExifData& exifData          = image->exifData();
                     exifData["Exif.Photo.UserComment"] = comment.c_str();
@@ -4396,8 +4563,8 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
                     exifData["Exif.Image.ImageWidth"]  = image->pixelWidth();
                     exifData["Exif.Image.ImageLength"] = image->pixelHeight();
 
-                    if (itemPtr->finished_at > 0) {
-                        time_t finishedAt = itemPtr->finished_at;
+                    if (item->finished_at > 0) {
+                        time_t finishedAt = item->finished_at;
                         std::tm* timeinfo = std::localtime(&finishedAt);
                         char dtimeBuffer[20];
                         std::strftime(dtimeBuffer, sizeof(dtimeBuffer), "%Y:%m:%d %H:%M:%S", timeinfo);
@@ -4416,7 +4583,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
             //
         }
     }
-    return itemPtr;
+    return item;
 }
 
 void MainWindowUI::ModelHashingCallback(size_t readed_size, std::string sha256, void* custom_pointer) {
@@ -4487,7 +4654,7 @@ void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
         if (m == nullptr) {
             continue;
         }
-        if (info->path == m->path) {
+        if (info->path == m->path && info->server_id == m->server_id) {
             this->m_model->SetSelection(_z);
             return;
         }

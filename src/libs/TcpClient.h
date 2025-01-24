@@ -14,6 +14,7 @@ namespace sd_gui_utils {
         using TcpClientOnAuthRequest = std::function<void()>;
 
         class TcpClient {
+            sockets::SocketOpt m_socketOpt;
             sockets::TcpClient<TcpClient> m_client;
             std::unordered_map<size_t, sd_gui_utils::networks::Packet> receivedPackets;
             std::vector<char> buffer;
@@ -36,7 +37,7 @@ namespace sd_gui_utils {
 
         public:
             TcpClient()
-                : m_client(*this) {};
+                : m_socketOpt({sd_gui_utils::TCP_TX_BUFFER_SIZE, sd_gui_utils::TCP_RX_BUFFER_SIZE}), m_client(*this, &m_socketOpt) {};
 
             TcpClient(TcpClient&& other)            = delete;
             TcpClient& operator=(TcpClient&& other) = delete;

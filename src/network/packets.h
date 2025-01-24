@@ -4,6 +4,12 @@
 namespace sd_gui_utils {
     inline namespace networks {
 
+        // 8 bytes length to store the expected packet size (on x64 sizeof(size_t) = 8)
+        inline const int PACKET_SIZE_LENGTH = 8;
+        // 64KB buffer
+        inline const int TCP_RX_BUFFER_SIZE = 64 * 1024;
+        inline const int TCP_TX_BUFFER_SIZE = 64 * 1024;
+
         class Packet {
         private:
             std::vector<unsigned char> data;
@@ -13,6 +19,7 @@ namespace sd_gui_utils {
             enum class Type : int {
                 REQUEST_TYPE,
                 RESPONSE_TYPE,
+                DELETE_TYPE,
                 INVALID_TYPE
             };
 
@@ -24,7 +31,10 @@ namespace sd_gui_utils {
                 PARAM_JOB_LIST,
                 PARAM_JOB_ADD,
                 PARAM_JOB_UPDATE,
-                PARAM_JOB_DELETE
+                PARAM_JOB_DELETE,
+                PARAM_JOB_IMAGE_LIST,
+                PARAM_JOB_DUPLICATE,
+                PARAM_JOB_RESUME
             };
 
             Packet(Type type, Param param)
@@ -49,11 +59,11 @@ namespace sd_gui_utils {
             inline void SetData(const T& j) {
                 try {
                     const nlohmann::json json_obj = j;
-                    std::string json_str    = json_obj.dump();
-                    this->data              = std::vector<uint8_t>(json_str.begin(), json_str.end());
-                    this->data_size         = this->data.size();
+                    std::string json_str          = json_obj.dump();
+                    this->data                    = std::vector<uint8_t>(json_str.begin(), json_str.end());
+                    this->data_size               = this->data.size();
                 } catch (const std::exception& e) {
-                    throw std::runtime_error("Failed to serialize object in SetData: " + std::string(e.what()));
+                    std::cerr << "Failed to serialize object in SetData: " + std::string(e.what()) << std::endl;
                 }
             }
 
@@ -63,8 +73,9 @@ namespace sd_gui_utils {
                     nlohmann::json json_obj = nlohmann::json::parse(std::string(this->data.begin(), this->data.end()));
                     return json_obj.get<T>();
                 } catch (const std::exception& e) {
-                    throw std::runtime_error("Failed to deserialize GetData data: " + std::string(e.what()));
+                    std::cerr << "Failed to deserialize GetData data: " + std::string(e.what()) << std::endl;
                 }
+                return T();
             }
 
             size_t GetDataSize() { return this->data_size; }
@@ -99,6 +110,54 @@ namespace sd_gui_utils {
             }
             NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Packet, type, param, version, data_size, data, server_id, server_name, source_idx, target_idx, client_id)
         };  // struct Packet
+
+        static const std::unordered_map<sd_gui_utils::networks::Packet::Param, std::string> PacketParam2str = {
+            {sd_gui_utils::networks::Packet::Param::PARAM_ERROR, "ERROR"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_AUTH, "AUTH"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST, "MODEL_LIST"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE, "KEEPALIVE"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST, "JOB_LIST"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD, "JOB_ADD"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE, "JOB_UPDATE"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE, "JOB_DELETE"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST, "JOB_IMAGE_LIST"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE, "JOB_DUPLICATE"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME, "JOB_RESUME"}
+            };
+
+        static const std::unordered_map<std::string, sd_gui_utils::networks::Packet::Param> str2PacketParam = {
+            {"ERROR", sd_gui_utils::networks::Packet::Param::PARAM_ERROR},
+            {"AUTH", sd_gui_utils::networks::Packet::Param::PARAM_AUTH},
+            {"MODEL_LIST", sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST},
+            {"KEEPALIVE", sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE},
+            {"JOB_LIST", sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST},
+            {"JOB_ADD", sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD},
+            {"JOB_UPDATE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE},
+            {"JOB_DELETE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE},
+            {"JOB_IMAGE_LIST", sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST},
+            {"JOB_DUPLICATE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE},
+            {"JOB_RESUME", sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME}
+            };
+
+        static const std::unordered_map<sd_gui_utils::networks::Packet::Type, std::string> PacketType2str = {
+            {sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, "REQUEST"},
+            {sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, "RESPONSE"},
+            {sd_gui_utils::networks::Packet::Type::DELETE_TYPE, "DELETE"},
+            {sd_gui_utils::networks::Packet::Type::INVALID_TYPE, "INVALID"}};
+
+        static const std::unordered_map<std::string, sd_gui_utils::networks::Packet::Type> str2PacketType = {
+            {"REQUEST", sd_gui_utils::networks::Packet::Type::REQUEST_TYPE},
+            {"RESPONSE", sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE},
+            {"DELETE", sd_gui_utils::networks::Packet::Type::DELETE_TYPE},
+            {"INVALID", sd_gui_utils::networks::Packet::Type::INVALID_TYPE}};
+
+        struct DeleteResponse {
+            uint64_t job_id = 0;
+            bool state;
+            std::string error = "";
+        };
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DeleteResponse, job_id, state, error)
+
     }  // namespace networks
 }  // namespace sd_gui_utils
 

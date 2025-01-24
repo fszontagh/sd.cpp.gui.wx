@@ -61,32 +61,30 @@ std::shared_ptr<QueueItem> QM::QueueManager::UpdateItem(const QueueItem& item) {
 
     if (item.server.empty()) {
         if (this->QueueList.find(item.id) != this->QueueList.end()) {
+            auto oldItem = *this->QueueList.at(item.id);
+            if (oldItem.status != item.status) {
+                this->SendEventToMainWindow(QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item.id]);
+            }
             *this->QueueList[item.id] = item;
             this->SaveJobToFile(item);
             return this->QueueList[item.id];
         }
         return nullptr;
-    }else{
+    } else {
         if (this->QueueList.find(item.id) != this->QueueList.end()) {
             auto oldItem              = *this->QueueList[item.id];
             *this->QueueList[item.id] = item;
             if (oldItem.status != item.status) {
                 this->SendEventToMainWindow(QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item.id]);
+                this->SaveJobToFile(item);
             }
             return this->QueueList[item.id];
         }
         this->QueueList[item.id] = std::make_shared<QueueItem>(item);
+        this->SaveJobToFile(item);
         return this->QueueList[item.id];
     }
     return nullptr;
-}
-
-void QM::QueueManager::UpdateItem(std::shared_ptr<QueueItem> item) {
-    std::lock_guard<std::mutex> lock(queueMutex);
-    if (this->QueueList.find(item->id) != this->QueueList.end()) {
-        this->QueueList[item->id] = item;
-        this->SaveJobToFile(*item);
-    }
 }
 
 auto QM::QueueManager::GetItemPtr(uint64_t item_id) -> std::shared_ptr<QueueItem> {
@@ -112,9 +110,14 @@ const std::map<int, std::shared_ptr<QueueItem>> QM::QueueManager::getList() {
 }
 
 std::shared_ptr<QueueItem> QM::QueueManager::Duplicate(std::shared_ptr<QueueItem> item) {
-    if (this->QueueList.find(item->id) == this->QueueList.end()) {
+    if (this->QueueList.contains(item->id) == false) {
         return nullptr;
     }
+
+    if (item->server.empty() == false) {
+
+    }
+
 
     std::shared_ptr<QueueItem> newitem = std::make_shared<QueueItem>(*item);
     // handle this in the AddItem
@@ -134,27 +137,15 @@ std::shared_ptr<QueueItem> QM::QueueManager::Duplicate(std::shared_ptr<QueueItem
     if (newitem->mode == SDMode::TXT2IMG ||
         newitem->mode == SDMode::IMG2IMG ||
         newitem->mode == SDMode::UPSCALE) {
-        newitem->images.erase(
-            std::remove_if(newitem->images.begin(), newitem->images.end(),
-                           [](QueueItemImage img) {
+        newitem->image_info.erase(
+            std::remove_if(newitem->image_info.begin(), newitem->image_info.end(),
+                           [](sd_gui_utils::networks::ImageInfo img) {
                                return sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED);
                            }),
-            newitem->images.end());
+            newitem->image_info.end());
     }
 
     newitem->rawImages.clear();
-    // re create images
-
-    std::vector<QueueItemImage> tmpList;
-
-    for (auto it = newitem->images.begin(); it != newitem->images.end(); it++) {
-        tmpList.push_back((*it));
-    }
-    newitem->images.clear();
-    for (auto it = tmpList.begin(); it != tmpList.end(); it++) {
-        newitem->images.push_back((*it));
-    }
-    tmpList.clear();
 
     // set to paused, user will start manually
     newitem->status = QueueStatus::PAUSED;
@@ -166,16 +157,20 @@ uint64_t QM::QueueManager::AddItem(std::shared_ptr<QueueItem> item, bool fromFil
 }
 
 void QM::QueueManager::RemoveRemoteItems(const std::string& server_id) {
-    for (auto it = this->QueueList.begin(); it != this->QueueList.end(); it++) {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    for (auto it = this->QueueList.begin(); it != this->QueueList.end();) {
         if (it->second == nullptr) {
-            this->QueueList.erase(it->first);
+            it = this->QueueList.erase(it);
             continue;
         }
         if (it->second->server.empty()) {
+            ++it;
             continue;
         }
         if (it->second->server == server_id) {
-            this->QueueList.erase(it->first);
+            it = this->QueueList.erase(it);
+        } else {
+            ++it;
         }
     }
 }
@@ -188,11 +183,7 @@ std::shared_ptr<QueueItem> QM::QueueManager::Duplicate(uint64_t id) {
 }
 
 void QM::QueueManager::SetStatus(QueueStatus status, std::shared_ptr<QueueItem> item) {
-    if (item->server.empty() == false) {
-        this->SendEventToMainWindow(QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item->id]);
-        return;
-    }
-    if (this->QueueList.find(item->id) != this->QueueList.end()) {
+    if (item->server.empty() && this->QueueList.find(item->id) != this->QueueList.end()) {
         if (item->finished_at == 0 && status == QueueStatus::DONE) {
             item->finished_at = this->GetCurrentUnixTimestamp();
         } else {
@@ -200,8 +191,8 @@ void QM::QueueManager::SetStatus(QueueStatus status, std::shared_ptr<QueueItem> 
         }
         this->QueueList[item->id]->status = status;
         this->SaveJobToFile(*this->QueueList[item->id]);
-        this->SendEventToMainWindow(QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item->id]);
     }
+    this->SendEventToMainWindow(QueueEvents::ITEM_STATUS_CHANGED, this->QueueList[item->id]);
 }
 
 void QM::QueueManager::PauseAll() {
@@ -406,14 +397,15 @@ void QM::QueueManager::SaveJobToFile(uint64_t job_id) {
 }
 
 void QM::QueueManager::SaveJobToFile(const QueueItem& item) {
+    wxString prefix = "local";
     if (item.server.empty() == false) {
-        return;
+        prefix = "remote";
     }
     try {
         const nlohmann::json jsonfile(item);
-        auto filename = wxFileName(wxString::Format("%s%slocal_%lu.json", this->jobsDir, wxFileName::GetPathSeparators(), item.id));
+        auto filename = wxFileName(this->jobsDir, wxString::Format("%s_%" PRIu64 ".json", prefix, item.id));
         wxFile file(filename.GetAbsolutePath(), wxFile::write);
-        file.Write(jsonfile.dump());
+        file.Write(jsonfile.dump(4));
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
     }
@@ -424,14 +416,19 @@ auto QM::QueueManager::DeleteJob(uint64_t job_id) -> bool {
     if (!item || item->id == 0) {
         return false;
     }
-    if (item->server.empty() == false) {  // not implemented
-        return false;
+    wxString prefix = "local";
+    if (item->server.empty() == false) {
+        prefix = "remote";
     }
-    auto filename = wxFileName(wxString::Format("%s%slocal_%lu.json", this->jobsDir, wxFileName::GetPathSeparators(), item->id));
+
+    wxFileName filename(this->jobsDir, wxString::Format("%s_%" PRIu64 ".json", prefix, item->id));
+
     if (wxFileName::FileExists(filename.GetAbsolutePath())) {
         if (wxRemoveFile(filename.GetAbsolutePath())) {
-            this->QueueList[item->id] = nullptr;
-            this->QueueList.erase(item->id);
+            if (this->QueueList.contains(item->id)) {
+                this->QueueList[item->id] = nullptr;
+                this->QueueList.erase(item->id);
+            }
             return true;
         }
     }
@@ -493,6 +490,9 @@ void QM::QueueManager::LoadJobListFromDir() {
         try {
             const nlohmann::json data       = nlohmann::json::parse(f);
             std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(data.get<QueueItem>());
+            if (item->server.empty() == false) {
+                continue;
+            }
             if (item->status == QueueStatus::RUNNING ||
                 item->status == QueueStatus::MODEL_LOADING ||
                 item->status == QueueStatus::HASHING ||

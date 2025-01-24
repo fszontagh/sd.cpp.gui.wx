@@ -46,7 +46,7 @@ install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSI
 install(FILES ${PROJECT_BINARY_DIR}/Dockerfile DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 
 if(WIN32)
-    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::base OpenSSL::Crypto)
+    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
 else(WIN32)
-    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base OpenSSL::Crypto)
+    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
 endif(WIN32)
