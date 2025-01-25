@@ -218,6 +218,12 @@ public:
         if (parents.size() > 0) {
             this->treeListCtrl->DeleteItem(parents.front());
             for (const auto& item : parents) {
+                if (item.IsOk() == false) {
+                    continue;
+                }
+                if (this->parentMap.empty()) {
+                    continue;
+                }
                 for (auto it = this->parentMap.begin(); it != this->parentMap.end();) {
                     if ((*it).second == item) {
                         it = this->parentMap.erase(it);

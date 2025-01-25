@@ -97,10 +97,6 @@ void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const c
             break;
         }
     }
-
-    std::cout << "SocketApp::onReceiveClientData Expected size: " << this->expected_size
-              << " Remaining size: " << size
-              << " Buffer size: " << this->buffer.size() << std::endl;
 }
 
 void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
@@ -136,6 +132,9 @@ void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const so
 }
 
 void SocketApp::OnTimer() {
+    if (this->m_clientInfo.empty()) {
+        return;
+    }
     auto it = this->m_clientInfo.begin();
     while (it != this->m_clientInfo.end()) {
         if ((wxGetLocalTime() - it->second.connected_at) > this->parent->configData->unauthorized_timeout && it->second.apikey.empty()) {

@@ -157,10 +157,24 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtr(std::string path) {
     }
     return nullptr;
 }
-sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtrByHash(std::string hash) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtrByHash(std::string hash, std::string remote_server_id) {
     if (hash.length() == 10) {
         for (auto model : this->ModelInfos) {
-            if (model.second->sha256.substr(0, 10) == hash) {
+            if (remote_server_id.length() > 0) {
+                if (model.second->sha256.substr(0, 10) == hash && model.second->server_id == remote_server_id) {
+                    return model.second;
+                }
+            } else {
+                if (model.second->sha256.substr(0, 10) == hash) {
+                    return model.second;
+                }
+            }
+        }
+        return nullptr;
+    }
+    if (remote_server_id.length() > 0) {
+        for (auto model : this->ModelInfos) {
+            if (model.second->sha256 == hash && model.second->server_id == remote_server_id) {
                 return model.second;
             }
         }

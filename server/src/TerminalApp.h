@@ -15,7 +15,14 @@ public:
     virtual int OnExit() override;
     virtual bool IsGUI() const override { return false; }
     void ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& packet);
-    inline void sendLogEvent(const wxString& message, const wxLogLevel level = wxLOG_Info) {
+    inline void sendLogEvent(wxString message, const wxLogLevel level = wxLOG_Info) {
+        message.Replace("\n\n", "\n");
+        message.Trim();
+
+        if (message.empty()) {
+            return;
+        }
+
         eventQueue.Push([message, level]() {
             switch (level) {
                 case wxLOG_Info:
@@ -63,10 +70,11 @@ public:
     inline void itemUpdateEvent(std::shared_ptr<QueueItem> item) {
         eventQueue.Push([this, item]() {
             if (this->queueManager->UpdateCurrentJob(*item, this->configData->GetJobsPath())) {
-                auto converted = item->convertToNetwork();
+                auto converted = item->convertToNetwork((item->status == QueueStatus::DONE ? false : true), this->configData->server_id);
                 sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
                 packet.SetData(converted);
                 this->socket->sendMsg(0, packet);  // send to everybody
+                return true;
             }
         });
     }
@@ -87,7 +95,6 @@ public:
                 this->sharedMemoryManager->write(data, j.dump().length() + 1);
                 this->sendLogEvent(wxString::Format("Job started: %" PRIu64, next_job->id));
                 this->queueManager->SetCurrentJob(next_job);
-                std::cout << "Sent job to shared memory: " << next_job->id << std::endl;
                 delete[] data;
             } else {
                 if (this->extprocessIsRunning.load() == false) {
@@ -98,11 +105,6 @@ public:
                         this->queueManager->DeleteCurrentJob();
                     }
                 }
-                // if (this->queueManager->GetCurrentJob() != nullptr && (this->queueManager->GetCurrentJob()->status & QueueStatusFlags::RUNNING_FLAG) == false &&
-                //     this->queueManager->GetCurrentJob()->status != QueueStatus::PENDING) {
-                //     this->queueManager->DeleteCurrentJob();
-                //     std::cout << "Deleting current job" << std::endl;
-                // }
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }

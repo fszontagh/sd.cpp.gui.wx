@@ -104,6 +104,7 @@ namespace sd_gui_utils {
             size_t hash_fullsize = 0, hash_progress_size = 0;
             float time                                                = 0;
             std::string model                                         = "";
+            std::string model_hash                                    = "";
             SDMode mode                                               = SDMode::TXT2IMG;
             std::string status_message                                = "";
             uint32_t upscale_factor                                   = 4;
@@ -136,6 +137,7 @@ namespace sd_gui_utils {
                                                         hash_progress_size,
                                                         time,
                                                         model,
+                                                        model_hash,
                                                         mode,
                                                         status_message,
                                                         upscale_factor,

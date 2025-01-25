@@ -319,7 +319,8 @@ namespace sd_gui_utils {
         std::mutex mutex;
 
     public:
-        std::vector<sd_gui_utils::sdServer*> servers;
+        // store the servers in map: int -> internal_id
+        std::map<int, sd_gui_utils::sdServer*> servers;
         wxString model                          = "";
         wxString vae                            = "";
         wxString lora                           = "";
@@ -355,12 +356,8 @@ namespace sd_gui_utils {
         bool remote_download_images_immediately = false;  // false: download job images on job item select | true: download job images immediately
 
         bool initServerList(wxEvtHandler* eventHandler) {
-            auto it = this->servers.begin();
-            while (it != this->servers.end()) {
-                delete *it;
-                *it = nullptr;
-                it  = this->servers.erase(it);
-            }
+            std::lock_guard<std::mutex> lock(this->mutex);
+            std::cout << "Init server list" << std::endl;
             if (configBase->HasGroup("/Servers")) {
                 wxString oldGroup = configBase->GetPath();
                 configBase->SetPath("/Servers");
@@ -384,13 +381,20 @@ namespace sd_gui_utils {
 
                     wxString name = configBase->Read("Name", wxEmptyString);
 
-                    sd_gui_utils::sdServer* server = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
-                    server->SetEnabled(enabled);
-                    server->SetInternalId(internal_id);
-                    server->SetId(id.ToStdString());
-                    server->SetName(name.ToStdString());
-                    server->SetClientId(client_id);
-                    this->AddTcpServer(server);
+                    if (this->servers.contains(internal_id) &&
+                        this->servers[internal_id] != nullptr &&
+                        this->servers[internal_id]->GetHost() != host.utf8_string() &&
+                        this->servers[internal_id]->GetPort() != port) {
+                        this->servers[internal_id]->Stop();
+                    } else {
+                        this->servers[internal_id] = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
+                    }
+
+                    this->servers[internal_id]->SetEnabled(enabled);
+                    this->servers[internal_id]->SetInternalId(internal_id);
+                    this->servers[internal_id]->SetId(id.ToStdString());
+                    this->servers[internal_id]->SetName(name.ToStdString());
+                    this->servers[internal_id]->SetClientId(client_id);
 
                     configBase->SetPath("..");
                     hasMore = configBase->GetNextGroup(serverKey, index);
@@ -404,33 +408,35 @@ namespace sd_gui_utils {
         inline void ServerEnable(int internal_id, bool enable, bool autostartstop = false) {
             std::cout << "ServerEnable " << internal_id << " " << enable << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    if ((*it)->IsEnabled() == enable) {
-                        continue;
-                    }
-                    (*it)->SetEnabled(enable, autostartstop);
-                    std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
-                    return;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetEnabled(enable, autostartstop);
+                std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
+                return;
             }
         }
 
         inline sd_gui_utils::sdServer* GetTcpServer(int internal_id) {
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    std::cout << "GetTcpServer done" << std::endl;
-                    return *it;
-                }
+            if (this->servers.empty()) {
+                return nullptr;
             }
+            if (this->servers.contains(internal_id)) {
+                return this->servers[internal_id];
+            }
+
             return nullptr;
         }
         inline sd_gui_utils::sdServer* GetTcpServer(std::string server_id) {
             std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->servers.empty()) {
+                return nullptr;
+            }
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetId() == server_id) {
-                    return *it;
+                if ((*it).second->GetId() == server_id) {
+                    return it->second;
                 }
             }
             return nullptr;
@@ -438,26 +444,36 @@ namespace sd_gui_utils {
         inline void AddTcpServer(sd_gui_utils::sdServer* server) {
             std::cout << "AddTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            this->servers.push_back(server);
-            std::cout << "AddTcpServer done" << std::endl;
+            if (server->GetInternalId() == -1) {
+                server->SetInternalId(this->servers.size());
+            }
+            while (this->servers.contains(server->GetInternalId())) {
+                server->SetInternalId(server->GetInternalId() + 1);
+            }
+            this->servers[server->GetInternalId()] = server;
+            std::cout << "AddTcpServer done: " << server->GetInternalId() << std::endl;
         }
         inline void RemoveTcpServer(int internal_id) {
             std::cout << "RemoveTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    delete *it;
-                    this->servers.erase(it);
-                    std::cout << "RemoveTcpServer done" << std::endl;
-                    return;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                delete this->servers[internal_id];
+                this->servers.erase(internal_id);
+                std::cout << "RemoveTcpServer done" << std::endl;
+                return;
             }
         }
         inline bool ServerExist(const std::string& host, int port) {
             std::cout << "ServerExist" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->servers.empty()) {
+                return false;
+            }
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetHost() == host && (*it)->GetPort() == port) {
+                if (it->second->GetHost() == host && it->second->GetPort() == port) {
                     std::cout << "ServerExist done" << std::endl;
                     return true;
                 }
@@ -469,55 +485,59 @@ namespace sd_gui_utils {
         inline void ServerChangePort(int internal_id, int port) {
             std::cout << "ServerChangePort" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetPort(port);
-                    break;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetPort(port);
             }
             std::cout << "ServerChangePort done" << std::endl;
         }
         inline void ServerUpdateId(int internal_id, const std::string& id) {
             std::cout << "ServerUpdateId: " << id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetId(id);
-                    break;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetId(id);
             }
             std::cout << "ServerUpdateId done" << std::endl;
         }
         inline void ServerUpdateClientId(int internal_id, uint64_t newId) {
             std::cout << "ServerUpdateClientId" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetClientId(newId);
-                    break;
-                }
+            if (this->servers.empty()) {
+                return;
             }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetClientId(newId);
+                auto key   = wxString::Format("/Servers/%s:%d/ClientId", this->servers[internal_id]->GetHost(), this->servers[internal_id]->GetPort());
+                auto value = wxString::Format("%" PRIu64, this->servers[internal_id]->GetClientId());
+                this->configBase->Write(key, value);
+            }
+
             std::cout << "ServerUpdateClientId done" << std::endl;
         }
         inline void ServerChangeHost(int internal_id, const std::string& host) {
             std::cout << "ServerChangeHost" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetHost(host);
-                    break;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetHost(host);
             }
             std::cout << "ServerChangeHost done" << std::endl;
         }
         inline void ServerChangeName(int internal_id, const std::string& name) {
             std::cout << "ServerChangeName: " << name << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if ((*it)->GetInternalId() == internal_id) {
-                    (*it)->SetName(name);
-                    break;
-                }
+            if (this->servers.empty()) {
+                return;
+            }
+            if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->SetName(name);
             }
             std::cout << "ServerChangeName done" << std::endl;
         }
@@ -525,20 +545,27 @@ namespace sd_gui_utils {
         inline void ClearTcpServers() {
             std::cout << "ClearTcpServers" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->servers.empty()) {
+                return;
+            }
+
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
-                if (*it == nullptr) {
-                    continue;
-                }
-                delete *it;
+                delete it->second;
             }
             this->servers.clear();
+
             std::cout << "ClearTcpServers done" << std::endl;
         }
 
         inline std::vector<sd_gui_utils::sdServer*> ListRemoteServers() {
             std::cout << "ListRemoteServers" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
-            return this->servers;
+            std::vector<sd_gui_utils::sdServer*> list;
+            for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
+                list.push_back(it->second);
+            }
+            std::cout << "ListRemoteServers done" << std::endl;
+            return list;
         }
 
         inline const wxString getPathByDirType(const wxString& dirTypeName) {
@@ -740,32 +767,25 @@ namespace sd_gui_utils {
                     this->configBase->DeleteGroup("/Servers");
                 }
 
-                wxString oldPath = this->configBase->GetPath();
-
-                this->configBase->SetPath("/Servers");
-
-                for (size_t i = 0; i < servers.size(); ++i) {
-                    this->configBase->SetPath(wxString::Format("%s:%d", servers[i]->GetHost(), servers[i]->GetPort()));
-                    this->configBase->Write("Host", wxString::FromUTF8Unchecked(servers[i]->GetHost()));
-                    this->configBase->Write("Port", servers[i]->GetPort());
-                    this->configBase->Write("Enabled", servers[i]->IsEnabled());
-                    this->configBase->Write("InternalId", servers[i]->GetInternalId());
-                    this->configBase->Write("Name", servers[i]->GetName());
-                    this->configBase->Write("Id", wxString(servers[i]->GetId().c_str()));
-                    this->configBase->Write("ClientId", wxString::Format("%" PRIu64, servers[i]->GetClientId()));
-                    this->configBase->SetPath("..");
+                for (size_t i = 0; i < servers.size(); i++) {
+                    if (servers[i] == nullptr) {
+                        continue;
+                    }
+                    wxString pathPrefix = wxString::Format("/Servers/%s:%d", servers[i]->GetHost(), servers[i]->GetPort());
+                    this->configBase->Write(pathPrefix + "/Host", wxString::FromUTF8Unchecked(servers[i]->GetHost()));
+                    this->configBase->Write(pathPrefix + "/Port", servers[i]->GetPort());
+                    this->configBase->Write(pathPrefix + "/Enabled", servers[i]->IsEnabled());
+                    this->configBase->Write(pathPrefix + "/InternalId", servers[i]->GetInternalId());
+                    this->configBase->Write(pathPrefix + "/Name", servers[i]->GetName());
+                    this->configBase->Write(pathPrefix + "/Id", wxString(servers[i]->GetId().c_str()));
+                    this->configBase->Write(pathPrefix + "/ClientId", wxString::Format("%" PRIu64, servers[i]->GetClientId()));
                 }
-                this->configBase->SetPath(oldPath);
                 this->configBase->Flush();
             }
         }
         ~config() {
             this->FlushConfig();
-            for (auto srv : this->servers) {
-                delete srv;
-                srv = nullptr;
-            }
-            this->servers.clear();
+            this->ClearTcpServers();
         }
     };
 
@@ -894,6 +914,12 @@ namespace sd_gui_utils {
         "exponential",
         "ays",
         "gits"};
+
+    inline const std::unordered_map<SDMode, wxString> SDModeGUINames = {
+        {SDMode::TXT2IMG, _("TXT2IMG")},
+        {SDMode::IMG2IMG, _("IMG2IMG")},
+        {SDMode::CONVERT, _("CONVERT")},
+        {SDMode::UPSCALE, _("UPSCALE")}};
 
     inline const std::unordered_map<sample_method_t, wxString> samplerUiName = {
         {sample_method_t::EULER, _("Euler")},
@@ -1096,6 +1122,14 @@ namespace sd_gui_utils {
     }
     inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
         wxDateTime localTime = wxDateTime::Now();
+
+        if (item.finished_at > 0) {
+            localTime.Set(static_cast<time_t>(item.finished_at));
+        } else if (item.updated_at > 0) {
+            localTime.Set(static_cast<time_t>(item.updated_at));
+        } else if (item.created_at > 0) {
+            localTime.Set(static_cast<time_t>(item.created_at));
+        }
 
         auto day     = localTime.Format(wxT("%d"));
         auto month   = localTime.Format(wxT("%m"));

@@ -4,8 +4,6 @@ namespace sd_gui_utils {
         void TcpClient::sendMsg(const char* data, size_t len) {
             auto ret = m_client.sendMsg(data, len);
             if (!ret.m_success) {
-                std::cout << "Send Error: " << ret.m_msg << "\n";
-
                 TcpClientOnError onErrorClb;
                 {
                     std::lock_guard<std::mutex> lock(callbackMutex_);
@@ -26,28 +24,13 @@ namespace sd_gui_utils {
             if (ret.m_success) {
                 TcpClientOnConnect connectClb;
                 {
-                    std::cout << "Lock on connectClb" << std::endl;
                     std::lock_guard<std::mutex> lock(callbackMutex_);
                     connectClb = callbacks_.onConnectClb;
                     if (connectClb) {
                         connectClb();
                     }
                 }
-
-            } /* else {
-                 this->disconnect_reason = ret.m_msg;
-                 TcpClientOntDisconnect disconnectClb;
-                 {
-                     std::cout << "Lock on disconnectClb" << std::endl;
-                     std::lock_guard<std::mutex> lock(callbackMutex_);
-                     disconnectClb = callbacks_.onDisconnectClb;
-                     if (disconnectClb) {
-                         disconnectClb(this->disconnect_reason);
-                     }
-                 }
-
-                 this->stop();
-             }*/
+            }
             return ret.m_success;
         }
 
@@ -61,12 +44,10 @@ namespace sd_gui_utils {
                         size -= sd_gui_utils::networks::PACKET_SIZE_LENGTH;
                         data += sd_gui_utils::networks::PACKET_SIZE_LENGTH;
                     } else {
-
                         this->buffer.insert(this->buffer.end(), data, data + size);
                         break;
                     }
                 }
-
 
                 size_t remaining_size = this->expected_size - this->buffer.size();
 
@@ -78,33 +59,24 @@ namespace sd_gui_utils {
                     auto packet = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
                     this->HandlePackets(packet);
 
-
                     this->buffer.clear();
                     this->expected_size = 0;
 
                     size -= remaining_size;
                     data += remaining_size;
                 } else {
-
                     this->buffer.insert(this->buffer.end(), data, data + size);
                     break;
                 }
             }
-
-
-            std::cout << "TcpClient::onReceiveData Expected size: " << this->expected_size
-                      << " Remaining size: " << size
-                      << " Buffer size: " << this->buffer.size() << std::endl;
         }
 
         void TcpClient::HandlePackets(Packet& packet) {
-            std::cout << "Handling packet: " << sd_gui_utils::networks::PacketType2str.at(packet.type) << " Param: " << sd_gui_utils::networks::PacketParam2str.at(packet.param) << "\n";
             if (packet.type == sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE) {
                 if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_ERROR) {
                     this->disconnect_reason = packet.GetData<std::string>();
                     TcpClientOnError onErrorClb;
                     {
-                        std::cout << "Lock on onErrorClb" << std::endl;
                         std::lock_guard<std::mutex> lock(callbackMutex_);
                         onErrorClb = callbacks_.onErrorClb;
                         if (onErrorClb) {
@@ -121,7 +93,6 @@ namespace sd_gui_utils {
                 this->receivedPackets[packet_id] = packet;
                 TcpClientOnMessage onMessageClb;
                 {
-                    std::cout << "Lock on onMessageClb" << std::endl;
                     std::lock_guard<std::mutex> lock(callbackMutex_);
                     onMessageClb = callbacks_.onMessageClb;
                     if (onMessageClb) {
@@ -135,7 +106,6 @@ namespace sd_gui_utils {
                 if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_AUTH) {
                     TcpClientOnAuthRequest onAuthRequestClb;
                     {
-                        std::cout << "Lock on onAuthRequestClb" << std::endl;
                         std::lock_guard<std::mutex> lock(callbackMutex_);
                         onAuthRequestClb = callbacks_.onAuthRequestClb;
                         if (onAuthRequestClb) {
@@ -153,7 +123,6 @@ namespace sd_gui_utils {
 
             TcpClientOntDisconnect disconnectClb;
             {
-                std::cout << "Lock on disconnectClb" << std::endl;
                 std::lock_guard<std::mutex> lock(callbackMutex_);
                 disconnectClb = callbacks_.onDisconnectClb;
             }

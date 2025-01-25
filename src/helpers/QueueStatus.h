@@ -24,8 +24,9 @@ inline const std::unordered_map<QueueStatus, wxString> QueueStatus_GUI_str = {
     {QueueStatus::RUNNING, _("running")},
     {QueueStatus::PAUSED, _("paused")},
     {QueueStatus::FAILED, _("failed")},
-    {QueueStatus::MODEL_LOADING, _("model loading...")},
+    {QueueStatus::MODEL_LOADING, _("model loading")},
     {QueueStatus::DONE, _("finished")},
-    {QueueStatus::HASHING, _("model hashing...")}};
+    {QueueStatus::HASHING_DONE, _("model hashing done")},
+    {QueueStatus::HASHING, _("model hashing")}};
 
 #endif  // __SDGUI_HELPERS_QUEUE_STATUS__

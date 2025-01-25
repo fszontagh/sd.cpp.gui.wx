@@ -23,20 +23,14 @@ namespace sd_gui_utils {
         mutable std::mutex mutex;
         void initCallbacks() {
             this->client->SetOnAuthRequestCallback([this]() {
-                // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onAuthRequestClb" << std::endl;
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_AUTH_REQUEST, this);
             });
 
             this->client->SetOnConnectCallback([this]() {
-                // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onConnectClb" << std::endl;
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_CONNECTED, this);
             });
 
             this->client->SetOnMessageCallback([this](int packet_id) {
-                // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onMessageClb" << std::endl;
                 auto msg = this->client->getPacket(packet_id);
                 if (msg.isValid() == false) {
                     return;
@@ -91,23 +85,18 @@ namespace sd_gui_utils {
             });
 
             this->client->SetOnDisconnectCallback([this](const std::string& reason) {
-                // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onDisconnectClb" << std::endl;
                 this->disconnect_reason = reason;
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_DISCONNECTED, this, reason);
             });
 
             this->client->SetOnErrorCallback([this](std::string msg) {
-                // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onErrorClb" << std::endl;
                 this->disconnect_reason = msg;
                 this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_ERROR, this, msg);
             });
 
             this->client->SetOnStopCallback([this]() {
                 // std::lock_guard<std::mutex> lock(this->mutex);
-                std::cout << "sdServer: onStopClb" << std::endl;
-                // this->needToRun.store(false);
+                // std::cout << "sdServer: onStopClb" << std::endl;
             });
         }
 
@@ -192,13 +181,17 @@ namespace sd_gui_utils {
             }
         }
 
-        void SendQueueJob(sd_gui_utils::RemoteQueueItem item) {
-            auto packet      = sd_gui_utils::networks::Packet();
-            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
-            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD;
-            packet.client_id = this->client_id;
-            packet.SetData(item);
-            this->client->sendMsg(packet);
+        void SendQueueJob(std::shared_ptr<QueueItem> item) {
+            this->threads.emplace_back([this, item]() {
+                item->PrepareImagesForServer();
+                auto convertedItem = item->convertToNetwork(false);
+                auto packet        = sd_gui_utils::networks::Packet();
+                packet.type        = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+                packet.param       = sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD;
+                packet.client_id   = this->client_id;
+                packet.SetData(convertedItem);
+                this->client->sendMsg(packet);
+            });
         }
 
         /// @brief Get the status of the server
@@ -252,29 +245,23 @@ namespace sd_gui_utils {
             this->internal_id = id;
         }
         void StartServer() {
-            std::cout << "sdServer: starting server" << std::endl;
             if (this->client->IsConnected() == true) {
-                std::cout << "sdServer: server is already running" << std::endl;
                 return;
             }
 
             this->needToRun.store(true);
             this->thread = std::thread([this]() {
-                std::cout << "sdServer: starting thread" << std::endl;
-
                 while (this->needToRun.load()) {
                     int tries = 1;
 
                     while (!this->client->IsConnected() && this->needToRun.load()) {
                         {
                             {
-                                std::cout << "Connecting... " << this->host << ":" << this->port << std::endl;
                                 std::lock_guard<std::mutex> lock(this->mutex);
                                 this->client = nullptr;
                                 this->client = std::make_shared<sd_gui_utils::networks::TcpClient>();
                                 this->initCallbacks();
                                 if (this->client->Connect(this->host, this->port) == true) {
-                                    std::cout << "sdServer: connected" << std::endl;
                                     break;
                                 }
                                 this->client->stop();
@@ -282,7 +269,6 @@ namespace sd_gui_utils {
                         }
 
                         tries++;
-                        std::cout << "sdServer: trying to connect: " << tries << " sleeping 5s" << std::endl;
                         if (this->needToRun.load()) {
                             std::this_thread::sleep_for(std::chrono::seconds(5));
                         }
@@ -292,15 +278,10 @@ namespace sd_gui_utils {
                         }
                     }
                     if (this->needToRun.load()) {
-                        std::cout << "sdServer: sleep 10s" << std::endl;
-                        std::this_thread::sleep_for(std::chrono::seconds(10));
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
                     }
                 }
-
-                std::cout << "sdServer: thread stopped" << std::endl;
             });
-
-            std::cout << "sdServer: StartServer exiting" << std::endl;
         }
 
         void SendData(const std::string& data, Packet::Param param, Packet::Type type = Packet::Type::REQUEST_TYPE) {
@@ -356,8 +337,6 @@ namespace sd_gui_utils {
         sdServer(const std::string& host, int port, wxEvtHandler* evt)
             : host(host), port(port), evt(evt) {
             this->client = std::make_shared<sd_gui_utils::networks::TcpClient>();
-
-            this->initCallbacks();
         }
         // copy constructor
         sdServer(const sdServer& other) = delete;
@@ -365,7 +344,6 @@ namespace sd_gui_utils {
         sdServer& operator=(const sdServer&) = delete;
         sdServer()                           = default;
         ~sdServer() {
-            std::cout << "sdServer: destructor" << std::endl;
             this->Stop();
         }
 

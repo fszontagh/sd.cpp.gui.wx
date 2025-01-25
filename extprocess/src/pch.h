@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <random>
+#include <mutex>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>

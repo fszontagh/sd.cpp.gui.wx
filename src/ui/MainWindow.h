@@ -240,7 +240,9 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_random_seed;
 		wxStaticText* m_staticText75;
 		wxBitmapButton* m_button7;
+		wxStaticText* m_staticText722;
 		wxTextCtrl* m_width;
+		wxStaticText* m_staticText7221;
 		wxTextCtrl* m_height;
 		wxChoice* m_sd15Res;
 		wxChoice* m_sdXlres;

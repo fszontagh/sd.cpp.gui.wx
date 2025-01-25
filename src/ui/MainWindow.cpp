@@ -1285,13 +1285,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1041->Add( m_staticline9, 0, wxEXPAND | wxALL, 5 );
 
 	wxBoxSizer* bSizer1031;
-	bSizer1031 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer1031 = new wxBoxSizer( wxVERTICAL );
 
 	m_staticText20 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("TAESD:"), wxDefaultPosition, wxSize( -1,-1 ), 0 );
 	m_staticText20->Wrap( -1 );
 	m_staticText20->SetToolTip( _("Using Tiny AutoEncoder for fast decoding (low quality)") );
 
-	bSizer1031->Add( m_staticText20, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1031->Add( m_staticText20, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	wxString m_taesdChoices[] = { _("Not selected") };
 	int m_taesdNChoices = sizeof( m_taesdChoices ) / sizeof( wxString );
@@ -1343,7 +1343,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1041->Add( m_button7, 0, wxEXPAND|wxALL, 5 );
 
 	wxBoxSizer* bSizer10011;
-	bSizer10011 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer10011 = new wxBoxSizer( wxVERTICAL );
+
+	m_staticText722 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("Width:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText722->Wrap( -1 );
+	bSizer10011->Add( m_staticText722, 0, wxALL|wxEXPAND, 5 );
 
 	m_width = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_NO_VSCROLL );
 	#ifdef __WXGTK__
@@ -1354,7 +1358,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#else
 	m_width->SetMaxLength( 6 );
 	#endif
-	bSizer10011->Add( m_width, 1, wxALL|wxEXPAND, 5 );
+	bSizer10011->Add( m_width, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText7221 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("Height:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7221->Wrap( -1 );
+	bSizer10011->Add( m_staticText7221, 0, wxALL|wxEXPAND, 5 );
 
 	m_height = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_NO_VSCROLL );
 	#ifdef __WXGTK__
@@ -1365,7 +1373,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#else
 	m_height->SetMaxLength( 6 );
 	#endif
-	bSizer10011->Add( m_height, 1, wxALL|wxEXPAND, 5 );
+	bSizer10011->Add( m_height, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer10011, 0, wxEXPAND|wxALL, 2 );
@@ -1461,7 +1469,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_steps = new wxSpinCtrl( m_rightMainPanelScroll, wxID_ANY, wxT("20"), wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_RIGHT|wxBORDER_DEFAULT, 0, 100, 20 );
 	m_steps->SetToolTip( _("number of sample steps (default: 20)") );
 
-	bSizer101->Add( m_steps, 1, wxALL|wxEXPAND, 5 );
+	bSizer101->Add( m_steps, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer101, 0, wxEXPAND, 0 );
@@ -1478,7 +1486,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_batch_count = new wxSpinCtrl( m_rightMainPanelScroll, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_RIGHT|wxBORDER_DEFAULT, 1, 1000, 1 );
 	m_batch_count->SetToolTip( _("number of images to generate.") );
 
-	bSizer990->Add( m_batch_count, 1, wxALL|wxEXPAND, 5 );
+	bSizer990->Add( m_batch_count, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer990, 0, wxEXPAND, 0 );
@@ -1492,7 +1500,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_cfg = new wxSpinCtrlDouble( m_rightMainPanelScroll, wxID_ANY, wxT("7.0"), wxDefaultPosition, wxSize( -1,-1 ), wxALIGN_RIGHT|wxBORDER_DEFAULT, 0, 30, 0, 0.1 );
 	m_cfg->SetDigits( 1 );
-	bSizer1021->Add( m_cfg, 1, wxALL|wxEXPAND, 5 );
+	bSizer1021->Add( m_cfg, 0, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer1021, 0, wxEXPAND, 0 );
@@ -1501,7 +1509,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_rightMainPanelScroll->SetSizer( bSizer1041 );
 	m_rightMainPanelScroll->Layout();
 	bSizer1041->Fit( m_rightMainPanelScroll );
-	bSizer1121->Add( m_rightMainPanelScroll, 1, wxALL|wxEXPAND, 5 );
+	bSizer1121->Add( m_rightMainPanelScroll, 1, wxEXPAND, 5 );
 
 	m_queue = new wxButton( m_rightMainPanel, wxID_ANY, _("Queue"), wxDefaultPosition, wxSize( -1,42 ), 0 );
 
@@ -1521,7 +1529,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_rightMainPanel->SetSizer( bSizer1121 );
 	m_rightMainPanel->Layout();
-	bSizer138->Add( m_rightMainPanel, 0, wxEXPAND, 5 );
+	bSizer138->Add( m_rightMainPanel, 0, wxEXPAND|wxALL, 5 );
 
 
 	m_panel31->SetSizer( bSizer138 );

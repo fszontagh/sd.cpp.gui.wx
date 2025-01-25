@@ -274,7 +274,7 @@ int TerminalApp::OnRun() {
         try {
             this->socket = new SocketApp(this->configData->host.c_str(), this->configData->port, this);
         } catch (std::exception& e) {
-            this->sendLogEvent(e.what(), wxLOG_Error);
+            this->sendLogEvent(wxString::Format("Socket server error: %s", e.what()), wxLOG_Error);
         }
 
         while (this->socket->isRunning() && this->eventHandlerReady.load() && this->extProcessNeedToRun.load()) {
@@ -357,6 +357,14 @@ void TerminalApp::ExternalProcessRunner() {
         if (subprocess_alive(this->subprocess) == 0) {
             this->sendLogEvent("Subprocess stopped", wxLOG_Error);
             this->extprocessIsRunning.store(false);
+            if (this->queueManager != nullptr) {
+                auto current_job = this->queueManager->GetCurrentJob();
+                if (current_job != nullptr) {
+                    current_job->status = QueueStatus::FAILED;
+                    this->itemUpdateEvent(current_job);
+                    this->queueManager->DeleteCurrentJob();
+                }
+            }
             // restart
             int result = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
             if (this->subprocess == nullptr) {
@@ -386,6 +394,14 @@ void TerminalApp::ExternalProcessRunner() {
     this->sendLogEvent("Subprocess stopped", wxLOG_Error);
     this->extprocessIsRunning.store(false);
     subprocess_terminate(this->subprocess);
+    if (this->queueManager != nullptr) {
+        auto current_job = this->queueManager->GetCurrentJob();
+        if (current_job != nullptr) {
+            current_job->status = QueueStatus::FAILED;
+            this->itemUpdateEvent(current_job);
+            this->queueManager->DeleteCurrentJob();
+        }
+    }
 }
 
 bool TerminalApp::ProcessEventHandler(std::string message) {
@@ -401,7 +417,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
         }
         if (this->queueManager->UpdateCurrentJob(item, this->configData->GetJobsPath())) {
             auto updated_item = this->queueManager->GetItem(item.id);
-            auto converted    = updated_item->convertToNetwork((updated_item->status == QueueStatus::DONE ? false : true));
+            auto converted    = updated_item->convertToNetwork((updated_item->status == QueueStatus::DONE ? false : true), this->configData->server_id);
             sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
             packet.SetData(converted);
             this->socket->sendMsg(0, packet);  // send to everybody
@@ -409,7 +425,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
         }
 
     } catch (const std::exception& e) {
-        this->sendLogEvent(e.what(), wxLOG_Error);
+        this->sendLogEvent(wxString::Format("Extprocess parse error: %s", e.what()), wxLOG_Error);
         return true;
     }
 
@@ -424,7 +440,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE) {
         sd_gui_utils::DeleteResponse response_data;
         response_data.job_id = packet.GetData<uint64_t>();
-        response_data.state = this->queueManager->DeleteItem(response_data.job_id, response_data.error);
+        response_data.state  = this->queueManager->DeleteItem(response_data.job_id, response_data.error);
 
         auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE);
         response.SetData(response_data);
@@ -450,16 +466,11 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         auto job     = this->queueManager->GetItem(item_id);
 
         if (job) {
-            const std::vector<sd_gui_utils::ImageInfo> imagelist = job->image_info;
-
-            if (imagelist.size() > 0) {
-                auto response = sd_gui_utils::networks::Packet(
-                    sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
-                    sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST);
-                response.SetData(imagelist);
-                this->socket->sendMsg(packet.source_idx, response);
-                this->sendLogEvent("Sent image list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
-            }
+            // update the entire job info
+            auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+            response.SetData(job->convertToNetwork(false, this->configData->server_id));
+            this->socket->sendMsg(packet.source_idx, response);
+            this->sendLogEvent("Sent image list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
         }
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
@@ -470,7 +481,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
                 auto response = sd_gui_utils::networks::Packet(
                     sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
                     sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-                response.SetData(j.convertToNetwork());
+                response.SetData(j.convertToNetwork(true, this->configData->server_id));
                 this->socket->sendMsg(packet.source_idx, response);
             }
             this->sendLogEvent("Sending job done", wxLOG_Debug);
@@ -478,23 +489,22 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         }));
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE) {
-        auto job_id = packet.GetData<uint64_t>();
+        auto job_id  = packet.GetData<uint64_t>();
         auto newItem = this->queueManager->DuplicateItem(job_id);
         if (newItem) {
             auto response = sd_gui_utils::networks::Packet(
                 sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
                 sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-            response.SetData(newItem->convertToNetwork());
+            response.SetData(newItem->convertToNetwork(false, this->configData->server_id));
             this->socket->sendMsg(packet.source_idx, response);
         }
-
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
         this->sendLogEvent("Received job add", wxLOG_Debug);
         auto data      = packet.GetData<sd_gui_utils::RemoteQueueItem>();
         data.id        = this->queueManager->GenerateNextId();
         auto converted = QueueItem::convertFromNetwork(data, this->configData->GetJobsPath());
-
+        converted.SetImagesPathsFromInfo();
         // set paths
         converted.params.embeddings_path = this->configData->model_paths.embedding;
         converted.params.lora_model_dir  = this->configData->model_paths.lora;
@@ -539,7 +549,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
 
         auto addedItem = this->queueManager->AddItem(converted);
         // send back the new item to all connected clients
-        auto newConverted = addedItem->convertToNetwork(false);
+        auto newConverted = addedItem->convertToNetwork(false, this->configData->server_id);
         sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
         packet.SetData(newConverted);
         this->socket->sendMsg(0, packet);  // send to everybody

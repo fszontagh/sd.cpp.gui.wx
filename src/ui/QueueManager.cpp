@@ -158,6 +158,9 @@ uint64_t QM::QueueManager::AddItem(std::shared_ptr<QueueItem> item, bool fromFil
 
 void QM::QueueManager::RemoveRemoteItems(const std::string& server_id) {
     std::lock_guard<std::mutex> lock(queueMutex);
+    if (server_id.empty()) {
+        return;
+    }
     for (auto it = this->QueueList.begin(); it != this->QueueList.end();) {
         if (it->second == nullptr) {
             it = this->QueueList.erase(it);

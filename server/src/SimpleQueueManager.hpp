@@ -49,7 +49,6 @@ public:
         item->status     = QueueStatus::PENDING;
         item->created_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         item->server     = this->server_id;
-        std::cout << "Item added: " << item->id << std::endl;
         this->jobs[item->id] = item;
         this->lastID         = (this->lastID < item->id) ? item->id : this->lastID;
 
@@ -66,6 +65,9 @@ public:
     }
     std::shared_ptr<QueueItem> GetNextPendingJob() {
         std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->jobs.empty()) {
+            return nullptr;
+        }
         for (auto it = this->jobs.begin(); it != this->jobs.end(); it++) {
             if ((*it).second->status == QueueStatus::PENDING) {
                 return (*it).second;
@@ -107,13 +109,16 @@ public:
                         this->currentItem = nullptr;
                     }
                 }
+                if (j->status == QueueStatus::FAILED) {
+                    if (this->currentItem && this->currentItem->id == oldJob.id) {
+                        this->currentItem = nullptr;
+                    }
+                }
                 this->StoreJobInFile(j);
                 return true;
             }
             return false;
         }
-
-        std::cout << "No item updated with id: " << item.id << std::endl;
         return false;
     }
 

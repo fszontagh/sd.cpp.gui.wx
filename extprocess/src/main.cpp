@@ -40,7 +40,9 @@ int main(int argc, char* argv[]) {
 
         if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE)) {
             if (std::strlen(buffer.get()) > 0) {
+                appLogic.updateLastMessageTime();
                 std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE);
+
                 if (message == "exit") {
                     std::cout << "Got exit command, exiting... " << std::endl;
                     needToRun = false;
@@ -65,7 +67,11 @@ int main(int argc, char* argv[]) {
             std::cerr << "[EXTPROCESS] Can not read shared memory" << std::endl;
             needToRun = false;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+       // if (appLogic.CalcTimeoutTime() > 600) {
+       //     needToRun = false; // quit if timeout
+       // } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+       // }
     }
 
     return 0;

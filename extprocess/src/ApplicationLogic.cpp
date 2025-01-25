@@ -275,7 +275,7 @@ void ApplicationLogic::Txt2Img() {
             return;
         }
 
-        std::cout << "Processing images " << this->currentItem->params.batch_count << std::endl;
+        std::cout << "[EXTPROCESS] Processing images " << this->currentItem->params.batch_count << std::endl;
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
             if (results[i].data == NULL) {
                 continue;
@@ -301,12 +301,9 @@ void ApplicationLogic::Txt2Img() {
 
 void ApplicationLogic::Img2img() {
     std::cout << std::flush;
-    std::cout << "running img2img" << std::endl;
     try {
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 2));
         this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED);
-        std::cout << " sent status" << std::endl;
-
         unsigned char* input_image_buffer   = NULL;
         unsigned char* control_image_buffer = NULL;
         unsigned char* mask_image_buffer    = NULL;
@@ -318,7 +315,7 @@ void ApplicationLogic::Img2img() {
         int input_w, input_h, input_c       = 0;
         int control_w, control_h, control_c = 0;
 
-        std::cout << "Checking initial image: " << this->currentItem->initial_image << std::endl;
+        std::cout << "[EXTPROCESS] Checking initial image: " << this->currentItem->initial_image << std::endl;
 
         if (this->currentItem->initial_image.length() > 0) {
             if (std::filesystem::exists(this->currentItem->initial_image)) {
@@ -326,7 +323,7 @@ void ApplicationLogic::Img2img() {
                 input_image        = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, input_image_buffer};
                 std::cout << " input image loaded: " << this->currentItem->initial_image << " width: " << input_w << " height: " << input_h << " channels: " << input_c << std::endl;
             } else {
-                std::cerr << "Initial image not found: " << this->currentItem->initial_image << std::endl;
+                std::cerr << "[EXTPROCESS] Initial image not found: " << this->currentItem->initial_image << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
                 this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Initial image not found:" + this->currentItem->initial_image);
                 return;

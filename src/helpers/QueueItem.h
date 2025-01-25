@@ -115,7 +115,19 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
 
         this->rawImages.clear();
     }
+    inline void PrepareImagesForServer() {
+        for (auto& img : this->image_info) {
+            if (wxFileExists(img.data_filename)) {
+                img.data.clear();
+                sd_gui_utils::EncodeFileToBase64(img.data_filename, img.data);
+                img.id = sd_gui_utils::calculateMD5(img.data_filename);
+            }
+        }
+    }
     inline QueueItem* RemoveGeneratedImages() {
+        if (this->image_info.empty()) {
+            return this;
+        }
         for (auto it = this->image_info.begin(); it != this->image_info.end();) {
             if (sd_gui_utils::hasImageType(it->type, sd_gui_utils::networks::ImageType::GENERATED)) {
                 it = this->image_info.erase(it);
@@ -126,7 +138,18 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         return this;
     }
 
-    inline sd_gui_utils::RemoteQueueItem convertToNetwork(bool clear_images_data = true) {
+    inline void SetImagesPathsFromInfo() {
+        for (auto& img : this->image_info) {
+            if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
+                this->initial_image = img.target_filename;
+            }
+            if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
+                this->mask_image = img.target_filename;
+            }
+        }
+    }
+
+    inline sd_gui_utils::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
         sd_gui_utils::RemoteQueueItem newItem(*this);
 
         if (clear_images_data == true) {
@@ -135,6 +158,12 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
                 img.data_filename.clear();
                 img.target_filename.clear();
             }
+        }
+        if (!model_names_prefix.empty()) {
+            newItem.params.model_path  = newItem.params.model_path.empty() ? newItem.params.model_path : model_names_prefix + ":" + newItem.params.model_path;
+            newItem.params.taesd_path  = newItem.params.taesd_path.empty() ? newItem.params.taesd_path : model_names_prefix + ":" + newItem.params.taesd_path;
+            newItem.params.vae_path    = newItem.params.vae_path.empty() ? newItem.params.vae_path : model_names_prefix + ":" + newItem.params.vae_path;
+            newItem.params.esrgan_path = newItem.params.esrgan_path.empty() ? newItem.params.esrgan_path : model_names_prefix + ":" + newItem.params.esrgan_path;
         }
         return newItem;
     }
@@ -170,6 +199,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,
                                                 hash_progress_size,
                                                 time,
                                                 model,
+                                                model_hash,
                                                 mode,
                                                 status_message,
                                                 upscale_factor,

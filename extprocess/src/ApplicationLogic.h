@@ -12,6 +12,9 @@ public:
         if (msg.empty()) {
             return;
         }
+        auto instance = static_cast<ApplicationLogic*>(data);
+        std::lock_guard<std::mutex> lock(instance->itemMutex);
+        instance->updateLastMessageTime();
         switch (level) {
             case sd_log_level_t::SD_LOG_DEBUG: {
                 std::cout << "[DEBUG] " << msg << std::endl;
@@ -83,6 +86,15 @@ public:
     inline const auto getCurrentItem() { return this->currentItem; }
 
     void processMessage(QueueItem& item);
+    void updateLastMessageTime() { this->last_message_time.store(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()); };
+    uint64_t GetLastMessageTime() { return last_message_time.load(); }
+    uint64_t CalcTimeoutTime() {
+        auto curtime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        if (this->last_message_time.load() == 0) {
+            return 0;
+        }
+        return this->last_message_time.load() - curtime;
+    }
 
 private:
     SharedLibrary sd_dll;
@@ -104,7 +116,9 @@ private:
     SdSetProgressCallbackFunction sdSetProgressCallbackFuncPtr = nullptr;
     SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
     std::mutex itemMutex;
+    std::mutex logMutex;
     std::string tempPath;
+    std::atomic<uint64_t> last_message_time = {0};  // store the last message from the parent
 
     void Txt2Img();
     void Img2img();
@@ -150,6 +164,7 @@ private:
         nlohmann::json j       = *this->currentItem;
         std::string jsonString = j.dump();
         this->sharedMemoryManager->write(jsonString.c_str(), jsonString.length());
+        this->updateLastMessageTime();
     }
     inline void sendStatus(QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
         if (this->currentItem == nullptr) {

@@ -151,6 +151,8 @@ public:
         this->mainFrame->loadSamplerList();
         this->mainFrame->loadTypeList();
 
+        SetTopWindow(this->mainFrame);
+        this->mainFrame->Show();
         if (this->cfg->initServerList(this->mainFrame->GetEventHandler())) {
             if (this->cfg->servers.empty() == false) {
                 for (auto& server : this->cfg->ListRemoteServers()) {
@@ -161,8 +163,6 @@ public:
                 }
             }
         }
-        SetTopWindow(this->mainFrame);
-        this->mainFrame->Show();
     };
 
     void ChangeLocale(const wxString& newLangName) {

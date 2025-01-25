@@ -196,6 +196,7 @@ private:
     void OnModelListPopUpClick(wxCommandEvent& evt);
     void LoadFileList(sd_gui_utils::DirTypes type = sd_gui_utils::DirTypes::CHECKPOINT);
     void ShowNotification(const wxString& title, const wxString& message);
+    void ShowNotification(std::shared_ptr<QueueItem> jobItem);
     void ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info);
     void ChangeGuiFromQueueItem(const QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);

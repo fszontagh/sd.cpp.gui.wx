@@ -332,7 +332,7 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
     if (col == ServerListColumns::SERVER_LIST_COLUMN_PORT) {
         int newPort = 0;
         if (value.ToInt(&newPort) == true && newPort > 0 && newPort < 65536) {
-            for (const auto& server : this->cfg->servers) {
+            for (const auto& server : this->cfg->ListRemoteServers()) {
                 if (server->GetPort() == newPort && server->GetPort() == srv->GetPort() && server->GetInternalId() != internal_id) {
                     wxMessageDialog(this, _("Server already exists")).ShowModal();
                     this->m_serverList->SetValue(wxString::Format(wxT("%d"), srv->GetPort()), row, col);
@@ -372,18 +372,15 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
     auto row  = this->m_serverList->ItemToRow(item);
     if (item.IsOk()) {
         auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
-        for (auto& srv : this->cfg->servers) {
-            if (srv->GetInternalId() == internal_id) {
-                if ((srv->GetAuthKeyState() == false || srv->GetHost().empty() || srv->GetPort() == 0) && this->m_serverEnable->GetValue() == true) {
-                    this->m_serverEnable->SetValue(srv->IsEnabled());
-                    wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
-                    return;
-                }
-                this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue(), true);
-                ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
-                this->m_serverEnable->SetLabel(srv->IsEnabled() ? _("Disable") : _("Enable"));
-                break;
+        auto srv = this->cfg->GetTcpServer(internal_id);
+        if (srv) {
+            if (srv->GetAuthKeyState() == false || srv->GetHost().empty() || srv->GetPort() == 0) {
+                wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
+                return;
             }
+            this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue(), true);
+            ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+            this->m_serverEnable->SetLabel(srv->IsEnabled() ? _("Disable") : _("Enable"));
         }
     }
 }

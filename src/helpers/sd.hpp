@@ -214,7 +214,7 @@ typedef sd_image_t (*UpscalerFunction)(upscaler_ctx_t*,  // pointer
                                        uint32_t          // upscale factor
 );
 
-inline const char* modes_str[] = {"txt2img", "img2img", "convert", "upscale"};
+inline const char* modes_str[] = {"txt2img", "img2img", "convert", "upscale", "img2vid"};
 
 enum SDMode {
     TXT2IMG,

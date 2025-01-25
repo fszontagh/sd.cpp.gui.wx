@@ -33,7 +33,7 @@ namespace ModelInfo {
         void setHash(std::string model_path, std::string hash);
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtr(std::string path);
-        sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string hash);
+        sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string , std::string remote_server_id = "");
         sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
@@ -43,6 +43,9 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* findRemoteModelOnLocal(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
         inline void resetModels(sd_gui_utils::DirTypes type) {
             std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->ModelInfos.empty()) {
+                return;
+            }
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
                 if (it->second->model_type == type) {
                     if (it->second) {
@@ -60,6 +63,9 @@ namespace ModelInfo {
         }
         inline void UnloadModelsByServer(sd_gui_utils::sdServer* server) {
             std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->ModelInfos.empty()) {
+                return;
+            }
             for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
                 if (server->GetId().empty() == false && it->second->server_id == server->GetId()) {
                     this->ModelCount[it->second->model_type]--;
