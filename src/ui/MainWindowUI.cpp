@@ -4134,10 +4134,10 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
         if (item->params.vae_path.empty() == false) {
             wxString vae_path = wxString::FromUTF8Unchecked(item->params.vae_path);
             if (item->server.empty() == false) {
-                vae_path.SubString(65, -1);
+                vae_path = vae_path.SubString(65, -1);
             }
             data.push_back(wxVariant(_("VAE")));
-            data.push_back(wxVariant(vae_path));
+            data.push_back(wxVariant(wxFileName(vae_path).GetFullName()));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
@@ -4175,10 +4175,10 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
         if (item->params.taesd_path.empty() == false) {
             wxString taesd_path = wxString::FromUTF8Unchecked(item->params.taesd_path);
             if (item->server.empty() == false) {
-                taesd_path.SubString(65, -1);
+                taesd_path = taesd_path.SubString(65, -1);
             }
             data.push_back(wxVariant(_("TAESD")));
-            data.push_back(wxVariant(taesd_path));
+            data.push_back(wxVariant(wxFileName(taesd_path).GetFullName()));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
