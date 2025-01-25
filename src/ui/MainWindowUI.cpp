@@ -914,7 +914,6 @@ void MainWindowUI::OnDataModelTreeColSorted(wxTreeListEvent& event) {
 
 void MainWindowUI::OnDataModelTreeExpanded(wxTreeListEvent& event) {
     auto item = event.GetItem();
-    std::cout << "Expanded: " << this->m_modelTreeList->GetItemText(item, 0) << std::endl;
 }
 
 void MainWindowUI::OnJobListItemSelection(wxDataViewEvent& event) {
@@ -997,8 +996,6 @@ std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const 
                         results = sd_gui_utils::parseExifPrompts(wxValue);
                         break;
                     }
-                } else {
-                    std::cout << "Key: " << wxKey.ToStdString() << " Value: " << wxValue.ToStdString() << std::endl;
                 }
             }
         }
@@ -2853,7 +2850,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         wxFileName file(entry);
 
         if (!file.FileExists()) {
-            std::cout << "File not exists: " << file.GetAbsolutePath().utf8_string() << std::endl;
+            this->writeLog("File not exists: " + file.GetAbsolutePath().utf8_string());
             continue;
         }
 
@@ -3218,11 +3215,6 @@ void MainWindowUI::onimgInfoOpen(const wxString& file) {
         if (image.GetType() == wxBITMAP_TYPE_PNG) {
             try {
                 const auto meta = sd_gui_utils::ReadMetadata(imagePath.GetAbsolutePath().utf8_string());
-                if (BUILD_TYPE == "Debug") {
-                    for (const auto& [key, value] : meta) {
-                        std::cout << key.utf8_string() << ": " << value.utf8_string() << std::endl;
-                    }
-                }
                 if (meta.contains("Parameters")) {
                     metadata = sd_gui_utils::parseExifPrompts(meta.at("Parameters").ToStdString());
                 }

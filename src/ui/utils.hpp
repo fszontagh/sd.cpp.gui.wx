@@ -357,7 +357,6 @@ namespace sd_gui_utils {
 
         bool initServerList(wxEvtHandler* eventHandler) {
             std::lock_guard<std::mutex> lock(this->mutex);
-            std::cout << "Init server list" << std::endl;
             if (configBase->HasGroup("/Servers")) {
                 wxString oldGroup = configBase->GetPath();
                 configBase->SetPath("/Servers");
@@ -406,14 +405,12 @@ namespace sd_gui_utils {
         }
 
         inline void ServerEnable(int internal_id, bool enable, bool autostartstop = false) {
-            std::cout << "ServerEnable " << internal_id << " " << enable << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
             }
             if (this->servers.contains(internal_id)) {
                 this->servers[internal_id]->SetEnabled(enable, autostartstop);
-                std::cout << "ServerEnable done " << internal_id << " " << enable << std::endl;
                 return;
             }
         }
@@ -442,7 +439,6 @@ namespace sd_gui_utils {
             return nullptr;
         }
         inline void AddTcpServer(sd_gui_utils::sdServer* server) {
-            std::cout << "AddTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (server->GetInternalId() == -1) {
                 server->SetInternalId(this->servers.size());
@@ -451,10 +447,8 @@ namespace sd_gui_utils {
                 server->SetInternalId(server->GetInternalId() + 1);
             }
             this->servers[server->GetInternalId()] = server;
-            std::cout << "AddTcpServer done: " << server->GetInternalId() << std::endl;
         }
         inline void RemoveTcpServer(int internal_id) {
-            std::cout << "RemoveTcpServer" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -462,28 +456,23 @@ namespace sd_gui_utils {
             if (this->servers.contains(internal_id)) {
                 delete this->servers[internal_id];
                 this->servers.erase(internal_id);
-                std::cout << "RemoveTcpServer done" << std::endl;
                 return;
             }
         }
         inline bool ServerExist(const std::string& host, int port) {
-            std::cout << "ServerExist" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return false;
             }
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 if (it->second->GetHost() == host && it->second->GetPort() == port) {
-                    std::cout << "ServerExist done" << std::endl;
                     return true;
                 }
             }
-            std::cout << "ServerExist done" << std::endl;
             return false;
         }
 
         inline void ServerChangePort(int internal_id, int port) {
-            std::cout << "ServerChangePort" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -491,10 +480,8 @@ namespace sd_gui_utils {
             if (this->servers.contains(internal_id)) {
                 this->servers[internal_id]->SetPort(port);
             }
-            std::cout << "ServerChangePort done" << std::endl;
         }
         inline void ServerUpdateId(int internal_id, const std::string& id) {
-            std::cout << "ServerUpdateId: " << id << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -502,10 +489,8 @@ namespace sd_gui_utils {
             if (this->servers.contains(internal_id)) {
                 this->servers[internal_id]->SetId(id);
             }
-            std::cout << "ServerUpdateId done" << std::endl;
         }
         inline void ServerUpdateClientId(int internal_id, uint64_t newId) {
-            std::cout << "ServerUpdateClientId" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -516,11 +501,8 @@ namespace sd_gui_utils {
                 auto value = wxString::Format("%" PRIu64, this->servers[internal_id]->GetClientId());
                 this->configBase->Write(key, value);
             }
-
-            std::cout << "ServerUpdateClientId done" << std::endl;
         }
         inline void ServerChangeHost(int internal_id, const std::string& host) {
-            std::cout << "ServerChangeHost" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -528,10 +510,8 @@ namespace sd_gui_utils {
             if (this->servers.contains(internal_id)) {
                 this->servers[internal_id]->SetHost(host);
             }
-            std::cout << "ServerChangeHost done" << std::endl;
         }
         inline void ServerChangeName(int internal_id, const std::string& name) {
-            std::cout << "ServerChangeName: " << name << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -539,11 +519,9 @@ namespace sd_gui_utils {
             if (this->servers.contains(internal_id)) {
                 this->servers[internal_id]->SetName(name);
             }
-            std::cout << "ServerChangeName done" << std::endl;
         }
 
         inline void ClearTcpServers() {
-            std::cout << "ClearTcpServers" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->servers.empty()) {
                 return;
@@ -553,18 +531,14 @@ namespace sd_gui_utils {
                 delete it->second;
             }
             this->servers.clear();
-
-            std::cout << "ClearTcpServers done" << std::endl;
         }
 
         inline std::vector<sd_gui_utils::sdServer*> ListRemoteServers() {
-            std::cout << "ListRemoteServers" << std::endl;
             std::lock_guard<std::mutex> lock(this->mutex);
             std::vector<sd_gui_utils::sdServer*> list;
             for (auto it = this->servers.begin(); it != this->servers.end(); ++it) {
                 list.push_back(it->second);
             }
-            std::cout << "ListRemoteServers done" << std::endl;
             return list;
         }
 

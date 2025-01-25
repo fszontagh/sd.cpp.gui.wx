@@ -13,6 +13,7 @@ public:
         bool disableExternalProcessHandling = false;
 
         this->initConfig();
+        SetAppDisplayName(PROJECT_DISPLAY_NAME);
 
         for (int i = 0; i < wxApp::argc; ++i) {
             if (wxApp::argv[i] == "-cuda") {

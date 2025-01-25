@@ -191,6 +191,7 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
+		wxTextCtrl* logs;
 		wxScrolledWindow* m_promptAndFluxPanel;
 		wxPanel* m_promptPanel;
 		wxStaticText* m_staticText73;
@@ -240,9 +241,7 @@ class mainUI : public wxFrame
 		wxBitmapButton* m_random_seed;
 		wxStaticText* m_staticText75;
 		wxBitmapButton* m_button7;
-		wxStaticText* m_staticText722;
 		wxTextCtrl* m_width;
-		wxStaticText* m_staticText7221;
 		wxTextCtrl* m_height;
 		wxChoice* m_sd15Res;
 		wxChoice* m_sdXlres;
@@ -262,7 +261,6 @@ class mainUI : public wxFrame
 		wxSpinCtrlDouble* m_cfg;
 		wxButton* m_queue;
 		wxChoice* m_server;
-		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
 		// Virtual event handlers, override them in your derived class

@@ -425,7 +425,7 @@ namespace sd_gui_utils {
                 size.y += (this->enlargeSize.top + this->enlargeSize.bottom) * scaleY;
             }
             wxSize gcSize = this->parent->GetClientSize();
-            std::cout << "Offseting with gc size x: " << gcSize.GetWidth() << ", y: " << gcSize.GetHeight() << std::endl;
+            //std::cout << "Offseting with gc size x: " << gcSize.GetWidth() << ", y: " << gcSize.GetHeight() << std::endl;
             int resultX = addBorder ? this->borderSize : 0;
             int resultY = addBorder ? this->borderSize : 0;
 

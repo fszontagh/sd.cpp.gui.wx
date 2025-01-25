@@ -209,7 +209,6 @@ public:
     }
 
     void DeleteByServerId(const std::string& serverId) {
-        std::cout << "TreeListManager::DeleteByServerId: " << serverId << std::endl;
         if (serverId.empty()) {
             return;
         }
@@ -408,7 +407,6 @@ private:
         if (folderGroupName.empty()) {
             return treeListCtrl->GetRootItem();
         }
-        // std::cout << "folderGroupName: " << folderGroupName << std::endl;
         std::vector<std::string> groups;
         SplitFolderGroupName(wxString::FromUTF8Unchecked(folderGroupName), groups);
 
