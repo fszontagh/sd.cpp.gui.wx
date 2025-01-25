@@ -588,19 +588,6 @@ void MainWindowUI::m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) {
     this->CheckQueueButton();
 }
 
-void MainWindowUI::onJobsStart(wxCommandEvent& event) {
-    // TODO: Implement onJobsStart
-    this->qmanager->RestartQueue();
-}
-
-void MainWindowUI::onJobsPause(wxCommandEvent& event) {
-    this->qmanager->PauseAll();
-}
-
-void MainWindowUI::onJobsDelete(wxCommandEvent& event) {
-    // this->qmanager->RestartQueue();
-}
-
 void MainWindowUI::OnJobListItemActivated(wxDataViewEvent& event) {
     // implemented in OnJobListItemSelection
 }
@@ -1976,7 +1963,9 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
         auto taesd = this->ModelManager->getIntoPtr(item.params.taesd_path);
         if (taesd == nullptr) {
             this->writeLog(_("Taesd file not found: " + item.params.taesd_path), true);
-        } else {
+            // TODO: search by hash if this is a remote job
+        }
+        if (taesd) {
             for (int i = 0; i < this->m_taesd->GetCount(); i++) {
                 auto teasdModel = this->m_taesd->GetClientData(i);
                 if (teasdModel != nullptr) {
@@ -2298,7 +2287,7 @@ MainWindowUI::~MainWindowUI() {
     this->modelImagePreviews.clear();
 
     for (auto& b : this->jobImagePreviews) {
-        delete b;
+        b.second.bitmap->Destroy();
     }
     this->jobImagePreviews.clear();
     this->TaskBar->Destroy();
@@ -3937,14 +3926,8 @@ void MainWindowUI::OnCivitAiThreadMessage(wxThreadEvent& e) {
 void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item) {
     this->m_joblist_item_details->DeleteAllItems();
     if (item == nullptr) {
-        if (this->previewImageList != nullptr && this->previewImageList->RemoveAll()) {
-            this->previewImageList->Destroy();
-            this->previewImageList = nullptr;
-        }
-        this->previewImageList = std::make_shared<wxImageList>(256, 256);
-        this->previewImageList->Create(256, 256);
         for (auto _t : this->jobImagePreviews) {
-            _t->Destroy();
+            _t.second.bitmap->Destroy();
         }
         this->jobImagePreviews.clear();
         return;
@@ -4149,8 +4132,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
         }
 
         if (item->params.vae_path.empty() == false) {
+            wxString vae_path = wxString::FromUTF8Unchecked(item->params.vae_path);
+            if (item->server.empty() == false) {
+                vae_path.SubString(65, -1);
+            }
             data.push_back(wxVariant(_("VAE")));
-            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.vae_path)));
+            data.push_back(wxVariant(vae_path));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
@@ -4186,8 +4173,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
         }
 
         if (item->params.taesd_path.empty() == false) {
+            wxString taesd_path = wxString::FromUTF8Unchecked(item->params.taesd_path);
+            if (item->server.empty() == false) {
+                taesd_path.SubString(65, -1);
+            }
             data.push_back(wxVariant(_("TAESD")));
-            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.taesd_path)));
+            data.push_back(wxVariant(taesd_path));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
         }
@@ -4281,130 +4272,209 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         }
     }
 
-    for (auto _t : this->jobImagePreviews) {
-        _t->Destroy();
-    }
-    this->jobImagePreviews.clear();
     if (item->image_info.empty()) {
+        // Töröljük az összes meglévő bitmapet, ha az image_info üres
+        for (auto& [id, preview] : this->jobImagePreviews) {
+            if (preview.bitmap) {
+                preview.bitmap->Destroy();
+            }
+        }
+        this->jobImagePreviews.clear();
         return;
     }
+
     int index = 0;
-    for (auto img : item->image_info) {
-        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx, md5: %s"), img.width, img.height, img.id);
-        if (!std::filesystem::exists(img.target_filename)) {
-            if (img.server_id.empty() == false) {
-                wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, cloud_download_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
-                bitmap->SetToolTip(tooltip);
-                this->bSizer8911->Add(bitmap, 0, wxALL, 2);
-                this->jobImagePreviews.emplace_back(bitmap);
-                if (this->mapp->cfg->remote_download_images_immediately == false) {
+    for (const auto& img : item->image_info) {
+        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx \nmd5: %s"), img.width, img.height, img.id);
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::CONTROLNET)) {
+            tooltip.Append(_("\nControlnet image"));
+        }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::INITIAL)) {
+            tooltip.Append(_("\nInitial image"));
+        }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::MASK_INPAINT)) {
+            tooltip.Append(_("\nInpaint mask image"));
+        }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::MASK_OUTPAINT)) {
+            tooltip.Append(_("\nOutpaint mask image"));
+        }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::MASK)) {
+            tooltip.Append(_("\nMask image"));
+        }
+
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::ORIGINAL)) {
+            tooltip.Append(_("\nOriginal image"));
+        }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::GENERATED)) {
+            tooltip.Append(_("\nGenerated image"));
+        }
+
+        if (this->jobImagePreviews.contains(img.id)) {
+            auto& preview = this->jobImagePreviews[img.id];
+            if (preview.is_ok) {
+                // Ha a kép már rendben van, nincs teendő
+                continue;
+            }
+
+            if (preview.need_to_download && wxFileExists(img.target_filename)) {
+                // Ha a fájl időközben letöltődött, frissítjük a bitmapet
+                auto resized = sd_gui_utils::cropResizeImage(
+                    wxString::FromUTF8Unchecked(img.target_filename), 256, 256,
+                    wxColour(51, 51, 51, wxALPHA_TRANSPARENT),
+                    wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
+                preview.bitmap->SetBitmap(resized);
+                preview.bitmap->SetToolTip(tooltip);
+                preview.is_ok              = true;
+                preview.need_to_download   = false;
+                preview.download_requested = false;
+                continue;
+            }
+
+            if (preview.need_to_download && !preview.download_requested) {
+                // Ha a letöltés szükséges, de még nem lett kérve
+                preview.bitmap->SetBitmap(cloud_download_png_to_wx_bitmap());
+                preview.bitmap->SetToolTip(tooltip);
+                preview.download_requested = true;
+
+                if (!this->mapp->cfg->remote_download_images_immediately) {
                     auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
                     if (srv) {
                         srv->RequestImages(img.jobid);
-                        bitmap->SetClientObject(new sd_gui_utils::StringClientData(img.id));
+                    }
+                }
+                continue;
+            }
+        } else {
+            // Új kép hozzáadása, ha még nem szerepel a listában
+            wxStaticBitmap* bitmap = nullptr;
+            if (!wxFileExists(img.target_filename)) {
+                // Ha a kép nem érhető el lokálisan
+                bitmap                         = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, !img.server_id.empty() ? cloud_download_png_to_wx_bitmap() : blankimage_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+                this->jobImagePreviews[img.id] = {bitmap, true, true, false, true};
+                if (!this->mapp->cfg->remote_download_images_immediately && !img.server_id.empty()) {
+                    auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
+                    if (srv) {
+                        srv->RequestImages(img.jobid);
                     }
                 }
             } else {
-                wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
-                bitmap->SetToolTip(tooltip);
-                this->bSizer8911->Add(bitmap, 0, wxALL, 2);
-                this->jobImagePreviews.emplace_back(bitmap);
+                // Ha a kép lokálisan elérhető
+                auto resized = sd_gui_utils::cropResizeImage(
+                    wxString::FromUTF8Unchecked(img.target_filename), 256, 256,
+                    wxColour(51, 51, 51, wxALPHA_TRANSPARENT),
+                    wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
+                bitmap                         = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
+                this->jobImagePreviews[img.id] = {bitmap, false, false, true, false};
             }
 
-        } else {
-            auto resized           = sd_gui_utils::cropResizeImage(wxString::FromUTF8Unchecked(img.target_filename), 256, 256, wxColour(51, 51, 51, wxALPHA_TRANSPARENT), wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
-            wxStaticBitmap* bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
             bitmap->SetToolTip(tooltip);
-            bitmap->Hide();
             this->bSizer8911->Add(bitmap, 0, wxALL, 2);
-            bitmap->Show();
-            this->jobImagePreviews.emplace_back(bitmap);
-            bitmap->Bind(wxEVT_LEFT_DCLICK, [img](wxMouseEvent& event) {
-                wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
-                event.Skip();
-            });
-            // rightclick
-            bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, item, this, index](wxMouseEvent& event) {
-                event.Skip();
-                wxMenu* menu = new wxMenu();
-                // menu->Append(99,tooltip);
-                // menu->Enable(99,false);
-                menu->Append(6, _("Open image"));
-                menu->Append(7, _("Open parent folder"));
-                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
-                    menu->AppendSeparator();
-                    menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + index));
-                    menu->Append(1, _("Copy prompts to text2img"));
-                    menu->Append(2, _("Copy prompts to img2img"));
-                    menu->Append(3, _("Send the image to img2img"));
-                    menu->Append(5, _("Upscale"));
-                }
-                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
-                    menu->AppendSeparator();
-                    menu->Append(8, _("Send image to the controlnet image"));
-                }
+            this->AddContextMenuToJobImagePreview(bitmap, item, img, index);
+        }
 
-                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL) ||
-                    sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
-                    menu->Append(3, _("Send the image to img2img"));
-                }
-                if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK)) {
-                    menu->AppendSeparator();
-                    menu->Append(9, _("Send image to img2img mask"));
-                }
-
-                menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item, index](wxCommandEvent& evt) {
-                    evt.Skip();
-                    auto id = evt.GetId();
-                    switch (id) {
-                        case 0: {
-                            this->m_seed->SetValue(item->params.seed + index);
-                        } break;
-                        case 1: {
-                            this->m_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
-                            this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
-                        } break;
-                        case 2: {
-                            this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
-                            this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
-                        } break;
-                        case 3: {
-                            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.target_filename), true);
-                            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG);
-                        } break;
-                        case 5: {
-                            this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
-                            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
-                        } break;
-                        case 6: {
-                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
-                        } break;
-                        case 7: {
-                            wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.target_filename).parent_path().string()));
-                        } break;
-                        case 8: {
-                            this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
-                        } break;
-                        case 9: {
-                            this->m_inpaintOpenMask->SetPath(wxString::FromUTF8Unchecked(img.target_filename));
-                            // i never used like this, but trigger the event:
-                            wxFileDirPickerEvent event(wxEVT_FILEPICKER_CHANGED, this->m_inpaintOpenMask, this->m_inpaintOpenMask->GetId(), this->m_inpaintOpenMask->GetPath());
-                            event.SetEventObject(this->m_inpaintOpenMask);
-                            this->m_inpaintOpenMask->GetEventHandler()->ProcessEvent(event);
-                        } break;
-                        default: {
-                            return;
-                        } break;
-                    }
-                });
-                bitmap->PopupMenu(menu);
-                delete menu;
-            });
-            // rightclick
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::GENERATED)) {
             index++;
         }
     }
+
+    // Töröljük a nem használt előnézeteket
+    for (auto it = this->jobImagePreviews.begin(); it != this->jobImagePreviews.end();) {
+        if (std::none_of(item->image_info.begin(), item->image_info.end(),
+                         [&it](const auto& img) { return img.id == it->first; })) {
+            if (it->second.bitmap) {
+                it->second.bitmap->Destroy();
+            }
+            it = this->jobImagePreviews.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
     this->m_scrolledWindow41->FitInside();
+}
+
+void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::shared_ptr<QueueItem> item, const sd_gui_utils::ImageInfo img, int gen_index) {
+    bitmap->Bind(wxEVT_LEFT_DCLICK, [img](wxMouseEvent& event) {
+        wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
+        event.Skip();
+    });
+    // rightclick
+    bitmap->Bind(wxEVT_RIGHT_UP, [img, bitmap, item, this, gen_index](wxMouseEvent& event) {
+        event.Skip();
+        wxMenu* menu = new wxMenu();
+        // menu->Append(99,tooltip);
+        // menu->Enable(99,false);
+        menu->Append(6, _("Open image"));
+        menu->Append(7, _("Open parent folder"));
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
+            menu->AppendSeparator();
+            menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + gen_index));
+            menu->Append(1, _("Copy prompts to text2img"));
+            menu->Append(2, _("Copy prompts to img2img"));
+            menu->Append(3, _("Send the image to img2img"));
+            menu->Append(5, _("Upscale"));
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
+            menu->AppendSeparator();
+            menu->Append(8, _("Send image to the controlnet image"));
+        }
+
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL) ||
+            sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::ORIGINAL)) {
+            menu->Append(3, _("Send the image to img2img"));
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK)) {
+            menu->AppendSeparator();
+            menu->Append(9, _("Send image to img2img mask"));
+        }
+
+        menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item, gen_index](wxCommandEvent& evt) {
+            evt.Skip();
+            auto id = evt.GetId();
+            switch (id) {
+                case 0: {
+                    this->m_seed->SetValue(item->params.seed + gen_index);
+                } break;
+                case 1: {
+                    this->m_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
+                    this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
+                } break;
+                case 2: {
+                    this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.prompt));
+                    this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(item->params.negative_prompt));
+                } break;
+                case 3: {
+                    this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.target_filename), true);
+                    this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG);
+                } break;
+                case 5: {
+                    this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
+                    this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
+                } break;
+                case 6: {
+                    wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(img.target_filename));
+                } break;
+                case 7: {
+                    wxLaunchDefaultApplication(wxString::FromUTF8Unchecked(std::filesystem::path(img.target_filename).parent_path().string()));
+                } break;
+                case 8: {
+                    this->onControlnetImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
+                } break;
+                case 9: {
+                    this->m_inpaintOpenMask->SetPath(wxString::FromUTF8Unchecked(img.target_filename));
+                    // i never used like this, but trigger the event:
+                    wxFileDirPickerEvent event(wxEVT_FILEPICKER_CHANGED, this->m_inpaintOpenMask, this->m_inpaintOpenMask->GetId(), this->m_inpaintOpenMask->GetPath());
+                    event.SetEventObject(this->m_inpaintOpenMask);
+                    this->m_inpaintOpenMask->GetEventHandler()->ProcessEvent(event);
+                } break;
+                default: {
+                    return;
+                } break;
+            }
+        });
+        bitmap->PopupMenu(menu);
+        delete menu;
+    });
 }
 std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> item, wxEvtHandler* eventHandler) {
     std::lock_guard<std::mutex> lock(this->qmanager->GetMutex());

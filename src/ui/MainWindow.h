@@ -76,9 +76,6 @@ class mainUI : public wxFrame
 		wxPanel* m_panel31;
 		wxNotebook* m_notebook1302;
 		wxPanel* m_jobs_panel;
-		wxButton* m_start_jobs;
-		wxButton* m_pause_jobs;
-		wxButton* m_delete_all_jobs;
 		wxStaticText* m_static_number_of_jobs;
 		wxDataViewListCtrl* m_joblist;
 		wxDataViewColumn* m_dataViewListColumn32;
@@ -191,7 +188,6 @@ class mainUI : public wxFrame
 		wxDataViewColumn* m_dataViewListColumn11;
 		wxDataViewColumn* m_dataViewListColumn21;
 		wxHtmlWindow* m_model_details_description;
-		wxTextCtrl* logs;
 		wxScrolledWindow* m_promptAndFluxPanel;
 		wxPanel* m_promptPanel;
 		wxStaticText* m_staticText73;
@@ -237,8 +233,8 @@ class mainUI : public wxFrame
 		wxChoice* m_taesd;
 		wxStaticLine* m_staticline8;
 		wxStaticText* m_staticText233;
-		wxSpinCtrl* m_seed;
 		wxBitmapButton* m_random_seed;
+		wxSpinCtrl* m_seed;
 		wxStaticText* m_staticText75;
 		wxBitmapButton* m_button7;
 		wxTextCtrl* m_width;
@@ -261,6 +257,7 @@ class mainUI : public wxFrame
 		wxSpinCtrlDouble* m_cfg;
 		wxButton* m_queue;
 		wxChoice* m_server;
+		wxTextCtrl* logs;
 		wxStatusBar* m_statusBar166;
 
 		// Virtual event handlers, override them in your derived class
@@ -274,9 +271,6 @@ class mainUI : public wxFrame
 		virtual void onModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onTypeSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void m_notebook1302OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
-		virtual void onJobsStart( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onJobsPause( wxCommandEvent& event ) { event.Skip(); }
-		virtual void onJobsDelete( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemActivated( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void onContextMenu( wxDataViewEvent& event ) { event.Skip(); }
 		virtual void OnJobListItemSelection( wxDataViewEvent& event ) { event.Skip(); }

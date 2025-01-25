@@ -43,9 +43,6 @@ protected:
     void onSelectPreset(wxCommandEvent& event) override;
     void onDeletePreset(wxCommandEvent& event) override;
     void m_notebook1302OnNotebookPageChanged(wxNotebookEvent& event) override;
-    void onJobsStart(wxCommandEvent& event) override;
-    void onJobsPause(wxCommandEvent& event) override;
-    void onJobsDelete(wxCommandEvent& event) override;
     void OnJobListItemActivated(wxDataViewEvent& event) override;
     void OnJobListItemKeyDown(wxKeyEvent& event) override;
     void onContextMenu(wxDataViewEvent& event) override;
@@ -143,7 +140,16 @@ private:
     std::string usingBackend;
 
     std::vector<wxStaticBitmap*> modelImagePreviews;
-    std::vector<wxStaticBitmap*> jobImagePreviews;
+
+    struct JobImagePreview {
+        wxStaticBitmap* bitmap  = nullptr;
+        bool need_to_download   = false;
+        bool local_missing      = false;
+        bool is_ok              = false;
+        bool download_requested = false;
+    };
+    // store the image_info hash -> wxStaticBitmap
+    std::map<std::string, JobImagePreview> jobImagePreviews;
 
     std::vector<std::shared_ptr<sd_gui_utils::networks::TcpClient>> tcpClients;
 
@@ -168,7 +174,6 @@ private:
     int init_width  = 512;
     int init_height = 512;
 
-    std::shared_ptr<wxImageList> previewImageList;
     std::vector<std::thread*> threads;
     wxBitmap ControlnetOrigPreviewBitmap;
     wxBitmap AppOrigPlaceHolderBitmap;
@@ -202,6 +207,7 @@ private:
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item);
     void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem);
+    void AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::shared_ptr<QueueItem> item, const sd_gui_utils::ImageInfo img, int gen_index);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
     void ProcessOutputThread();
