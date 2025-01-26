@@ -6,7 +6,7 @@ SocketApp::SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent)
     if (ret.m_success) {
         this->parent->sendLogEvent("Server started on  " + std::string(listenAddr) + ":" + std::to_string(port));
     } else {
-        this->parent->sendLogEvent("Error: " + ret.m_msg, wxLOG_Error);
+        this->parent->sendLogEvent("Server error: " + ret.m_msg, wxLOG_Error);
         this->needToRun = false;
     }
 }

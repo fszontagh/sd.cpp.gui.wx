@@ -8,8 +8,8 @@ public:
 
     // stdout/stderr captured by parent
     inline static void HandleSDLog(sd_log_level_t level, const char* text, void* data) {
-        std::string msg = std::string(text);
-        if (msg.empty()) {
+        wxString msg(text);
+        if (msg.IsEmpty()) {
             return;
         }
         auto instance = static_cast<ApplicationLogic*>(data);
@@ -17,21 +17,22 @@ public:
         instance->updateLastMessageTime();
         switch (level) {
             case sd_log_level_t::SD_LOG_DEBUG: {
-                std::cout << "[DEBUG] " << msg << std::endl;
+                wxLogDebug(msg);
             } break;
             case sd_log_level_t::SD_LOG_INFO: {
-                std::cout << "[INFO] " << msg << std::endl;
+                wxLogInfo(msg);
             } break;
             case sd_log_level_t::SD_LOG_ERROR: {
-                std::cout << "[ERROR] " << msg << std::endl;
+                wxLogError(msg);
             } break;
             case sd_log_level_t::SD_LOG_WARN: {
-                std::cout << "[WARN] " << msg << std::endl;
+                wxLogWarning(msg);
             } break;
             default: {
-                std::cout << msg << std::endl;
+                wxLogMessage(msg);
             } break;
         }
+        std::cout.flush();
     }
     inline static void HandleHashCallback(size_t readed, std::string hash, void* data) {
         ApplicationLogic* instance = static_cast<ApplicationLogic*>(data);
@@ -127,21 +128,6 @@ private:
     bool loadSdModel();
 
     std::string handleSdImage(sd_image_t& image);
-
-    /**
-     * @brief Send a status update to the parent process
-     *
-     * @param status The new status of the current item
-     * @param event The event that triggered the status update
-     * @param reason Optional reason string to be sent with the status message
-     * @param sleep Optional sleep time in milliseconds before sending the message
-     *
-     * This function will update the current item's status and event in the
-     * shared memory, and then send the updated item to the parent process.
-     * If a reason string is provided, it will be stored in the current item's
-     * status_message field. If a sleep time is provided, the function will
-     * sleep for that amount of time before sending the message.
-     */
     inline void sendStatus(QueueStatus status, QueueEvents event, const std::string& reason = "", unsigned int sleep = 0) {
         if (this->currentItem == nullptr) {
             return;

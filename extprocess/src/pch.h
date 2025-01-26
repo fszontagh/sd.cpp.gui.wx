@@ -29,8 +29,9 @@
 #include <wx/translation.h>
 #include <wx/filename.h>
 #include <wx/image.h>
+#include <wx/log.h>
 
-
+#include "libs/CustomLogFormatter.h"
 #include "helpers/sd.hpp"
 #include "helpers/sslUtils.hpp"
 #include "helpers/base64.h"

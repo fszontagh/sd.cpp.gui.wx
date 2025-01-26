@@ -24,13 +24,13 @@ public:
     std::shared_ptr<QueueItem> DuplicateItem(uint64_t job_id) {
         std::lock_guard<std::mutex> lock(this->mutex);
         if (this->jobs.contains(job_id)) {
-            auto oldJob            = this->jobs.at(job_id);
-            auto newJob            = std::make_shared<QueueItem>(*oldJob);
-            newJob->id             = this->GenerateNextId();
-            newJob->status         = QueueStatus::PAUSED;
-            newJob->created_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            newJob->server         = this->server_id;
-            newJob->RemoveGeneratedImages(); // clean up generated images
+            auto oldJob        = this->jobs.at(job_id);
+            auto newJob        = std::make_shared<QueueItem>(*oldJob);
+            newJob->id         = this->GenerateNextId();
+            newJob->status     = QueueStatus::PAUSED;
+            newJob->created_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            newJob->server     = this->server_id;
+            newJob->RemoveGeneratedImages();  // clean up generated images
             this->jobs[newJob->id] = newJob;
             this->lastID           = (this->lastID < newJob->id) ? newJob->id : this->lastID;
             this->StoreJobInFile(newJob);
@@ -46,9 +46,9 @@ public:
             auto id  = this->GenerateNextId();
             item->id = id;
         }
-        item->status     = QueueStatus::PENDING;
-        item->created_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        item->server     = this->server_id;
+        item->status         = QueueStatus::PENDING;
+        item->created_at     = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        item->server         = this->server_id;
         this->jobs[item->id] = item;
         this->lastID         = (this->lastID < item->id) ? item->id : this->lastID;
 
@@ -101,7 +101,8 @@ public:
             }
             if (j->IsUpdated(item)) {
                 auto oldJob = *j;
-                *j          = item;
+                //*j          = item;
+                j->ConvertFromSharedMemory(item);
 
                 if (j->status == QueueStatus::DONE) {
                     j->prepareImagesForClients(target_dir);  // convert images to base64 and generate image ID

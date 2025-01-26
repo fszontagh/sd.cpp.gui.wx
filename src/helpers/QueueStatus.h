@@ -9,11 +9,12 @@ enum QueueStatus {
     MODEL_LOADING = 1 << 4,  // non deletable, running
     DONE          = 1 << 5,  // deletable
     HASHING       = 1 << 6,  // non deletable, running
-    HASHING_DONE  = 1 << 7   // non deletable, running
+    HASHING_DONE  = 1 << 7,  // non deletable, running,
+    MODEL_FAILED  = 1 << 8   // deletable, not running
 };
 
 namespace QueueStatusFlags {
-    constexpr int DELETABLE_FLAG   = (PENDING | PAUSED | FAILED | DONE);
+    constexpr int DELETABLE_FLAG   = (PENDING | PAUSED | FAILED | DONE | MODEL_FAILED);
     constexpr int RUNNING_FLAG     = (RUNNING | MODEL_LOADING | HASHING | HASHING_DONE);
     constexpr int PAUSABLE_FLAG    = (PENDING | PAUSED);
     constexpr int REQUEUEABLE_FLAG = (RUNNING | HASHING);

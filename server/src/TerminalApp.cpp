@@ -104,12 +104,6 @@ bool TerminalApp::OnInit() {
             return false;
         }
     }
-    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id, this->configData->GetJobsPath());
-    this->snowflakeGenerator = std::make_shared<sd_gui_utils::SnowflakeIDGenerator>(this->configData->server_id);
-
-    if (configData->shared_memory_path.empty()) {
-        configData->shared_memory_path = std::string(SHARED_MEMORY_PATH) + this->configData->server_id;
-    }
 
     if (configData->logfile.empty() == false) {
         configData->logfile = wxFileName(configData->logfile).GetAbsolutePath();
@@ -122,8 +116,22 @@ bool TerminalApp::OnInit() {
         }
         this->logger = new wxLogStderr(this->logfile);
         wxASSERT(this->logger != nullptr);
+        this->logger->SetFormatter(new CustomLogFormatter());
         this->oldLogger = wxLog::GetActiveTarget();
         wxLog::SetActiveTarget(this->logger);
+        if (configData->diffuser_logfile.empty()) {
+            wxFileName diffuser_logfile(configData->logfile);
+            diffuser_logfile.SetExt("diffuser.log");
+            configData->diffuser_logfile = diffuser_logfile.GetAbsolutePath();
+            wxLogInfo("Diffuser log file: %s", configData->diffuser_logfile);
+        }
+    }
+
+    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id, this->configData->GetJobsPath());
+    this->snowflakeGenerator = std::make_shared<sd_gui_utils::SnowflakeIDGenerator>(this->configData->server_id);
+
+    if (configData->shared_memory_path.empty()) {
+        configData->shared_memory_path = std::string(SHARED_MEMORY_PATH) + this->configData->server_id;
     }
 
     if (this->configData->model_paths.checkpoints.empty()) {
@@ -174,6 +182,10 @@ bool TerminalApp::OnInit() {
         return false;
     }
     std::string dllName = "stable-diffusion_";
+    if (backend_type_to_str.contains(this->configData->backend) == false) {
+        wxLogError("Unknown backend type: '%d'", this->configData->backend);
+        return false;
+    }
     dllName += backend_type_to_str.at(this->configData->backend);
 
     // get the library
@@ -194,7 +206,7 @@ bool TerminalApp::OnInit() {
     try {
         this->sharedLibrary->load();
     } catch (std::exception& e) {
-        wxLogError(e.what());
+        wxLogError("Error on loading shared library: '%s'", e.what());
         return false;
     }
 
@@ -208,6 +220,7 @@ bool TerminalApp::OnInit() {
     this->queueManager->LoadJobListFromDir();
     wxLogInfo("QueueManager loaded %" PRIu64 " jobs", this->queueManager->GetJobCount());
 
+    this->extProcessParams.Add(this->configData->diffuser_logfile);
     this->extProcessParams.Add(this->configData->shared_memory_path);
     this->extProcessNeedToRun.store(true);
     return true;
@@ -216,12 +229,13 @@ bool TerminalApp::OnInit() {
 
 int TerminalApp::OnExit() {
     wxLogInfo("Exiting...");
+    std::cout << "Exiting..." << std::endl;
 
     if (this->socket != nullptr) {
         this->socket->stop();
     }
 
-    if (this->subprocess != nullptr) {
+    if (this->subprocess.load() != nullptr) {
         this->extProcessNeedToRun.store(false);
     }
     this->queueNeedToRun.store(false);
@@ -255,14 +269,19 @@ int TerminalApp::OnExit() {
 int TerminalApp::OnRun() {
     this->logThread = std::thread(&TerminalApp::ProcessLogQueue, this);
     this->threads.emplace_back(&TerminalApp::ProcessOutputThread, this);
+    this->threads.emplace_back(&TerminalApp::ExternalProcessRunner, this);
+    this->threads.emplace_back(&TerminalApp::JobQueueThread, this);
 
     std::thread tr([this]() {
+        this->sendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
         while (this->eventHandlerReady.load() == false) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            this->sendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
+        this->sendLogEvent("Waiting for external process to start", wxLOG_Info);
         while (this->extProcessNeedToRun.load() == true && this->extprocessIsRunning.load() == false) {
             this->sendLogEvent("Waiting for external process to start", wxLOG_Info);
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         if (this->extProcessNeedToRun.load() == false && this->extprocessIsRunning.load() == false) {
@@ -272,17 +291,16 @@ int TerminalApp::OnRun() {
         }
         this->sendLogEvent("Starting socket server", wxLOG_Info);
         try {
-            this->socket = new SocketApp(this->configData->host.c_str(), this->configData->port, this);
+            // this->socket = new SocketApp(this->configData->host.c_str(), this->configData->port, this);
+            this->socket = std::make_shared<SocketApp>(this->configData->host.c_str(), this->configData->port, this);
         } catch (std::exception& e) {
             this->sendLogEvent(wxString::Format("Socket server error: %s", e.what()), wxLOG_Error);
         }
 
         while (this->socket->isRunning() && this->eventHandlerReady.load() && this->extProcessNeedToRun.load()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-
-        delete this->socket;
-        this->socket = nullptr;
+        this->socket->stop();
         // stop the external process too
         this->extProcessNeedToRun.store(false);
         this->sendLogEvent("Socket server stopped", wxLOG_Info);
@@ -291,8 +309,7 @@ int TerminalApp::OnRun() {
 
     this->threads.emplace_back(std::move(tr));
 
-    this->threads.emplace_back(&TerminalApp::ExternalProcessRunner, this);
-    this->threads.emplace_back(&TerminalApp::JobQueueThread, this);
+
 
     return wxAppConsole::OnRun();
 }
@@ -300,22 +317,25 @@ int TerminalApp::OnRun() {
 void TerminalApp::ProcessOutputThread() {
     this->sendLogEvent("Starting process output monitoring thread", wxLOG_Debug);
     while (this->extProcessNeedToRun.load() == true) {
-        if (this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
-            static char stddata[1024]    = {0};
-            static char stderrdata[1024] = {0};
+        if (this->subprocess.load() != nullptr) {
+            auto state = subprocess_alive(this->subprocess.load());
+            if (state != 0) {
+                static char stddata[1024]    = {0};
+                static char stderrdata[1024] = {0};
 
-            unsigned int size             = sizeof(stderrdata);
-            unsigned int stdout_read_size = 0;
-            unsigned int stderr_read_size = 0;
+                unsigned int size             = sizeof(stderrdata);
+                unsigned int stdout_read_size = 0;
+                unsigned int stderr_read_size = 0;
 
-            stdout_read_size = subprocess_read_stdout(this->subprocess, stddata, size);
-            stderr_read_size = subprocess_read_stderr(this->subprocess, stderrdata, size);
+                stdout_read_size = subprocess_read_stdout(this->subprocess.load(), stddata, size);
+                stderr_read_size = subprocess_read_stderr(this->subprocess.load(), stderrdata, size);
 
-            if (stdout_read_size > 0 && std::string(stddata).find("(null)") == std::string::npos) {
-                this->sendLogEvent(stddata, wxLOG_Info);
-            }
-            if (stderr_read_size > 0 && std::string(stderrdata).find("(null)") == std::string::npos) {
-                this->sendLogEvent(stddata, wxLOG_Error);
+                if (stdout_read_size > 0 && std::string(stddata).find("(null)") == std::string::npos) {
+                    this->sendLogEvent(stddata, wxLOG_Info);
+                }
+                if (stderr_read_size > 0 && std::string(stderrdata).find("(null)") == std::string::npos) {
+                    this->sendLogEvent(stddata, wxLOG_Error);
+                }
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
@@ -327,46 +347,50 @@ void TerminalApp::ExternalProcessRunner() {
         this->sendLogEvent("Subprocess already running", wxLOG_Error);
         return;
     }
-    std::vector<const char*> command_line = {this->extprocessCommand.c_str()};
-    // command_line.push_back(this->extprocessCommand.c_str());
-    wxString params = this->extprocessCommand;
+    std::vector<const char*> command_line;
+    command_line.push_back(this->extprocessCommand.c_str());  // Első paraméter
 
-    int counter = 1;
+    wxString params = this->extprocessCommand;
     for (auto const& p : this->extProcessParams) {
         params.Append(" ");
         params.Append(p);
-        command_line[counter] = p.c_str();
-        counter++;
+        command_line.push_back(p.c_str().AsChar());  // Új paraméterek hozzáadása
     }
 
-    command_line[counter] = nullptr;
+    command_line.push_back(nullptr);
 
-    this->sendLogEvent(wxString::Format("Starting subprocess: %s", params), wxLOG_Info);
-    this->subprocess = new subprocess_s();
-    int result       = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
-    if (this->subprocess == nullptr || result != 0) {
-        this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
+    this->sendLogEvent(wxString::Format("Starting subprocess workdir: '%s' with params: '%s'", wxGetCwd(), params), wxLOG_Info);
+
+    auto sprocess = new subprocess_s();
+    int result    = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, sprocess);
+
+    this->subprocess.store(sprocess);
+    this->extprocessIsRunning.store(true);
+    if (result != 0) {
+        this->sendLogEvent("Failed to create subprocess, result: " + std::to_string(result) + "", wxLOG_Error);
         this->extprocessIsRunning.store(false);
         this->extProcessNeedToRun.store(false);
         return;
     }
-    this->extprocessIsRunning.store(true);
-    this->sendLogEvent(wxString::Format("%s:%d Subprocess created: %d", __FILE__, __LINE__, result), wxLOG_Info);
 
+    this->sendLogEvent("Subprocess started", wxLOG_Info);
+    //wxLog::SetActiveTarget(nullptr);
     while (this->extProcessNeedToRun.load() == true) {
-        if (subprocess_alive(this->subprocess) == 0) {
+        if (subprocess_alive(this->subprocess.load()) == 0) {
             this->sendLogEvent("Subprocess stopped", wxLOG_Error);
             this->extprocessIsRunning.store(false);
             if (this->queueManager != nullptr) {
                 auto current_job = this->queueManager->GetCurrentJob();
                 if (current_job != nullptr) {
                     current_job->status = QueueStatus::FAILED;
-                    this->itemUpdateEvent(current_job);
+                    // this->itemUpdateEvent(current_job);
                     this->queueManager->DeleteCurrentJob();
                 }
             }
-            // restart
-            int result = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
+            auto sprocess = this->subprocess.load();
+            int result    = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, sprocess);
+            this->subprocess.store(sprocess);
+
             if (this->subprocess == nullptr) {
                 this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
                 this->extprocessIsRunning.store(false);
@@ -375,7 +399,6 @@ void TerminalApp::ExternalProcessRunner() {
             this->extprocessIsRunning.store(false);
             this->sendLogEvent(wxString::Format("%s:%d Subprocess created: %d", __FILE__, __LINE__, result), wxLOG_Info);
         }
-        // handle shared memory
         {
             std::unique_lock<std::mutex> lock(this->shmMutex);
             std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
@@ -393,7 +416,7 @@ void TerminalApp::ExternalProcessRunner() {
     }
     this->sendLogEvent("Subprocess stopped", wxLOG_Error);
     this->extprocessIsRunning.store(false);
-    subprocess_terminate(this->subprocess);
+    subprocess_terminate(this->subprocess.load());
     if (this->queueManager != nullptr) {
         auto current_job = this->queueManager->GetCurrentJob();
         if (current_job != nullptr) {
@@ -674,11 +697,12 @@ bool TerminalApp::LoadModelFiles() {
 
 void TerminalApp::ProcessLogQueue() {
     while (!this->eventHanlderExit.load()) {
+        // std::lock_guard<std::mutex> lock(this->eventMutex);
         while (!this->eventQueue.IsEmpty()) {
             auto event = this->eventQueue.Pop();
             event();
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
 void TerminalApp::CalcModelHashes() {

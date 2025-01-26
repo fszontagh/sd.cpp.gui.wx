@@ -5,6 +5,7 @@
 #include "libs/SharedLibrary.h"
 #include "libs/SharedMemoryManager.h"
 #include "libs/SnowFlakeIdGenerarot.hpp"
+#include "libs/subprocess.h"
 
 wxDECLARE_APP(TerminalApp);
 
@@ -22,7 +23,7 @@ public:
         if (message.empty()) {
             return;
         }
-
+        std::lock_guard<std::mutex> lock(this->logMutex);
         eventQueue.Push([message, level]() {
             switch (level) {
                 case wxLOG_Info:
@@ -42,11 +43,13 @@ public:
                     break;
             }
         });
+        wxLog::FlushActive();
     }
     inline void sendDisconnectEvent(SocketApp::clientInfo client) {
         if (client.apikey.empty() || client.client_id == 0) {
             return;
         }
+        std::lock_guard<std::mutex> lock(this->eventMutex);
         eventQueue.Push([this, client]() {
             std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
             nlohmann::json json        = client;
@@ -59,6 +62,7 @@ public:
         if (client.client_id == 0) {
             return;
         }
+        std::lock_guard<std::mutex> lock(this->eventMutex);
         eventQueue.Push([this, client]() {
             std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
             nlohmann::json json        = client;
@@ -68,15 +72,18 @@ public:
         });
     }
     inline void itemUpdateEvent(std::shared_ptr<QueueItem> item) {
-        eventQueue.Push([this, item]() {
-            if (this->queueManager->UpdateCurrentJob(*item, this->configData->GetJobsPath())) {
-                auto converted = item->convertToNetwork((item->status == QueueStatus::DONE ? false : true), this->configData->server_id);
-                sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-                packet.SetData(converted);
-                this->socket->sendMsg(0, packet);  // send to everybody
-                return true;
-            }
-        });
+        if (this->queueNeedToRun.load() && this->extProcessNeedToRun.load()) {
+            std::lock_guard<std::mutex> lock(this->eventMutex);
+            eventQueue.Push([this, item]() {
+                if (this->queueManager->UpdateCurrentJob(*item, this->configData->GetJobsPath())) {
+                    auto converted = item->convertToNetwork((item->status == QueueStatus::DONE ? false : true), this->configData->server_id);
+                    sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                    packet.SetData(converted);
+                    this->socket->sendMsg(0, packet);  // send to everybody
+                    return true;
+                }
+            });
+        }
     }
     inline void JobQueueThread() {
         while (this->queueNeedToRun.load()) {
@@ -89,7 +96,7 @@ public:
                     continue;
                 }
 
-                const nlohmann::json j = *next_job;
+                const nlohmann::json j = next_job->ConvertToSharedMemory();
                 char* data             = new char[j.dump().length() + 1];
                 strcpy(data, j.dump().c_str());
                 this->sharedMemoryManager->write(data, j.dump().length() + 1);
@@ -128,6 +135,9 @@ public:
 private:
     std::atomic<bool> queueNeedToRun{true};
     std::mutex shmMutex;
+    std::mutex eventMutex;
+    std::mutex logMutex;
+    std::mutex processMutex;
     void ExternalProcessRunner();
     void ProcessOutputThread();
     void ProcessLogQueue();
@@ -187,11 +197,11 @@ private:
     bool m_shouldExit                                        = false;
     std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;
     std::shared_ptr<SharedLibrary> sharedLibrary             = nullptr;
-    SocketApp* socket                                        = nullptr;
+    std::shared_ptr<SocketApp> socket                        = nullptr;
     std::FILE* logfile                                       = nullptr;
     wxLogStderr* logger                                      = nullptr;
     wxLog* oldLogger                                         = nullptr;
-    struct subprocess_s* subprocess                          = nullptr;
+    std::atomic<subprocess_s*> subprocess                    = {nullptr};
     wxString extprocessCommand                               = "";
     wxArrayString extProcessParams;
     std::atomic<bool> eventHandlerReady{false};

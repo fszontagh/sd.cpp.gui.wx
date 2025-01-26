@@ -253,10 +253,10 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText64->Wrap( -1 );
 	bSizer106->Add( m_staticText64, 0, wxALL|wxEXPAND, 5 );
 
-	m_joblist_item_details = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 480,-1 ), wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VARIABLE_LINE_HEIGHT|wxDV_VERT_RULES|wxBORDER_DEFAULT );
+	m_joblist_item_details = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 480,-1 ), wxDV_HORIZ_RULES|wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VARIABLE_LINE_HEIGHT|wxDV_VERT_RULES|wxBORDER_DEFAULT );
 	m_dataViewListColumn1 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn2 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_NONE );
+	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
 	bSizer106->Add( m_joblist_item_details, 1, wxALL|wxEXPAND, 5 );
 
 
@@ -1041,6 +1041,21 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer99->Add( m_prompt2, 0, wxEXPAND|wxALL, 1 );
 
+	wxBoxSizer* bSizer10006;
+	bSizer10006 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_prompt_load_prev = new wxButton( m_promptPanel, wxID_ANY, _("Load previous prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10006->Add( m_prompt_load_prev, 0, wxALL, 5 );
+
+	m_prompt_clear = new wxButton( m_promptPanel, wxID_ANY, _("Clear prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10006->Add( m_prompt_clear, 0, wxALL, 5 );
+
+	m_prompt_normalize = new wxButton( m_promptPanel, wxID_ANY, _("Normalize"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10006->Add( m_prompt_normalize, 0, wxALL, 5 );
+
+
+	bSizer99->Add( bSizer10006, 1, wxEXPAND, 5 );
+
 	m_staticText74 = new wxStaticText( m_promptPanel, wxID_ANY, _("Negative prompt:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText74->Wrap( -1 );
 	bSizer99->Add( m_staticText74, 0, wxALL, 5 );
@@ -1056,6 +1071,21 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt->SetMinSize( wxSize( -1,120 ) );
 
 	bSizer99->Add( m_neg_prompt, 0, wxALL|wxEXPAND, 1 );
+
+	wxBoxSizer* bSizer10007;
+	bSizer10007 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_nprompt_load_prev = new wxButton( m_promptPanel, wxID_ANY, _("Load previous neg. prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10007->Add( m_nprompt_load_prev, 0, wxALL, 5 );
+
+	m_nprompt_clear = new wxButton( m_promptPanel, wxID_ANY, _("Clear prompt"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10007->Add( m_nprompt_clear, 0, wxALL, 5 );
+
+	m_nprompt_normalize = new wxButton( m_promptPanel, wxID_ANY, _("Normalize"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer10007->Add( m_nprompt_normalize, 0, wxALL, 5 );
+
+
+	bSizer99->Add( bSizer10007, 1, wxEXPAND, 5 );
 
 	m_staticText49 = new wxStaticText( m_promptPanel, wxID_ANY, _("Prompt presets:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText49->Wrap( -1 );
@@ -1098,7 +1128,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	slgScale->SetDigits( 1 );
 	slgScale->SetToolTip( _("skip layer guidance (SLG) scale, only for DiT models: (default: 0.0)") );
 
-	gSizer4->Add( slgScale, 0, wxALL, 5 );
+	gSizer4->Add( slgScale, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText5221 = new wxStaticText( m_fluxPanel, wxID_ANY, _("Skip layers:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText5221->Wrap( -1 );
@@ -1109,7 +1139,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_skipLayers = new wxTextCtrl( m_fluxPanel, wxID_ANY, _("7,8,9"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_skipLayers->SetToolTip( _("Layers to skip for SLG steps: (default: [7,8,9])") );
 
-	gSizer4->Add( m_skipLayers, 0, wxALL, 5 );
+	gSizer4->Add( m_skipLayers, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText52211 = new wxStaticText( m_fluxPanel, wxID_ANY, _("Skip Layer Start:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText52211->Wrap( -1 );
@@ -1121,7 +1151,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	skipLayerStart->SetDigits( 2 );
 	skipLayerStart->SetToolTip( _("SLG enabling point: (default: 0.01)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
-	gSizer4->Add( skipLayerStart, 0, wxALL, 5 );
+	gSizer4->Add( skipLayerStart, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText522111 = new wxStaticText( m_fluxPanel, wxID_ANY, _("Skip Layer End:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText522111->Wrap( -1 );
@@ -1133,7 +1163,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	skipLayerEnd->SetDigits( 2 );
 	skipLayerEnd->SetToolTip( _("SLG disabling point: (default: 0.2)\nSLG will be enabled at step int([STEPS]*[START]) and disabled at int([STEPS]*[END])") );
 
-	gSizer4->Add( skipLayerEnd, 0, wxALL, 5 );
+	gSizer4->Add( skipLayerEnd, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText52111 = new wxStaticText( m_fluxPanel, wxID_ANY, _("Diffusion Model:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText52111->Wrap( -1 );
@@ -1142,7 +1172,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	gSizer4->Add( m_staticText52111, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_filePickerDiffusionModel = new wxFilePickerCtrl( m_fluxPanel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL|wxFLP_USE_TEXTCTRL );
-	gSizer4->Add( m_filePickerDiffusionModel, 0, wxALL, 5 );
+	gSizer4->Add( m_filePickerDiffusionModel, 0, wxALL|wxEXPAND, 5 );
 
 	m_cleanDiffusionModel = new wxBitmapButton( m_fluxPanel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -1154,28 +1184,28 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	diffusionFlashAttn = new wxCheckBox( m_fluxPanel, wxID_ANY, _("Flash attention"), wxDefaultPosition, wxDefaultSize, 0 );
 	diffusionFlashAttn->SetToolTip( _("Use flash attention in the diffusion model. This will reduce significantly the memory uage (for low vram).\nMight lower quality, since it implies converting k and v to f16.\nThis might crash if it is not supported by the backend.\n\n") );
 
-	gSizer4->Add( diffusionFlashAttn, 0, wxALL, 5 );
+	gSizer4->Add( diffusionFlashAttn, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText52 = new wxStaticText( m_fluxPanel, wxID_ANY, _("ClipL:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText52->Wrap( -1 );
 	gSizer4->Add( m_staticText52, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_filePickerClipL = new wxFilePickerCtrl( m_fluxPanel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL|wxFLP_USE_TEXTCTRL );
-	gSizer4->Add( m_filePickerClipL, 0, wxALL, 5 );
+	gSizer4->Add( m_filePickerClipL, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText521 = new wxStaticText( m_fluxPanel, wxID_ANY, _("ClipG:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText521->Wrap( -1 );
 	gSizer4->Add( m_staticText521, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_filePickerClipG = new wxFilePickerCtrl( m_fluxPanel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL|wxFLP_USE_TEXTCTRL );
-	gSizer4->Add( m_filePickerClipG, 0, wxALL, 5 );
+	gSizer4->Add( m_filePickerClipG, 0, wxALL|wxEXPAND, 5 );
 
 	m_staticText5211 = new wxStaticText( m_fluxPanel, wxID_ANY, _("T5XXL:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText5211->Wrap( -1 );
 	gSizer4->Add( m_staticText5211, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	m_filePickerT5XXL = new wxFilePickerCtrl( m_fluxPanel, wxID_ANY, wxEmptyString, _("Select a file"), _("Model files (*.safetensors;*.gguf)|*.safetensors;*.gguf"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_SMALL|wxFLP_USE_TEXTCTRL );
-	gSizer4->Add( m_filePickerT5XXL, 0, wxALL, 5 );
+	gSizer4->Add( m_filePickerT5XXL, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_fluxPanel->SetSizer( gSizer4 );
@@ -1330,6 +1360,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#else
 	m_width->SetMaxLength( 6 );
 	#endif
+	m_width->SetToolTip( _("Image width") );
+
 	bSizer10011->Add( m_width, 1, wxALL|wxEXPAND, 5 );
 
 	m_height = new wxTextCtrl( m_rightMainPanelScroll, wxID_ANY, _("512"), wxDefaultPosition, wxDefaultSize, wxTE_CENTER|wxTE_NO_VSCROLL );
@@ -1341,7 +1373,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#else
 	m_height->SetMaxLength( 6 );
 	#endif
-	bSizer10011->Add( m_height, 0, wxALL|wxEXPAND, 5 );
+	m_height->SetToolTip( _("Image height") );
+
+	bSizer10011->Add( m_height, 1, wxALL|wxEXPAND, 5 );
 
 
 	bSizer1041->Add( bSizer10011, 0, wxEXPAND|wxALL, 2 );
@@ -1613,9 +1647,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_prompt->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_prompt_load_prev->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnLoadPrevPrompt ), NULL, this );
+	m_prompt_clear->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnClearPrompt ), NULL, this );
+	m_prompt_normalize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnNormalizePrompt ), NULL, this );
 	m_neg_prompt2->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_neg_prompt->Connect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_neg_prompt->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_nprompt_load_prev->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnLoadPrevPrompt ), NULL, this );
+	m_nprompt_clear->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnClearPrompt ), NULL, this );
+	m_nprompt_normalize->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnNormalizePrompt ), NULL, this );
 	m_bpButton25->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
 	m_filePickerDiffusionModel->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
 	m_cleanDiffusionModel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );
@@ -1739,9 +1779,15 @@ mainUI::~mainUI()
 	m_prompt->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
 	m_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnPromptText ), NULL, this );
+	m_prompt_load_prev->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnLoadPrevPrompt ), NULL, this );
+	m_prompt_clear->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnClearPrompt ), NULL, this );
+	m_prompt_normalize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnNormalizePrompt ), NULL, this );
 	m_neg_prompt2->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
 	m_neg_prompt->Disconnect( wxEVT_DROP_FILES, wxDropFilesEventHandler( mainUI::onTxt2ImgFileDrop ), NULL, this );
 	m_neg_prompt->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( mainUI::OnNegPromptText ), NULL, this );
+	m_nprompt_load_prev->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnLoadPrevPrompt ), NULL, this );
+	m_nprompt_clear->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnClearPrompt ), NULL, this );
+	m_nprompt_normalize->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnNormalizePrompt ), NULL, this );
 	m_bpButton25->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onWhatIsThis ), NULL, this );
 	m_filePickerDiffusionModel->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::onFilePickerDiffusionModel ), NULL, this );
 	m_cleanDiffusionModel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onCleanDiffusionModel ), NULL, this );

@@ -8,6 +8,7 @@
 #include <ostream>
 #include <random>
 #include <cinttypes>
+#include <stack>
 
 
 #include "wx/wxprec.h"
@@ -33,6 +34,7 @@
 #include "wx/apptrait.h"
 #include "wx/intl.h"
 #include "wx/translation.h"
+#include "wx/regex.h"
 #include "wx/image.h"
 #include "wx/wxcrtbase.h"
 #include "wx/tokenzr.h"

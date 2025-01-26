@@ -37,6 +37,7 @@
 #include "helpers/QueueItem.h"
 
 #include "ServerConfig.h"
+#include "libs/CustomLogFormatter.h"
 
 #include "libs/json.hpp"
 #include "network/RemoteModelInfo.h"

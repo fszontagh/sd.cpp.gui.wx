@@ -3,8 +3,6 @@
 
 #include "sockets-cpp/TcpServer.h"
 
-inline auto LogPrinter = [](const std::string& strLogMsg) { std::cout << strLogMsg << std::endl; };
-
 class TerminalApp;
 
 class SocketApp {

@@ -43,9 +43,10 @@ struct ServerConfig {
     uint16_t port              = 8191;
     int max_clients            = 10;
     size_t max_request_size    = 1024 * 1024 * 1024;
-    unsigned int tcp_keepalive = 30;  // kep alive period
+    unsigned int tcp_keepalive = 30;  // keep alive period
     unsigned int cpu_cores     = 1;
     std::string logfile;
+    std::string diffuser_logfile;
     backend_type backend = backend_type::AVX;
     std::string authkey;
     std::string shared_memory_path    = "";
@@ -78,6 +79,7 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohma
     nlohmann_json_j["max_clients"]          = nlohmann_json_t.max_clients;
     nlohmann_json_j["max_request_size"]     = nlohmann_json_t.max_request_size;
     nlohmann_json_j["logfile"]              = nlohmann_json_t.logfile;
+    nlohmann_json_j["diffuser_logfile"]     = nlohmann_json_t.diffuser_logfile;
     nlohmann_json_j["backend"]              = backend_type_to_str.at(nlohmann_json_t.backend);
     nlohmann_json_j["authkey"]              = nlohmann_json_t.authkey;
     nlohmann_json_j["unauthorized_timeout"] = nlohmann_json_t.unauthorized_timeout;
@@ -103,6 +105,7 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
     nlohmann_json_t.max_clients      = nlohmann_json_j.value("max_clients", nlohmann_json_default_obj.max_clients);
     nlohmann_json_t.max_request_size = nlohmann_json_j.value("max_request_size", nlohmann_json_default_obj.max_request_size);
     nlohmann_json_t.logfile          = nlohmann_json_j.value("logfile", nlohmann_json_default_obj.logfile);
+    nlohmann_json_t.diffuser_logfile = nlohmann_json_j.value("diffuser_logfile", nlohmann_json_default_obj.diffuser_logfile);
     nlohmann_json_t.server_id        = nlohmann_json_j.value("server_id", nlohmann_json_default_obj.server_id);
     nlohmann_json_t.data_path        = nlohmann_json_j.value("data_path", nlohmann_json_default_obj.data_path);
 

@@ -60,7 +60,6 @@ namespace sd_gui_utils {
             }
 
             inline void stop() {
-                std::cout << "TcpClient stop" << std::endl;
                 this->m_client.finish();
                 this->connected.store(false);
 
@@ -75,36 +74,30 @@ namespace sd_gui_utils {
             }
             void SetOnConnectCallback(TcpClientOnConnect callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnConnectCallback" << std::endl;
                 callbacks_.onConnectClb = std::move(callback);
             }
 
             void SetOnMessageCallback(TcpClientOnMessage callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnMessageCallback" << std::endl;
                 callbacks_.onMessageClb = std::move(callback);
             }
 
             void SetOnDisconnectCallback(TcpClientOntDisconnect callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnDisconnectCallback" << std::endl;
                 callbacks_.onDisconnectClb = std::move(callback);
             }
 
             void SetOnErrorCallback(TcpClientOnError callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnErrorCallback" << std::endl;
                 callbacks_.onErrorClb = std::move(callback);
             }
 
             void SetOnStopCallback(TcpClientOnStop callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnStopCallback" << std::endl;
                 callbacks_.onStopClb = std::move(callback);
             }
             void SetOnAuthRequestCallback(TcpClientOnAuthRequest callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
-                std::cout << "SetOnAuthRequestCallback" << std::endl;
                 callbacks_.onAuthRequestClb = std::move(callback);
             }
         };

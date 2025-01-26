@@ -794,6 +794,25 @@ namespace sd_gui_utils {
         std::string path;
     };
 
+    struct LastItemNotification {
+    private:
+        QueueStatus status;
+        uint64_t id = 0;
+        std::mutex mutex;
+
+    public:
+        LastItemNotification() = default;
+        bool changed(QueueStatus status, uint64_t id) {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            return this->status != status || this->id != id;
+        }
+        void update(QueueStatus status, uint64_t id) {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->status = status;
+            this->id     = id;
+        }
+    };
+
     inline void to_json(nlohmann::json& j, const generator_preset& p) {
         j = nlohmann::json{
             {"cfg", p.cfg},

@@ -137,6 +137,20 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         }
         return this;
     }
+    inline QueueItem ConvertToSharedMemory() {
+        QueueItem newItem(*this);
+        if (!newItem.image_info.empty()) {
+            newItem.image_info.clear();
+            newItem.image_info.shrink_to_fit();  // Opció: memória felszabadítása
+        }
+        return newItem;
+    }
+
+    inline void ConvertFromSharedMemory(QueueItem item) {
+        auto imginfo     = std::move(this->image_info);
+        *this            = std::move(item);
+        this->image_info = std::move(imginfo);
+    }
 
     inline void SetImagesPathsFromInfo() {
         for (auto& img : this->image_info) {
@@ -199,7 +213,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,
                                                 hash_progress_size,
                                                 time,
                                                 model,
-                                                model_hash,
+                                                hashes,
                                                 mode,
                                                 status_message,
                                                 upscale_factor,

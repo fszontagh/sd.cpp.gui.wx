@@ -14,6 +14,8 @@ FYI:
     "host": "127.0.0.1",
     // where the server will log
     "logfile": "/var/log/stable-diffusion-server.log",
+    // where the diffusser process will log
+    "diffuser_logfile": "/var/log/stable-diffusion-diffuser.log",
     // the backend HW accelerator, valid values: avx, avx2, avx512, cuda, vulkan -> the required libraries must be installed
     "backend": "avx",
     // maximum number of clients that can connect in parallel

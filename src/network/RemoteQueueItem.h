@@ -94,6 +94,14 @@ namespace sd_gui_utils {
         };
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, id, width, height, type, size, data, target_filename, data_filename)
 
+        struct ModelHash {
+            std::string model_hash  = "";
+            std::string taesd_hash  = "";
+            std::string vae_hash    = "";
+            std::string esrgan_hash = "";
+        };
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelHash, model_hash, taesd_hash, vae_hash, esrgan_hash)
+
         struct RemoteQueueItem {
             uint64_t id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0, number_of_images = 0;
             SDParams params    = SDParams();
@@ -104,7 +112,7 @@ namespace sd_gui_utils {
             size_t hash_fullsize = 0, hash_progress_size = 0;
             float time                                                = 0;
             std::string model                                         = "";
-            std::string model_hash                                    = "";
+            sd_gui_utils::ModelHash hashes                            = {};
             SDMode mode                                               = SDMode::TXT2IMG;
             std::string status_message                                = "";
             uint32_t upscale_factor                                   = 4;
@@ -137,7 +145,7 @@ namespace sd_gui_utils {
                                                         hash_progress_size,
                                                         time,
                                                         model,
-                                                        model_hash,
+                                                        hashes,
                                                         mode,
                                                         status_message,
                                                         upscale_factor,

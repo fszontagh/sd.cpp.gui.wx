@@ -185,8 +185,11 @@ private:
 
     std::atomic<bool> extProcessNeedToRun{true};
     wxString extprocessCommand;
-    wxString extProcessParam;
+    wxArrayString extProcessParams;
     wxString extprocessLastError;
+    wxString extProcessLogFile;
+
+    sd_gui_utils::LastItemNotification lastItemNotification = {};
 
     // std::ofstream logfile;
     wxFile logfile;
@@ -196,6 +199,9 @@ private:
     void OnCloseCivitWindow(wxCloseEvent& event);
     void OnHtmlLinkClicked(wxHtmlLinkEvent& event) override;
     void onWhatIsThis(wxCommandEvent& event) override;
+    void OnLoadPrevPrompt(wxCommandEvent& event) override;
+    void OnClearPrompt(wxCommandEvent& event) override;
+    void OnNormalizePrompt(wxCommandEvent& event) override;
     void OnExit(wxEvent& event);
     void OnPopupClick(wxCommandEvent& evt);
     void OnModelListPopUpClick(wxCommandEvent& evt);
@@ -206,7 +212,7 @@ private:
     void ChangeGuiFromQueueItem(const QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item);
-    void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem);
+    void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem = nullptr) ;
     void AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::shared_ptr<QueueItem> item, const sd_gui_utils::ImageInfo img, int gen_index);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
@@ -218,6 +224,127 @@ private:
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
 
+    inline static bool AreParenthesesBalanced(const wxString& input) {
+        std::stack<wchar_t> stack;
+
+        for (size_t i = 0; i < input.Length(); ++i) {
+            if (input[i] == '(') {
+                stack.push('(');
+            } else if (input[i] == ')') {
+                if (stack.empty()) {
+                    return false;
+                }
+                stack.pop();
+            }
+        }
+        return stack.empty();
+    }
+    inline wxString NormalizePrompt(const wxString& input) {
+        if (!AreParenthesesBalanced(input)) {
+            this->writeLog(_("Parentheses are not balanced!"));
+            return input;
+        }
+
+        wxString result;
+        int depth = 0;
+        wxString buffer;
+
+        for (size_t i = 0; i < input.Length(); ++i) {
+            if (input[i] == '(') {
+                if (depth > 0) {
+                    buffer += '(';  // A mélyebb zárójelekbe belépve
+                }
+                ++depth;
+            } else if (input[i] == ')') {
+                --depth;
+                if (depth == 0) {
+                    // Ha elértük a legkülső zárójelet
+                    if (wxRegEx(":[0-9]+\\.[0-9]+").Matches(buffer)) {
+                        result += "(" + buffer + ")";
+                    } else {
+                        // A súly kiszámítása a mélység alapján
+                        double weight = 1.0 + (depth + 1) * 0.1;
+                        wxString weightStr;
+                        weightStr.Printf("%.1f", weight);
+                        weightStr.Replace(",", ".");
+                        // Dupla zárójel esetén megfelelő formázás
+                        if (buffer.StartsWith("(") && buffer.EndsWith(")")) {
+                            result += "(" + buffer + ")";
+                        } else {
+                            result += "(" + buffer + ":" + weightStr + ")";
+                        }
+                    }
+                    buffer.clear();  // A következő zárójelhez tiszta buffer
+                } else {
+                    buffer += ')';  // Mélyebb zárójel belsejében maradunk
+                }
+            } else {
+                if (depth > 0) {
+                    buffer += input[i];  // Zárójelbe tett karakterek hozzáadása
+                } else {
+                    result += input[i];  // Külső karakterek hozzáadása
+                }
+            }
+        }
+
+        return result;
+    }
+
+    inline void NormalizeTextPrompt(wxString& prompt) {
+        prompt.Replace(",,", ", ");
+        prompt.Replace(" ,", ", ");
+        prompt.Replace("  ", " ");
+        if (prompt.StartsWith(" ")) {
+            prompt.Remove(0, 1);
+        }
+        if (prompt.EndsWith(" ")) {
+            prompt.Remove(prompt.Length() - 1, 1);
+        }
+        // prompt = this->NormalizePrompt(prompt);
+        if (!AreParenthesesBalanced(prompt)) {
+            this->writeLog(_("Parentheses are not balanced!"));
+        }
+    }
+    inline void GeneratePromptCombinations(const wxString& input, std::vector<wxString>& results, size_t pos = 0) {
+        wxRegEx regex("\\{([^}]+)\\}");
+        wxString current = input;
+
+        if (regex.Matches(current.Mid(pos))) {
+            size_t start, len;
+
+            regex.GetMatch(&start, &len);
+            wxString match = current.Mid(start, len);
+
+            wxString options         = regex.GetMatch(current, 1);
+            wxArrayString variations = wxSplit(options, '|');
+
+            for (const auto& variation : variations) {
+                wxString temp = current;
+                temp.Replace(match, variation, false);
+                this->GeneratePromptCombinations(temp, results, start + variation.Length());
+            }
+        } else {
+            results.push_back(current);
+        }
+    }
+    inline static int CountTokens(const wxString& input) {
+        int tokenCount = 0;
+        wxRegEx tokenRegex("[^\\s]+");
+
+        size_t start = 0;
+        while (tokenRegex.Matches(input.Mid(start))) {
+            size_t matchStart = 0, matchLength = 0;
+
+            if (tokenRegex.GetMatch(&matchStart, &matchLength)) {
+                ++tokenCount;
+                start += matchStart + matchLength;
+            } else {
+                break;
+            }
+        }
+
+        return tokenCount;
+    }
     inline void CheckQueueButton() {
         auto current_tab = (sd_gui_utils::GuiMainPanels)this->m_notebook1302->GetSelection();
         switch (current_tab) {
