@@ -34,7 +34,8 @@ namespace sd_gui_utils {
                 PARAM_JOB_DELETE,
                 PARAM_JOB_IMAGE_LIST,
                 PARAM_JOB_DUPLICATE,
-                PARAM_JOB_RESUME
+                PARAM_JOB_RESUME,
+                PARAM_JOB_PAUSE
             };
 
             Packet(Type type, Param param)
@@ -50,6 +51,7 @@ namespace sd_gui_utils {
             std::string server_id   = "";
             std::string server_name = "";
             uint64_t client_id      = 0;
+            long packet_added_time  = 0;
             bool isValid() {
                 return this->type == sd_gui_utils::networks::Packet::Type::INVALID_TYPE ? false : true;
             }
@@ -122,8 +124,8 @@ namespace sd_gui_utils {
             {sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE, "JOB_DELETE"},
             {sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST, "JOB_IMAGE_LIST"},
             {sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE, "JOB_DUPLICATE"},
-            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME, "JOB_RESUME"}
-            };
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME, "JOB_RESUME"},
+            {sd_gui_utils::networks::Packet::Param::PARAM_JOB_PAUSE, "JOB_PAUSE"}};
 
         static const std::unordered_map<std::string, sd_gui_utils::networks::Packet::Param> str2PacketParam = {
             {"ERROR", sd_gui_utils::networks::Packet::Param::PARAM_ERROR},
@@ -136,8 +138,8 @@ namespace sd_gui_utils {
             {"JOB_DELETE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE},
             {"JOB_IMAGE_LIST", sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST},
             {"JOB_DUPLICATE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE},
-            {"JOB_RESUME", sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME}
-            };
+            {"JOB_RESUME", sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME},
+            {"JOB_PAUSE", sd_gui_utils::networks::Packet::Param::PARAM_JOB_PAUSE}};
 
         static const std::unordered_map<sd_gui_utils::networks::Packet::Type, std::string> PacketType2str = {
             {sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, "REQUEST"},

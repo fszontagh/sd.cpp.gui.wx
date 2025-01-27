@@ -32,6 +32,9 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     }
     inline int GetActualProgress() {
         float current_progress = 0.f;
+        if (this->status == QueueStatus::PENDING) {
+            return 0;
+        }
 
         if (this->step > 0 && this->steps > 0) {
             current_progress = 100.f * (static_cast<float>(this->step) /

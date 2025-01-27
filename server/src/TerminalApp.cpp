@@ -140,7 +140,7 @@ bool TerminalApp::OnInit() {
     }
 
     this->sharedMemoryManager = std::make_shared<SharedMemoryManager>(configData->shared_memory_path, SHARED_MEMORY_SIZE, true);
-    wxLogDebug(wxString::Format("Shared memory initialized: %s size: %d", configData->shared_memory_path, SHARED_MEMORY_SIZE));
+    wxLogInfo(wxString::Format("Shared memory initialized: %s size: %d", configData->shared_memory_path, SHARED_MEMORY_SIZE));
 
     Bind(wxEVT_TIMER, [this](wxTimerEvent& evt) {
         if (this->socket != nullptr) {
@@ -223,6 +223,18 @@ bool TerminalApp::OnInit() {
     this->extProcessParams.Add(this->configData->diffuser_logfile);
     this->extProcessParams.Add(this->configData->shared_memory_path);
     this->extProcessNeedToRun.store(true);
+
+    this->command_line.push_back(this->extprocessCommand.c_str());
+
+    this->params = this->extprocessCommand;
+    for (auto const& p : this->extProcessParams) {
+        this->params.Append(" ");
+        this->params.Append(p);
+        command_line.push_back(p.c_str().AsChar());
+    }
+
+    command_line.push_back(nullptr);
+
     return true;
     // return wxAppConsole::OnInit();  // Call the base class implementation
 }
@@ -309,8 +321,6 @@ int TerminalApp::OnRun() {
 
     this->threads.emplace_back(std::move(tr));
 
-
-
     return wxAppConsole::OnRun();
 }
 
@@ -330,9 +340,9 @@ void TerminalApp::ProcessOutputThread() {
                 stdout_read_size = subprocess_read_stdout(this->subprocess.load(), stddata, size);
                 stderr_read_size = subprocess_read_stderr(this->subprocess.load(), stderrdata, size);
 
-                if (stdout_read_size > 0 && std::string(stddata).find("(null)") == std::string::npos) {
-                    this->sendLogEvent(stddata, wxLOG_Info);
-                }
+                // if (stdout_read_size > 0 && std::string(stddata).find("(null)") == std::string::npos) {
+                //     this->sendLogEvent(stddata, wxLOG_Info);
+                // }
                 if (stderr_read_size > 0 && std::string(stderrdata).find("(null)") == std::string::npos) {
                     this->sendLogEvent(stddata, wxLOG_Error);
                 }
@@ -341,66 +351,25 @@ void TerminalApp::ProcessOutputThread() {
         std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
     }
 }
-
 void TerminalApp::ExternalProcessRunner() {
-    if (this->subprocess != nullptr) {
-        this->sendLogEvent("Subprocess already running", wxLOG_Error);
-        return;
-    }
-    std::vector<const char*> command_line;
-    command_line.push_back(this->extprocessCommand.c_str());  // Első paraméter
-
-    wxString params = this->extprocessCommand;
-    for (auto const& p : this->extProcessParams) {
-        params.Append(" ");
-        params.Append(p);
-        command_line.push_back(p.c_str().AsChar());  // Új paraméterek hozzáadása
-    }
-
-    command_line.push_back(nullptr);
-
-    this->sendLogEvent(wxString::Format("Starting subprocess workdir: '%s' with params: '%s'", wxGetCwd(), params), wxLOG_Info);
-
-    auto sprocess = new subprocess_s();
-    int result    = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, sprocess);
-
-    this->subprocess.store(sprocess);
-    this->extprocessIsRunning.store(true);
-    if (result != 0) {
-        this->sendLogEvent("Failed to create subprocess, result: " + std::to_string(result) + "", wxLOG_Error);
-        this->extprocessIsRunning.store(false);
-        this->extProcessNeedToRun.store(false);
-        return;
-    }
-
-    this->sendLogEvent("Subprocess started", wxLOG_Info);
-    //wxLog::SetActiveTarget(nullptr);
+    this->extprocessIsRunning.store(false);
     while (this->extProcessNeedToRun.load() == true) {
-        if (subprocess_alive(this->subprocess.load()) == 0) {
-            this->sendLogEvent("Subprocess stopped", wxLOG_Error);
-            this->extprocessIsRunning.store(false);
-            if (this->queueManager != nullptr) {
-                auto current_job = this->queueManager->GetCurrentJob();
-                if (current_job != nullptr) {
-                    current_job->status = QueueStatus::FAILED;
-                    // this->itemUpdateEvent(current_job);
-                    this->queueManager->DeleteCurrentJob();
-                }
-            }
-            auto sprocess = this->subprocess.load();
-            int result    = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_combined_stdout_stderr | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, sprocess);
+        if (this->subprocess.load() == nullptr) {
+            auto sprocess = new subprocess_s();
+            int result    = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, sprocess);
             this->subprocess.store(sprocess);
-
-            if (this->subprocess == nullptr) {
-                this->sendLogEvent("Failed to create subprocess", wxLOG_Error);
+            if (result != 0 && this->extProcessNeedToRun.load() == true) {
                 this->extprocessIsRunning.store(false);
-                return;
+                this->sendLogEvent("Failed to create subprocess, result: " + std::to_string(result) + " waiting 5s", wxLOG_Error);
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+            } else {
+                this->sendLogEvent("Subprocess started", wxLOG_Info);
+                this->extprocessIsRunning.store(true);
             }
-            this->extprocessIsRunning.store(false);
-            this->sendLogEvent(wxString::Format("%s:%d Subprocess created: %d", __FILE__, __LINE__, result), wxLOG_Info);
         }
-        {
-            std::unique_lock<std::mutex> lock(this->shmMutex);
+
+        while (subprocess_alive(this->subprocess.load()) != 0 && this->extProcessNeedToRun.load() == true) {
+            //std::unique_lock<std::mutex> lock(this->shmMutex);
             std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
 
             this->sharedMemoryManager->read(buffer.get(), SHARED_MEMORY_SIZE);
@@ -411,22 +380,21 @@ void TerminalApp::ExternalProcessRunner() {
                     this->sharedMemoryManager->clear();
                 }
             }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    this->sendLogEvent("Subprocess stopped", wxLOG_Error);
-    this->extprocessIsRunning.store(false);
-    subprocess_terminate(this->subprocess.load());
-    if (this->queueManager != nullptr) {
-        auto current_job = this->queueManager->GetCurrentJob();
-        if (current_job != nullptr) {
-            current_job->status = QueueStatus::FAILED;
-            this->itemUpdateEvent(current_job);
-            this->queueManager->DeleteCurrentJob();
+        if (this->extProcessNeedToRun.load() == true) {
+            this->sendLogEvent("Subprocess stopped, need restarting", wxLOG_Error);
+            // update the job if running
+            if (this->queueManager != nullptr) {
+                this->queueManager->ChangeCurrentJobStatus(QueueStatus::FAILED);
+            }
+            this->extprocessIsRunning.store(false);
+            this->subprocess.store(nullptr);
+            std::this_thread::sleep_for(std::chrono::seconds(5));
         }
     }
+    std::cout << "Subprocess thread stopped" << std::endl;
 }
-
 bool TerminalApp::ProcessEventHandler(std::string message) {
     if (message.empty()) {
         return false;
@@ -519,9 +487,47 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
                 sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
                 sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
             response.SetData(newItem->convertToNetwork(false, this->configData->server_id));
+            this->socket->sendMsg(0, response);
+        }
+    }
+
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_PAUSE) {
+        auto job_id = packet.GetData<uint64_t>();
+        wxString error;
+        auto newItem = this->queueManager->PauseItem(job_id, error);
+        if (newItem) {
+            auto response = sd_gui_utils::networks::Packet(
+                sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
+                sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+            response.SetData(newItem->convertToNetwork(true, this->configData->server_id));
+            this->socket->sendMsg(0, response);
+        } else {
+            auto response = sd_gui_utils::networks::Packet(
+                sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
+                sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
+            response.SetData(error);
             this->socket->sendMsg(packet.source_idx, response);
         }
     }
+    if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME) {
+        auto job_id = packet.GetData<uint64_t>();
+        wxString error;
+        auto newItem = this->queueManager->ResumeItem(job_id, error);
+        if (newItem) {
+            auto response = sd_gui_utils::networks::Packet(
+                sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
+                sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+            response.SetData(newItem->convertToNetwork(true, this->configData->server_id));
+            this->socket->sendMsg(0, response);
+        } else {
+            auto response = sd_gui_utils::networks::Packet(
+                sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
+                sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
+            response.SetData(error);
+            this->socket->sendMsg(packet.source_idx, response);
+        }
+    }
+
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
         this->sendLogEvent("Received job add", wxLOG_Debug);
         auto data      = packet.GetData<sd_gui_utils::RemoteQueueItem>();

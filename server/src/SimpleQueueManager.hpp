@@ -22,7 +22,7 @@ public:
         return id;
     }
     std::shared_ptr<QueueItem> DuplicateItem(uint64_t job_id) {
-        std::lock_guard<std::mutex> lock(this->mutex);
+        // std::lock_guard<std::mutex> lock(this->mutex);
         if (this->jobs.contains(job_id)) {
             auto oldJob        = this->jobs.at(job_id);
             auto newJob        = std::make_shared<QueueItem>(*oldJob);
@@ -30,12 +30,48 @@ public:
             newJob->status     = QueueStatus::PAUSED;
             newJob->created_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             newJob->server     = this->server_id;
+            newJob->time       = 0;
+            newJob->stats      = {};
+            newJob->started_at = 0;
             newJob->RemoveGeneratedImages();  // clean up generated images
             this->jobs[newJob->id] = newJob;
             this->lastID           = (this->lastID < newJob->id) ? newJob->id : this->lastID;
             this->StoreJobInFile(newJob);
             return newJob;
         }
+        return nullptr;
+    }
+
+    std::shared_ptr<QueueItem> PauseItem(uint64_t job_id, wxString& error) {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->jobs.contains(job_id)) {
+            auto job = this->jobs.at(job_id);
+            if (job->status & QueueStatusFlags::PAUSABLE_FLAG) {
+                job->status = QueueStatus::PAUSED;
+                this->StoreJobInFile(job);
+                return job;
+            }
+            error = wxString::Format(_("Job cannot be paused: %" PRIu64), job_id);
+            return nullptr;
+        }
+        error = _("Job not found");
+        return nullptr;
+    }
+
+    std::shared_ptr<QueueItem> ResumeItem(uint64_t job_id, wxString& error) {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->jobs.contains(job_id)) {
+            auto job = this->jobs.at(job_id);
+
+            if (job->status & QueueStatusFlags::RESUMEABLE_FLAG) {
+                job->status = QueueStatus::PENDING;
+                this->StoreJobInFile(job);
+                return job;
+            }
+            error = wxString::Format(_("Job cannot be resumed: %" PRIu64), job_id);
+            return nullptr;
+        }
+        error = _("Job not found");
         return nullptr;
     }
 
@@ -62,6 +98,12 @@ public:
     std::shared_ptr<QueueItem> GetCurrentJob() {
         std::lock_guard<std::mutex> lock(this->mutex);
         return this->currentItem;
+    }
+    void ChangeCurrentJobStatus(QueueStatus status) {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->currentItem != nullptr) {
+            this->currentItem->status = status;
+        }
     }
     std::shared_ptr<QueueItem> GetNextPendingJob() {
         std::lock_guard<std::mutex> lock(this->mutex);
@@ -216,6 +258,19 @@ private:
     sd_gui_utils::SnowflakeIDGenerator generator;
     uint64_t lastID                        = 0;
     std::shared_ptr<QueueItem> currentItem = nullptr;
+    /**
+     * Store a job in the job directory as a JSON file.
+     *
+     * If the item is nullptr or has an id of 0, this function does nothing.
+     *
+     * If the item is valid, this function dumps the item as a JSON object to a
+     * file in the job directory. The filename is 'local_<id>.json', where <id>
+     * is the job id.
+     *
+     * If an error occurs while opening the file or serializing the object, an
+     * error message is printed to stderr.
+     * This is not locking
+     */
     void StoreJobInFile(std::shared_ptr<QueueItem> item) {
         if (!item || item->id == 0) {
             return;

@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     logger->SetFormatter(new CustomLogFormatter());
     wxLog::SetActiveTarget(logger);
     wxLogInfo("Logging initialized. Log file: %s", logFile.GetAbsolutePath());
+    wxLog::SetLogLevel(wxLOG_Max);
 
     std::string shared_memory_path = SHARED_MEMORY_PATH;
 
@@ -75,7 +76,7 @@ int main(int argc, char* argv[]) {
                         wxLogWarning("[EXTPROCESS] Got a wrong id: 0");
                     } else if (item.id != lastId && item.status == QueueStatus::PENDING) {
                         sharedMemory->clear();
-                        wxLogDebug("New message: %" PRIu64, item.id);
+                        wxLogInfo("New message: %" PRIu64, item.id);
                         lastId = item.id;
                         appLogic.processMessage(item);
                     }

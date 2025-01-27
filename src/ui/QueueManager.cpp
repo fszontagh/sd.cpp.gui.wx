@@ -115,9 +115,7 @@ std::shared_ptr<QueueItem> QM::QueueManager::Duplicate(std::shared_ptr<QueueItem
     }
 
     if (item->server.empty() == false) {
-
     }
-
 
     std::shared_ptr<QueueItem> newitem = std::make_shared<QueueItem>(*item);
     // handle this in the AddItem
@@ -494,6 +492,10 @@ void QM::QueueManager::LoadJobListFromDir() {
             const nlohmann::json data       = nlohmann::json::parse(f);
             std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>(data.get<QueueItem>());
             if (item->server.empty() == false) {
+                continue;
+            }
+            // job is not compatible with the current app version, skipping
+            if (!sd_gui_utils::CheckVersionCompatibility(item->app_version)) {
                 continue;
             }
             if (item->status == QueueStatus::RUNNING ||

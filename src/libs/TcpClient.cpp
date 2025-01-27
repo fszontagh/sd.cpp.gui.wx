@@ -89,8 +89,12 @@ namespace sd_gui_utils {
                 // if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST) {
 
                 //}
-                size_t packet_id                 = this->receivedPackets.size();
-                this->receivedPackets[packet_id] = packet;
+                size_t packet_id = this->receivedPackets.size();
+                {
+                    std::lock_guard<std::mutex> lock(packetMutex_);
+                    packet.packet_added_time         = std::chrono::system_clock::now().time_since_epoch().count();
+                    this->receivedPackets[packet_id] = packet;
+                }
                 TcpClientOnMessage onMessageClb;
                 {
                     std::lock_guard<std::mutex> lock(callbackMutex_);
@@ -113,6 +117,9 @@ namespace sd_gui_utils {
                         }
                     }
                     return;
+                }
+                if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE) {
+                    this->cleanUpPackets();
                 }
             }
         }

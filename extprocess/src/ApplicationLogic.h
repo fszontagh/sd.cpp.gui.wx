@@ -17,7 +17,7 @@ public:
         instance->updateLastMessageTime();
         switch (level) {
             case sd_log_level_t::SD_LOG_DEBUG: {
-                wxLogDebug(msg);
+                wxLogInfo(msg);  // debug logs go into the info log otherwise it printed to std::out
             } break;
             case sd_log_level_t::SD_LOG_INFO: {
                 wxLogInfo(msg);

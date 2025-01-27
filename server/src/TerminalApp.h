@@ -87,7 +87,7 @@ public:
     }
     inline void JobQueueThread() {
         while (this->queueNeedToRun.load()) {
-            if (this->queueManager->GetCurrentJob() == nullptr) {
+            if (this->queueManager->GetCurrentJob() == nullptr && this->extprocessIsRunning.load()) {
                 // lock this->shmMutex
                 std::unique_lock<std::mutex> lock(this->shmMutex);
                 auto next_job = this->queueManager->GetNextPendingJob();
@@ -105,13 +105,22 @@ public:
                 delete[] data;
             } else {
                 if (this->extprocessIsRunning.load() == false) {
-                    auto current = this->queueManager->GetCurrentJob();
-                    if (current) {
-                        current->status = QueueStatus::FAILED;
-                        this->itemUpdateEvent(current);
+                    this->queueManager->ChangeCurrentJobStatus(QueueStatus::FAILED);
+                    if (this->queueManager->GetCurrentJob() != nullptr) {
+                        auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                        errorPacket.SetData(this->queueManager->GetCurrentJob()->convertToNetwork(false, this->configData->server_id));
+                        this->socket->sendMsg(0, errorPacket);
                         this->queueManager->DeleteCurrentJob();
                     }
                 }
+                // if (this->extprocessIsRunning.load() == false) {
+                //     auto current = this->queueManager->GetCurrentJob();
+                //     if (current) {
+                //         current->status = QueueStatus::FAILED;
+                //         this->itemUpdateEvent(current);
+                //         this->queueManager->DeleteCurrentJob();
+                //     }
+                // }
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
@@ -139,6 +148,7 @@ private:
     std::mutex logMutex;
     std::mutex processMutex;
     void ExternalProcessRunner();
+    void ExternalProcessRunnerOld();
     void ProcessOutputThread();
     void ProcessLogQueue();
     bool ProcessEventHandler(std::string message);
@@ -209,6 +219,8 @@ private:
     std::atomic<bool> extprocessIsRunning{false};
     wxTimer timer;
     std::unordered_map<std::string, sd_gui_utils::networks::RemoteModelInfo> modelFiles;
+    std::vector<const char*> command_line;
+    wxString params;
 };
 
 #endif  // _SERVER_TERMINALAPP_H

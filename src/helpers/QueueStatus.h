@@ -16,8 +16,9 @@ enum QueueStatus {
 namespace QueueStatusFlags {
     constexpr int DELETABLE_FLAG   = (PENDING | PAUSED | FAILED | DONE | MODEL_FAILED);
     constexpr int RUNNING_FLAG     = (RUNNING | MODEL_LOADING | HASHING | HASHING_DONE);
-    constexpr int PAUSABLE_FLAG    = (PENDING | PAUSED);
-    constexpr int REQUEUEABLE_FLAG = (RUNNING | HASHING);
+    constexpr int PAUSABLE_FLAG    = (PENDING);
+    constexpr int RESUMEABLE_FLAG  = (PAUSED);
+    constexpr int REQUEUEABLE_FLAG = (RUNNING | HASHING | PENDING | DONE | HASHING_DONE | PAUSED | MODEL_LOADING);
 };
 
 inline const std::unordered_map<QueueStatus, wxString> QueueStatus_GUI_str = {

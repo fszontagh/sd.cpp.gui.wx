@@ -152,10 +152,10 @@ sd_gui_utils::ModelFileInfo ModelInfo::Manager::getInfo(std::string path) {
 }
 
 sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtr(std::string path) {
-    if (this->exists(path)) {
-        return this->ModelInfos[path];
+    if (this->ModelInfos.find(path) == this->ModelInfos.end()) {
+        return nullptr;
     }
-    return nullptr;
+    return this->ModelInfos.at(path);
 }
 sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtrByHash(std::string hash, std::string remote_server_id) {
     if (hash.length() == 10) {

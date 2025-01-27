@@ -23,6 +23,7 @@ namespace sd_gui_utils {
             void sendMsg(const char* data, size_t len);
             std::atomic<bool> connected{false};
             std::string host, disconnect_reason;
+            std::mutex packetMutex_;
             int port;
             mutable std::mutex callbackMutex_;
             struct Callbacks {
@@ -54,9 +55,20 @@ namespace sd_gui_utils {
             inline std::string GetDisconnectReason() { return this->disconnect_reason; }
             inline sd_gui_utils::networks::Packet getPacket(size_t Id) {
                 if (receivedPackets.find(Id) != receivedPackets.end()) {
-                    return receivedPackets[Id];
+                    return receivedPackets.at(Id);
                 }
                 return sd_gui_utils::networks::Packet();
+            }
+            inline void cleanUpPackets() {
+                std::lock_guard<std::mutex> lock(packetMutex_);
+                long curr_time = std::chrono::system_clock::now().time_since_epoch().count();
+                for (auto it = receivedPackets.begin(); it != receivedPackets.end();) {
+                    if (curr_time - it->second.packet_added_time > 60 || it->second.param == sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE) {
+                        it = receivedPackets.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
             }
 
             inline void stop() {

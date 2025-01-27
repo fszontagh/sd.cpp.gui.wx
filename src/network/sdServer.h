@@ -387,6 +387,14 @@ namespace sd_gui_utils {
             packet.SetData(job_id);
             this->client->sendMsg(packet);
         }
+        void PauseJob(uint64_t job_id) {
+            auto packet      = sd_gui_utils::networks::Packet();
+            packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
+            packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_PAUSE;
+            packet.client_id = this->GetClientId();
+            packet.SetData(job_id);
+            this->client->sendMsg(packet);
+        }
         void RequestImages(uint64_t job_id) {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;

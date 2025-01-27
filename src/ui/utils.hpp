@@ -380,11 +380,13 @@ namespace sd_gui_utils {
 
                     wxString name = configBase->Read("Name", wxEmptyString);
 
-                    if (this->servers.contains(internal_id) &&
-                        this->servers[internal_id] != nullptr &&
-                        this->servers[internal_id]->GetHost() != host.utf8_string() &&
-                        this->servers[internal_id]->GetPort() != port) {
-                        this->servers[internal_id]->Stop();
+                    if (this->servers.contains(internal_id)) {
+                        if (this->servers[internal_id] != nullptr &&
+                            (this->servers[internal_id]->GetHost() != host.utf8_string() ||
+                             this->servers[internal_id]->GetPort() != port ||
+                             this->servers[internal_id]->IsEnabled() != enabled)) {
+                            this->servers[internal_id]->Stop();
+                        }
                     } else {
                         this->servers[internal_id] = new sd_gui_utils::sdServer(host.utf8_string(), port, eventHandler);
                     }
@@ -1113,7 +1115,7 @@ namespace sd_gui_utils {
 
         return fileName.GetFullPath();
     }
-    inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]") {
+    inline static wxString formatFileName(const QueueItem& item, const wxString& format = "[mode]_[jobid]_[seed]_[width]x[height]_[batch]", wxString server_name = "") {
         wxDateTime localTime = wxDateTime::Now();
 
         if (item.finished_at > 0) {
@@ -1153,7 +1155,8 @@ namespace sd_gui_utils {
             {"[steps_total]", std::to_string(item.steps)},
             {"[cfg_scale]", std::to_string(item.params.cfg_scale)},
             {"[denoising_strength]", std::to_string(item.params.strength)},
-        };
+            {"[server_id]", item.server},
+            {"[server_name]", server_name.ToStdString()}};
 
         wxString result = format;
 
@@ -1184,7 +1187,7 @@ namespace sd_gui_utils {
      * Logs an error message if the directory cannot be created.
      */
 
-    inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "") {
+    inline static wxString CreateFilePath(const wxString& filename, const wxString& extension, const wxString& folderPath, const wxString& suffix = "", bool rename_if_exists = false) {
         // Normalize path separator for the current OS
         wxString normalizedFilename = folderPath + wxFileName::GetPathSeparator() + filename + extension;
         normalizedFilename.Replace("\\", wxFileName::GetPathSeparator());
@@ -1201,7 +1204,6 @@ namespace sd_gui_utils {
         wxString baseName = fullPath.GetName();  // Extract base name (e.g., "mi")
         wxString ext      = fullPath.GetExt();   // Extract extension (e.g., "txt")
         wxString path     = fullPath.GetPath();  // Extract path (e.g., "/home/valaki/kiement/vala")
-        int counter       = 1;
 
         if (!wxDirExists(path)) {
             // create directories recursively
@@ -1209,13 +1211,16 @@ namespace sd_gui_utils {
                 std::cerr << "Failed to create directory: " << path << std::endl;
             }
         }
-
-        while (wxFileExists(fullPath.GetFullPath())) {
-            // Generate a new unique name: baseName_counter_suffix.extension
-            wxString newName = wxString::Format("%s_%d", baseName, counter);
-            fullPath.Assign(path, newName, ext);
-            ++counter;
+        if (rename_if_exists) {
+            int counter = 0;
+            while (wxFileExists(fullPath.GetFullPath())) {
+                // Generate a new unique name: baseName_counter_suffix.extension
+                wxString newName = wxString::Format("%s_%d", baseName, counter);
+                fullPath.Assign(path, newName, ext);
+                ++counter;
+            }
         }
+
         if (!suffix.IsEmpty()) {
             return AppendSuffixToFileName(fullPath.GetFullPath(), suffix);
         }
@@ -1349,5 +1354,36 @@ namespace sd_gui_utils {
         return value != static_cast<int>(panel);
     }
 
+    /**
+     * \brief Checks if a given version string is compatible with the current version.
+     *
+     * This function compares the provided version string, which should follow a
+     * dot-separated format, with the current software version defined by SD_GUI_VERSION.
+     * It removes the dots and converts both versions to integers for comparison.
+     *
+     * \param[in] version The version string to check for compatibility.
+     * \return True if the provided version is the same as the current version;
+     * false otherwise or if there is an error in the conversion process.
+     */
+    inline static bool CheckVersionCompatibility(const wxString& version) {
+        if (version.Contains(".") == false) {
+            return false;
+        }
+        wxString vversion(version);
+
+        vversion.Replace(".", "");
+
+        wxString currentVersion(SD_GUI_VERSION);
+        currentVersion.Replace(".", "");
+        int cver;
+        if (!currentVersion.ToInt(&cver)) {
+            return false;
+        }
+        int vver;
+        if (!vversion.ToInt(&vver)) {
+            return false;
+        }
+        return cver == vver;
+    }
 }  // namespace sd_gui_utils
 #endif

@@ -137,7 +137,7 @@ void ApplicationLogic::processMessage(QueueItem& item) {
     this->currentItem             = std::make_shared<QueueItem>(item);
     this->currentItem->started_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-    std::cout << "Processing item: " << this->currentItem->id << std::endl;
+    wxLogInfo("Processing item: %" PRIu64, this->currentItem->id);
 
     if (this->currentItem->need_sha256 == true) {
         this->sendStatus(QueueStatus::HASHING, QueueEvents::ITEM_MODEL_HASH_START);
@@ -151,7 +151,6 @@ void ApplicationLogic::processMessage(QueueItem& item) {
         this->sendStatus(QueueStatus::HASHING, QueueEvents::ITEM_MODEL_HASH_DONE, "", EPROCESS_SLEEP_TIME);
     }
 
-    this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
     // on mode convert always return true, because no model loading
     if (this->loadSdModel() == false) {
         if (this->currentItem->mode == SDMode::TXT2IMG || this->currentItem->mode == SDMode::IMG2IMG) {
@@ -193,15 +192,15 @@ void ApplicationLogic::processMessage(QueueItem& item) {
     wxLogInfo("Starting item: %" PRIu64 " type: %s", this->currentItem->id, GenerationMode_str.at(this->currentItem->mode).c_str());
     switch (this->currentItem->mode) {
         case SDMode::TXT2IMG: {
-            wxLogDebug("Running txt2img");
+            wxLogInfo("Running txt2img");
             Txt2Img();
         } break;
         case SDMode::IMG2IMG: {
-            wxLogDebug("Running img2img");
+            wxLogInfo("Running img2img");
             Img2img();
         } break;
         case SDMode::UPSCALE: {
-            wxLogDebug("Running upscale");
+            wxLogInfo("Running upscale");
             Upscale();
         } break;
 
@@ -274,7 +273,7 @@ void ApplicationLogic::Txt2Img() {
             return;
         }
 
-        wxLogDebug("Generated %d images in batch", this->currentItem->params.batch_count);
+        wxLogInfo("Generated %d images in batch", this->currentItem->params.batch_count);
         for (int i = 0; i < this->currentItem->params.batch_count; i++) {
             if (results[i].data == NULL) {
                 continue;
@@ -313,13 +312,13 @@ void ApplicationLogic::Img2img() {
         int input_w, input_h, input_c       = 0;
         int control_w, control_h, control_c = 0;
 
-        wxLogDebug("Checking initial image: %s", this->currentItem->initial_image.c_str());
+        wxLogInfo("Checking initial image: %s", this->currentItem->initial_image.c_str());
 
         if (this->currentItem->initial_image.length() > 0) {
             if (std::filesystem::exists(this->currentItem->initial_image)) {
                 input_image_buffer = stbi_load(this->currentItem->initial_image.c_str(), &input_w, &input_h, &input_c, 3);
                 input_image        = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, input_image_buffer};
-                wxLogDebug(" input image loaded: %s width: %d height: %d channels: %d", this->currentItem->initial_image.c_str(), input_w, input_h, input_c);
+                wxLogInfo(" input image loaded: %s width: %d height: %d channels: %d", this->currentItem->initial_image.c_str(), input_w, input_h, input_c);
             } else {
                 wxLogError("Initial image not found: '%s'", this->currentItem->initial_image.c_str());
                 std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
@@ -334,7 +333,7 @@ void ApplicationLogic::Img2img() {
         }
         if (this->currentItem->mask_image.length() > 0 && std::filesystem::exists(this->currentItem->mask_image)) {
             mask_image_buffer = stbi_load(this->currentItem->mask_image.c_str(), &input_w, &input_h, &input_c, 1);
-            wxLogDebug(" - mask image loaded: %s width: %d height: %d channels: %d", this->currentItem->mask_image.c_str(), input_w, input_h, input_c);
+            wxLogInfo(" - mask image loaded: %s width: %d height: %d channels: %d", this->currentItem->mask_image.c_str(), input_w, input_h, input_c);
         } else {
             std::vector<uint8_t> arr(this->currentItem->params.width * this->currentItem->params.height, 255);
             mask_image_buffer = arr.data();
@@ -347,7 +346,7 @@ void ApplicationLogic::Img2img() {
             if (std::filesystem::exists(this->currentItem->params.control_image_path)) {
                 control_image_buffer = stbi_load(this->currentItem->params.control_image_path.c_str(), &control_w, &control_h, &control_c, 3);
                 control_image        = new sd_image_t{(uint32_t)control_w, (uint32_t)control_h, 3, control_image_buffer};
-                wxLogDebug(" - control image loaded: %s width: %d height: %d channels: %d", this->currentItem->params.control_image_path.c_str(), control_w, control_h, control_c);
+                wxLogInfo(" - control image loaded: %s width: %d height: %d channels: %d", this->currentItem->params.control_image_path.c_str(), control_w, control_h, control_c);
             } else {
                 wxLogError("Control image not found: '%s'", this->currentItem->params.control_image_path.c_str());
                 this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Missing controlnet image");
@@ -400,7 +399,7 @@ void ApplicationLogic::Img2img() {
                 continue;
             }
             std::string filepath = this->handleSdImage(results[i]);
-            wxLogDebug("Saved tmp image to: '%s'", filepath.c_str());
+            wxLogInfo("Saved tmp image to: '%s'", filepath.c_str());
             this->currentItem->rawImages.push_back(filepath);
             free(results[i].data);
             results[i].data = NULL;
@@ -478,7 +477,7 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         wxLogError("stbi_write_png failed: '%s'", filename.c_str());
         return "";
     }
-    wxLogDebug("saved image to: '%s' size: %dx%d filesize: %d", filename.c_str(), image.width, image.height, std::filesystem::file_size(filename));
+    wxLogInfo("saved image to: '%s' size: %dx%d filesize: %" PRIu64, filename.c_str(), image.width, image.height, std::filesystem::file_size(filename));
     return filename;
 }
 
@@ -487,33 +486,36 @@ bool ApplicationLogic::loadSdModel() {
     if (this->currentItem->mode == SDMode::CONVERT) {
         // remove already loaded models
         if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
-            wxLogDebug("Freeing up previous sd model");
+            this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
+            wxLogInfo("Freeing up previous sd model");
             this->freeSdCtxPtr(this->sd_ctx);
             this->sd_ctx = nullptr;
         }
         if (this->upscale_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
-            wxLogDebug("Freeing up previous upscaler model");
+            this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
+            wxLogInfo("Freeing up previous upscaler model");
             this->freeUpscalerCtxPtr(this->upscale_ctx);
             this->upscale_ctx = nullptr;
         }
         return true;
     }
 
-    // hnalde upscaler model
+    // handle upscaler model
     if (this->currentItem->mode == SDMode::UPSCALE) {
-        wxLogDebug("Loading upscale model: %s", this->currentItem->params.esrgan_path.c_str());
+        wxLogInfo("Loading upscale model: %s", this->currentItem->params.esrgan_path.c_str());
+        this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
         // free up the sd model
         if (this->sd_ctx != nullptr && this->currentItem->keep_checkpoint_in_memory == false) {
-            wxLogDebug("Freeing up previous sd model");
+            wxLogInfo("Freeing up previous sd model");
             this->freeSdCtxPtr(this->sd_ctx);
             this->sd_ctx = nullptr;
         }
 
         // check if we need reload the model
         if (this->lastItem != nullptr && this->lastItem->mode == SDMode::UPSCALE) {
-            wxLogDebug("Previous model is upscale");
+            wxLogInfo("Previous model is upscale");
             if (this->lastItem->params.esrgan_path != this->currentItem->params.esrgan_path) {
-                wxLogDebug("upscaler model changed");
+                wxLogInfo("upscaler model changed");
                 if (this->upscale_ctx != nullptr) {
                     this->freeUpscalerCtxPtr(this->upscale_ctx);
                     this->upscale_ctx = nullptr;
@@ -522,7 +524,7 @@ bool ApplicationLogic::loadSdModel() {
                 this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
                 return this->upscale_ctx != NULL;
             }
-            wxLogDebug("upscaler model is the same");
+            wxLogInfo("upscaler model is the same");
             return true;  // already loaded the model
         }
         wxLogInfo("Loading upscaler model: '%s'", this->currentItem->params.esrgan_path.c_str());
@@ -536,13 +538,13 @@ bool ApplicationLogic::loadSdModel() {
             return false;
         }
         if (this->currentItem->params.model_path == "") {
-            wxLogDebug("Loading sd model: %s", this->currentItem->params.diffusion_model_path.c_str());
+            wxLogInfo("Loading sd model: %s", this->currentItem->params.diffusion_model_path.c_str());
         } else {
-            wxLogDebug("Loading sd model: %s", this->currentItem->params.model_path.c_str());
+            wxLogInfo("Loading sd model: %s", this->currentItem->params.model_path.c_str());
         }
         bool loadModel = true;
         if (this->lastItem != nullptr) {
-            wxLogDebug("Previous model: '%s'", this->lastItem->params.model_path.c_str());
+            wxLogInfo("Previous model: '%s'", this->lastItem->params.model_path.c_str());
             if (this->lastItem->params.model_path.empty() && this->currentItem->params.model_path.empty()) {
                 if (this->currentItem->params.diffusion_model_path == this->lastItem->params.diffusion_model_path) {
                     loadModel = false;
@@ -638,9 +640,10 @@ bool ApplicationLogic::loadSdModel() {
         }
 
         if (loadModel == true) {
-            wxLogDebug("Loading sd model: %s", this->currentItem->params.model_path.c_str());
+            this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOAD_START, "", EPROCESS_SLEEP_TIME);
+            wxLogInfo("Loading sd model: %s", this->currentItem->params.model_path.c_str());
             if (this->sd_ctx != nullptr) {
-                wxLogDebug("Freeing sd_ctx");
+                wxLogInfo("Freeing sd_ctx");
                 this->freeSdCtxPtr(this->sd_ctx);
                 this->sd_ctx = nullptr;
             }
@@ -665,7 +668,7 @@ bool ApplicationLogic::loadSdModel() {
             }
 
             if (this->upscale_ctx != nullptr && this->currentItem->keep_upscaler_in_memory == false) {
-                wxLogDebug("Freeing upscale_ctx");
+                wxLogInfo("Freeing upscale_ctx");
                 this->freeUpscalerCtxPtr(this->upscale_ctx);
                 this->upscale_ctx = nullptr;
             }
@@ -697,6 +700,7 @@ bool ApplicationLogic::loadSdModel() {
             if (this->sd_ctx == NULL) {
                 return false;
             }
+            this->sendStatus(QueueStatus::MODEL_LOADING, QueueEvents::ITEM_MODEL_LOADED, "", EPROCESS_SLEEP_TIME);
         }
         return sd_ctx == NULL ? false : true;
     }
