@@ -99,7 +99,9 @@ if(NOT SD_HIPBLAS)
             GIT_TAG ${SD_GIT_TAG}
             #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-            CMAKE_ARGS "-DGGML_NATIVE=${GGML_NATIVE}"
+            CMAKE_ARGS "-DCMAKE_C_COMPILER=clang"
+            "-DCMAKE_CXX_COMPILER=clang++"
+            "-DGGML_NATIVE=${GGML_NATIVE}"
             "-DGGML_CCACHE=${GGML_CCACHE}"
             "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
             "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}"
