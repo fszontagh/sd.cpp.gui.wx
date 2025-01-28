@@ -38,7 +38,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path build
           cd build
           conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=never
+          conan install .. -s compiler.cppstd=17 --build=missing
 
   build-windows:
     name: Build on Windows
