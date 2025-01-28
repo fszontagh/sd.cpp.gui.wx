@@ -393,10 +393,11 @@ jobs:
       - name: Configure & Compile main application
         run: |
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_SERVER=ON
           cmake --build . --config Release --target po-compile
           cmake --build . --config Release --target stablediffusiongui
           cmake --build . --config Release --target stablediffusiongui_diffuser
+          cmake --build . --config Release --target stablediffusiongui_server
 
       - name: Package main application
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
