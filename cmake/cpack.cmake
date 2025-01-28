@@ -76,6 +76,8 @@ if (SD_SERVER OR EXISTS "${CMAKE_BINARY_DIR}/server/${EPREFIX}${PROJECT_BINARY_N
     list(APPEND CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}Server")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_NAME "stablediffusiongui-server-${SDCPP_VERSION}")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    configure_file("platform/linux/${PROJECT_BINARY_NAME}_server.service" ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service @ONLY)
+    install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION /lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
 endif()
 
 
@@ -135,6 +137,8 @@ endif()
 
 
 if(WIN32)
+    set(CPACK_MODULE_PATH ${CMAKE_MODULE_PATH})
+    list(APPEND CPACK_MODULE_PATH "${CMAKE_SOURCE_DIR}/platform/msvc")
     set(CPACK_GENERATOR "NSIS")
     set(CPACK_NSIS_DISPLAY_NAME "${CMAKE_PROJECT_NAME}")
     set(CPACK_NSIS_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
@@ -152,6 +156,30 @@ if(WIN32)
 
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.png DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
     install(FILES ${CMAKE_SOURCE_DIR}/graphics/icons/256/stablediffusiongui.ico DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
+
+
+if (SD_SERVER)
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(FATAL_ERROR "Server is not supported yet in ${CMAKE_BUILD_TYPE} mode")
+    endif()
+    cmake_path(SET SERVICE_INSTALL_SCRIPT NORMALIZE ${CMAKE_BINARY_DIR}/nsis/nsis_install_service.nsh)
+    cmake_path(SET SERVICE_UNINSTALL_SCRIPT NORMALIZE ${CMAKE_BINARY_DIR}/nsis/nsis_uninstall_service.nsh)
+
+
+
+    configure_file(platform/msvc/nsis_install_service.nsh ${SERVICE_INSTALL_SCRIPT} @ONLY)
+    configure_file(platform/msvc/nsis_uninstall_service.nsh ${SERVICE_UNINSTALL_SCRIPT} @ONLY)
+    configure_file(platform/msvc/winsw.xml ${CMAKE_BINARY_DIR}/nsis/winsw.xml COPYONLY)
+
+    # download WinSW-x64 to manage as service
+    file(DOWNLOAD https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe ${CMAKE_BINARY_DIR}/nsis/WinSW-x64.exe)
+    install(FILES ${CMAKE_BINARY_DIR}/nsis/WinSW-x64.exe DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+    install(FILES ${CMAKE_BINARY_DIR}/nsis/winsw.xml DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+
+
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "  !addincludedir ${CMAKE_BINARY_DIR}/nsis \n !include nsis_install_service.nsh")
+    set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "  !addincludedir ${CMAKE_BINARY_DIR}/nsis \n !include nsis_uninstall_service.nsh")
+endif()
 
 
 elseif(UNIX AND NOT APPLE)
@@ -206,17 +234,32 @@ include(CPack)
     cpack_add_component("${CMAKE_PROJECT_NAME}"
         DISPLAY_NAME "SD C++ GUI"
         DESCRIPTION "Stable Diffusion CPP Desktop Graphical User Interface"
+        CONFLICTS "${CMAKE_PROJECT_NAME}Server"
+        INSTALL_TYPES "local"
     )
 
+if (SD_SERVER)
     cpack_add_component("${CMAKE_PROJECT_NAME}Server"
         DISPLAY_NAME "SD C++ Server"
         DESCRIPTION "Stable Diffusion CPP Server"
+        CONFLICTS "${CMAKE_PROJECT_NAME}"
+        INSTALL_TYPES "server"
     )
+
+    cpack_add_component("${CMAKE_PROJECT_NAME}Service"
+        DISPLAY_NAME "Install server as a Windows service"
+        DESCRIPTION "Run the Stable Diffusion server as a Windows service."
+        DEPENDS "${CMAKE_PROJECT_NAME}Server"
+        GROUP "Optional Features"
+        INSTALL_TYPES "server"
+    )
+endif(SD_SERVER)
 
     cpack_add_component(libsdcpp_avx
         DISPLAY_NAME "SD C++ -AVX"
         DESCRIPTION "SD CPU backend with AVX CPU feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
 
 
@@ -224,12 +267,14 @@ include(CPack)
         DISPLAY_NAME "SD C++ -AVX2"
         DESCRIPTION "SD CPU backend with AVX2 CPU feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
 
     cpack_add_component(libsdcpp_avx512
         DISPLAY_NAME "SD C++ -AVX512"
         DESCRIPTION "SD CPU backend with AVX512 CPU feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
 
 
@@ -237,6 +282,7 @@ include(CPack)
         DISPLAY_NAME "SD C++ -CUDA"
         DESCRIPTION "SD GPU backend with CUDA GPU feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
 
 
@@ -244,20 +290,40 @@ include(CPack)
         DISPLAY_NAME "SD C++ -HIPBLAS"
         DESCRIPTION "SD GPU backend with AMD GPU feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
-
 
 
     cpack_add_component(libsdcpp_vulkan
         DISPLAY_NAME "SD C++ -VULKAN"
         DESCRIPTION "SD GPU backend with VULKAN feature"
         GROUP backends
+        INSTALL_TYPES "server" "local"
     )
+
     cpack_add_component_group(backends
-    DISPLAY_NAME "C++ Backends"
-    EXPANDED
-    DESCRIPTION
-   "Stable Diffusion C++ Backends")
+        DISPLAY_NAME "C++ Backends"
+        EXPANDED
+        DESCRIPTION "Stable Diffusion C++ Backends"
+        INSTALL_TYPES "server" "local"
+    )
+
+   cpack_add_component_group("Optional Features"
+        DISPLAY_NAME "Optional Features"
+        EXPANDED
+        DESCRIPTION "Stable Diffusion C++ Optional Features"
+    )
+
+
+    cpack_add_install_type(local
+        DISPLAY_NAME Local diffusion installation
+    )
+    cpack_add_install_type(server
+        DISPLAY_NAME Server installation
+    )
+
+
+
 
 set(EPREFIX "")
 

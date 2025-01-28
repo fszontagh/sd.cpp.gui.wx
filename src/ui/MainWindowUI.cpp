@@ -735,14 +735,21 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 return;
             }
 
+            menu->Append(1, _("Requeue"));
+            menu->Enable(1, false);
+
+            if (qitem->status & QueueStatusFlags::REQUEUEABLE_FLAG) {
+                menu->Enable(1, true);
+            }
             if (qitem->mode != SDMode::CONVERT) {
-                menu->Append(1, _("Requeue"));
                 if (qitem->mode == SDMode::IMG2IMG ||
                     qitem->mode == SDMode::UPSCALE) {
                     if (!std::filesystem::exists(qitem->initial_image)) {
                         menu->Enable(1, false);
                     }
                 }
+            } else {
+                menu->Enable(1, false);
             }
 
             if (qitem->params.controlnet_path.length() > 0 &&
@@ -771,16 +778,15 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
 
             if (qitem->status & QueueStatusFlags::PAUSABLE_FLAG) {
                 menu->AppendSeparator();
-                menu->Append(8, qitem->status == QueueStatus::PENDING ? _("Pause") : _("Resume"));
+                menu->Append(8, _("Pause"));
+            } else if (qitem->status & QueueStatusFlags::RESUMEABLE_FLAG) {
+                menu->AppendSeparator();
+                menu->Append(8, _("Resume"));
             }
 
             menu->AppendSeparator();
             menu->Append(99, _("Delete"));
             menu->Enable(99, false);
-
-            if (qitem->status & QueueStatusFlags::REQUEUEABLE_FLAG) {
-                menu->Enable(1, false);
-            }
 
             if (qitem->status & QueueStatusFlags::DELETABLE_FLAG) {
                 menu->Enable(99, true);
@@ -5426,7 +5432,7 @@ void MainWindowUI::ProcessCheckThread() {
                     event->SetId(9999);
                     wxQueueEvent(this, event);
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
+                // std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
                 return;
             }
             float sleepTime = EPROCESS_SLEEP_TIME;
@@ -5453,7 +5459,9 @@ void MainWindowUI::ProcessCheckThread() {
                     }
                 }
             }
-            std::this_thread::sleep_for(std::chrono::duration<float, std::milli>(sleepTime));
+            if (this->extProcessNeedToRun.load()) {
+                std::this_thread::sleep_for(std::chrono::duration<float, std::milli>(sleepTime));
+            }
 
             continue;
         }
@@ -5493,10 +5501,9 @@ void MainWindowUI::ProcessCheckThread() {
         }
         this->jobsCountSinceSegfault.store(0);
         this->stepsCountSinceSegfault.store(0);
-        if (std::string(BUILD_TYPE) == "Debug") {
-            std::cout << "[GUI] restart sleep time: " << (EPROCESS_SLEEP_TIME * 10) << std::endl;
+        if (this->extProcessNeedToRun.load()) {
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME * 10));
     }
 }
 void MainWindowUI::initLog() {

@@ -1,0 +1,5 @@
+<service>
+  <id>stablediffusiongui_server</id>
+  <executable>%BASE%\stablediffusiongui_server.exe</executable>
+  <arguments>%BASE%\server.json</arguments>
+</service>

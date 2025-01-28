@@ -84,8 +84,8 @@ bool TerminalApp::OnInit() {
         auto now                    = std::chrono::system_clock::now();
         auto timestamp              = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
         this->configData->server_id = sd_gui_utils::sha256_string_openssl(std::to_string(timestamp) + this->configData->authkey + this->configData->host + this->configData->model_paths.checkpoints);
-        auto idGen                  = sd_gui_utils::SnowflakeIDGenerator(this->configData->server_id, this->configData->host, this->configData->port);
-        this->configData->server_id = idGen.generateID(timestamp);
+        // auto idGen                  = sd_gui_utils::SnowflakeIDGenerator(this->configData->server_id, this->configData->host, this->configData->port);
+        // this->configData->server_id = idGen.generateID(timestamp);
 
         wxLogInfo("Generated server_id: %s", this->configData->server_id);
         // save into the config file
@@ -369,7 +369,7 @@ void TerminalApp::ExternalProcessRunner() {
         }
 
         while (subprocess_alive(this->subprocess.load()) != 0 && this->extProcessNeedToRun.load() == true) {
-            //std::unique_lock<std::mutex> lock(this->shmMutex);
+            // std::unique_lock<std::mutex> lock(this->shmMutex);
             std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
 
             this->sharedMemoryManager->read(buffer.get(), SHARED_MEMORY_SIZE);
@@ -590,9 +590,12 @@ bool TerminalApp::LoadModelFiles() {
     wxLogInfo("Loading model files");
     size_t used_sizes = 0;
     // load checkpoints
-    if (this->configData->model_paths.checkpoints.empty() || wxDirExists(this->configData->model_paths.checkpoints) == false) {
-        wxLogError("Model path does not exist: %s", this->configData->model_paths.checkpoints);
+    if (this->configData->model_paths.checkpoints.empty()) {
+        wxLogError("Model path is empty in config: %s", this->configData->model_paths.checkpoints);
         return false;
+    }
+    if (!wxDirExists(this->configData->model_paths.checkpoints)) {
+        wxDir::Make(this->configData->model_paths.checkpoints, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
     }
 
     wxArrayString checkpoint_files;

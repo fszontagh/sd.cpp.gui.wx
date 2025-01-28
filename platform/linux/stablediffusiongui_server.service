@@ -1,0 +1,14 @@
+[Unit]
+Description=@CMAKE_PROJECT_DESCRIPTION@
+Documentation=@HOMEPAGE_URL@
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+ExecStart=/usr/bin/stablediffusiongui_server /etc/stablediffusiongui_server/server.json
+TimeoutStartSec=0
+RestartSec=2
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

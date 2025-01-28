@@ -256,7 +256,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_joblist_item_details = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxSize( 480,-1 ), wxDV_HORIZ_RULES|wxDV_NO_HEADER|wxDV_ROW_LINES|wxDV_SINGLE|wxDV_VARIABLE_LINE_HEIGHT|wxDV_VERT_RULES|wxBORDER_DEFAULT );
 	m_dataViewListColumn1 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn2 = m_joblist_item_details->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_END );
+	m_dataViewListColumn2->GetRenderer()->EnableEllipsize( wxELLIPSIZE_MIDDLE );
 	bSizer106->Add( m_joblist_item_details, 1, wxALL|wxEXPAND, 5 );
 
 

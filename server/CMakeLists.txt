@@ -44,6 +44,7 @@ configure_file(server-config-example.json ${PROJECT_BINARY_DIR}/server-config-ex
 
 install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 install(FILES ${PROJECT_BINARY_DIR}/Dockerfile DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(FILES ${PROJECT_BINARY_DIR}/server-config-example.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 
 if(WIN32)
     target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
