@@ -86,12 +86,6 @@ if(NOT SD_HIPBLAS)
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
 
-    SET(GGML_NATIVE OFF)
-    SET(GGML_CCACHE OFF)
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        SET(GGML_NATIVE ON)
-        SET(GGML_CCACHE ON)
-    endif()
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
@@ -101,8 +95,6 @@ if(NOT SD_HIPBLAS)
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             CMAKE_ARGS "-DCMAKE_C_COMPILER=clang"
             "-DCMAKE_CXX_COMPILER=clang++"
-            "-DGGML_NATIVE=${GGML_NATIVE}"
-            "-DGGML_CCACHE=${GGML_CCACHE}"
             "-DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME}"
             "-DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION}"
             "-DCMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}"
@@ -114,6 +106,7 @@ if(NOT SD_HIPBLAS)
             "-DGGML_AVX=${SD_AVX}"
             "-DGGML_AVX2=${SD_AVX2}"
             "-DGGML_AVX512=${SD_AVX512}"
+            "-DGGML_CPU_AARCH64=OFF"
             "-DSD_CUDA=${SD_CUDA}"
             "-DSD_HIPBLAS=${SD_HIPBLAS}"
             "-DSD_VULKAN=${SD_VULKAN}"
