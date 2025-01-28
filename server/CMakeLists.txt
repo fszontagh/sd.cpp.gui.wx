@@ -32,19 +32,26 @@ target_include_directories(${SERVER_BINARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/ser
 
 set(bin_INSTALL_PATH_NSIS "bin")
 set(share_INSTALL_PATH_NSIS "share/stablediffusiongui")
+set(etc_INSTALL_PATH_NSIS "/etc/stablediffusiongui_server")
 
 
 if (WIN32)
 	set(bin_INSTALL_PATH_NSIS ".")
     set(share_INSTALL_PATH_NSIS ".")
+    set(share_INSTALL_PATH_NSIS ".")
+else()
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
 endif()
 # to generate Dockerfile for the server
 configure_file(platforms/Docker/Dockerfile.in ${PROJECT_BINARY_DIR}/Dockerfile)
-configure_file(server-config-example.json ${PROJECT_BINARY_DIR}/server-config-example.json @ONLY)
+configure_file(server-config-example.json ${PROJECT_BINARY_DIR}/server.json @ONLY)
+configure_file(server-config-example-docker.json ${PROJECT_BINARY_DIR}/server-docker.json @ONLY)
 
-install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install(FILES ${PROJECT_BINARY_DIR}/Dockerfile DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
-install(FILES ${PROJECT_BINARY_DIR}/server-config-example.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(FILES ${PROJECT_BINARY_DIR}/server-docker.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(FILES ${PROJECT_BINARY_DIR}/server.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+
 
 if(WIN32)
     target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)

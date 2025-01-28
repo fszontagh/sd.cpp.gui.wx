@@ -1,5 +1,7 @@
 <service>
-  <id>stablediffusiongui_server</id>
-  <executable>%BASE%\stablediffusiongui_server.exe</executable>
-  <arguments>%BASE%\server.json</arguments>
+  <id>@PROJECT_BINARY_NAME@_server</id>
+  <executable>%BASE%\@PROJECT_BINARY_NAME@_server.exe</executable>
+  <description>@PROJECT_DESCRIPTION@</description>
+  <name>@PROJECT_DESCRIPTION@ Server</name>
+  <arguments>"%BASE%\server.json"</arguments>
 </service>

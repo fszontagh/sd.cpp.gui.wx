@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+# Szolgáltatás leállítása és kikapcsolása
+if command -v systemctl > /dev/null 2>&1; then
+    systemctl stop stablediffusiongui_server.service || true
+    systemctl disable stablediffusiongui_server.service || true
+fi
+
+if [ "$1" = "purge" ]; then
+    rm -f /etc/stablediffusiongui_server/server.json
+fi
+
+exit 0

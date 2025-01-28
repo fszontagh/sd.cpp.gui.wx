@@ -13,9 +13,9 @@ FYI:
     // the host to listen, possible values: 0.0.0.0 -> listann all interfaces, 127.0.0.1 -> listen only on localhost, :: -> listen on all ipv6 interfaces, or any valid IP address and hostname
     "host": "127.0.0.1",
     // where the server will log
-    "logfile": "/var/log/stable-diffusion-server.log",
+    "logfile": "/app/log/stable-diffusion-server.log",
     // where the diffusser process will log
-    "diffuser_logfile": "/var/log/stable-diffusion-diffuser.log",
+    "diffuser_logfile": "/app/log/stable-diffusion-diffuser.log",
     // the backend HW accelerator, valid values: avx, avx2, avx512, cuda, vulkan -> the required libraries must be installed
     "backend": "avx",
     // maximum number of clients that can connect in parallel
@@ -23,14 +23,14 @@ FYI:
     // the maximum interval in seconds to wait the client to send an authentication request
     "unauthorized_timeout": 4,
     // where the connected client's info and image generation data (jobs, images) stored
-    "data_path": "/var/lib/stable-diffusion-server",
+    "data_path": "/app/data",
     "model_paths": {
-        "controlnet": "/var/lib/stable-diffusion-server/models/controlnet",
-        "embedding": "/var/lib/stable-diffusion-server/models/embeddings",
-        "esrgan": "/var/lib/stable-diffusion-server/models/esrgan",
-        "lora": "/var/lib/stable-diffusion-server/models/loras",
-        "checkpoints": "/var/lib/stable-diffusion-server/models/checkpoints",
-        "taesd": "/var/lib/stable-diffusion-server/models/taesd",
-        "vae": "/var/lib/stable-diffusion-server/models/vae"
+        "controlnet": "/app/modelscontrolnet",
+        "embedding": "/app/modelsembeddings",
+        "esrgan": "/app/modelsesrgan",
+        "lora": "/app/modelsloras",
+        "checkpoints": "/app/modelscheckpoints",
+        "taesd": "/app/modelstaesd",
+        "vae": "/app/modelsvae"
     }
 }

@@ -1,0 +1,21 @@
+#!/bin/bash
+# postinst script for stablediffusiongui-server
+set -e
+
+echo "Reloading systemd daemon..."
+systemctl daemon-reload || true
+echo "Enabling stablediffusiongui_server.service..."
+systemctl enable stablediffusiongui_server.service || true
+
+chmod -f +x /usr/bin/stablediffusiongui_server
+chmod -f +x /usr/bin/stablediffusiongui_diffuser
+
+CONF_FILE="/etc/stablediffusiongui_server/server.json"
+if [ ! -f "$CONF_FILE" ]; then
+    mkdir /etc/stablediffusiongui_server
+    cp /usr/share/stablediffusiongui/server.json "$CONF_FILE"
+    mkdir -p /var/lib/stable-diffusion-server/models/{checkpoints,controlnet,embedding,esrgan,loras,taesd,vae}
+fi
+
+
+exit 0

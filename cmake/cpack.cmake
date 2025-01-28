@@ -1,6 +1,7 @@
 # CPack configuration
 
-#include(InstallRequiredSystemLibraries)
+include(GNUInstallDirs)
+
 set(CPACK_PACKAGE_NAME "StableDiffusionGUI")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_CONTACT "Ferenc Szonta'gh <szf@fsociety.hu>")
@@ -66,7 +67,7 @@ set_property(TARGET ${PROJECT_BINARY_NAME} PROPERTY APPIMAGE_ICON_FILE ${CMAKE_S
 
 
 
-install(TARGETS ${PROJECT_BINARY_NAME} DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}")
+install(TARGETS ${PROJECT_BINARY_NAME} DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 #list(APPEND CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}")
 
 if (SD_SERVER OR EXISTS "${CMAKE_BINARY_DIR}/server/${EPREFIX}${PROJECT_BINARY_NAME}_server${CMAKE_EXECUTABLE_SUFFIX}")
@@ -75,9 +76,7 @@ if (SD_SERVER OR EXISTS "${CMAKE_BINARY_DIR}/server/${EPREFIX}${PROJECT_BINARY_N
     COMPONENT "${CMAKE_PROJECT_NAME}Server")
     list(APPEND CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}Server")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_NAME "stablediffusiongui-server-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
-    configure_file("platform/linux/${PROJECT_BINARY_NAME}_server.service" ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service @ONLY)
-    install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION /lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
+    set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 
@@ -87,7 +86,7 @@ if (SDGUI_AVX OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PR
 	COMPONENT libsdcpp_avx)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx")
     set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_NAME "libstablediffusion-avx-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_AVX2 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx2${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -96,7 +95,7 @@ if (SDGUI_AVX2 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_P
 	COMPONENT libsdcpp_avx2)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx2")
     set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_NAME "libstablediffusion-avx2-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX2_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_AVX512 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_avx512${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -105,7 +104,7 @@ if (SDGUI_AVX512 OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY
 	COMPONENT libsdcpp_avx512)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_avx512")
     set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_NAME "libstablediffusion-avx512-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_AVX512_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_CUBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_cuda${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -114,7 +113,7 @@ if (SDGUI_CUBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY
 	COMPONENT libsdcpp_cuda)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_cuda")
     set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_NAME "libstablediffusion-cuda-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_HIPBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_hipblas${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -123,7 +122,7 @@ if (SDGUI_HIPBLAS OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRAR
 	COMPONENT libsdcpp_hipblas)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_hipblas")
     set(CPACK_DEBIAN_LIBSDCPP_HIPBLAS_PACKAGE_NAME "libstablediffusion-hipblas-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_HIPBLAS_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_HIPBLAS_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 if (SDGUI_VULKAN OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_vulkan${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -132,7 +131,7 @@ if (SDGUI_VULKAN OR EXISTS "${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY
 	COMPONENT libsdcpp_vulkan)
 	list(APPEND CPACK_COMPONENTS_ALL "libsdcpp_vulkan")
     set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_NAME "libstablediffusion-vulkan-${SDCPP_VERSION}")
-    set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_LIBSDCPP_VULKAN_PACKAGE_RELEASE "${DISTRO_VERSION}")
 endif()
 
 
@@ -169,7 +168,7 @@ if (SD_SERVER)
 
     configure_file(platform/msvc/nsis_install_service.nsh ${SERVICE_INSTALL_SCRIPT} @ONLY)
     configure_file(platform/msvc/nsis_uninstall_service.nsh ${SERVICE_UNINSTALL_SCRIPT} @ONLY)
-    configure_file(platform/msvc/winsw.xml ${CMAKE_BINARY_DIR}/nsis/winsw.xml COPYONLY)
+    configure_file(platform/msvc/winsw.xml ${CMAKE_BINARY_DIR}/nsis/winsw.xml @ONLY)
 
     # download WinSW-x64 to manage as service
     file(DOWNLOAD https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe ${CMAKE_BINARY_DIR}/nsis/WinSW-x64.exe)
@@ -195,23 +194,40 @@ elseif(UNIX AND NOT APPLE)
     # DEB package settings
     set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), stablediffusiongui (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
-    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libexiv2-27, libnotify4, openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9)")
+    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libexiv2-27, libnotify4, openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION})")
     if (DISTRO_VER GREATER 23)
         set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     else()
         set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     endif()
-    set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_DEPENDS  "openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${TODAY}~${DISTRO_VERSION})")
+
+    set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_CONFLICTS "stablediffusiongui-server")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION ${CMAKE_PROJECT_DESCRIPTION})
     set(CPACK_DEBIAN_PACKAGE_SECTION "graphics")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
     set(CPACK_DEBIAN_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
-    set(CPACK_DEBIAN_PACKAGE_RELEASE "${TODAY}~${DISTRO_VERSION}")
+    set(CPACK_DEBIAN_PACKAGE_RELEASE "${DISTRO_VERSION}")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_NAME "stablediffusiongui")
 
+    if (SD_SERVER)
+        set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_DEPENDS  "openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION})")
+        set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_CONFLICTS "stablediffusiongui")
 
-    include(GNUInstallDirs)
+        configure_file("platform/linux/postinst" ${CMAKE_BINARY_DIR}/postinst @ONLY)
+        configure_file("platform/linux/prerm" ${CMAKE_BINARY_DIR}/prerm @ONLY)
+        configure_file("platform/linux/postrm" ${CMAKE_BINARY_DIR}/postrm @ONLY)
+
+
+        set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_CONTROL_EXTRA
+        "${CMAKE_BINARY_DIR}/postinst;${CMAKE_BINARY_DIR}/prerm;${CMAKE_BINARY_DIR}/postrm")
+
+        configure_file("platform/linux/${PROJECT_BINARY_NAME}_server.service" ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service @ONLY)
+        install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION /lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
+
+    endif()
+
+
     set(APPIMAGE_SOURCE_DIR "${CMAKE_BINARY_DIR}/AppImageSource")
 
 
