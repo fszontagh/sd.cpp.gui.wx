@@ -404,12 +404,12 @@ jobs:
         run: |
           cd build
           cmake --build . --config Release --target package
-          mkdir -p AppImageSource/usr/lib
-          cp -pP /usr/lib/x86_64-linux-gnu/libexiv2* AppImageSource/usr/lib
-          cp -pP /usr/lib/x86_64-linux-gnu/libjpeg* AppImageSource/usr/lib
-          cp -pP /usr/lib/x86_64-linux-gnu/libpng* AppImageSource/usr/lib
-          cp -pP /usr/lib/x86_64-linux-gnu/libcurl* AppImageSource/usr/lib
-          cmake --build . --config Release --target AppImage
+#          mkdir -p AppImageSource/usr/lib
+#          cp -pP /usr/lib/x86_64-linux-gnu/libexiv2* AppImageSource/usr/lib
+#          cp -pP /usr/lib/x86_64-linux-gnu/libjpeg* AppImageSource/usr/lib
+#          cp -pP /usr/lib/x86_64-linux-gnu/libpng* AppImageSource/usr/lib
+#          cp -pP /usr/lib/x86_64-linux-gnu/libcurl* AppImageSource/usr/lib
+#          cmake --build . --config Release --target AppImage
 
       - name: Upload Release Outputs
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}

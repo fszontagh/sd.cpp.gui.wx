@@ -379,7 +379,7 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
                 return;
             }
             this->cfg->ServerEnable(internal_id, this->m_serverEnable->GetValue(), true);
-            ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
+            this->ChangeRemoteServer(srv->GetStatus(), ServerListColumns::SERVER_LIST_COLUMN_STATUS, row);
             this->m_serverEnable->SetLabel(srv->IsEnabled() ? _("Disable") : _("Enable"));
         }
     }

@@ -171,6 +171,8 @@ namespace sd_gui_utils {
         }
         void Stop() {
             this->needToRun.store(false);
+            this->client->stop();
+
             if (this->thread.joinable()) {
                 this->thread.join();
             }
@@ -216,8 +218,7 @@ namespace sd_gui_utils {
             this->enabled.store(state);
             if (state == false && autostartstop == true) {
                 this->Stop();
-            }
-            if (state == true && autostartstop == true) {
+            } else if (state == true && autostartstop == true) {
                 this->Stop();
                 this->StartServer();
             }

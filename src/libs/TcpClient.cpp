@@ -128,7 +128,7 @@ namespace sd_gui_utils {
             this->connected.store(false);
             this->disconnect_reason = ret.m_msg;
 
-            TcpClientOntDisconnect disconnectClb;
+            TcpClientOnDisconnect disconnectClb;
             {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
                 disconnectClb = callbacks_.onDisconnectClb;

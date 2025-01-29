@@ -8,7 +8,7 @@ namespace sd_gui_utils {
     inline namespace networks {
         using TcpClientOnMessage     = std::function<void(int)>;
         using TcpClientOnConnect     = std::function<void()>;
-        using TcpClientOntDisconnect = std::function<void(std::string)>;
+        using TcpClientOnDisconnect  = std::function<void(std::string)>;
         using TcpClientOnError       = std::function<void(const std::string&)>;
         using TcpClientOnStop        = std::function<void()>;
         using TcpClientOnAuthRequest = std::function<void()>;
@@ -29,7 +29,7 @@ namespace sd_gui_utils {
             struct Callbacks {
                 TcpClientOnMessage onMessageClb         = nullptr;
                 TcpClientOnConnect onConnectClb         = nullptr;
-                TcpClientOntDisconnect onDisconnectClb  = nullptr;
+                TcpClientOnDisconnect onDisconnectClb   = nullptr;
                 TcpClientOnError onErrorClb             = nullptr;
                 TcpClientOnStop onStopClb               = nullptr;
                 TcpClientOnAuthRequest onAuthRequestClb = nullptr;
@@ -73,6 +73,17 @@ namespace sd_gui_utils {
 
             inline void stop() {
                 this->m_client.finish();
+                if (this->IsConnected()) {
+                    TcpClientOnDisconnect disconnectClb;
+                    {
+                        std::lock_guard<std::mutex> lock(callbackMutex_);
+                        disconnectClb = callbacks_.onDisconnectClb;
+                    }
+                    this->disconnect_reason = "client stopped";
+                    if (disconnectClb) {
+                        disconnectClb(this->disconnect_reason);
+                    }
+                }
                 this->connected.store(false);
 
                 TcpClientOnStop onStopClb;
@@ -94,7 +105,7 @@ namespace sd_gui_utils {
                 callbacks_.onMessageClb = std::move(callback);
             }
 
-            void SetOnDisconnectCallback(TcpClientOntDisconnect callback) {
+            void SetOnDisconnectCallback(TcpClientOnDisconnect callback) {
                 std::lock_guard<std::mutex> lock(callbackMutex_);
                 callbacks_.onDisconnectClb = std::move(callback);
             }

@@ -52,14 +52,12 @@
 #include "helpers/sd.hpp"
 #include "sockets-cpp/TcpClient.h"
 #include "ui/ThreadEventTypes.hpp"
-
+#include "network/RemoteModelInfo.h"
 #include "helpers/sslUtils.hpp"
 #include "helpers/QueueItemStats.h"
 #include "helpers/QueueEvents.h"
 #include "helpers/QueueStatus.h"
 #include "network/RemoteQueueItem.h"
-
-#include "network/RemoteModelInfo.h"
 #include "helpers/QueueItem.h"
 
 #include "network/sdServer.h"
