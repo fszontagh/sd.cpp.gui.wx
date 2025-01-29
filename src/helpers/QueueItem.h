@@ -1,6 +1,5 @@
 #ifndef __HELPERS_QUEUE_ITEM_
 #define __HELPERS_QUEUE_ITEM_
-#include <inttypes.h>
 
 inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
     {SDMode::TXT2IMG, "txt2img"},
@@ -164,7 +163,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
                 this->mask_image = img.target_filename;
             }
         }
-    }
+    }  // SetImagesPathsFromInfo
 
     inline sd_gui_utils::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
         sd_gui_utils::RemoteQueueItem newItem(*this);
@@ -183,8 +182,8 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
             newItem.params.esrgan_path = newItem.params.esrgan_path.empty() ? newItem.params.esrgan_path : model_names_prefix + ":" + newItem.params.esrgan_path;
         }
         return newItem;
-    }
-    // convert the images into local path
+    }  // convertToNetwork
+
     inline static QueueItem convertFromNetwork(const sd_gui_utils::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
         QueueItem newItem(item);
         // newItem.image_data.clear();
@@ -197,8 +196,8 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
             }
         }
         return newItem;
-    }
-};
+    }  // convertFromNetwork
+};  // QueueItem
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,
                                                 id,

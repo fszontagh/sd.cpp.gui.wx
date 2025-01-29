@@ -4609,42 +4609,14 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
     std::vector<sd_gui_utils::networks::ImageInfo> needExif;
     // the raw images are the generated images. Only presents when the generation is done without errors
     for (const auto& rimage : item->rawImages) {
-        // regenerate name, if multiple image generated, this check if exists
-        wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output), "", true);
-        if (wxFileExists(fullName)) {
-            item->image_info.emplace_back(sd_gui_utils::networks::ImageType::GENERATED, fullName);
-            continue;
-        }
-
-        wxImage rawImage;
-
-        if (imgHandler == wxBITMAP_TYPE_PNG) {
-            rawImage.SetOption(wxIMAGE_OPTION_COMPRESSION, this->mapp->cfg->png_compression_level);  // set the compression from the settings
-        }
-        if (imgHandler == wxBITMAP_TYPE_JPEG) {
-            rawImage.SetOption(wxIMAGE_OPTION_QUALITY, this->mapp->cfg->image_quality);
-        }
-
-        rawImage.SetLoadFlags(rawImage.GetLoadFlags() & ~wxImage::Load_Verbose);
-        if (!rawImage.LoadFile(wxString::FromUTF8Unchecked(rimage))) {
-            item->status_message = _("Invalid image from diffusion: ") + rimage;
-            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, item);
-            return item;
-        }
-
-        rawImage.SetOption(wxIMAGE_OPTION_FILENAME, baseFileName);
-        rawImage.SetOption(wxIMAGE_OPTION_PNG_COMPRESSION_LEVEL, 0);
-        if (!rawImage.SaveFile(fullName, imgHandler)) {
-            item->status_message = wxString::Format(_("Failed to save image into %s"), fullName).utf8_string();
-            MainWindowUI::SendThreadEvent(eventHandler, QueueEvents::ITEM_FAILED, item);
-            return item;
-        }
-        // add the generated image to the job
-        item->image_info.emplace_back(sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE, fullName);
-        item->image_info.back().target_filename = fullName.ToStdString();
-        item->image_info.back().width           = rawImage.GetWidth();
-        item->image_info.back().height          = rawImage.GetHeight();
-        item->image_info.back().id              = sd_gui_utils::calculateMD5(rimage);
+        sd_gui_utils::networks::ImageInfo rawImage;
+        rawImage.target_filename = rimage;
+        rawImage.id              = sd_gui_utils::calculateMD5(rimage);
+        rawImage.width           = 0;
+        rawImage.height          = 0;
+        rawImage.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
+        item->image_info.push_back(rawImage);
+        needExif.push_back(rawImage);
     }
     // count generated images
     int generated_images = 0;
@@ -4714,6 +4686,8 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
                     wxDateTime timestamp;
                     timestamp.Set(ts);
                     newTargetName.SetTimes(&timestamp, &timestamp, &timestamp);
+                    img.width  = tmp.GetWidth();
+                    img.height = tmp.GetHeight();
                 }
             }
         }
@@ -4734,6 +4708,8 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
                     wxDateTime timestamp;
                     timestamp.Set(ts);
                     newTargetName.SetTimes(&timestamp, &timestamp, &timestamp);
+                    img.width  = tmp.GetWidth();
+                    img.height = tmp.GetHeight();
                 }
                 // wxCopyFile(img.target_filename, newImage.GetAbsolutePath());
             }

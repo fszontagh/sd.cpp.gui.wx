@@ -223,7 +223,7 @@ elseif(UNIX AND NOT APPLE)
         "${CMAKE_BINARY_DIR}/postinst;${CMAKE_BINARY_DIR}/prerm;${CMAKE_BINARY_DIR}/postrm")
 
         configure_file("platform/linux/${PROJECT_BINARY_NAME}_server.service" ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service @ONLY)
-        install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION /lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
+        install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
 
     endif()
 

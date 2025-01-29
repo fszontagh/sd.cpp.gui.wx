@@ -6,6 +6,7 @@
 #include <thread>
 #include <random>
 #include <mutex>
+#include <cinttypes>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>

@@ -7,6 +7,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <cinttypes>
 
 #include <wx/app.h>
 #include <wx/dir.h>
