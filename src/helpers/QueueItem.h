@@ -204,8 +204,8 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         }
     }  // SetImagesPathsFromInfo
 
-    inline sd_gui_utils::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
-        sd_gui_utils::RemoteQueueItem newItem(*this);
+    inline sd_gui_utils::networks::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
+        sd_gui_utils::networks::RemoteQueueItem newItem(*this);
 
         if (clear_images_data == true) {
             for (auto& img : newItem.image_info) {
@@ -223,7 +223,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         return newItem;
     }  // convertToNetwork
 
-    inline static QueueItem convertFromNetwork(const sd_gui_utils::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
+    inline static QueueItem convertFromNetwork(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
         QueueItem newItem(item);
         // newItem.image_data.clear();
         for (auto& img : newItem.image_info) {

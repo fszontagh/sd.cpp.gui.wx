@@ -530,7 +530,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
 
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
         this->sendLogEvent("Received job add", wxLOG_Debug);
-        auto data      = packet.GetData<sd_gui_utils::RemoteQueueItem>();
+        auto data      = packet.GetData<sd_gui_utils::networks::RemoteQueueItem>();
         data.id        = this->queueManager->GenerateNextId();
         auto converted = QueueItem::convertFromNetwork(data, this->configData->GetJobsPath());
         converted.SetImagesPathsFromInfo();

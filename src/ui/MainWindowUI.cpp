@@ -906,18 +906,15 @@ void MainWindowUI::OnDataModelTreeContextMenu(wxTreeListEvent& event) {
             menu->AppendSubMenu(submenu, _("&Move to another folder"));
 
             menu->Append(310, _("&Delete model file"));
-            // do not delete the model if it is used in a job
-            for (const auto& qitem : this->qmanager->getList()) {
-                if (qitem.second->params.model_path == modelInfo->path &&
-                    (qitem.second->status == QueueStatus::MODEL_LOADING ||
-                     qitem.second->status == QueueStatus::HASHING ||
-                     qitem.second->status == QueueStatus::HASHING_DONE ||
-                     qitem.second->status == QueueStatus::PAUSED ||
-                     qitem.second->status == QueueStatus::PENDING ||
-                     qitem.second->status == QueueStatus::RUNNING ||
-                     modelInfo->server_id.empty() == false)) {  // TODO: allow remote models to delete
-                    menu->Enable(310, false);
-                    break;
+            if (modelInfo->server_id.empty() == false) {
+                menu->Enable(310, false);
+            } else {
+                for (const auto& qitem : this->qmanager->getList()) {
+                    if (qitem.second->params.model_path == modelInfo->path &&
+                        (qitem.second->status & QueueStatusFlags::DELETABLE_FLAG) == false) {
+                        menu->Enable(310, false);
+                        break;
+                    }
                 }
             }
         }
