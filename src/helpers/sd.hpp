@@ -12,13 +12,6 @@
 #include <vector>
 #include "../libs/json.hpp"
 
-inline static void writeCriticalLog(const std::string& log, std::string filename) {
-    std::filesystem::path p = std::filesystem::current_path() / filename;
-    std::ofstream logFile(p, std::ios::app);
-    logFile << log << std::endl;
-    logFile.close();
-}
-
 // Enumerations
 enum rng_type_t { STD_DEFAULT_RNG,
                   CUDA_RNG };
@@ -673,23 +666,18 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, SDParams& nlohmann
     }
 }
 
-inline static std::vector<int> pointerToVector(int* ptr, size_t size) {
-    if (ptr == nullptr) {
-        return {};
-    }
-    return std::vector<int>(ptr, ptr + size);
-}
-inline static int* vectorToPointer(const std::vector<int>& vec) {
-    if (vec.empty()) {
-        return nullptr;
-    }
+inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
+    {SDMode::TXT2IMG, "txt2img"},
+    {SDMode::IMG2IMG, "img2img"},
+    {SDMode::CONVERT, "convert"},
+    {SDMode::UPSCALE, "upscale"},
+    {SDMode::IMG2VID, "img2vid"}};
 
-    int* ptr = new int[vec.size()];
-    for (size_t i = 0; i < vec.size(); ++i) {
-        ptr[i] = vec[i];
-    }
-
-    return ptr;
-}
+inline const std::unordered_map<std::string, SDMode> GenerationMode_str_inv = {
+    {"txt2img", SDMode::TXT2IMG},
+    {"img2img", SDMode::IMG2IMG},
+    {"convert", SDMode::CONVERT},
+    {"upscale", SDMode::UPSCALE},
+    {"img2vid", SDMode::IMG2VID}};
 
 #endif  // STABLE_DIFFUSION_WRAPPER_H

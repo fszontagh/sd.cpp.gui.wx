@@ -1,19 +1,6 @@
 #ifndef HELPERS_QUEUE_ITEM_H
 #define HELPERS_QUEUE_ITEM_H
 
-inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
-    {SDMode::TXT2IMG, "txt2img"},
-    {SDMode::IMG2IMG, "img2img"},
-    {SDMode::CONVERT, "convert"},
-    {SDMode::UPSCALE, "upscale"},
-    {SDMode::IMG2VID, "img2vid"}};
-
-inline const std::unordered_map<std::string, SDMode> GenerationMode_str_inv = {
-    {"txt2img", SDMode::TXT2IMG},
-    {"img2img", SDMode::IMG2IMG},
-    {"convert", SDMode::CONVERT},
-    {"upscale", SDMode::UPSCALE},
-    {"img2vid", SDMode::IMG2VID}};
 
 struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     std::vector<std::string> rawImages = {};
@@ -126,7 +113,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         this->rawImages.clear();
     }
     inline void PrepareImagesForServer() {
-        for (auto& img : this->image_info) {
+        for (sd_gui_utils::networks::ImageInfo& img : this->image_info) {
             if (wxFileExists(img.data_filename)) {
                 img.data.clear();
                 sd_gui_utils::EncodeFileToBase64(img.data_filename, img.data);
@@ -208,7 +195,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         sd_gui_utils::networks::RemoteQueueItem newItem(*this);
 
         if (clear_images_data == true) {
-            for (auto& img : newItem.image_info) {
+            for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
                 img.data.clear();
                 img.data_filename.clear();
                 img.target_filename.clear();
@@ -226,7 +213,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     inline static QueueItem convertFromNetwork(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
         QueueItem newItem(item);
         // newItem.image_data.clear();
-        for (auto& img : newItem.image_info) {
+        for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
             img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
             if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
                 if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
