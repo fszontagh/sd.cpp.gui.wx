@@ -214,7 +214,7 @@ elseif(UNIX AND NOT APPLE)
     if (SD_SERVER)
         set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_DEPENDS  "openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION})")
         set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_CONFLICTS "stablediffusiongui")
-        set(CPACK_DEBIAN_SIONGUISERVER_PACKAGE_DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION} Server")
+        set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION} Server")
 
         configure_file("platform/linux/postinst" ${CMAKE_BINARY_DIR}/postinst @ONLY)
         configure_file("platform/linux/prerm" ${CMAKE_BINARY_DIR}/prerm @ONLY)
