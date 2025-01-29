@@ -1,5 +1,5 @@
-#ifndef __HELPERS_QUEUE_ITEM_
-#define __HELPERS_QUEUE_ITEM_
+#ifndef HELPERS_QUEUE_ITEM_H
+#define HELPERS_QUEUE_ITEM_H
 
 inline const std::unordered_map<SDMode, std::string> GenerationMode_str = {
     {SDMode::TXT2IMG, "txt2img"},
@@ -21,14 +21,17 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     std::string mask_image             = "";
     inline wxString GetActualSpeed() {
         wxString speed = "";
+        if (this->time == 0.0f) {
+            return wxString("0s/it");
+        }
         if (this->status == QueueStatus::MODEL_LOADING || this->mode == SDMode::CONVERT) {
-            // int progress = (this->step / this->steps) * 100;
             speed = wxString::Format(this->time > 1.0f ? "%.2fs/it" : "%.2fit/s", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time));
         } else {
-            speed = wxString::Format(this->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d", this->time > 1.0f || this->time == 0 ? this->time : (1.0f / this->time), this->step, this->steps);
+            wxString formatStr = this->time > 1.0f ? "%.2fs/it %d/%d" : "%.2fit/s %d/%d";
+            speed              = wxString::Format(formatStr, (this->time > 1.0f ? this->time : (1.0f / this->time)), this->step, this->steps);
         }
         return speed;
-    }
+    };
     inline int GetActualProgress() {
         float current_progress = 0.f;
         if (this->status == QueueStatus::PENDING) {
@@ -81,18 +84,20 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
             info.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
             if (wxFileExists(md5name.GetFullPath()) == true) {
                 wxFile f;
-                f.Open(md5name.GetFullPath(), wxFile::read);
                 wxString md5;
-                f.ReadAll(&md5);
-                f.Close();
+                if (f.Open(md5name.GetFullPath(), wxFile::read)) {
+                    f.ReadAll(&md5);
+                    f.Close();
+                }
                 info.id = md5.ToStdString();
 
             } else {
                 info.id = sd_gui_utils::calculateMD5(newName.GetAbsolutePath().ToStdString());
                 wxFile f;
-                f.Open(md5name.GetFullPath(), wxFile::write);
-                f.Write(wxString(info.id.data(), info.id.size()));
-                f.Close();
+                if (f.Open(md5name.GetFullPath(), wxFile::write)) {
+                    f.Write(wxString(info.id.data(), info.id.size()));
+                    f.Close();
+                }
             }
             // generate base64
             if (wxFileExists(base64Name.GetFullPath()) == false) {
@@ -100,15 +105,18 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
                     continue;
                 }
                 wxFile tmpFile;
-                tmpFile.Open(base64Name.GetFullPath(), wxFile::write);
-                tmpFile.Write(wxString(info.data.data(), info.data.size()));
-                tmpFile.Close();
+                if (tmpFile.Open(base64Name.GetFullPath(), wxFile::write)) {
+                    tmpFile.Write(wxString(info.data.data(), info.data.size()));
+                    tmpFile.Close();
+                }
+
             } else {
-                wxFile f;
-                f.Open(base64Name.GetFullPath(), wxFile::read);
                 wxString base64;
-                f.ReadAll(&base64);
-                f.Close();
+                wxFile f;
+                if (f.Open(base64Name.GetFullPath(), wxFile::read)) {
+                    f.ReadAll(&base64);
+                    f.Close();
+                }
                 info.data = base64.ToStdString();
             }
             this->image_info.emplace_back(info);
@@ -123,6 +131,37 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
                 img.data.clear();
                 sd_gui_utils::EncodeFileToBase64(img.data_filename, img.data);
                 img.id = sd_gui_utils::calculateMD5(img.data_filename);
+            }
+        }
+    }
+    inline QueueItem* RemoveRawImageData() {
+        if (this->rawImages.empty()) {
+            return this;
+        }
+        for (auto it = this->image_info.begin(); it != this->image_info.end();) {
+            if (!it->data.empty()) {
+                it->data.clear();
+            }
+        }
+        return this;
+    }
+    inline QueueItem* LoadImageInfos() {
+        if (this->image_info.empty()) {
+            return this;
+        }
+        for (auto it = this->image_info.begin(); it != this->image_info.end();) {
+            if (it->data.empty() && it->target_filename.empty() == false) {
+                wxFileName b64file(it->target_filename);
+                b64file.SetExt("png.base64");
+                if (wxFileExists(b64file.GetFullPath()) == true) {
+                    wxFile f;
+                    wxString base64string;
+                    if (f.Open(b64file.GetFullPath(), wxFile::read)) {
+                        f.ReadAll(&base64string);
+                        it->data = base64string.ToStdString();
+                        f.Close();
+                    }
+                }
             }
         }
     }

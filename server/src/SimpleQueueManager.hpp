@@ -258,19 +258,7 @@ private:
     sd_gui_utils::SnowflakeIDGenerator generator;
     uint64_t lastID                        = 0;
     std::shared_ptr<QueueItem> currentItem = nullptr;
-    /**
-     * Store a job in the job directory as a JSON file.
-     *
-     * If the item is nullptr or has an id of 0, this function does nothing.
-     *
-     * If the item is valid, this function dumps the item as a JSON object to a
-     * file in the job directory. The filename is 'local_<id>.json', where <id>
-     * is the job id.
-     *
-     * If an error occurs while opening the file or serializing the object, an
-     * error message is printed to stderr.
-     * This is not locking
-     */
+
     void StoreJobInFile(std::shared_ptr<QueueItem> item) {
         if (!item || item->id == 0) {
             return;

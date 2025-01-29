@@ -3792,7 +3792,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
         } catch (std::exception& e) {
             this->writeLog(wxString::Format(_("Error parsing JSON: %s"), e.what()));
-            std::cout << "The wrong json: " << packet.GetData<std::string>().c_str() << std::endl;
         }
 
         return;
@@ -4421,7 +4420,6 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         if (this->jobImagePreviews.contains(img.id)) {
             auto& preview = this->jobImagePreviews[img.id];
             if (preview.is_ok) {
-                std::cout << "Preview ok, nothing to do" << std::endl;
                 continue;
             }
 
@@ -4435,7 +4433,6 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
                 preview.is_ok              = true;
                 preview.need_to_download   = false;
                 preview.download_requested = false;
-                std::cout << "Preview downloaded, file exists, update bitmap" << std::endl;
                 continue;
             }
 
@@ -4450,7 +4447,6 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
                         srv->RequestImages(img.jobid);
                     }
                 }
-                std::cout << "Need to download, download requested" << std::endl;
                 continue;
             }
         } else {
@@ -4837,8 +4833,6 @@ void MainWindowUI::ShowNotification(std::shared_ptr<QueueItem> jobItem) {
 
     this->ShowNotification(title, message);
     this->lastItemNotification.update(jobItem->status, jobItem->id);
-    std::cout << "Show notification: " << title << "\n"
-              << message << std::endl;
 }
 
 void MainWindowUI::onControlnetImageOpen(const wxString& file) {
@@ -5794,7 +5788,6 @@ void MainWindowUI::OnInpaintCleanMask(wxCommandEvent& event) {
 void MainWindowUI::OnInPaintBrushStyleToggle(wxCommandEvent& event) {
     auto object = dynamic_cast<wxToggleButton*>(event.GetEventObject());
     if (object == nullptr) {
-        std::cout << "nullptr, exit" << std::endl;
         return;
     }
     if (event.IsChecked() == false) {

@@ -225,6 +225,12 @@ enum SDMode {
     MODE_COUNT
 };
 
+struct SDModeHash {
+    std::size_t operator()(const SDMode& mode) const {
+        return static_cast<std::size_t>(mode);
+    }
+};
+
 struct SDParams {
     int n_threads = -1;
     SDMode mode   = TXT2IMG;
