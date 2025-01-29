@@ -324,11 +324,13 @@ endif(SD_SERVER)
         INSTALL_TYPES "server" "local"
     )
 
-   cpack_add_component_group("Optional Features"
-        DISPLAY_NAME "Optional Features"
-        EXPANDED
-        DESCRIPTION "Stable Diffusion C++ Optional Features"
-    )
+    if (SD_SERVER)
+    cpack_add_component_group("Optional Features"
+            DISPLAY_NAME "Optional Features"
+            EXPANDED
+            DESCRIPTION "Stable Diffusion C++ Optional Features"
+        )
+    endif()
 
 
     cpack_add_install_type(local
