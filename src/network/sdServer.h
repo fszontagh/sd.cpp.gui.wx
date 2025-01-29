@@ -59,7 +59,7 @@ namespace sd_gui_utils {
                             if (this->needToRun.load() == false) {
                                 return;
                             }
-                            //auto nitem = QueueItem::convertFromNetwork(item);
+                            // auto nitem = QueueItem::convertFromNetwork(item);
                             QueueItem nitem(item);
                             this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, nitem);
                         }));
@@ -68,16 +68,22 @@ namespace sd_gui_utils {
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_UPDATE) {
-                    auto job = msg.GetData<RemoteQueueItem>();
+                    sd_gui_utils::networks::RemoteQueueItem job = msg.GetData<RemoteQueueItem>();
+
                     if (job.status == QueueStatus::DONE) {
-                        this->threads.push_back(std::thread([this, job]() {
-                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem(job));
+                        // A `convertFromNetwork` futását külön threadre rakjuk, hogy ne blokkolja a fő szálat
+                        this->threads.push_back(std::thread([this, job = std::move(job)]() mutable {
+                            auto convertedJob = sd_gui_utils::convertFromNetwork(std::move(job));
+                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, std::move(convertedJob));
                         }));
                     } else {
-                        this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem(job));
+                        // Ha nem kell külön thread, akkor azonnal move-oljuk
+                        this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE,
+                                              sd_gui_utils::convertFromNetwork(std::move(job)));
                     }
                     return;
                 }
+
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_IMAGE_LIST) {
                     auto image_list = msg.GetData<std::vector<ImageInfo>>();
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE, image_list);

@@ -6,18 +6,6 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     std::string initial_image          = "";
     std::string mask_image             = "";
 
-    QueueItem() = default;
-    QueueItem(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
-        *this = item;
-        for (sd_gui_utils::networks::ImageInfo& img : this->image_info) {
-            img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
-            if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
-                if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
-                    continue;
-                }
-            }
-        }
-    }
     inline wxString GetActualSpeed() {
         wxString speed = "";
         if (this->time == 0.0f) {
@@ -164,9 +152,9 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
             }
         }
     }
-    inline QueueItem* RemoveGeneratedImages() {
+    inline void RemoveGeneratedImages() {
         if (this->image_info.empty()) {
-            return this;
+            return;
         }
         for (auto it = this->image_info.begin(); it != this->image_info.end();) {
             if (sd_gui_utils::hasImageType(it->type, sd_gui_utils::networks::ImageType::GENERATED)) {
@@ -175,9 +163,9 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
                 it++;
             }
         }
-        return this;
+        return;
     }
-    inline QueueItem ConvertToSharedMemory() {
+    [[nodiscard]] inline QueueItem ConvertToSharedMemory() {
         QueueItem newItem(*this);
         if (!newItem.image_info.empty()) {
             newItem.image_info.clear();
@@ -203,7 +191,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         }
     }  // SetImagesPathsFromInfo
 
-    inline sd_gui_utils::networks::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
+    [[nodiscard]] inline sd_gui_utils::networks::RemoteQueueItem convertToNetwork(bool clear_images_data = true, std::string model_names_prefix = "") {
         sd_gui_utils::networks::RemoteQueueItem newItem(*this);
 
         if (clear_images_data == true) {
@@ -237,6 +225,22 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
       }  // convertFromNetwork
       */
 };  // QueueItem
+
+namespace sd_gui_utils {
+    [[nodiscard]] inline QueueItem convertFromNetwork(sd_gui_utils::networks::RemoteQueueItem&& item, wxString tempDir = wxFileName::GetTempDir()) {
+        QueueItem newItem(std::move(item));
+        // newItem.image_data.clear();
+        for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
+            img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
+            if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
+                if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
+                    continue;
+                }
+            }
+        }
+        return newItem;
+    }
+}
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,
                                                 id,
