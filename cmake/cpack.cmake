@@ -77,6 +77,7 @@ if (SD_SERVER OR EXISTS "${CMAKE_BINARY_DIR}/server/${EPREFIX}${PROJECT_BINARY_N
     list(APPEND CPACK_COMPONENTS_ALL "${CMAKE_PROJECT_NAME}Server")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_NAME "stablediffusiongui-server-${SDCPP_VERSION}")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_RELEASE "${DISTRO_VERSION}")
+    set_property(TARGET ${PROJECT_BINARY_NAME}_server PROPERTY DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION} Server")
 endif()
 
 
@@ -213,6 +214,7 @@ elseif(UNIX AND NOT APPLE)
     if (SD_SERVER)
         set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_DEPENDS  "openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION})")
         set(CPACK_DEBIAN_STABLEDIFFUSIONGUISERVER_PACKAGE_CONFLICTS "stablediffusiongui")
+        set(CPACK_DEBIAN_SIONGUISERVER_PACKAGE_DESCRIPTION "${CMAKE_PROJECT_DESCRIPTION} Server")
 
         configure_file("platform/linux/postinst" ${CMAKE_BINARY_DIR}/postinst @ONLY)
         configure_file("platform/linux/prerm" ${CMAKE_BINARY_DIR}/prerm @ONLY)
@@ -223,7 +225,13 @@ elseif(UNIX AND NOT APPLE)
         "${CMAKE_BINARY_DIR}/postinst;${CMAKE_BINARY_DIR}/prerm;${CMAKE_BINARY_DIR}/postrm")
 
         configure_file("platform/linux/${PROJECT_BINARY_NAME}_server.service" ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service @ONLY)
-        install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service DESTINATION lib/systemd/system COMPONENT "${CMAKE_PROJECT_NAME}Server")
+
+
+        install(FILES ${CMAKE_BINARY_DIR}/server/${PROJECT_BINARY_NAME}_server.service
+                DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/stablediffusiongui
+                COMPONENT "${CMAKE_PROJECT_NAME}Server"
+        )
+
 
     endif()
 

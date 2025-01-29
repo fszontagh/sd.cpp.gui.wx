@@ -2,8 +2,8 @@
 
 set -e
 
-# systemd újratöltése
 if command -v systemctl > /dev/null 2>&1; then
+    systemctl disable stablediffusiongui_server.service
     systemctl daemon-reload
 fi
 
