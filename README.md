@@ -5,6 +5,8 @@ A cross-platform GUI for [Stable Diffusion C++](https://github.com/leejet/stable
 
 Licensed under the MIT License.
 
+[![Release and Check build on multiple platforms](https://github.com/fszontagh/sd.cpp.gui.wx/actions/workflows/multiplatform.yml/badge.svg?event=push)](https://github.com/fszontagh/sd.cpp.gui.wx/actions/workflows/multiplatform.yml)
+
 ### **Features**
 
 -   **Text-to-image (text2img)** generation
