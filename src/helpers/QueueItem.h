@@ -227,8 +227,20 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
 };  // QueueItem
 
 namespace sd_gui_utils {
+/**
+ * @brief Converts a RemoteQueueItem to a QueueItem and processes its image data.
+ *
+ * This function takes a RemoteQueueItem and converts it into a QueueItem.
+ * It processes each image in the item by setting the target filename to a
+ * path in the specified temporary directory. If the target file does not
+ * exist and the image data is not empty, it decodes the Base64 data into a file.
+ *
+ * @param item The RemoteQueueItem to convert.
+ * @param tempDir The temporary directory to store image files. Defaults to the system's temporary directory.
+ * @return The converted QueueItem with processed image data.
+ */
     [[nodiscard]] inline QueueItem convertFromNetwork(sd_gui_utils::networks::RemoteQueueItem&& item, wxString tempDir = wxFileName::GetTempDir()) {
-        QueueItem newItem(std::move(item));
+        QueueItem newItem(item);
         // newItem.image_data.clear();
         for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
             img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
