@@ -59,7 +59,8 @@ namespace sd_gui_utils {
                             if (this->needToRun.load() == false) {
                                 return;
                             }
-                            auto nitem = QueueItem::convertFromNetwork(item);
+                            //auto nitem = QueueItem::convertFromNetwork(item);
+                            QueueItem nitem(item);
                             this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, nitem);
                         }));
                     }
@@ -70,10 +71,10 @@ namespace sd_gui_utils {
                     auto job = msg.GetData<RemoteQueueItem>();
                     if (job.status == QueueStatus::DONE) {
                         this->threads.push_back(std::thread([this, job]() {
-                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
+                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem(job));
                         }));
                     } else {
-                        this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem::convertFromNetwork(job));
+                        this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, QueueItem(job));
                     }
                     return;
                 }

@@ -1,11 +1,23 @@
 #ifndef HELPERS_QUEUE_ITEM_H
 #define HELPERS_QUEUE_ITEM_H
 
-
 struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     std::vector<std::string> rawImages = {};
     std::string initial_image          = "";
     std::string mask_image             = "";
+
+    QueueItem() = default;
+    QueueItem(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
+        *this = item;
+        for (sd_gui_utils::networks::ImageInfo& img : this->image_info) {
+            img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
+            if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
+                if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
+                    continue;
+                }
+            }
+        }
+    }
     inline wxString GetActualSpeed() {
         wxString speed = "";
         if (this->time == 0.0f) {
@@ -210,19 +222,20 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         return newItem;
     }  // convertToNetwork
 
-    inline static QueueItem convertFromNetwork(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
-        QueueItem newItem(item);
-        // newItem.image_data.clear();
-        for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
-            img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
-            if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
-                if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
-                    continue;
-                }
-            }
-        }
-        return newItem;
-    }  // convertFromNetwork
+    /*  inline static QueueItem convertFromNetwork(const sd_gui_utils::networks::RemoteQueueItem& item, wxString tempDir = wxFileName::GetTempDir()) {
+          QueueItem newItem(item);
+          // newItem.image_data.clear();
+          for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
+              img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
+              if (wxFileExists(img.target_filename) == false && img.data.empty() == false) {
+                  if (sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename) == false) {
+                      continue;
+                  }
+              }
+          }
+          return newItem;
+      }  // convertFromNetwork
+      */
 };  // QueueItem
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,
