@@ -3091,7 +3091,12 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
         if (this->mapp->cfg->servers.empty() == false) {
             for (auto& server : this->mapp->cfg->ListRemoteServers()) {
                 if (server->IsEnabled() && server->IsConnected() == false) {
-                    server->StartServer();
+                    server->LoadAuthKeyFromSecretStore();
+                    if (server->GetAuthKeyState() == true) {
+                        server->StartServer();
+                    } else {
+                        server->SetEnabled(false, true);
+                    }
                 }
             }
         }
@@ -3725,11 +3730,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_AUTH_REQUEST) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Server auth request: %s"), server->GetName()));
-        wxSecretStore store = wxSecretStore::GetDefault();
-        wxString username;
-        wxSecretValue authkey;
-        if (store.IsOk() && store.Load(server->GetsecretKeyName(), username, authkey)) {
-            server->SendAuthToken(authkey.GetAsString().utf8_string());
+        if (server->GetAuthKeyState() == true) {
+            server->SendAuthToken();
         } else {
             this->writeLog(wxString::Format(_("Server auth request failed: %s"), server->GetName()));
             this->mapp->cfg->ServerEnable(server->GetInternalId(), false);
@@ -4800,18 +4802,30 @@ void MainWindowUI::ShowNotification(std::shared_ptr<QueueItem> jobItem) {
     }
 
     wxString status_str = wxGetTranslation(QueueStatus_GUI_str.at(jobItem->status));
-    wxString message    = wxString::Format(_("Job #%" PRIu64 " %s"), jobItem->id, status_str);
-    wxString mode_str   = sd_gui_utils::SDModeGUINames.at(jobItem->mode);
-    wxString title      = wxString::Format("%s %s", mode_str, status_str);
+    wxString message    = _("Job ");
+    message.Append(wxString::Format("%" PRIu64, jobItem->id));
+
+    wxString mode_str = sd_gui_utils::SDModeGUINames.at(jobItem->mode);
+    if (jobItem->mask_image.empty() == false) {
+        mode_str += wxString::Format(_(" (INPAINTING)"));
+    }
+    wxString title = wxString::Format("%s %s", mode_str, status_str);
 
     if (jobItem->params.batch_count > 1) {
         message.Append(wxString::Format("\nBatch: %d", jobItem->params.batch_count));
     }
 
-    if (jobItem->status == QueueStatus::MODEL_LOADING ||
-        jobItem->status == QueueStatus::HASHING ||
-        jobItem->status == QueueStatus::HASHING_DONE) {
-        message.Append(wxString::Format("\nModel: %s", jobItem->model));
+    if (jobItem->model.empty() == false) {
+        message.Append("\n");
+        message.Append(wxString::Format(_("Model: %s"), jobItem->model));
+    }
+    if (jobItem->params.vae_path.empty() == false) {
+        message.Append("\n");
+        message.Append(wxString::Format(_("VAE: %s"), wxFileName(jobItem->params.vae_path).GetFullName()));
+    }
+    if (jobItem->params.taesd_path.empty() == false) {
+        message.Append("\n");
+        message.Append(wxString::Format(_("TAESD: %s"), wxFileName(jobItem->params.taesd_path).GetFullName()));
     }
 
     if (jobItem->status == QueueStatus::HASHING) {
@@ -4824,7 +4838,8 @@ void MainWindowUI::ShowNotification(std::shared_ptr<QueueItem> jobItem) {
     if (!jobItem->server.empty()) {
         auto srv = this->mapp->cfg->GetTcpServer(jobItem->server);
         if (srv) {
-            message.Append(wxString::Format("\nServer: %s", srv->GetName()));
+            message.Append("\n");
+            message.Append(wxString::Format(_("Server: %s"), srv->GetName()));
         }
     }
 

@@ -160,7 +160,12 @@ public:
                     if (server->IsEnabled() == false) {
                         continue;
                     }
-                    server->StartServer();
+                    server->LoadAuthKeyFromSecretStore();
+                    if (server->GetAuthKeyState() == true) {
+                        server->StartServer();
+                    } else {
+                        server->SetEnabled(false);
+                    }
                 }
             }
         }

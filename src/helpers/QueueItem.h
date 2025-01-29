@@ -47,7 +47,7 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
         }
         return static_cast<int>(current_progress);
     }
-    bool IsUpdated(const QueueItem& newJob) {
+    inline bool IsUpdated(const QueueItem& newJob) {
         return this->status != newJob.status ||
                this->update_index != newJob.update_index ||
                this->updated_at != newJob.updated_at;

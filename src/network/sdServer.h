@@ -8,7 +8,8 @@ namespace sd_gui_utils {
         std::string name = "";  // name is get from the over tcp
         std::string host = "";
         bool authkey     = false;  // auth key is set in the
-        int port         = 0;
+        wxSecretValue authkey_str;
+        int port = 0;
         std::atomic<bool> enabled{false};
         std::atomic<bool> needToRun{false};
         std::string server_id = "";
@@ -165,6 +166,15 @@ namespace sd_gui_utils {
         bool IsEnabled() const { return this->enabled.load(); }
         void SetAuthKeyState(bool state) { this->authkey = state; }
         bool GetAuthKeyState() const { return this->authkey; }
+        void LoadAuthKeyFromSecretStore() {
+            this->authkey       = false;
+            auto key            = this->GetsecretKeyName();
+            wxSecretStore store = wxSecretStore::GetDefault();
+            wxString username;
+            if (store.IsOk() && store.Load(this->GetsecretKeyName(), username, this->authkey_str)) {
+                this->authkey = true;
+            }
+        }
         sd_gui_utils::networks::Packet GetPacket(size_t packet_id) {
             std::lock_guard<std::mutex> lock(this->mutex);
             return this->client == nullptr ? sd_gui_utils::networks::Packet() : this->client->getPacket(packet_id);
@@ -348,11 +358,11 @@ namespace sd_gui_utils {
             this->Stop();
         }
 
-        void SendAuthToken(const std::string token) {
+        void SendAuthToken() {
             auto packet  = sd_gui_utils::networks::Packet();
             packet.type  = sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE;
             packet.param = sd_gui_utils::networks::Packet::Param::PARAM_AUTH;
-            packet.SetData(token);
+            packet.SetData(this->authkey_str.GetAsString().ToStdString());
             packet.client_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
