@@ -81,7 +81,7 @@ set(SOURCES
     src/ui/ModelInfo.cpp
     src/libs/SharedMemoryManager.cpp
     src/libs/TcpClient.cpp
-
+    src/helpers/QueueItem.cpp
 )
 
 if (WIN32)
@@ -114,7 +114,7 @@ endif()
 
 if (NOT WIN32)
 
-set(APPDEPENDS wx::base wx::core wx::xrc wx::aui wx::richtext)
+set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::stc)
 
 else()
     set(APPDEPENDS wxWidgets::wxWidgets)

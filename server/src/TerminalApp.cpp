@@ -532,7 +532,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         this->sendLogEvent("Received job add", wxLOG_Debug);
         auto data = packet.GetData<sd_gui_utils::networks::RemoteQueueItem>();
         data.id   = this->queueManager->GenerateNextId();
-        QueueItem converted = sd_gui_utils::convertFromNetwork(std::move(data), this->configData->GetJobsPath());
+        QueueItem converted = QueueItem::convertFromNetwork(std::move(data), this->configData->GetJobsPath());
         converted.SetImagesPathsFromInfo();
         // set paths
         converted.params.embeddings_path = this->configData->model_paths.embedding;

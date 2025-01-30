@@ -51,8 +51,13 @@ protected:
     void OnDataModelTreeExpanded(wxTreeListEvent& event) override;
     void OnJobListItemSelection(wxDataViewEvent& event) override;
     void onTxt2ImgFileDrop(wxDropFilesEvent& event) override;
-    void OnPromptText(wxCommandEvent& event) override;
-    void OnNegPromptText(wxCommandEvent& event) override;
+    //void OnPromptText(wxCommandEvent& event) override;
+    //void OnNegPromptText(wxCommandEvent& event) override;
+    void OnPromptKeyDown(wxKeyEvent& event) override;
+    void OnTextChanged(wxStyledTextEvent& event);
+    void OnAutoCompSelection(wxStyledTextEvent& event);
+    void HighLightPrompts(wxStyledTextCtrl * stc);
+    void InitPrompts();
     void onGenerate(wxCommandEvent& event) override;
     void OnControlnetImageOpen(wxFileDirPickerEvent& event) override;
     void OnControlnetImagePreviewButton(wxCommandEvent& event) override;

@@ -9,7 +9,7 @@ configure_file(src/config.hpp.in config.hpp)
 
 
 
-set(SOURCES "src/main.cpp")
+set(SOURCES src/main.cpp ${CMAKE_SOURCE_DIR}/src/helpers/QueueItem.cpp)
 
 if (MSVC)
     set(BNAME ${EPROCESS_BINARY_NAME})
@@ -52,5 +52,5 @@ endif()
 if(WIN32)
     target_link_libraries(${EPROCESS_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
 else(WIN32)
-    target_link_libraries(${EPROCESS_BINARY_NAME} PRIVATE wx::base OpenSSL::Crypto)
+    target_link_libraries(${EPROCESS_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
 endif(WIN32)

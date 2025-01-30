@@ -1,6 +1,11 @@
 set(SERVER_BINARY_NAME "${PROJECT_BINARY_NAME}_server")
 
-set(SOURCES src/main.cpp src/TerminalApp.cpp src/SocketApp.cpp)
+set(SOURCES
+    src/main.cpp
+    src/TerminalApp.cpp
+    src/SocketApp.cpp
+    ${CMAKE_SOURCE_DIR}/src/helpers/QueueItem.cpp
+    )
 
 if (MSVC)
     set(BNAME ${SERVER_BINARY_NAME})

@@ -147,7 +147,7 @@ public:
                 j->ConvertFromSharedMemory(item);
 
                 if (j->status == QueueStatus::DONE) {
-                    j->prepareImagesForClients(target_dir);  // convert images to base64 and generate image ID
+                    j->PrepareImagesForClients(target_dir);  // convert images to base64 and generate image ID
                     if (this->currentItem && this->currentItem->id == oldJob.id) {
                         this->currentItem = nullptr;
                     }

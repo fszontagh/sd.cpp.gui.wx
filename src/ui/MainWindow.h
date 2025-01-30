@@ -42,6 +42,7 @@
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
+#include <wx/stc/stc.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/radiobox.h>
@@ -191,14 +192,14 @@ class mainUI : public wxFrame
 		wxScrolledWindow* m_promptAndFluxPanel;
 		wxPanel* m_promptPanel;
 		wxStaticText* m_staticText73;
-		wxTextCtrl* m_prompt;
-		wxTextCtrl* m_prompt2;
+		wxStyledTextCtrl* m_prompt;
+		wxStyledTextCtrl* m_prompt2;
 		wxButton* m_prompt_load_prev;
 		wxButton* m_prompt_clear;
 		wxButton* m_prompt_normalize;
 		wxStaticText* m_staticText74;
-		wxTextCtrl* m_neg_prompt2;
-		wxTextCtrl* m_neg_prompt;
+		wxStyledTextCtrl* m_neg_prompt;
+		wxStyledTextCtrl* m_neg_prompt2;
 		wxButton* m_nprompt_load_prev;
 		wxButton* m_nprompt_clear;
 		wxButton* m_nprompt_normalize;
@@ -330,11 +331,10 @@ class mainUI : public wxFrame
 		virtual void OnDataModelTreeExpanding( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeSelected( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnModelFavoriteChange( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnPromptText( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnPromptKeyDown( wxKeyEvent& event ) { event.Skip(); }
 		virtual void OnLoadPrevPrompt( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnClearPrompt( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnNormalizePrompt( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnNegPromptText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onWhatIsThis( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onFilePickerDiffusionModel( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void onCleanDiffusionModel( wxCommandEvent& event ) { event.Skip(); }

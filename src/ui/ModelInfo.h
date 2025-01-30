@@ -33,7 +33,7 @@ namespace ModelInfo {
         void setHash(std::string model_path, std::string hash);
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtr(std::string path);
-        sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string , std::string remote_server_id = "");
+        sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string, std::string remote_server_id = "");
         sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
@@ -41,6 +41,23 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
         sd_gui_utils::ModelFileInfo* findLocalModelOnRemote(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
         sd_gui_utils::ModelFileInfo* findRemoteModelOnLocal(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
+        [[nodiscard]] const inline std::map<std::string, std::string> ListModelNamesByType(sd_gui_utils::DirTypes type, const wxString &filter = wxEmptyString) {
+            std::map<std::string, std::string> list;
+            for (const auto& it : this->ModelInfos) {
+                if (it.second->model_type == type) {
+                    if (filter.empty() == false && it.second->name.find(filter) == std::string::npos) {
+                        continue;
+                    }
+                    // cut the name on the last .
+                    wxString name = it.second->name;
+                    if (name.Contains('.')) {
+                        name = name.BeforeLast('.');
+                    }
+                    list[it.second->name] = name;
+                }
+            }
+            return list;
+        }
         inline void resetModels(sd_gui_utils::DirTypes type) {
             std::lock_guard<std::mutex> lock(this->mutex);
             if (this->ModelInfos.empty()) {

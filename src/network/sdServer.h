@@ -73,13 +73,13 @@ namespace sd_gui_utils {
                     if (job.status == QueueStatus::DONE) {
                         // A `convertFromNetwork` futását külön threadre rakjuk, hogy ne blokkolja a fő szálat
                         this->threads.push_back(std::thread([this, job = std::move(job)]() mutable {
-                            auto convertedJob = sd_gui_utils::convertFromNetwork(std::move(job));
+                            auto convertedJob = QueueItem::convertFromNetwork(std::move(job));
                             this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, std::move(convertedJob));
                         }));
                     } else {
                         // Ha nem kell külön thread, akkor azonnal move-oljuk
                         this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE,
-                                              sd_gui_utils::convertFromNetwork(std::move(job)));
+                                              QueueItem::convertFromNetwork(std::move(job)));
                     }
                     return;
                 }

@@ -249,7 +249,7 @@ public:
                 store->GetValueByRow(old_progress, i, DataViewListManager::RowToInt(queueJobColumns::PROGRESS));
                 refresh = false;
                 if (old_progress.GetInteger() != progress) {
-                    store->SetValueByRow(progress, i, DataViewListManager::RowToInt(queueJobColumns::PROGRESS));
+                    store->SetValueByRow(wxAny(progress), i, DataViewListManager::RowToInt(queueJobColumns::PROGRESS));
                     store->RowValueChanged(i, DataViewListManager::RowToInt(queueJobColumns::PROGRESS));
                     refresh = true;
                 }

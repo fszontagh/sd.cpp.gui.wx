@@ -125,6 +125,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->m_inpaintZoomSlider->SetLineSize(this->inpaintHelper->GetZoomStep());
 
+    this->InitPrompts();
+
     //
     /*
         if (this->mapp->cfg->servers.empty() == false) {
@@ -1025,22 +1027,333 @@ std::unordered_map<wxString, wxString> MainWindowUI::getMetaDataFromImage(const 
     return results;
 }
 /// TODO: store embeddings like checkpoints and loras, the finetune this
-void MainWindowUI::OnPromptText(wxCommandEvent& event) {
+/*void MainWindowUI::OnPromptText(wxCommandEvent& event) {
     event.Skip();  // disabled while really slow
     auto obj    = static_cast<wxTextCtrl*>(event.GetEventObject());
     auto tokens = MainWindowUI::CountTokens(obj->GetValue());
     obj->SetToolTip(wxString::Format(_("Tokens: %d"), tokens));
     return;
+}*/
+
+/*void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
+    event.Skip();  // disabled while really slow
+    auto obj    = static_cast<wxTextCtrl*>(event.GetEventObject());
+    auto tokens = MainWindowUI::CountTokens(obj->GetValue());
+    obj->SetToolTip(wxString::Format(_("Tokens: %d"), tokens));
+    return;
+}*/
+void MainWindowUI::OnTextChanged(wxStyledTextEvent& event) {
+    wxStyledTextCtrl* stc = (wxStyledTextCtrl*)event.GetEventObject();
+    if (!stc) {
+        event.Skip();
+        return;
+    }
+    this->HighLightPrompts(stc);
+    auto type = event.GetModificationType();
+    if (type & wxSTC_MOD_INSERTTEXT) {  // ignore, this is autocomplete maybe
+        event.Skip();
+        return;
+    }
+    if (stc->AutoCompActive()) {
+        event.Skip();
+        return;
+    }
+    int currentPos        = stc->GetCurrentPos();
+    int wordStartPos      = stc->WordStartPosition(currentPos, false);
+    wxString loraTestWord = stc->GetTextRange(wordStartPos - 1, currentPos + 1);
+    int lenEntered        = currentPos - wordStartPos;
+    if (lenEntered == 3 || loraTestWord.StartsWith("<lora:")) {
+        wxString list;
+        if (loraTestWord.StartsWith("<lora:")) {
+            auto loras = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::LORA);
+            for (const auto& lora_info : loras) {
+                list.Append(wxString::Format("<lora:%s:0.5>\t%s\r", lora_info.second, lora_info.first));
+            }
+        } else {
+            auto embeddings = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::EMBEDDING);
+            for (const auto& embedding_info : embeddings) {
+                list.Append(wxString::Format("%s\t%s\r", embedding_info.second, embedding_info.first));
+            }
+        }
+
+        if (!list.empty() && !stc->AutoCompActive()) {
+            stc->AutoCompSetIgnoreCase(true);
+            stc->AutoCompSetSeparator('\r');
+            // stc->AutoCompSetTypeSeparator('\n');
+            stc->AutoCompSetMaxHeight(4);
+            stc->AutoCompSetAutoHide(true);
+            stc->AutoCompStops(":");  // stop when a colon is entered
+            stc->AutoCompShow(lenEntered, list);
+            // stc->CallTipShow(wordStartPos, list);
+        }
+    }
+    event.Skip();
+}
+void MainWindowUI::OnAutoCompSelection(wxStyledTextEvent& event) {
+    wxStyledTextCtrl* stc = (wxStyledTextCtrl*)event.GetEventObject();
+
+    wxString selected = event.GetText();
+    // cut the string selected at the last tab char
+    selected = selected.Left(selected.Last('\t'));
+    event.SetText(selected);
+    event.Skip();
+    return;
+    std::cout << "Selected: " << selected.ToStdString() << std::endl;
+
+    if (stc) {
+        stc->InsertText(stc->GetCurrentPos(), selected);
+        stc->SetCurrentPos(stc->GetCurrentPos() + selected.Length());
+        stc->AutoCompCancel();
+    }
+    // event.SetText(selected);
+    // event.Skip();
+    // event.Skip();
 }
 
-void MainWindowUI::OnNegPromptText(wxCommandEvent& event) {
-    event.Skip();  // disabled while really slow
-    auto obj    = static_cast<wxTextCtrl*>(event.GetEventObject());
-    auto tokens = MainWindowUI::CountTokens(obj->GetValue());
-    obj->SetToolTip(wxString::Format(_("Tokens: %d"), tokens));
-    return;
-    event.Skip();  // disabled while really slow
-    return;
+void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
+    // loras
+    wxString text = stc->GetText();
+    int length    = text.Length();
+
+    stc->StartStyling(0);
+    stc->SetStyling(length, wxSTC_STYLE_DEFAULT);
+
+    int pos = 0;
+    while ((pos = text.find("<lora:", pos)) != wxNOT_FOUND) {
+        int endPos = text.find(">", pos);
+        if (endPos == wxNOT_FOUND)
+            break;
+
+        int tagLength = endPos - pos + 1;
+        stc->StartStyling(pos);
+        stc->SetStyling(tagLength, 10);
+
+        pos = endPos + 1;
+    }
+    // loras
+    // embeddings
+    std::map<std::string, std::string> embeddings = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::EMBEDDING);
+
+    for (const auto& pair : embeddings) {
+        int pos = 0;
+        while ((pos = text.find(pair.first, pos)) != wxNOT_FOUND) {
+            int endPos = pos + pair.first.length();
+            if (endPos == wxNOT_FOUND) {
+                break;
+            }
+            stc->StartStyling(pos);
+            stc->SetStyling(endPos - pos, 11);
+            pos = endPos;
+        }
+        pos = 0;
+        while ((pos = text.find(pair.second, pos)) != wxNOT_FOUND) {
+            int endPos = pos + pair.second.length();
+            if (endPos == wxNOT_FOUND) {
+                break;
+            }
+            stc->StartStyling(pos);
+            stc->SetStyling(endPos - pos, 11);
+            pos = endPos;
+        }
+    }
+    // embeddings
+}
+
+void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
+    int keyCode = event.GetKeyCode();
+
+    if (keyCode == WXK_TAB) {
+        return;
+    }
+
+    if (!event.ControlDown()) {
+        event.Skip();
+        return;
+    }
+    if (keyCode != WXK_UP && keyCode != WXK_DOWN) {
+        event.Skip();
+        return;
+    }
+
+    auto obj = static_cast<wxStyledTextCtrl*>(event.GetEventObject());
+    if (!obj) {
+        event.Skip();
+        return;
+    }
+
+    long from, to;
+    obj->GetSelection(&from, &to);
+    wxString text = obj->GetValue();
+
+    if (from == to) {
+        // Ha nincs kijelölés, a kurzor pozícióján állunk
+        from = obj->GetInsertionPoint();
+        to   = obj->GetInsertionPoint();
+
+        // Megnézzük, hogy a kurzor egy zárójeles kifejezésen belül van-e
+        long bracketStart = from, bracketEnd = from;
+        while (bracketStart > 0 && text[bracketStart - 1] != '(') {
+            bracketStart--;
+        }
+        while (bracketEnd < (long)text.Length() && text[bracketEnd] != ')') {
+            bracketEnd++;
+        }
+
+        // Ha találtunk megfelelő zárójelet, azt használjuk
+        if (bracketStart > 0 && bracketEnd < (long)text.Length() && text[bracketStart - 1] == '(' && text[bracketEnd] == ')') {
+            from = bracketStart - 1;
+            to   = bracketEnd + 1;
+        } else {
+            // Ha nincs zárójeles rész, csak a szót választjuk ki
+            while (from > 0 && wxIsalnum(text[from - 1])) {
+                from--;
+            }
+            while (to < (long)text.Length() && wxIsalnum(text[to])) {
+                to++;
+            }
+        }
+    }
+
+    if (from == to) {
+        event.Skip();
+        return;
+    }
+
+    wxString selectedText = text.Mid(from, to - from);
+    wxRegEx regex(R"(\(([^:()]+):([0-9]+)\.([0-9]+)\))");
+
+    wxString newText;
+    if (regex.Matches(selectedText)) {
+        // Ha már van formázás, módosítjuk az értékét
+        wxString base = regex.GetMatch(selectedText, 1);
+        long intPart, decPart;
+        regex.GetMatch(selectedText, 2).ToLong(&intPart);
+        regex.GetMatch(selectedText, 3).ToLong(&decPart);
+
+        if (keyCode == WXK_UP) {
+            if (intPart == 0 && decPart == 9) {
+                newText = base;
+            } else if (++decPart > 9) {
+                decPart = 0;
+                intPart++;
+            }
+        } else {  // WXK_DOWN
+            if (intPart == 1 && decPart == 1) {
+                newText = base;  // Visszaáll az eredeti szóra
+            } else if (intPart > 0 || decPart > 0) {
+                if (--decPart < 0) {
+                    decPart = 9;
+                    intPart--;
+                }
+            }
+        }
+
+        if (newText.IsEmpty()) {
+            newText = wxString::Format("(%s:%ld.%ld)", base, intPart, decPart);
+        }
+    } else {
+        wxRegEx alreadyFormatted(R"(^\(([^:()]+)\)$)");
+        if (alreadyFormatted.Matches(selectedText)) {
+            selectedText = alreadyFormatted.GetMatch(selectedText, 1);
+        }
+
+        if (keyCode == WXK_UP) {
+            newText = wxString::Format("(%s:1.1)", selectedText);
+        } else {
+            newText = wxString::Format("(%s:0.9)", selectedText);
+        }
+    }
+
+    // Szöveg módosítása és kijelölése
+    obj->ChangeValue(text.Mid(0, from) + newText + text.Mid(to));
+    obj->SetSelection(from, from + newText.Length());
+}
+void MainWindowUI::InitPrompts() {
+    this->m_prompt->SetWrapMode(wxSTC_WRAP_WHITESPACE);
+    this->m_prompt2->SetWrapMode(wxSTC_WRAP_WHITESPACE);
+    this->m_neg_prompt->SetWrapMode(wxSTC_WRAP_WHITESPACE);
+    this->m_neg_prompt2->SetWrapMode(wxSTC_WRAP_WHITESPACE);
+
+    this->m_prompt->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    this->m_prompt2->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    this->m_neg_prompt->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    this->m_neg_prompt2->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    // this->m_prompt->StyleSetForeground(wxSTC_STYLE_CONTROLCHAR, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    this->m_prompt->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    this->m_prompt2->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    this->m_neg_prompt->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    this->m_neg_prompt2->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+
+    /* exists, but not implemented :(
+    wxTextAttr defStyle(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT), wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->SetDefaultStyle(defStyle);
+    this->m_prompt2->SetDefaultStyle(defStyle);
+    this->m_neg_prompt->SetDefaultStyle(defStyle);
+    this->m_neg_prompt2->SetDefaultStyle(defStyle);
+    */
+
+    // set lora styles
+    wxColour loraColor(50, 100, 150);
+    wxColour embeddingColor(250, 60, 90);
+    auto loraFont      = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    auto embeddingFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+
+    loraFont.SetWeight(wxFONTWEIGHT_BOLD);
+    embeddingFont.SetWeight(wxFONTWEIGHT_BOLD);
+
+    this->m_prompt->StyleSetFont(10, loraFont);
+    this->m_prompt->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(10, loraColor);
+
+    this->m_prompt2->StyleSetFont(10, loraFont);
+    this->m_prompt2->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(10, loraColor);
+
+    this->m_neg_prompt->StyleSetFont(10, loraFont);
+    this->m_neg_prompt->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(10, loraColor);
+
+    this->m_neg_prompt2->StyleSetFont(10, loraFont);
+    this->m_neg_prompt2->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(10, loraColor);
+
+    this->m_prompt->StyleSetFont(11, embeddingFont);
+    this->m_prompt->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(11, embeddingColor);
+
+    this->m_prompt2->StyleSetFont(11, embeddingFont);
+    this->m_prompt2->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(11, embeddingColor);
+
+    this->m_neg_prompt->StyleSetFont(11, embeddingFont);
+    this->m_neg_prompt->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(11, embeddingColor);
+
+    this->m_neg_prompt2->StyleSetFont(11, embeddingFont);
+    this->m_neg_prompt2->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(11, embeddingColor);
+
+    this->m_prompt->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
+    this->m_prompt2->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
+    this->m_neg_prompt->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
+    this->m_neg_prompt2->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
+
+    this->m_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
+    this->m_prompt2->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
+    this->m_neg_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
+    this->m_neg_prompt2->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
+
+    this->m_prompt->SetKeyWords(0, wxT("BREAK"));
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
@@ -3403,7 +3716,7 @@ void MainWindowUI::StartGeneration(std::shared_ptr<QueueItem> myJob) {
     try {
         myJob->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         this->qmanager->SetStatus(QueueStatus::PENDING, myJob);
-        nlohmann::json j = *myJob;
+        nlohmann::json j = myJob->ConvertToSharedMemory();
         std::string msg  = j.dump();
         this->sharedMemory->write(msg.data(), msg.size());
 
@@ -3958,7 +4271,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             auto id                          = store->GetItemData(currentItem);
             std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
             if (qitem->id == myjob->id) {
-                store->SetValueByRow(qitem->GetActualProgress(), i, progressCol);
+                store->SetValueByRow(wxAny(qitem->GetActualProgress()), i, progressCol);
                 store->SetValueByRow(qitem->GetActualSpeed(), i, speedCol);
                 store->RowValueChanged(i, progressCol);
                 store->RowValueChanged(i, speedCol);
