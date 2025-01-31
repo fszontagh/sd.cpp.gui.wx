@@ -53,31 +53,30 @@ namespace sd_gui_utils {
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_LIST) {
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_START, nullptr);
-                    auto list = msg.GetData<std::vector<RemoteQueueItem>>();
-                    for (const auto& item : list) {
-                        this->threads.emplace_back(std::thread([this, item]() {
+                    std::vector<sd_gui_utils::networks::RemoteQueueItem> list = msg.GetData<std::vector<RemoteQueueItem>>();
+
+                    this->threads.push_back(std::thread([this, list = std::move(list)]() mutable {
+                        for (size_t i = 0; i < list.size(); ++i) {
                             if (this->needToRun.load() == false) {
                                 return;
                             }
-                            // auto nitem = QueueItem::convertFromNetwork(item);
-                            QueueItem nitem(item);
-                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, nitem);
-                        }));
-                    }
+                            QueueItem convertedJob = QueueItem::convertFromNetwork(std::move(list[i]));
+                            this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, std::move(convertedJob));
+                        }
+                    }));
+
                     this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_FINISHED, this);
                     return;
                 }
                 if (msg.param == sd_gui_utils::Packet::Param::PARAM_JOB_UPDATE) {
-                    sd_gui_utils::networks::RemoteQueueItem job = msg.GetData<RemoteQueueItem>();
+                    sd_gui_utils::networks::RemoteQueueItem job = msg.GetData<sd_gui_utils::networks::RemoteQueueItem>();
 
                     if (job.status == QueueStatus::DONE) {
-                        // A `convertFromNetwork` futását külön threadre rakjuk, hogy ne blokkolja a fő szálat
                         this->threads.push_back(std::thread([this, job = std::move(job)]() mutable {
                             auto convertedJob = QueueItem::convertFromNetwork(std::move(job));
                             this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE, std::move(convertedJob));
                         }));
                     } else {
-                        // Ha nem kell külön thread, akkor azonnal move-oljuk
                         this->SendThreadEvent(sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE,
                                               QueueItem::convertFromNetwork(std::move(job)));
                     }
@@ -264,6 +263,9 @@ namespace sd_gui_utils {
         }
         void StartServer() {
             if (this->client->IsConnected() == true) {
+                return;
+            }
+            if (this->needToRun.load() == true) { // we need to run, so we already try to connect
                 return;
             }
 

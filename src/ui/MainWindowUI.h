@@ -51,12 +51,12 @@ protected:
     void OnDataModelTreeExpanded(wxTreeListEvent& event) override;
     void OnJobListItemSelection(wxDataViewEvent& event) override;
     void onTxt2ImgFileDrop(wxDropFilesEvent& event) override;
-    //void OnPromptText(wxCommandEvent& event) override;
-    //void OnNegPromptText(wxCommandEvent& event) override;
+    // void OnPromptText(wxCommandEvent& event) override;
+    // void OnNegPromptText(wxCommandEvent& event) override;
     void OnPromptKeyDown(wxKeyEvent& event) override;
     void OnTextChanged(wxStyledTextEvent& event);
     void OnAutoCompSelection(wxStyledTextEvent& event);
-    void HighLightPrompts(wxStyledTextCtrl * stc);
+    void HighLightPrompts(wxStyledTextCtrl* stc);
     void InitPrompts();
     void onGenerate(wxCommandEvent& event) override;
     void OnControlnetImageOpen(wxFileDirPickerEvent& event) override;
@@ -139,6 +139,8 @@ private:
     std::unique_ptr<ModelUiManager> modelUiManager           = nullptr;
     std::unique_ptr<DataViewListManager> dataViewListManager = nullptr;
 
+    bool m_autoCompJustCompleted = false;
+
     bool disableExternalProcessHandling               = false;
     std::atomic<unsigned int> jobsCountSinceSegfault  = {0};
     std::atomic<unsigned int> stepsCountSinceSegfault = {0};
@@ -217,7 +219,7 @@ private:
     void ChangeGuiFromQueueItem(const QueueItem item);
     void UpdateModelInfoDetailsFromModelList(sd_gui_utils::ModelFileInfo* modelinfo);
     void UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueItem> item);
-    void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem = nullptr) ;
+    void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem = nullptr);
     void AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::shared_ptr<QueueItem> item, const sd_gui_utils::ImageInfo img, int gen_index);
     bool ProcessEventHandler(std::string msg);
     void ProcessCheckThread();
@@ -229,6 +231,29 @@ private:
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
 
+    inline static size_t findLoraDistance(const wxString& text, size_t cursorPos) {
+        const wxString pattern = "<lora:";
+        wxString part = text.SubString(0, cursorPos);
+        if (part.Contains(pattern) == false) {
+            return wxNOT_FOUND;
+        }
+        auto t = part.Find(':', true) + 1;
+        if (t == wxNOT_FOUND) {
+            return t;
+        }
+        wxString subText = part.Mid(t - pattern.Length(), pattern.Length());
+        if (subText != "<lora:") {
+            return wxNOT_FOUND;
+        }
+        if (t == cursorPos) {
+            return wxNOT_FOUND;
+        }
+        if (t > cursorPos) {
+            return wxNOT_FOUND;
+        }
+
+        return t;
+    }
     inline static bool AreParenthesesBalanced(const wxString& input) {
         std::stack<wchar_t> stack;
 
@@ -296,18 +321,29 @@ private:
     }
 
     inline void NormalizeTextPrompt(wxString& prompt) {
-        prompt.Replace(",,", ", ");
-        prompt.Replace(" ,", ", ");
-        prompt.Replace("  ", " ");
-        if (prompt.StartsWith(" ")) {
-            prompt.Remove(0, 1);
-        }
-        if (prompt.EndsWith(" ")) {
+        if (prompt.EndsWith(",")) {
             prompt.Remove(prompt.Length() - 1, 1);
         }
+        prompt.Trim();
+        prompt.Trim(false);
+        prompt.Replace(",,", ",");
+        prompt.Replace(" ,", ",");
+        prompt.Replace("  ", " ");
         // prompt = this->NormalizePrompt(prompt);
         if (!AreParenthesesBalanced(prompt)) {
             this->writeLog(_("Parentheses are not balanced!"));
+        } else {
+            wxString output = prompt;
+            wxRegEx re("\\({2,}([^()]+)\\){2,}");
+            int level = 1;
+
+            while (re.Matches(output)) {
+                wxString match       = re.GetMatch(output, 1);
+                wxString replacement = wxString::Format("(%s:1.%d)", match, level++);
+                re.Replace(&output, replacement, false);
+            }
+
+            prompt = output;
         }
     }
     inline void GeneratePromptCombinations(const wxString& input, std::vector<wxString>& results, size_t pos = 0) {

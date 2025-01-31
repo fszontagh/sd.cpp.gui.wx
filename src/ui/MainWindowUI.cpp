@@ -1049,65 +1049,66 @@ void MainWindowUI::OnTextChanged(wxStyledTextEvent& event) {
         return;
     }
     this->HighLightPrompts(stc);
-    auto type = event.GetModificationType();
-    if (type & wxSTC_MOD_INSERTTEXT) {  // ignore, this is autocomplete maybe
+
+    if (this->m_autoCompJustCompleted) {
+        this->m_autoCompJustCompleted = false;
         event.Skip();
         return;
     }
-    if (stc->AutoCompActive()) {
-        event.Skip();
+
+    if (event.GetModificationType() != 20) {
         return;
     }
-    int currentPos        = stc->GetCurrentPos();
-    int wordStartPos      = stc->WordStartPosition(currentPos, false);
-    wxString loraTestWord = stc->GetTextRange(wordStartPos - 1, currentPos + 1);
-    int lenEntered        = currentPos - wordStartPos;
-    if (lenEntered == 3 || loraTestWord.StartsWith("<lora:")) {
+
+    int currentPos   = stc->GetCurrentPos();
+    int wordStartPos = stc->WordStartPosition(currentPos, true);
+    int lenEntered   = currentPos - wordStartPos;
+    if (lenEntered <= 0) {
+        return;
+    }
+
+    wxString loraSearchText;
+    size_t loraPos = wxNOT_FOUND;
+
+    loraPos = MainWindowUI::findLoraDistance(stc->GetText(), stc->GetCurrentPos() + 1);
+    if (loraPos != wxNOT_FOUND) {
+        loraSearchText = stc->GetTextRange(loraPos, stc->GetCurrentPos() + 1);
+    }
+    wxString enteredText = stc->GetTextRange(wordStartPos, currentPos + 1);
+
+    if (enteredText.EndsWith("\n")) {
+        return;
+    }
+    if (enteredText.Trim().Length() >= 3 || (loraPos != wxNOT_FOUND)) {
         wxString list;
-        if (loraTestWord.StartsWith("<lora:")) {
-            auto loras = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::LORA);
+
+        if (loraPos != wxNOT_FOUND) {
+            auto loras = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::LORA, loraSearchText);
+
             for (const auto& lora_info : loras) {
-                list.Append(wxString::Format("<lora:%s:0.5>\t%s\r", lora_info.second, lora_info.first));
+                list.Append(wxString::Format("%s:0.5>\r", lora_info.second));
             }
         } else {
-            auto embeddings = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::EMBEDDING);
+            auto embeddings = this->ModelManager->ListModelNamesByType(sd_gui_utils::DirTypes::EMBEDDING, enteredText);
             for (const auto& embedding_info : embeddings) {
-                list.Append(wxString::Format("%s\t%s\r", embedding_info.second, embedding_info.first));
+                list.Append(wxString::Format("%s \r", embedding_info.second));
             }
         }
 
-        if (!list.empty() && !stc->AutoCompActive()) {
+        if (!list.empty()) {
             stc->AutoCompSetIgnoreCase(true);
             stc->AutoCompSetSeparator('\r');
             // stc->AutoCompSetTypeSeparator('\n');
             stc->AutoCompSetMaxHeight(4);
-            stc->AutoCompSetAutoHide(true);
-            stc->AutoCompStops(":");  // stop when a colon is entered
+            stc->AutoCompSetAutoHide(false);
             stc->AutoCompShow(lenEntered, list);
-            // stc->CallTipShow(wordStartPos, list);
         }
     }
     event.Skip();
 }
 void MainWindowUI::OnAutoCompSelection(wxStyledTextEvent& event) {
-    wxStyledTextCtrl* stc = (wxStyledTextCtrl*)event.GetEventObject();
-
-    wxString selected = event.GetText();
-    // cut the string selected at the last tab char
-    selected = selected.Left(selected.Last('\t'));
-    event.SetText(selected);
     event.Skip();
     return;
-    std::cout << "Selected: " << selected.ToStdString() << std::endl;
-
-    if (stc) {
-        stc->InsertText(stc->GetCurrentPos(), selected);
-        stc->SetCurrentPos(stc->GetCurrentPos() + selected.Length());
-        stc->AutoCompCancel();
-    }
-    // event.SetText(selected);
-    // event.Skip();
-    // event.Skip();
 }
 
 void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
@@ -1124,9 +1125,28 @@ void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
         if (endPos == wxNOT_FOUND)
             break;
 
+        size_t colonPos = text.find(":", pos);
+        if (colonPos == std::string::npos)
+            break;
+
+        size_t colonPos2 = text.find(":", colonPos + 1);
+        if (colonPos2 == std::string::npos)
+            break;
+
+        const auto name = text.substr(colonPos + 1, colonPos2 - colonPos - 1);
+
+        if (this->ModelManager->NameStartsWith(name, sd_gui_utils::DirTypes::LORA) == nullptr) {
+            int tagLength = endPos - pos + 1;
+            stc->StartStyling(pos);
+            stc->SetStyling(tagLength, +sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND);
+
+            pos = endPos + 1;
+            continue;
+        }
+
         int tagLength = endPos - pos + 1;
         stc->StartStyling(pos);
-        stc->SetStyling(tagLength, 10);
+        stc->SetStyling(tagLength, +sd_gui_utils::GuiPromptStyles::STYLE_LORA);
 
         pos = endPos + 1;
     }
@@ -1142,7 +1162,7 @@ void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
                 break;
             }
             stc->StartStyling(pos);
-            stc->SetStyling(endPos - pos, 11);
+            stc->SetStyling(endPos - pos, +sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING);
             pos = endPos;
         }
         pos = 0;
@@ -1152,11 +1172,23 @@ void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
                 break;
             }
             stc->StartStyling(pos);
-            stc->SetStyling(endPos - pos, 11);
+            stc->SetStyling(endPos - pos, +sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING);
             pos = endPos;
         }
     }
     // embeddings
+    // highlight the word: BREAK
+    pos = 0;
+    while ((pos = text.find("BREAK", pos)) != wxNOT_FOUND) {
+        int endPos = pos + 5;
+        if (endPos == wxNOT_FOUND) {
+            break;
+        }
+        stc->StartStyling(pos);
+        stc->SetStyling(endPos - pos, +sd_gui_utils::GuiPromptStyles::STYLE_OTHERS);
+        pos = endPos;
+    }
+    // highlight the word: BREAK
 }
 
 void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
@@ -1186,11 +1218,9 @@ void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
     wxString text = obj->GetValue();
 
     if (from == to) {
-        // Ha nincs kijelölés, a kurzor pozícióján állunk
         from = obj->GetInsertionPoint();
         to   = obj->GetInsertionPoint();
 
-        // Megnézzük, hogy a kurzor egy zárójeles kifejezésen belül van-e
         long bracketStart = from, bracketEnd = from;
         while (bracketStart > 0 && text[bracketStart - 1] != '(') {
             bracketStart--;
@@ -1304,44 +1334,89 @@ void MainWindowUI::InitPrompts() {
 
     // set lora styles
     wxColour loraColor(50, 100, 150);
-    wxColour embeddingColor(250, 60, 90);
+    wxColour embeddingColor(50, 168, 143);
+    wxColour notFoundColor(245, 12, 70);
+    // set others styles, eg BREAK
+    wxColour othersColor(220, 220, 50);
+
     auto loraFont      = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
     auto embeddingFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    auto notfoundFont  = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    auto othersFont    = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
 
-    loraFont.SetWeight(wxFONTWEIGHT_BOLD);
-    embeddingFont.SetWeight(wxFONTWEIGHT_BOLD);
+    // loraFont.SetWeight(wxFONTWEIGHT_BOLD);
+    // embeddingFont.SetWeight(wxFONTWEIGHT_BOLD);
+    // othersFont.SetWeight(wxFONTWEIGHT_BOLD);
+    notfoundFont.SetStrikethrough(true);
 
-    this->m_prompt->StyleSetFont(10, loraFont);
-    this->m_prompt->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(10, loraColor);
+    // other keywords, eg: BREAK
+    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
+    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
 
-    this->m_prompt2->StyleSetFont(10, loraFont);
-    this->m_prompt2->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(10, loraColor);
+    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
+    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
 
-    this->m_neg_prompt->StyleSetFont(10, loraFont);
-    this->m_neg_prompt->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(10, loraColor);
+    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
+    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
 
-    this->m_neg_prompt2->StyleSetFont(10, loraFont);
-    this->m_neg_prompt2->StyleSetBackground(10, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(10, loraColor);
+    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
+    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
 
-    this->m_prompt->StyleSetFont(11, embeddingFont);
-    this->m_prompt->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(11, embeddingColor);
+    // lora styles
 
-    this->m_prompt2->StyleSetFont(11, embeddingFont);
-    this->m_prompt2->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(11, embeddingColor);
+    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
+    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
 
-    this->m_neg_prompt->StyleSetFont(11, embeddingFont);
-    this->m_neg_prompt->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(11, embeddingColor);
+    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
+    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
 
-    this->m_neg_prompt2->StyleSetFont(11, embeddingFont);
-    this->m_neg_prompt2->StyleSetBackground(11, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(11, embeddingColor);
+    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
+    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
+
+    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
+    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
+
+    // embedding styls
+    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
+    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
+
+    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
+    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
+
+    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
+    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
+
+    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
+    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
+
+    // lora not found style
+    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
+    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
+
+    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
+    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
+
+    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
+    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
+
+    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
+    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
 
     this->m_prompt->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
     this->m_prompt2->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
@@ -1354,6 +1429,10 @@ void MainWindowUI::InitPrompts() {
     this->m_neg_prompt2->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
 
     this->m_prompt->SetKeyWords(0, wxT("BREAK"));
+
+    this->m_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, [this](wxStyledTextEvent&) {
+        this->m_autoCompJustCompleted = true;
+    });
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
@@ -5837,9 +5916,12 @@ void MainWindowUI::writeLog(const wxString& msg, bool writeIntoGui, bool debug) 
     message.Replace("\r\n", " ", true);
     message.Replace("  ", " ", true);
 
-    if (!message.IsEmpty() && message.Last() != '\n') {
-        message.Append("\n");
+    message.Trim();
+
+    if (message.IsEmpty()) {
+        return;
     }
+    message.Append("\n");
     if (debug) {
         message.Prepend("[DEBUG] ");
     }

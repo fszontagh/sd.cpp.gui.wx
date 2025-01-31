@@ -37,23 +37,34 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name);
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
+        inline sd_gui_utils::ModelFileInfo* NameStartsWith(const wxString& keyword, const sd_gui_utils::DirTypes& type) {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (const auto& m : this->ModelInfos) {
+                if (m.second->model_type == type && m.second->name.starts_with(keyword)) {
+                    return m.second;
+                }
+            }
+            return nullptr;
+        }
         sd_gui_utils::ModelFileInfo* searchByName(const std::vector<std::string>& keywords, const sd_gui_utils::DirTypes& type);
         sd_gui_utils::ModelFileInfo* findModelByImageParams(const std::unordered_map<wxString, wxString>& params);
         sd_gui_utils::ModelFileInfo* findLocalModelOnRemote(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
         sd_gui_utils::ModelFileInfo* findRemoteModelOnLocal(sd_gui_utils::ModelFileInfo* model, sd_gui_utils::sdServer* server);
-        [[nodiscard]] const inline std::map<std::string, std::string> ListModelNamesByType(sd_gui_utils::DirTypes type, const wxString &filter = wxEmptyString) {
+        [[nodiscard]] const inline std::map<std::string, std::string> ListModelNamesByType(sd_gui_utils::DirTypes type, const wxString& filter = wxEmptyString) {
             std::map<std::string, std::string> list;
             for (const auto& it : this->ModelInfos) {
+                wxString modelName(it.second->name);
+                wxString modelNameL = modelName.Lower();
                 if (it.second->model_type == type) {
-                    if (filter.empty() == false && it.second->name.find(filter) == std::string::npos) {
+                    if (filter.empty() == false && modelNameL.StartsWith(filter.Lower()) == false) {
                         continue;
                     }
                     // cut the name on the last .
-                    wxString name = it.second->name;
-                    if (name.Contains('.')) {
-                        name = name.BeforeLast('.');
+
+                    if (modelName.Contains('.')) {
+                        modelName = modelName.BeforeLast('.');
                     }
-                    list[it.second->name] = name;
+                    list[it.second->name] = modelName.ToStdString();
                 }
             }
             return list;

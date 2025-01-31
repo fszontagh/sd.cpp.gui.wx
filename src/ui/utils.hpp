@@ -1336,6 +1336,7 @@ namespace sd_gui_utils {
         PANEL_IMAGEINFO,
         PANEL_MODELS
     };
+
     /// \brief Convert GuiMainPanels enum to size_t
     ///
     /// This implicit conversion is useful when using the enum as an index to a
@@ -1352,6 +1353,18 @@ namespace sd_gui_utils {
 
     constexpr bool operator!=(int value, GuiMainPanels panel) {
         return value != static_cast<int>(panel);
+    }
+
+    enum class GuiPromptStyles : int {
+        STYLE_LORA           = 10,
+        STYLE_EMBEDDING      = 11,
+        STYLE_OTHERS         = 12,
+        STYLE_LORA_NOT_FOUND = 16
+
+    };
+
+    constexpr int operator+(GuiPromptStyles style) {
+        return static_cast<int>(style);
     }
 
     /**
