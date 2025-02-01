@@ -16,7 +16,7 @@ inline const unsigned int EPROCESS_STD_BUFFER = 10240;
 
 inline const std::vector<std::string> CHECKPOINT_FILE_EXTENSIONS = {"safetensors", "cktp", "gguf"};
 inline const std::vector<std::string> EMBEDDING_FILE_EXTENSIONS  = {"safetensors", "pt"};
-inline const std::vector<std::string> LORA_FILE_EXTENSIONS       = {"safetensors", "pt", "ckpt"};
+inline const std::vector<std::string> LORA_FILE_EXTENSIONS       = {"safetensors", "ckpt"}; // sdcpp looking for .safetensors and .ckpt only
 inline const std::vector<std::string> VAE_FILE_EXTENSIONS        = {"safetensors", "pt", "ckpt", "gguf"};
 inline const std::vector<std::string> TAESD_FILE_EXTENSIONS      = {"safetensors", "pth", "gguf"};
 inline const std::vector<std::string> ESRGAN_FILE_EXTENSIONS     = {"pth", "pt"};

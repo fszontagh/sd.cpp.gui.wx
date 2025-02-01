@@ -34,8 +34,8 @@ namespace ModelInfo {
         sd_gui_utils::ModelFileInfo getInfo(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtr(std::string path);
         sd_gui_utils::ModelFileInfo* getIntoPtrByHash(std::string, std::string remote_server_id = "");
-        sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name);
-        sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name);
+        sd_gui_utils::ModelFileInfo* getInfoByName(std::string model_name, const sd_gui_utils::DirTypes& type = sd_gui_utils::DirTypes::CHECKPOINT);
+        sd_gui_utils::ModelFileInfo* findInfoByName(std::string model_name, const sd_gui_utils::DirTypes& type = sd_gui_utils::DirTypes::CHECKPOINT);
         sd_gui_utils::ModelFileInfo* searchByName(const std::string& keyword, const sd_gui_utils::DirTypes& type);
         inline sd_gui_utils::ModelFileInfo* NameStartsWith(const wxString& keyword, const sd_gui_utils::DirTypes& type) {
             std::lock_guard<std::mutex> lock(this->mutex);

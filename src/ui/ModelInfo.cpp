@@ -188,9 +188,9 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getIntoPtrByHash(std::string ha
     return nullptr;
 }
 // @brief Get a modelinfo by it's name
-sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getInfoByName(std::string model_name) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getInfoByName(std::string model_name, const sd_gui_utils::DirTypes& type) {
     for (std::map<std::string, sd_gui_utils::ModelFileInfo*>::iterator itr = this->ModelInfos.begin(); itr != this->ModelInfos.end(); itr++) {
-        if ((itr)->second->name == model_name) {
+        if ((itr)->second->name == model_name && (itr)->second->model_type == type) {
             return (itr)->second;
         }
     }
@@ -198,9 +198,9 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::getInfoByName(std::string model
     return nullptr;
 }
 // @brief Find a similar named modelinfo
-sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findInfoByName(std::string model_name) {
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findInfoByName(std::string model_name, const sd_gui_utils::DirTypes& type) {
     for (auto model : this->ModelInfos) {
-        if (model.second->name.find(model_name) != std::string::npos) {
+        if (model.second->name.find(model_name) != std::string::npos && model.second->model_type == type) {
             return model.second;
         }
     }
@@ -246,7 +246,7 @@ sd_gui_utils::ModelFileInfo* ModelInfo::Manager::findModelByImageParams(const st
             }
         }
 
-        if (item.first == "model" && !modelFound) {
+        if (item.first == "model" && !modelFound && item.second.empty() == false) {
             // get by name
             auto check = this->getInfoByName(item.second.utf8_string());
             if (check != nullptr) {
@@ -358,10 +358,14 @@ void ModelInfo::Manager::WriteIntoMeta(const std::string& model_path) {
 }
 
 void ModelInfo::Manager::WriteIntoMeta(const sd_gui_utils::ModelFileInfo& modelinfo) {
-    nlohmann::json j(modelinfo);
-    std::ofstream file(modelinfo.meta_file);
-    file << j;
-    file.close();
+    try {
+        nlohmann::json j(modelinfo);
+        std::ofstream file(modelinfo.meta_file);
+        file << j;
+        file.close();
+    } catch (const std::exception& e) {
+        wxLogError("Exception: %s file: %s", e.what(), modelinfo.meta_file);
+    }
 }
 
 void ModelInfo::Manager::WriteIntoMeta(sd_gui_utils::ModelFileInfo* modelinfo) {

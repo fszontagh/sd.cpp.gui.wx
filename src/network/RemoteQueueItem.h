@@ -77,7 +77,8 @@ namespace sd_gui_utils {
             // @brief The server id where the image is belong to
             std::string server_id = "";
             // @brief The image md5 hash
-            std::string id = "";
+            std::string md5_hash                                  = "";
+            [[deprecated("Use `GetId` instead.")]] std::string id = {};  // keep for compatibility
             // @brief The image width
             int width = 0;
             // @brief The image height
@@ -91,16 +92,19 @@ namespace sd_gui_utils {
             // @brief The image filename where it will be saved
             std::string target_filename = "";
             std::string data_filename   = "";
+            std::string GetId() const { return this->md5_hash + std::to_string(this->jobid); }
+            bool operator==(const ImageInfo& rhs) const { return this->GetId() == rhs.GetId(); }
         };
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, id, width, height, type, size, data, target_filename, data_filename)
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, md5_hash, id, width, height, type, size, data, target_filename, data_filename)
 
         struct ModelHash {
-            std::string model_hash  = "";
-            std::string taesd_hash  = "";
-            std::string vae_hash    = "";
-            std::string esrgan_hash = "";
+            std::string model_hash      = "";
+            std::string taesd_hash      = "";
+            std::string vae_hash        = "";
+            std::string esrgan_hash     = "";
+            std::string controlnet_hash = "";
         };
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelHash, model_hash, taesd_hash, vae_hash, esrgan_hash)
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ModelHash, model_hash, taesd_hash, vae_hash, esrgan_hash, controlnet_hash)
 
         struct RemoteQueueItem {
             uint64_t id = 0, created_at = 0, updated_at = 0, finished_at = 0, started_at = 0, number_of_images = 0;

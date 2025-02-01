@@ -3,11 +3,11 @@
 SocketApp::SocketApp(const char* listenAddr, uint16_t port, TerminalApp* parent)
     : m_socketOpt({sd_gui_utils::TCP_TX_BUFFER_SIZE, sd_gui_utils::TCP_RX_BUFFER_SIZE, listenAddr}), m_server(*this, &m_socketOpt), parent(parent) {
     sockets::SocketRet ret = m_server.start(port);
+    this->needToRun.store(ret.m_success);
     if (ret.m_success) {
-        this->parent->sendLogEvent("Server started on  " + std::string(listenAddr) + ":" + std::to_string(port));
+        this->parent->SendLogEvent("Server listening on " + std::string(listenAddr) + ":" + std::to_string(port));
     } else {
-        this->parent->sendLogEvent("Server error: " + ret.m_msg, wxLOG_Error);
-        this->needToRun = false;
+        this->parent->SendLogEvent("Server error: " + ret.m_msg, wxLOG_Error);
     }
 }
 
@@ -23,17 +23,17 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
     if (idx == 0) {
         auto ret = m_server.sendBcast(data, len);
         if (!ret.m_success) {
-            this->parent->sendLogEvent("Broadcast send Error: " + ret.m_msg, wxLOG_Error);
+            this->parent->SendLogEvent("Broadcast send Error: " + ret.m_msg, wxLOG_Error);
         }
     } else if (this->m_clientInfo.contains(idx)) {
         auto ret = m_server.sendClientMessage(idx, data, len);
         if (!ret.m_success) {
-            this->parent->sendLogEvent("Send Error: " + ret.m_msg, wxLOG_Error);
+            this->parent->SendLogEvent("Send Error: " + ret.m_msg, wxLOG_Error);
         } else {
             this->m_clientInfo.at(idx).tx += len;
         }
     } else {
-        this->parent->sendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
+        this->parent->SendLogEvent("Client " + std::to_string(idx) + " doesn't exist", wxLOG_Warning);
     }
     auto fsize = sd_gui_utils::formatbytes(len);
     // wxString logmsg = wxString::Format("Sent to client id: %d size: %.1f %s", idx, fsize.first, fsize.second);
@@ -41,7 +41,7 @@ void SocketApp::sendMsg(int idx, const char* data, size_t len) {
 }
 size_t SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
     if (idx != 0 && this->m_clientInfo.contains(idx)) {
-        packet.client_id = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
+        packet.client_session_id = this->m_clientInfo[idx].client_id > 0 ? this->m_clientInfo[idx].client_id : 0;
     }
 
     auto raw_packet    = sd_gui_utils::networks::Packet::Serialize(packet);
@@ -63,13 +63,12 @@ size_t SocketApp::sendMsg(int idx, sd_gui_utils::networks::Packet& packet) {
 void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const char* data, size_t size) {
     while (size > 0) {
         if (this->expected_size == 0) {
-
             if (size >= sd_gui_utils::networks::PACKET_SIZE_LENGTH) {
                 memcpy(&this->expected_size, data, sd_gui_utils::networks::PACKET_SIZE_LENGTH);
 
                 size -= sd_gui_utils::networks::PACKET_SIZE_LENGTH;
                 data += sd_gui_utils::networks::PACKET_SIZE_LENGTH;
-                this->parent->sendLogEvent("Received packet expected size: " + std::to_string(this->expected_size), wxLOG_Debug);
+                this->parent->SendLogEvent("Received packet expected size: " + std::to_string(this->expected_size), wxLOG_Debug);
             } else {
                 this->buffer.insert(this->buffer.end(), data, data + size);
                 break;
@@ -79,7 +78,6 @@ void SocketApp::onReceiveClientData(const sockets::ClientHandle& client, const c
         size_t remaining_size = this->expected_size - this->buffer.size();
 
         if (size >= remaining_size) {
-
             this->buffer.insert(this->buffer.end(), data, data + remaining_size);
 
             auto packet       = sd_gui_utils::networks::Packet::DeSerialize(this->buffer.data(), this->buffer.size());
@@ -104,13 +102,15 @@ void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
     uint16_t port;
     bool connected;
     if (m_server.getClientInfo(client, ipAddr, port, connected)) {
-        this->parent->sendLogEvent("Client " + std::to_string(client) + " connected from " + ipAddr + ":" + std::to_string(port));
+        this->parent->SendLogEvent("Client " + std::to_string(client) + " connected from " + ipAddr + ":" + std::to_string(port));
         {
             std::lock_guard<std::mutex> guard(m_mutex);
             // generate an id
             // auto idGen                 = sd_gui_utils::SnowflakeIDGenerator(std::to_string(client), ipAddr, port);
             // idGen.generateID(this->m_clientInfo.size()
-            this->m_clientInfo[client] = {ipAddr, port, client, wxGetLocalTime()};
+            clientInfo info            = {ipAddr, port, client, wxGetLocalTime()};
+            info.client_id             = this->m_clientInfo.size() + 1;
+            this->m_clientInfo[client] = info;
         }
         sd_gui_utils::networks::Packet auth_required_packet;
         auth_required_packet.type  = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
@@ -120,12 +120,13 @@ void SocketApp::onClientConnect(const sockets::ClientHandle& client) {
 }
 
 void SocketApp::onClientDisconnect(const sockets::ClientHandle& client, const sockets::SocketRet& ret) {
-    this->parent->sendLogEvent("Client " + std::to_string(client) + " disconnected: " + ret.m_msg);
+    this->parent->SendLogEvent("Client " + std::to_string(client) + " disconnected: " + ret.m_msg);
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         if (this->m_clientInfo.contains(client)) {
             this->m_clientInfo.at(client).disconnected_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-            this->parent->sendDisconnectEvent(this->m_clientInfo.at(client));
+            // this->parent->SendDisconnectEvent(this->m_clientInfo.at(client));
+            this->parent->StoreClientStats(this->m_clientInfo.at(client));
             this->m_clientInfo.erase(client);
         }
     }
@@ -135,23 +136,40 @@ void SocketApp::OnTimer() {
     if (this->m_clientInfo.empty()) {
         return;
     }
+
+    const time_t currentTime       = wxGetLocalTime();
+    const auto unauthorizedTimeout = this->parent->configData->unauthorized_timeout;
+    const auto tcpKeepalive        = this->parent->configData->tcp_keepalive;
+
     auto it = this->m_clientInfo.begin();
     while (it != this->m_clientInfo.end()) {
-        if ((wxGetLocalTime() - it->second.connected_at) > this->parent->configData->unauthorized_timeout && it->second.apikey.empty()) {
+        auto& client = it->second;
+
+        if ((currentTime - client.connected_at) > unauthorizedTimeout && client.apikey.empty()) {
+            this->parent->SendLogEvent(wxString::Format(
+                                           "Unauthorized client %d disconnected due to inactivity %s:%d",
+                                           client.idx, client.host, client.port),
+                                       wxLOG_Warning);
+
             {
                 std::lock_guard<std::mutex> guard(m_mutex);
-                this->parent->sendLogEvent(wxString::Format("Unauthorized client %d disconnected due to inactivity %s:%d", it->second.idx, it->second.host, it->second.port), wxLOG_Warning);
-                this->m_server.deleteClient(it->second.idx);
+                this->m_server.deleteClient(client.idx);
                 it = this->m_clientInfo.erase(it);
             }
         } else {
-            if (it->second.last_keepalive == 0 || (wxGetLocalTime() - it->second.last_keepalive) > this->parent->configData->tcp_keepalive) {
-                it->second.last_keepalive = wxGetLocalTime();
-                auto keepAlivePacket      = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::REQUEST_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
-                // keepAlivePacket.SetData(std::string(SD_GUI_VERSION));
-                auto packet_size = this->sendMsg(it->second.idx, keepAlivePacket);
-                this->parent->sendLogEvent("Keepalive sent to " + it->second.host + ":" + std::to_string(it->second.port) + " packet size: " + std::to_string(packet_size) + "", wxLOG_Debug);
-                this->parent->sendOnTimerEvent(it->second);
+            if (client.last_keepalive == 0 || (currentTime - client.last_keepalive) > tcpKeepalive) {
+                client.last_keepalive = currentTime;
+                auto keepAlivePacket  = sd_gui_utils::networks::Packet(
+                    sd_gui_utils::networks::Packet::Type::REQUEST_TYPE,
+                    sd_gui_utils::networks::Packet::Param::PARAM_KEEPALIVE);
+
+                auto packet_size = this->sendMsg(client.idx, keepAlivePacket);
+                this->parent->SendLogEvent(
+                    "Keepalive sent to " + client.host + ":" + std::to_string(client.port) +
+                        " packet size: " + std::to_string(packet_size),
+                    wxLOG_Debug);
+
+                this->parent->StoreClientStats(client);  // Store client info into JSON
             }
             ++it;
         }
@@ -170,7 +188,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
             auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
             errorPacket.SetData("Version Mismatch, server: " + std::string(SD_GUI_VERSION) + ", client: " + packet.version);
             this->sendMsg(packet.source_idx, errorPacket);
-            this->parent->sendLogEvent(wxString::Format("Version Mismatch, server: %s, client: %s", SD_GUI_VERSION, packet.version), wxLOG_Error);
+            this->parent->SendLogEvent(wxString::Format("Version Mismatch, server: %s, client: %s", SD_GUI_VERSION, packet.version), wxLOG_Error);
             this->DisconnectClient(packet.source_idx);
             return;
         }
@@ -184,43 +202,63 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
                 {
                     // std::lock_guard<std::mutex> guard(m_mutex);
                     std::string packetData = packet.GetData<std::string>();
-                    this->parent->sendLogEvent("Got auth key: \n" + packetData + " our key: \n" + this->parent->configData->authkey, wxLOG_Debug);
-                    if (packet.client_id > 0) {
-                        this->m_clientInfo[packet.source_idx].client_id = packet.client_id;
+                    this->parent->SendLogEvent("Got auth key: \n" + packetData + " our key: \n" + this->parent->configData->authkey, wxLOG_Debug);
+                    if (packet.client_session_id > 0) {
+                        this->m_clientInfo[packet.source_idx].client_id = packet.client_session_id;
+                    } else {
+                        this->m_clientInfo[packet.source_idx].client_id = this->GetNextClientId();
                     }
                     if (this->parent->configData->authkey.compare(packetData) == 0) {
                         this->m_clientInfo[packet.source_idx].apikey = packetData;
-                        if (packet.client_id > 0) {
-                            this->m_clientInfo[packet.source_idx].client_id = packet.client_id;
-                        }
 
                         auto responsePacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_AUTH);
                         responsePacket.SetData("Authentication done");
-                        responsePacket.server_id   = this->parent->configData->server_id;
-                        responsePacket.client_id   = this->m_clientInfo[packet.source_idx].client_id;
-                        responsePacket.server_name = this->parent->configData->server_name;
+                        responsePacket.server_id         = this->parent->configData->server_id;
+                        responsePacket.client_session_id = this->m_clientInfo[packet.source_idx].client_id;
+                        responsePacket.server_name       = this->parent->configData->server_name;
                         this->sendMsg(packet.source_idx, responsePacket);
-                        this->parent->sendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
+                        this->parent->SendLogEvent("Client authenticated: " + std::to_string(packet.source_idx), wxLOG_Info);
+                        this->parent->StoreClientStats(this->m_clientInfo[packet.source_idx]);
                     } else {
                         auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_ERROR);
                         errorPacket.SetData("Authentication Failed");
                         this->sendMsg(packet.source_idx, errorPacket);
-                        this->parent->sendLogEvent("Authentication Failed, ip: " + this->m_clientInfo[packet.source_idx].host + " port: " + std::to_string(this->m_clientInfo[packet.source_idx].port) + " key: " + this->m_clientInfo[packet.source_idx].apikey + "", wxLOG_Error);
+                        this->parent->SendLogEvent("Authentication Failed, ip: " + this->m_clientInfo[packet.source_idx].host + " port: " + std::to_string(this->m_clientInfo[packet.source_idx].port) + " key: " + this->m_clientInfo[packet.source_idx].apikey + "", wxLOG_Error);
                     }
                 }
             }
         }
     } catch (nlohmann::json::exception& e) {
-        this->parent->sendLogEvent(wxString::Format("Json Parse Error: %s", e.what()), wxLOG_Error);
+        this->parent->SendLogEvent(wxString::Format("Json Parse Error: %s", e.what()), wxLOG_Error);
     }
 }
 
 void SocketApp::DisconnectClient(int idx) {
     std::lock_guard<std::mutex> guard(m_mutex);
     if (this->m_clientInfo.contains(idx)) {
-        this->parent->sendDisconnectEvent(this->m_clientInfo[idx]);
+        this->parent->StoreClientStats(this->m_clientInfo[idx]);
+        // this->parent->SendDisconnectEvent(this->m_clientInfo[idx]);
         if (this->m_server.deleteClient(idx)) {
             this->m_clientInfo.erase(idx);
         }
     }
+}
+void SocketApp::stop() {
+    this->needToRun.store(false);
+}
+int SocketApp::GetNextClientId() {
+    int max = 0;
+    // read all client info from files
+    const auto dir = this->parent->configData->GetClientDataPath();
+    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+        if (entry.path().extension() == ".json") {
+            std::string fileName = entry.path().filename().string();
+            std::string clientId = fileName.substr(0, fileName.length() - 5);
+            int id               = std::stoi(clientId);
+            if (id > max) {
+                max = id;
+            }
+        }
+    }
+    return max + 1;
 }

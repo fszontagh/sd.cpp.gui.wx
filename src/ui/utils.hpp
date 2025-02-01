@@ -412,6 +412,9 @@ namespace sd_gui_utils {
                 return;
             }
             if (this->servers.contains(internal_id)) {
+                if (enable) {
+                    this->servers[internal_id]->LoadAuthKeyFromSecretStore();
+                }
                 this->servers[internal_id]->SetEnabled(enable, autostartstop);
                 return;
             }
@@ -456,6 +459,7 @@ namespace sd_gui_utils {
                 return;
             }
             if (this->servers.contains(internal_id)) {
+                this->servers[internal_id]->Stop();
                 delete this->servers[internal_id];
                 this->servers.erase(internal_id);
                 return;

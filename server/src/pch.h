@@ -1,3 +1,4 @@
+#include <csignal>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -8,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <cinttypes>
+#include <atomic>
+#include <memory>
 
 #include <wx/app.h>
 #include <wx/dir.h>
@@ -21,10 +24,14 @@
 #include <wx/timer.h>
 #include <wx/image.h>
 
+
+#include "libs/subprocess.h"
 #include "ver.hpp"
 
 #include "helpers/sd.hpp"
 #include "helpers/formatbytes.hpp"
+#include "libs/SharedMemoryManager.h"
+#include "libs/SharedLibrary.h"
 
 #include "EventQueue.h"
 #include "extprocess/config.hpp"

@@ -1512,12 +1512,14 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         item->params.wtype    = static_cast<sd_type_t>(wClientData->getId());
         item->params.schedule = static_cast<schedule_t>(sClientData->getId());
 
-        item->image_info.emplace_back(sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE, item->initial_image);
         wxImage initialImage;
-        initialImage.LoadFile(item->initial_image);
-        item->image_info.back().width  = initialImage.GetWidth();
-        item->image_info.back().height = initialImage.GetHeight();
-        item->image_info.back().id     = sd_gui_utils::calculateMD5(item->initial_image);
+        if (initialImage.LoadFile(item->initial_image)) {
+            sd_gui_utils::networks::ImageInfo info(sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE, item->initial_image);
+            info.width    = initialImage.GetWidth();
+            info.height   = initialImage.GetHeight();
+            info.md5_hash = sd_gui_utils::calculateMD5(item->initial_image);
+            item->image_info.emplace_back(info);
+        }
 
         if (errorlist.size() > 0) {
             wxString error_strs;
@@ -1756,7 +1758,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 item->image_info.emplace_back(_type, maskImagename.GetAbsolutePath());
                 item->image_info.back().width           = maskImage.GetWidth();
                 item->image_info.back().height          = maskImage.GetHeight();
-                item->image_info.back().id              = sd_gui_utils::calculateMD5(maskImagename.GetAbsolutePath().ToStdString());
+                item->image_info.back().md5_hash        = sd_gui_utils::calculateMD5(maskImagename.GetAbsolutePath().ToStdString());
                 item->image_info.back().target_filename = maskImagename.GetAbsolutePath();
                 item->mask_image                        = maskImagename.GetAbsolutePath();
             }
@@ -1780,7 +1782,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                     initialImageName.GetAbsolutePath());
                 item->image_info.back().width           = initialImage.GetWidth();
                 item->image_info.back().height          = initialImage.GetHeight();
-                item->image_info.back().id              = sd_gui_utils::calculateMD5(initialImageName.GetAbsolutePath().ToStdString());
+                item->image_info.back().md5_hash        = sd_gui_utils::calculateMD5(initialImageName.GetAbsolutePath().ToStdString());
                 item->image_info.back().target_filename = initialImageName.GetAbsolutePath();
 
                 item->image_info.emplace_back(
@@ -1788,7 +1790,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                     originalImageName.GetAbsolutePath());
                 item->image_info.back().width           = originalImage.GetWidth();
                 item->image_info.back().height          = originalImage.GetHeight();
-                item->image_info.back().id              = sd_gui_utils::calculateMD5(originalImageName.GetAbsolutePath().ToStdString());
+                item->image_info.back().md5_hash        = sd_gui_utils::calculateMD5(originalImageName.GetAbsolutePath().ToStdString());
                 item->image_info.back().target_filename = originalImageName.GetAbsolutePath();
 
                 item->image_info.emplace_back(
@@ -1796,7 +1798,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                     outpaintMaskImageName.GetAbsolutePath());
                 item->image_info.back().width           = outPaintedMaskImage.GetWidth();
                 item->image_info.back().height          = outPaintedMaskImage.GetHeight();
-                item->image_info.back().id              = sd_gui_utils::calculateMD5(outpaintMaskImageName.GetAbsolutePath().ToStdString());
+                item->image_info.back().md5_hash        = sd_gui_utils::calculateMD5(outpaintMaskImageName.GetAbsolutePath().ToStdString());
                 item->image_info.back().target_filename = outpaintMaskImageName.GetAbsolutePath();
 
                 item->mask_image = outpaintMaskImageName.GetAbsolutePath();
@@ -1807,7 +1809,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                     initialImageName.GetAbsolutePath());
                 item->image_info.back().width           = initialImage.GetWidth();
                 item->image_info.back().height          = initialImage.GetHeight();
-                item->image_info.back().id              = sd_gui_utils::calculateMD5(initialImageName.GetAbsolutePath().ToStdString());
+                item->image_info.back().md5_hash        = sd_gui_utils::calculateMD5(initialImageName.GetAbsolutePath().ToStdString());
                 item->image_info.back().target_filename = initialImageName.GetAbsolutePath();
             }
         }
@@ -1836,6 +1838,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
                 wxLogError(_("No controlnet model found!"));
                 return;
             }
+            if (controlnetModel->sha256.empty() == false) {
+                item->hashes.controlnet_hash = controlnetModel->sha256;
+            }
             if (item->server.empty() == false && controlnetModel->server_id != item->server) {
                 errorlist.Add(_("The selected controlnet model not available on the selected server!"));
             } else {
@@ -1846,15 +1851,22 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
                 if (this->m_controlnetImageOpen->GetPath().length() > 0) {
                     item->params.control_image_path = this->m_controlnetImageOpen->GetPath().utf8_string();
-                    item->image_info.emplace_back(
+                    sd_gui_utils::ImageInfo ctrnetImageInfo(
                         sd_gui_utils::networks::ImageType::CONTROLNET | sd_gui_utils::networks::ImageType::COPYABLE,
                         item->params.control_image_path);
+
                     wxImage ctrnetImage;
-                    ctrnetImage.LoadFile(item->params.control_image_path);
-                    item->image_info.back().width           = ctrnetImage.GetWidth();
-                    item->image_info.back().height          = ctrnetImage.GetHeight();
-                    item->image_info.back().id              = sd_gui_utils::calculateMD5(item->params.control_image_path);
-                    item->image_info.back().target_filename = item->params.control_image_path;
+                    if (ctrnetImage.LoadFile(item->params.control_image_path)) {
+                        ctrnetImageInfo.width           = ctrnetImage.GetWidth();
+                        ctrnetImageInfo.height          = ctrnetImage.GetHeight();
+                        ctrnetImageInfo.md5_hash        = sd_gui_utils::calculateMD5(item->params.control_image_path);
+                        ctrnetImageInfo.target_filename = item->params.control_image_path;
+                        item->image_info.emplace_back(ctrnetImageInfo);
+                    } else {
+                        this->writeLog(wxString::Format(_("Can not load controlnet image: '%s', removing it"), item->params.control_image_path.c_str()), true);
+                        item->params.control_image_path = "";
+                        item->params.controlnet_path    = "";
+                    }
                 }
             }
         }
@@ -2225,10 +2237,8 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
 
         wxString preset_name = dlg.GetValue();
         preset.cfg           = this->m_cfg->GetValue();
-        // do not save the seed
-        // preset.seed = this->m_seed->GetValue();
-        preset.clip_skip = this->m_clip_skip->GetValue();
-        preset.steps     = this->m_steps->GetValue();
+        preset.clip_skip     = this->m_clip_skip->GetValue();
+        preset.steps         = this->m_steps->GetValue();
         this->m_width->GetValue().ToInt(&preset.width);
         this->m_height->GetValue().ToInt(&preset.height);
 
@@ -2254,13 +2264,17 @@ void MainWindowUI::onSavePreset(wxCommandEvent& event) {
             preset.mode = modes_str[SDMode::IMG2IMG];
         }
 
-        nlohmann::json j(preset);
-        std::string presetfile = wxString::Format("%s%s%s.json", this->mapp->cfg->presets, wxString(wxFileName::GetPathSeparator()), preset.name).utf8_string();
+        try {
+            nlohmann::json j(preset);
+            std::string presetfile = wxString::Format("%s%s%s.json", this->mapp->cfg->presets, wxString(wxFileName::GetPathSeparator()), preset.name).utf8_string();
 
-        std::ofstream file(presetfile);
-        file << j;
-        file.close();
-        this->LoadPresets();
+            std::ofstream file(presetfile);
+            file << j;
+            file.close();
+            this->LoadPresets();
+        } catch (const std::exception& e) {
+            this->writeLog(wxString::Format(_("Failed to save preset: %s"), e.what()));
+        }
     }
 }
 
@@ -3126,7 +3140,14 @@ wxString MainWindowUI::paramsToImageComment(const QueueItem& myItem) {
     wxString sha256;
 
     if (!myItem.params.model_path.empty()) {
-        auto modelInfo = this->ModelManager->getIntoPtr(myItem.params.model_path);
+        sd_gui_utils::ModelFileInfo* modelInfo = nullptr;
+        if (myItem.hashes.model_hash.empty() == false) {
+            modelInfo = this->ModelManager->getIntoPtrByHash(myItem.hashes.model_hash, myItem.server);
+        }
+        if (!modelInfo) {
+            modelInfo = this->ModelManager->getIntoPtr(myItem.params.model_path);
+        }
+
         if (modelInfo) {
             modelPath = wxFileName(modelInfo->path);
             sha256    = wxString::FromUTF8(modelInfo->sha256);
@@ -3465,7 +3486,11 @@ void MainWindowUI::loadLoraList() {
 
 void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
     event.Skip();
-    this->settingsWindow->Destroy();
+    if (this->settingsWindow == nullptr) {
+        return;
+    }
+
+    this->settingsWindow->Hide();
     if (this->mapp->cfg->enable_civitai == false && this->m_civitai->IsShown()) {
         this->m_civitai->Hide();
         if (this->civitwindow != nullptr) {
@@ -4167,6 +4192,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             this->writeLog("Got invalid packet from server: " + server->GetName());
             return;
         }
+        auto last_selected_model = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
+
         try {
             auto list = packet.GetData<std::vector<sd_gui_utils::networks::RemoteModelInfo>>();
             for (const auto& item : list) {
@@ -4177,7 +4204,8 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 if (newItem == nullptr) {
                     continue;
                 }
-                this->modelUiManager->AddItem(newItem, false, server);
+
+                this->modelUiManager->AddItem(newItem, last_selected_model == wxString(newItem->path), server);
             }
 
             this->writeLog(wxString::Format(_("Server's model list updated: %s Models: %lu"), server->GetName(), list.size()), true);
@@ -4286,13 +4314,17 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         if (modelinfo->civitaiPlainJson.empty() && this->mapp->cfg->enable_civitai) {
             this->threads.emplace_back(new std::thread(&MainWindowUI::threadedModelInfoDownload, this, this->GetEventHandler(), modelinfo));
         }
-        nlohmann::json j(*modelinfo);
-        std::ofstream file(modelinfo->meta_file);
-        file << j;
-        file.close();
-        modelinfo->hash_progress_size = 0;
-        modelinfo->hash_fullsize      = 0;
-        this->modelUiManager->ChangeText(modelinfo->path, modelinfo->sha256.substr(0, 10), 3);
+        try {
+            nlohmann::json j(*modelinfo);
+            std::ofstream file(modelinfo->meta_file);
+            file << j;
+            file.close();
+            modelinfo->hash_progress_size = 0;
+            modelinfo->hash_fullsize      = 0;
+            this->modelUiManager->ChangeText(modelinfo->path, modelinfo->sha256.substr(0, 10), 3);
+        } catch (const std::exception& e) {
+            this->writeLog(wxString::Format(_("Error writing model meta file: %s\n"), modelinfo->name));
+        }
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::HASHING_PROGRESS) {
@@ -4687,12 +4719,12 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
 
         if (!item->params.controlnet_path.empty()) {
             data.push_back(wxVariant(_("CN model")));
-            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.controlnet_path)));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(wxFileName(item->params.controlnet_path).GetFullName())));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
 
             data.push_back(wxVariant(_("CN img")));
-            data.push_back(wxVariant(wxString::FromUTF8Unchecked(item->params.control_image_path)));
+            data.push_back(wxVariant(wxString::FromUTF8Unchecked(wxFileName(item->params.control_image_path).GetFullName())));
             this->m_joblist_item_details->AppendItem(data);
             data.clear();
 
@@ -4776,7 +4808,7 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
 
     int index = 0;
     for (const auto& img : item->image_info) {
-        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx \nmd5: %s"), img.width, img.height, img.id);
+        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx \nmd5: %s"), img.width, img.height, img.md5_hash);
         if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::CONTROLNET)) {
             tooltip.Append("\n");
             tooltip.Append(_("Controlnet image"));
@@ -4808,8 +4840,11 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         tooltip.Append("\n");
         tooltip.Append(wxString::Format(_("Filename: %s"), wxFileName(img.target_filename).GetFullName()));
 
-        if (this->jobImagePreviews.contains(img.id)) {
-            auto& preview = this->jobImagePreviews[img.id];
+        // generate a local unique identifier for the image
+        const std::string image_luid = img.GetId();
+
+        if (this->jobImagePreviews.contains(image_luid)) {
+            auto& preview = this->jobImagePreviews[image_luid];
             if (preview.is_ok) {
                 continue;
             }
@@ -4833,9 +4868,10 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
                 preview.download_requested = true;
 
                 if (!this->mapp->cfg->remote_download_images_immediately) {
-                    auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
-                    if (srv) {
-                        srv->RequestImages(img.jobid);
+                    auto srv = this->mapp->cfg->GetTcpServer(item->server);
+                    if (srv && item->image_download_requested == false) {
+                        srv->RequestImages(item->id);
+                        item->image_download_requested = true;
                     }
                 }
                 continue;
@@ -4843,12 +4879,19 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         } else {
             wxStaticBitmap* bitmap = nullptr;
             if (!wxFileExists(img.target_filename)) {
-                bitmap                         = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, !img.server_id.empty() ? cloud_download_png_to_wx_bitmap() : deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
-                this->jobImagePreviews[img.id] = {bitmap, true, true, false, true};
+                bitmap                             = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, !item->server.empty() ? cloud_download_png_to_wx_bitmap() : deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+                this->jobImagePreviews[image_luid] = {bitmap,
+                                                      img.server_id.empty() == false,
+                                                      true,
+                                                      false,
+                                                      false,
+                                                      img.md5_hash};
                 if (!this->mapp->cfg->remote_download_images_immediately && !img.server_id.empty()) {
                     auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
-                    if (srv) {
-                        srv->RequestImages(img.jobid);
+                    if (srv && item->image_download_requested == false) {
+                        srv->RequestImages(item->id);
+                        this->jobImagePreviews[image_luid].download_requested = true;
+                        item->image_download_requested                        = true;
                     }
                 }
             } else {
@@ -4856,8 +4899,13 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
                     wxString::FromUTF8Unchecked(img.target_filename), 256, 256,
                     wxColour(51, 51, 51, wxALPHA_TRANSPARENT),
                     wxString::FromUTF8Unchecked(this->mapp->cfg->thumbs_path));
-                bitmap                         = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
-                this->jobImagePreviews[img.id] = {bitmap, false, false, true, false};
+                bitmap                             = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, resized, wxDefaultPosition, wxDefaultSize, 0);
+                this->jobImagePreviews[image_luid] = {bitmap,
+                                                      false,
+                                                      false,
+                                                      true,
+                                                      false,
+                                                      img.md5_hash};
             }
 
             bitmap->SetToolTip(tooltip);
@@ -4872,7 +4920,7 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
 
     for (auto it = this->jobImagePreviews.begin(); it != this->jobImagePreviews.end();) {
         if (std::none_of(item->image_info.begin(), item->image_info.end(),
-                         [&it](const auto& img) { return img.id == it->first; })) {
+                         [&it](const auto& img) { return img.GetId() == it->second.imgid; })) {
             if (it->second.bitmap) {
                 it->second.bitmap->Destroy();
             }
@@ -4998,7 +5046,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
     for (const auto& rimage : item->rawImages) {
         sd_gui_utils::networks::ImageInfo rawImage;
         rawImage.target_filename = rimage;
-        rawImage.id              = sd_gui_utils::calculateMD5(rimage);
+        rawImage.md5_hash        = sd_gui_utils::calculateMD5(rimage);
         rawImage.width           = 0;
         rawImage.height          = 0;
         rawImage.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
@@ -5109,6 +5157,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
             item->initial_image = newTargetName.GetAbsolutePath();
+        }
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
+            item->params.control_image_path = newTargetName.GetAbsolutePath();
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             needExif.emplace_back(img);

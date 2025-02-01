@@ -82,6 +82,8 @@ set(SOURCES
     src/libs/SharedMemoryManager.cpp
     src/libs/TcpClient.cpp
     src/helpers/QueueItem.cpp
+    src/helpers/DataViewListManager.cpp
+    src/helpers/ModelUiManager.cpp
 )
 
 if (WIN32)

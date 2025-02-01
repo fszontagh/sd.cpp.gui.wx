@@ -3,9 +3,11 @@
 #include "libs/SnowFlakeIdGenerarot.hpp"
 class SimpleQueueManager {
 public:
-    SimpleQueueManager(std::string server_id, std::string jobs_path)
-        : server_id(server_id), generator(server_id), jobs_path(jobs_path) {
-    }
+    SimpleQueueManager(std::shared_ptr<ServerConfig> config)
+        : server_id(config->server_id),
+          jobs_path(config->GetJobsPath()),
+          rewrite_server_id_in_jobfiles(config->rewrite_server_id_in_jobfiles),
+          generator(config->server_id) {}
     size_t GetJobCount() {
         std::lock_guard<std::mutex> lock(this->mutex);
         return this->jobs.size();
@@ -147,7 +149,7 @@ public:
                 j->ConvertFromSharedMemory(item);
 
                 if (j->status == QueueStatus::DONE) {
-                    j->PrepareImagesForClients(target_dir);  // convert images to base64 and generate image ID
+                    j->PrepareImagesForClients(target_dir);  // convert ONLY the generated images to base64 and generate image ID
                     if (this->currentItem && this->currentItem->id == oldJob.id) {
                         this->currentItem = nullptr;
                     }
@@ -197,7 +199,7 @@ public:
 
         const wxDir dir(this->jobs_path);
         if (!dir.IsOpened()) {
-            std::cerr << "Error opening directory: " << this->jobs_path << std::endl;
+            wxLogMessage(_("Error opening directory: %s"), this->jobs_path);
             return;
         }
 
@@ -225,6 +227,18 @@ public:
                     auto item                     = std::make_shared<QueueItem>(jsondata.get<QueueItem>());
                     bool need_update              = false;
                     if (item->id != 0) {
+                        if (item->server != this->server_id) {
+                            wxLogMessage("Server id mismatch in job id: %" PRIu64, item->id);
+                            if (this->rewrite_server_id_in_jobfiles) {
+                                wxLogMessage("Changed server id in job id: %" PRIu64 " from: %s to: %s", item->id, item->server.c_str(), this->server_id.c_str());
+                                item->server = this->server_id;
+                                need_update  = true;
+                            } else {
+                                wxRenameFile(fn.GetAbsolutePath(), fn.GetAbsolutePath() + ".wrong_version");
+                                cont = dir.GetNext(&path);
+                                continue;
+                            }
+                        }
                         if (item->status & QueueStatusFlags::RUNNING_FLAG) {
                             item->status     = QueueStatus::FAILED;
                             item->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -255,6 +269,7 @@ private:
     std::mutex mutex;
     std::map<uint64_t, std::shared_ptr<QueueItem>> jobs;
     std::string server_id, jobs_path;
+    bool rewrite_server_id_in_jobfiles = false;
     sd_gui_utils::SnowflakeIDGenerator generator;
     uint64_t lastID                        = 0;
     std::shared_ptr<QueueItem> currentItem = nullptr;
@@ -263,19 +278,48 @@ private:
         if (!item || item->id == 0) {
             return;
         }
+
         try {
-            const nlohmann::json jsondata = *item;
-            const auto filepath           = wxString::Format("%s%slocal_%" PRIu64 ".json", this->jobs_path, wxFileName::GetPathSeparators(), item->id);
-            wxFileName fn(filepath);
+            auto storeItem = *item;
+            storeItem.ClearImageInfosData();  // Remove all RAW image data (base64)
+
+            nlohmann::json jsonData;
+            try {
+                jsonData = storeItem;
+            } catch (const std::exception& e) {
+                std::cerr << "Error converting item to JSON: " << e.what() << std::endl;
+                return;
+            }
+
+            // JSON string létrehozása
+            std::string jsonString;
+            try {
+                jsonString = jsonData.dump(2);
+            } catch (const std::exception& e) {
+                std::cerr << "Error serializing JSON: " << e.what() << std::endl;
+                return;
+            }
+
+            // Fájlnév meghatározása
+            const auto filepath = wxString::Format("local_%" PRIu64 ".json", item->id);
+            wxFileName fn(this->jobs_path, filepath);
+            wxString tempFilePath = fn.GetAbsolutePath() + ".tmp";  // Temporary file path
+
             wxFile file;
-            if (file.Open(fn.GetAbsolutePath(), wxFile::write)) {
-                file.Write(jsondata.dump(2));
+            if (file.Open(tempFilePath, wxFile::write)) {
+                file.Write(jsonString);
                 file.Close();
+                if (fn.FileExists()) {
+                    wxRemoveFile(fn.GetAbsolutePath());
+                }
+                if (!wxRenameFile(tempFilePath, fn.GetAbsolutePath())) {
+                    std::cerr << "Error renaming temp file to: " << filepath << std::endl;
+                }
             } else {
-                std::cerr << "Error opening file: " << filepath << std::endl;
+                std::cerr << "Error opening file for writing: " << tempFilePath << std::endl;
             }
         } catch (const std::exception& e) {
-            std::cerr << "Error serializing item to JSON: " << e.what() << std::endl;
+            std::cerr << "Unexpected error in StoreJobInFile: " << e.what() << std::endl;
         }
     }
 };

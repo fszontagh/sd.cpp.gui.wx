@@ -205,7 +205,7 @@ void MainWindowSettings::AddRemoteServerToList(sd_gui_utils::sdServer* server) {
     wxSecretValue authkey;
 
     if (store.IsOk() && store.Load(server->GetsecretKeyName(), username, authkey)) {
-        server->SetAuthKeyState(true);
+        server->LoadAuthKeyFromSecretStore();
     }
 
     wxVector<wxVariant> values;
@@ -321,7 +321,7 @@ void MainWindowSettings::OnServerListEditingDone(wxDataViewEvent& event) {
                 return;
             } else {
                 if (store.Save(srv->GetsecretKeyName(), username, authkey) == true) {
-                    srv->SetAuthKeyState(true);
+                    srv->LoadAuthKeyFromSecretStore();
                     return;
                 }
             }

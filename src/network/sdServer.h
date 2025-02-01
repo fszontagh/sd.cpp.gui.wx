@@ -140,7 +140,7 @@ namespace sd_gui_utils {
             if (packet.isValid() == false) {
                 return 0;
             }
-            return packet.client_id;
+            return packet.client_session_id;
         }
         std::string GetServerNameFromPacket(int packet_id) {
             auto packet = this->GetPacket(packet_id);
@@ -164,13 +164,12 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::DELETE_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE;
-            packet.client_id = this->client_id;
+            packet.client_session_id = this->client_id;
             packet.SetData(job_id);
             this->client->sendMsg(packet);
             return true;
         }
         bool IsEnabled() const { return this->enabled.load(); }
-        void SetAuthKeyState(bool state) { this->authkey = state; }
         bool GetAuthKeyState() const { return this->authkey; }
         void LoadAuthKeyFromSecretStore() {
             this->authkey       = false;
@@ -206,7 +205,7 @@ namespace sd_gui_utils {
                 auto packet        = sd_gui_utils::networks::Packet();
                 packet.type        = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
                 packet.param       = sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD;
-                packet.client_id   = this->client_id;
+                packet.client_session_id   = this->client_id;
                 packet.SetData(convertedItem);
                 this->client->sendMsg(packet);
             });
@@ -308,13 +307,13 @@ namespace sd_gui_utils {
             std::lock_guard<std::mutex> lock(this->mutex);
             Packet packet(Packet::Type::REQUEST_TYPE, Packet::Param::PARAM_AUTH);
             packet.SetData(data);
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
 
         void SendPacket(sd_gui_utils::networks::Packet& packet) {
             std::lock_guard<std::mutex> lock(this->mutex);
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
 
@@ -371,8 +370,8 @@ namespace sd_gui_utils {
             auto packet  = sd_gui_utils::networks::Packet();
             packet.type  = sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE;
             packet.param = sd_gui_utils::networks::Packet::Param::PARAM_AUTH;
-            packet.SetData(this->authkey_str.GetAsString().ToStdString());
-            packet.client_id = this->GetClientId();
+            packet.SetData(this->authkey_str.GetAsString().ToUTF8().data());
+            packet.client_session_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
         void RequestModelList() {
@@ -380,7 +379,7 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_MODEL_LIST;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
         void RequestJobList() {
@@ -388,14 +387,14 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             this->client->sendMsg(packet);
         }
         void DuplicateJob(uint64_t job_id) {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_DUPLICATE;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             packet.SetData(job_id);
             this->client->sendMsg(packet);
         }
@@ -403,7 +402,7 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_RESUME;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             packet.SetData(job_id);
             this->client->sendMsg(packet);
         }
@@ -411,7 +410,7 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_PAUSE;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             packet.SetData(job_id);
             this->client->sendMsg(packet);
         }
@@ -419,7 +418,7 @@ namespace sd_gui_utils {
             auto packet      = sd_gui_utils::networks::Packet();
             packet.type      = sd_gui_utils::networks::Packet::Type::REQUEST_TYPE;
             packet.param     = sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST;
-            packet.client_id = this->GetClientId();
+            packet.client_session_id = this->GetClientId();
             packet.SetData(job_id);
             this->client->sendMsg(packet);
         }

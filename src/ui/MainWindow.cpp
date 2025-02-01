@@ -351,8 +351,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxArrayString m_controlnetModelsChoices;
 	m_controlnetModels = new wxChoice( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxSize( 210,-1 ), m_controlnetModelsChoices, 0 );
 	m_controlnetModels->SetSelection( 0 );
-	m_controlnetModels->Enable( false );
-
 	bSizer34->Add( m_controlnetModels, 0, wxALL, 5 );
 
 	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
@@ -1346,7 +1344,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1121;
 	bSizer1121 = new wxBoxSizer( wxVERTICAL );
 
-	m_rightMainPanelScroll = new wxScrolledWindow( m_rightMainPanel, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), wxBORDER_THEME|wxVSCROLL );
+	m_rightMainPanelScroll = new wxScrolledWindow( m_rightMainPanel, wxID_ANY, wxDefaultPosition, wxSize( 310,-1 ), wxBORDER_THEME|wxVSCROLL );
 	m_rightMainPanelScroll->SetScrollRate( 5, 5 );
 	wxBoxSizer* bSizer1041;
 	bSizer1041 = new wxBoxSizer( wxVERTICAL );
@@ -1633,8 +1631,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_rightMainPanelScroll->SetSizer( bSizer1041 );
 	m_rightMainPanelScroll->Layout();
-	bSizer1041->Fit( m_rightMainPanelScroll );
-	bSizer1121->Add( m_rightMainPanelScroll, 1, wxEXPAND, 5 );
+	bSizer1121->Add( m_rightMainPanelScroll, 1, wxEXPAND, 0 );
 
 	m_queue = new wxButton( m_rightMainPanel, wxID_ANY, _("Queue"), wxDefaultPosition, wxSize( -1,42 ), 0 );
 

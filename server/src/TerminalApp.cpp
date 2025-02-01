@@ -2,7 +2,16 @@
 #include "libs/SnowFlakeIdGenerarot.hpp"
 #include "libs/subprocess.h"
 
+TerminalApp* TerminalApp::instance = nullptr;
+
 bool TerminalApp::OnInit() {
+    instance = this;
+    // std::signal(SIGINT, TerminalApp::SignalHandler);
+    std::signal(SIGTERM, TerminalApp::SignalHandler);
+    std::signal(SIGINT, TerminalApp::SignalHandler);
+    std::signal(SIGABRT, TerminalApp::SignalHandler);
+    std::signal(SIGUSR1, TerminalApp::SignalHandler);
+
     wxLog::SetTimestamp("%Y-%m-%d %H:%M:%S");
 
     if (argc < 2) {
@@ -127,7 +136,7 @@ bool TerminalApp::OnInit() {
         }
     }
 
-    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData->server_id, this->configData->GetJobsPath());
+    this->queueManager       = std::make_shared<SimpleQueueManager>(this->configData);
     this->snowflakeGenerator = std::make_shared<sd_gui_utils::SnowflakeIDGenerator>(this->configData->server_id);
 
     if (configData->shared_memory_path.empty()) {
@@ -145,6 +154,40 @@ bool TerminalApp::OnInit() {
     Bind(wxEVT_TIMER, [this](wxTimerEvent& evt) {
         if (this->socket != nullptr) {
             this->socket->OnTimer();
+        }
+        if (this->printStatsToLog.load() == true) {
+            this->printStatsToLog.store(false);
+            const auto list    = this->socket->GetClientsList();
+            wxString logString = wxString::Format("Connected clients: %d", (int)list.size());
+            this->SendLogEvent(logString, wxLOG_Info);
+
+            for (const auto& client : list) {
+                wxDateTime connectedAt, lastUpdate;
+                connectedAt.Set((time_t)client.connected_at);
+                lastUpdate.Set((time_t)client.last_keepalive);
+
+                wxString connectedAtStr = connectedAt.Format("%Y-%m-%d %H:%M:%S");
+                wxString lastUpdateStr  = lastUpdate.Format("%Y-%m-%d %H:%M:%S");
+
+                wxULongLong txSize = wxULongLong(client.tx);
+                wxULongLong rxSize = wxULongLong(client.rx);
+
+                wxString bandwithStat = wxString::Format(
+                    "Received: %s Sent: %s",
+                    wxFileName::GetHumanReadableSize(txSize),
+                    wxFileName::GetHumanReadableSize(rxSize));
+
+                wxString clientInfo = wxString::Format(
+                    "Client (%llu): %s:%u Connected at: %s Last update: %s %s",
+                    wxULongLong(client.client_id).GetValue(),
+                    wxString(client.host),
+                    client.port,
+                    connectedAtStr,
+                    lastUpdateStr,
+                    bandwithStat);
+
+                this->SendLogEvent(clientInfo, wxLOG_Info);
+            }
         }
         evt.Skip();
     });
@@ -234,14 +277,12 @@ bool TerminalApp::OnInit() {
     }
 
     command_line.push_back(nullptr);
-
     return true;
     // return wxAppConsole::OnInit();  // Call the base class implementation
 }
 
 int TerminalApp::OnExit() {
-    wxLogInfo("Exiting...");
-    std::cout << "Exiting..." << std::endl;
+    this->SendLogEvent("Exiting...");
 
     if (this->socket != nullptr) {
         this->socket->stop();
@@ -285,28 +326,28 @@ int TerminalApp::OnRun() {
     this->threads.emplace_back(&TerminalApp::JobQueueThread, this);
 
     std::thread tr([this]() {
-        this->sendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
+        this->SendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
         while (this->eventHandlerReady.load() == false) {
-            this->sendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
+            this->SendLogEvent("Waiting for event handler thread to start", wxLOG_Info);
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
-        this->sendLogEvent("Waiting for external process to start", wxLOG_Info);
+        this->SendLogEvent("Waiting for external process to start", wxLOG_Info);
         while (this->extProcessNeedToRun.load() == true && this->extprocessIsRunning.load() == false) {
-            this->sendLogEvent("Waiting for external process to start", wxLOG_Info);
+            this->SendLogEvent("Waiting for external process to start", wxLOG_Info);
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         if (this->extProcessNeedToRun.load() == false && this->extprocessIsRunning.load() == false) {
-            this->sendLogEvent("External process not running, exiting...", wxLOG_Error);
+            this->SendLogEvent("External process not running, exiting...", wxLOG_Error);
             this->ExitMainLoop();
             return;
         }
-        this->sendLogEvent("Starting socket server", wxLOG_Info);
+        this->SendLogEvent("Starting socket server", wxLOG_Info);
         try {
             // this->socket = new SocketApp(this->configData->host.c_str(), this->configData->port, this);
             this->socket = std::make_shared<SocketApp>(this->configData->host.c_str(), this->configData->port, this);
         } catch (std::exception& e) {
-            this->sendLogEvent(wxString::Format("Socket server error: %s", e.what()), wxLOG_Error);
+            this->SendLogEvent(wxString::Format("Socket server error: %s", e.what()), wxLOG_Error);
         }
 
         while (this->socket->isRunning() && this->eventHandlerReady.load() && this->extProcessNeedToRun.load()) {
@@ -315,7 +356,7 @@ int TerminalApp::OnRun() {
         this->socket->stop();
         // stop the external process too
         this->extProcessNeedToRun.store(false);
-        this->sendLogEvent("Socket server stopped", wxLOG_Info);
+        this->SendLogEvent("Socket server stopped", wxLOG_Info);
         this->ExitMainLoop();
     });
 
@@ -325,7 +366,7 @@ int TerminalApp::OnRun() {
 }
 
 void TerminalApp::ProcessOutputThread() {
-    this->sendLogEvent("Starting process output monitoring thread", wxLOG_Debug);
+    this->SendLogEvent("Starting process output monitoring thread", wxLOG_Debug);
     while (this->extProcessNeedToRun.load() == true) {
         if (this->subprocess.load() != nullptr) {
             auto state = subprocess_alive(this->subprocess.load());
@@ -344,7 +385,7 @@ void TerminalApp::ProcessOutputThread() {
                 //     this->sendLogEvent(stddata, wxLOG_Info);
                 // }
                 if (stderr_read_size > 0 && std::string(stderrdata).find("(null)") == std::string::npos) {
-                    this->sendLogEvent(stddata, wxLOG_Error);
+                    this->SendLogEvent(stddata, wxLOG_Error);
                 }
             }
         }
@@ -360,10 +401,10 @@ void TerminalApp::ExternalProcessRunner() {
             this->subprocess.store(sprocess);
             if (result != 0 && this->extProcessNeedToRun.load() == true) {
                 this->extprocessIsRunning.store(false);
-                this->sendLogEvent("Failed to create subprocess, result: " + std::to_string(result) + " waiting 5s", wxLOG_Error);
+                this->SendLogEvent("Failed to create subprocess, result: " + std::to_string(result) + " waiting 5s", wxLOG_Error);
                 std::this_thread::sleep_for(std::chrono::seconds(5));
             } else {
-                this->sendLogEvent("Subprocess started", wxLOG_Info);
+                this->SendLogEvent("Subprocess started", wxLOG_Info);
                 this->extprocessIsRunning.store(true);
             }
         }
@@ -383,7 +424,7 @@ void TerminalApp::ExternalProcessRunner() {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         if (this->extProcessNeedToRun.load() == true) {
-            this->sendLogEvent("Subprocess stopped, need restarting", wxLOG_Error);
+            this->SendLogEvent("Subprocess stopped, need restarting", wxLOG_Error);
             // update the job if running
             if (this->queueManager != nullptr) {
                 this->queueManager->ChangeCurrentJobStatus(QueueStatus::FAILED);
@@ -393,7 +434,7 @@ void TerminalApp::ExternalProcessRunner() {
             std::this_thread::sleep_for(std::chrono::seconds(5));
         }
     }
-    std::cout << "Subprocess thread stopped" << std::endl;
+    this->SendLogEvent("Subprocess stopped", wxLOG_Info);
 }
 bool TerminalApp::ProcessEventHandler(std::string message) {
     if (message.empty()) {
@@ -416,7 +457,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
         }
 
     } catch (const std::exception& e) {
-        this->sendLogEvent(wxString::Format("Extprocess parse error: %s", e.what()), wxLOG_Error);
+        this->SendLogEvent(wxString::Format("Extprocess parse error: %s", e.what()), wxLOG_Error);
         return true;
     }
 
@@ -425,7 +466,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
 
 void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& packet) {
     if (packet.source_idx == -1) {
-        this->sendLogEvent("Invalid source index", wxLOG_Error);
+        this->SendLogEvent("Invalid source index", wxLOG_Error);
         return;
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE) {
@@ -436,7 +477,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_DELETE);
         response.SetData(response_data);
         this->socket->sendMsg(0, response);
-        this->sendLogEvent("Sent job delete to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+        this->SendLogEvent("Sent job delete to client: " + std::to_string(packet.source_idx), wxLOG_Info);
 
         return;
     }
@@ -450,23 +491,25 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         }
         response.SetData(list);
         this->socket->sendMsg(packet.source_idx, response);
-        this->sendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+        this->SendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST) {
         auto item_id = packet.GetData<uint64_t>();
         auto job     = this->queueManager->GetItem(item_id);
 
         if (job) {
-            // update the entire job info
+            auto updatedJob = job->LoadImageInfos();
+
             auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-            response.SetData(job->convertToNetwork(false, this->configData->server_id));
-            this->socket->sendMsg(packet.source_idx, response);
-            this->sendLogEvent("Sent image list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+            if (response.SetData(updatedJob.convertToNetwork(false, this->configData->server_id))) {
+                this->socket->sendMsg(packet.source_idx, response);
+                this->SendLogEvent("Sent image list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+            }
         }
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
         this->threads.emplace_back(std::thread([this, packet]() {
-            this->sendLogEvent("Sending job list", wxLOG_Debug);
+            this->SendLogEvent("Sending job list", wxLOG_Debug);
             auto list = this->queueManager->GetJobListCopy();
             for (auto& j : list) {
                 auto response = sd_gui_utils::networks::Packet(
@@ -475,7 +518,7 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
                 response.SetData(j.convertToNetwork(true, this->configData->server_id));
                 this->socket->sendMsg(packet.source_idx, response);
             }
-            this->sendLogEvent("Sending job done", wxLOG_Debug);
+            this->SendLogEvent("Sending job done", wxLOG_Debug);
             // this->sendLogEvent("Sent job list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
         }));
     }
@@ -529,16 +572,16 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
     }
 
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_ADD) {
-        this->sendLogEvent("Received job add", wxLOG_Debug);
-        auto data = packet.GetData<sd_gui_utils::networks::RemoteQueueItem>();
-        data.id   = this->queueManager->GenerateNextId();
+        this->SendLogEvent("Received job add", wxLOG_Debug);
+        auto data           = packet.GetData<sd_gui_utils::networks::RemoteQueueItem>();
+        data.id             = this->queueManager->GenerateNextId();
         QueueItem converted = QueueItem::convertFromNetwork(std::move(data), this->configData->GetJobsPath());
         converted.SetImagesPathsFromInfo();
         // set paths
         converted.params.embeddings_path = this->configData->model_paths.embedding;
         converted.params.lora_model_dir  = this->configData->model_paths.lora;
         converted.params.model_path      = this->GetModelPathByHash(converted.params.model_path);
-        if (converted.params.model_path.empty()) {
+        if (converted.params.model_path.empty() && converted.mode != SDMode::UPSCALE) {
             wxLogError("Model not found: %s", converted.model);
         }
 
@@ -567,6 +610,24 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
                 wxLogWarning("TAESD Model not found: %s", converted.params.taesd_path);
             }
         }
+        if (converted.params.esrgan_path.empty() == false) {
+            const auto path = this->GetModelPathByHash(converted.params.esrgan_path);
+            if (path.empty() == false) {
+                converted.params.esrgan_path = path;
+            } else {
+                wxLogWarning("ESRGAN Model not found: %s", converted.params.esrgan_path);
+            }
+        }
+        if (converted.params.controlnet_path.empty() == false) {
+            const auto path = this->GetModelPathByHash(converted.params.controlnet_path);
+            if (path.empty() == false) {
+                converted.params.controlnet_path = path;
+            } else {
+                converted.params.controlnet_path = "";
+                wxLogWarning("ControlNet Model not found: %s", converted.params.controlnet_path);
+            }
+        }
+
         if (converted.params.esrgan_path.empty() == false) {
             const auto path = this->GetModelPathByHash(converted.params.esrgan_path);
             if (path.empty() == false) {
@@ -765,4 +826,167 @@ void TerminalApp::AddModelFile(const wxFileName& filename, const std::string& ro
     if (!wxFileExists(hashFileName.GetFullPath())) {
         this->hashingFullSize.store(this->hashingFullSize.load() + static_cast<wxULongLong>(modelInfo.size));
     }
+}
+void TerminalApp::SendLogEvent(wxString message, const wxLogLevel level) {
+    message.Replace("\n\n", "\n");
+    message.Trim();
+
+    if (message.empty()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(this->logMutex);
+    eventQueue.Push([message, level]() {
+        switch (level) {
+            case wxLOG_Info:
+                wxLogInfo(message);
+                break;
+            case wxLOG_Warning:
+                wxLogWarning(message);
+                break;
+            case wxLOG_Error:
+                wxLogError(message);
+                break;
+            case wxLOG_Debug:
+                wxLogDebug(message);
+                break;
+            default:
+                wxLogMessage(message);
+                break;
+        }
+    });
+    wxLog::FlushActive();
+}
+
+void TerminalApp::StoreClientStats(SocketApp::clientInfo& client) {
+    std::cout << "StoreClientStats: " << client.client_id << std::endl;
+    if (client.client_id == 0 || client.apikey.empty()) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(this->eventMutex);
+    eventQueue.Push([this, client]() {
+        std::lock_guard<std::mutex> lock(this->clientInfoMutex);
+        std::cout << "StoreClientStats run: " << client.client_id << std::endl;
+
+        std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
+
+        try {
+            nlohmann::json json;
+
+            if (std::filesystem::exists(clientDataFile)) {
+                std::ifstream fileRead(clientDataFile);
+                if (!fileRead) {
+                    std::cerr << "Error: Cannot open file for reading: " << clientDataFile << std::endl;
+                    return;
+                }
+
+                nlohmann::json jsonOld;
+                fileRead >> jsonOld;
+                fileRead.close();
+
+                auto oldInfo = jsonOld.get<SocketApp::clientInfo>();
+                oldInfo.copyFrom(client);
+                json = oldInfo;
+
+                std::cout << "StoreClientStats update: " << client.client_id << std::endl;
+            } else {
+                json = client;
+                std::cout << "StoreClientStats create: " << client.client_id << std::endl;
+            }
+
+            std::ofstream file(clientDataFile);
+            if (!file) {
+                std::cerr << "Error: Cannot open file for writing: " << clientDataFile << std::endl;
+                return;
+            }
+            file << std::setw(4) << json << std::endl;
+
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in StoreClientStats: " << e.what() << std::endl;
+        }
+    });
+}
+
+void TerminalApp::SendItemUpdateEvent(std::shared_ptr<QueueItem> item) {
+    if (this->queueNeedToRun.load() && this->extProcessNeedToRun.load()) {
+        std::lock_guard<std::mutex> lock(this->eventMutex);
+        eventQueue.Push([this, item]() {
+            if (this->queueManager->UpdateCurrentJob(*item, this->configData->GetJobsPath())) {
+                auto converted = item->convertToNetwork((item->status == QueueStatus::DONE ? false : true), this->configData->server_id);
+                sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                packet.SetData(converted);
+                this->socket->sendMsg(0, packet);  // send to everybody
+                return true;
+            }
+            return false;
+        });
+    }
+}
+void TerminalApp::JobQueueThread() {
+    while (this->queueNeedToRun.load()) {
+        if (this->queueManager->GetCurrentJob() == nullptr && this->extprocessIsRunning.load()) {
+            auto next_job = this->queueManager->GetNextPendingJob();
+            if (next_job == nullptr) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                continue;
+            }
+
+            const nlohmann::json j = next_job->ConvertToSharedMemory();
+            char* data             = new char[j.dump().length() + 1];
+            strcpy(data, j.dump().c_str());
+            this->sharedMemoryManager->write(data, j.dump().length() + 1);
+            this->SendLogEvent(wxString::Format("Job started: %" PRIu64, next_job->id));
+            this->queueManager->SetCurrentJob(next_job);
+            delete[] data;
+        } else {
+            if (this->extprocessIsRunning.load() == false) {
+                this->queueManager->ChangeCurrentJobStatus(QueueStatus::FAILED);
+                if (this->queueManager->GetCurrentJob() != nullptr) {
+                    auto errorPacket = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
+                    errorPacket.SetData(this->queueManager->GetCurrentJob()->convertToNetwork(false, this->configData->server_id));
+                    this->socket->sendMsg(0, errorPacket);
+                    this->queueManager->DeleteCurrentJob();
+                }
+            }
+            // if (this->extprocessIsRunning.load() == false) {
+            //     auto current = this->queueManager->GetCurrentJob();
+            //     if (current) {
+            //         current->status = QueueStatus::FAILED;
+            //         this->itemUpdateEvent(current);
+            //         this->queueManager->DeleteCurrentJob();
+            //     }
+            // }
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+SocketApp::clientInfo TerminalApp::ReReadClientInfo(uint64_t client_id, bool delete_old_file) {
+    std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client_id) + ".json";
+    if (std::filesystem::exists(clientDataFile) == false) {
+        return SocketApp::clientInfo();
+    }
+    std::ifstream file(clientDataFile);
+    nlohmann::json json;
+    file >> json;
+    file.close();
+    if (delete_old_file) {
+        std::filesystem::remove(clientDataFile);
+    }
+    return json;
+}
+sd_gui_utils::RemoteModelInfo* TerminalApp::GetModelByHash(const std::string sha2560) {
+    for (auto& model : this->modelFiles) {
+        if (model.second.sha256 == sha2560) {
+            return &model.second;
+        }
+    }
+    return nullptr;
+}
+std::string TerminalApp::GetModelPathByHash(const std::string& sha256) {
+    for (auto& model : this->modelFiles) {
+        if (model.second.sha256 == sha256) {
+            return model.first;
+        }
+    }
+    return "";
 }

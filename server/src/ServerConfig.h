@@ -55,7 +55,10 @@ struct ServerConfig {
     std::string exprocess_binary_path;       // force to use this exprocess binary
     ModelPaths model_paths = {};
     std::string server_id;
-    std::string data_path = "";  // where to store client info, jobs and images
+    std::string data_path              = "";     // where to store client info, jobs and images
+    bool rewrite_server_id_in_jobfiles = false;  // ignore if the backreaded jobs don't match the server id !! WARN: this is dangerous, in normal case, this job shouldn't be loaded
+                                                 // if true, the job will be loaded in and the server_id will be rewritten in the jobfile
+                                                 // if false, the job will not loaded in
 
     /// @brief Retrieves the absolute path to the server data directory.
     /// @return A string representing the absolute path to the directory where client info, jobs, and images are stored.
@@ -94,6 +97,9 @@ inline void to_json(nlohmann ::json& nlohmann_json_j, const ServerConfig& nlohma
     if (nlohmann_json_t.exprocess_binary_path.empty() == false) {
         nlohmann_json_j["exprocess_binary_path"] = nlohmann_json_t.exprocess_binary_path;
     }
+    if (nlohmann_json_t.rewrite_server_id_in_jobfiles) {
+        nlohmann_json_j["rewrite_server_id_in_jobfiles"] = nlohmann_json_t.rewrite_server_id_in_jobfiles;
+    }
 
     nlohmann_json_j["model_paths"] = nlohmann_json_t.model_paths;
 }
@@ -125,5 +131,9 @@ inline void from_json(const nlohmann ::json& nlohmann_json_j, ServerConfig& nloh
     }
     nlohmann_json_t.unauthorized_timeout = nlohmann_json_j.value("unauthorized_timeout", nlohmann_json_default_obj.unauthorized_timeout);
     nlohmann_json_t.model_paths          = nlohmann_json_j.at("model_paths");
+
+    if (nlohmann_json_j.contains("rewrite_server_id_in_jobfiles") && !nlohmann_json_j["rewrite_server_id_in_jobfiles"].is_null()) {
+        nlohmann_json_t.rewrite_server_id_in_jobfiles = nlohmann_json_j.value("rewrite_server_id_in_jobfiles", nlohmann_json_default_obj.rewrite_server_id_in_jobfiles);
+    }
 }
 #endif  // __SERVER_CONFIG_H

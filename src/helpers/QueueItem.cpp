@@ -17,9 +17,10 @@ void QueueItem::ConvertFromSharedMemory(QueueItem item) {
 }
 
 QueueItem QueueItem::convertFromNetwork(sd_gui_utils::networks::RemoteQueueItem&& item, wxString tempDir) {
+    // QueueItem newItem(item);
     QueueItem newItem(item);
     for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
-        img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.id, item.server)).GetAbsolutePath().ToStdString();
+        img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.md5_hash, item.server)).GetAbsolutePath().ToStdString();
         if (!wxFileExists(img.target_filename) && !img.data.empty()) {
             if (!sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename)) {
                 continue;
@@ -94,6 +95,9 @@ void QueueItem::SetImagesPathsFromInfo() {
         if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
             this->mask_image = img.target_filename;
         }
+        if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
+            this->params.control_image_path = img.target_filename;
+        }
     }
 }
 
@@ -114,13 +118,18 @@ void QueueItem::PrepareImagesForClients(const wxString& targetDir) {
         }
 
         wxFileName newName(targetDir, wxString::Format("%" PRIu64 "_%d_generated.png", this->id, counter));
+        wxFileName newNameB64(targetDir, wxString::Format("%" PRIu64 "_%d_generated.png.base64", this->id, counter));
+
         if (!wxFileExists(newName.GetAbsolutePath())) {
             wxRenameFile(img, newName.GetAbsolutePath());
+        }
+        if (!wxFileExists(newNameB64.GetAbsolutePath())) {
+            sd_gui_utils::StoreBase64ToFile(newName.GetAbsolutePath().ToStdString(), newNameB64.GetAbsolutePath().ToStdString());
         }
 
         info.target_filename = newName.GetAbsolutePath().ToStdString();
         info.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
-        info.id              = sd_gui_utils::calculateMD5(newName.GetAbsolutePath().ToStdString());
+        info.md5_hash              = sd_gui_utils::calculateMD5(newName.GetAbsolutePath().ToStdString());
 
         this->image_info.emplace_back(info);
         counter++;
@@ -134,7 +143,7 @@ void QueueItem::PrepareImagesForServer() {
         if (wxFileExists(img.data_filename)) {
             img.data.clear();
             sd_gui_utils::EncodeFileToBase64(img.data_filename, img.data);
-            img.id = sd_gui_utils::calculateMD5(img.data_filename);
+            img.md5_hash = sd_gui_utils::calculateMD5(img.data_filename);
         }
     }
 }
@@ -149,26 +158,36 @@ QueueItem* QueueItem::RemoveRawImageData() {
     return this;
 }
 
-QueueItem* QueueItem::LoadImageInfos() {
-    if (this->image_info.empty()) {
-        return this;
+/**
+ * @brief Loads additional image metadata from existing sources.
+ *
+ * This method creates a copy of the current QueueItem and loads Base64-encoded
+ * image data if missing. It does not modify the original instance.
+ *
+ * @return A new QueueItem instance with updated image data.
+ */
+QueueItem QueueItem::LoadImageInfos() const {
+    QueueItem copy = *this;  // Create a copy of the current object
+
+    if (copy.image_info.empty()) {
+        return copy;
     }
-    for (auto& img : this->image_info) {
+
+    for (auto& img : copy.image_info) {  // Work on the copy's image_info
         if (img.data.empty() && !img.target_filename.empty()) {
-            wxFileName b64file(img.target_filename);
-            b64file.SetExt("png.base64");
-            if (wxFileExists(b64file.GetFullPath())) {
-                wxFile f;
-                wxString base64string;
-                if (f.Open(b64file.GetFullPath(), wxFile::read)) {
-                    f.ReadAll(&base64string);
-                    img.data = base64string.ToStdString();
-                    f.Close();
-                }
+            wxFileName b64Name(img.target_filename);
+            wxFileName targetFileName(img.target_filename);
+            b64Name.SetEmptyExt();
+            b64Name.SetExt(targetFileName.GetExt() + ".base64");
+
+            if (!wxFileExists(b64Name.GetAbsolutePath())) {
+                sd_gui_utils::StoreBase64ToFile(img.target_filename, b64Name.GetAbsolutePath().ToStdString());
             }
+            img.data = sd_gui_utils::ReadBase64FromFile(b64Name.GetAbsolutePath().ToStdString());
         }
     }
-    return this;
+
+    return copy;
 }
 
 void QueueItem::RemoveGeneratedImages() {
@@ -181,5 +200,21 @@ void QueueItem::RemoveGeneratedImages() {
         } else {
             ++it;
         }
+    }
+}
+
+/**
+ * @brief Clears the image data for all images in the job.
+ *
+ * This method is typically used when the job is stored in file at the server and the
+ * image data is no longer needed. It does not modify the image
+ * metadata, only the image data.
+ */
+void QueueItem::ClearImageInfosData() {
+    if (this->image_info.empty()) {
+        return;
+    }
+    for (auto& img : this->image_info) {
+        img.data.clear();
     }
 }

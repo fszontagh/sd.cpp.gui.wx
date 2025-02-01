@@ -45,27 +45,29 @@ namespace sd_gui_utils {
             sd_gui_utils::networks::Packet::Type type = sd_gui_utils::networks::Packet::Type::INVALID_TYPE;
             sd_gui_utils::networks::Packet::Param param;
             // std::string version   = std::string(SD_GUI_VERSION);
-            std::string version     = std::string(SD_GUI_VERSION);
-            int source_idx          = -1;
-            int target_idx          = -1;
-            std::string server_id   = "";
-            std::string server_name = "";
-            uint64_t client_id      = 0;
-            long packet_added_time  = 0;
+            std::string version        = std::string(SD_GUI_VERSION);
+            int source_idx             = -1;
+            int target_idx             = -1;
+            std::string server_id      = "";
+            std::string server_name    = "";
+            uint64_t client_session_id = 0;
+            long packet_added_time     = 0;
             bool isValid() {
                 return this->type == sd_gui_utils::networks::Packet::Type::INVALID_TYPE ? false : true;
             }
 
             inline size_t GetSize() { return this->data_size; }
             template <typename T>
-            inline void SetData(const T& j) {
+            inline bool SetData(const T& j) {
                 try {
                     const nlohmann::json json_obj = j;
                     std::string json_str          = json_obj.dump();
                     this->data                    = std::vector<uint8_t>(json_str.begin(), json_str.end());
                     this->data_size               = this->data.size();
+                    return true;
                 } catch (const std::exception& e) {
                     std::cerr << "Failed to serialize object in SetData: " + std::string(e.what()) << std::endl;
+                    return false;
                 }
             }
 
@@ -110,7 +112,7 @@ namespace sd_gui_utils {
                         "Failed to convert Packet: " + std::string(e.what()) + "\nRaw data size: " + std::to_string(size));
                 }
             }
-            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Packet, type, param, version, data_size, data, server_id, server_name, source_idx, target_idx, client_id)
+            NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Packet, type, param, version, data_size, data, server_id, server_name, source_idx, target_idx, client_session_id)
         };  // struct Packet
 
         static const std::unordered_map<sd_gui_utils::networks::Packet::Param, std::string> PacketParam2str = {
