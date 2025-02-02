@@ -86,6 +86,7 @@ if(NOT SD_HIPBLAS)
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
 
+
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
