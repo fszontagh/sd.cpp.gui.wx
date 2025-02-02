@@ -2435,7 +2435,16 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
     this->SetTypeByType(item.params.wtype);
 
     if (!item.params.taesd_path.empty()) {
-        auto taesd = this->ModelManager->getIntoPtr(item.params.taesd_path);
+        sd_gui_utils::ModelFileInfo* taesd = nullptr;
+
+        if (taesd == nullptr && item.hashes.taesd_hash.empty() == false) {
+            taesd = this->ModelManager->getIntoPtrByHash(item.hashes.taesd_hash, item.server);
+        }
+
+        if (taesd == nullptr) {
+            taesd = this->ModelManager->getIntoPtr(item.params.taesd_path);
+        }
+
         if (taesd == nullptr) {
             this->writeLog(_("Taesd file not found: " + item.params.taesd_path), true);
             // TODO: search by hash if this is a remote job
@@ -3960,6 +3969,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
             case QueueEvents::ITEM_UPDATED: {
                 this->dataViewListManager->UpdateColumns(DataViewListManager::queueJobColumns::PROGRESS | DataViewListManager::queueJobColumns::SPEED, item);
                 this->UpdateCurrentProgress(item, event);
+                this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
             } break;
                 // this is just the item start, if no mode
                 // loaded, then will trigger model load

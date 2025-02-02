@@ -291,7 +291,6 @@ private:
                 return;
             }
 
-            // JSON string létrehozása
             std::string jsonString;
             try {
                 jsonString = jsonData.dump(2);
@@ -300,14 +299,17 @@ private:
                 return;
             }
 
-            // Fájlnév meghatározása
+            if (jsonString.empty()) {
+                std::cerr << "JSON string is empty" << std::endl;
+                return;
+            }
             const auto filepath = wxString::Format("local_%" PRIu64 ".json", item->id);
             wxFileName fn(this->jobs_path, filepath);
             wxString tempFilePath = fn.GetAbsolutePath() + ".tmp";  // Temporary file path
 
             wxFile file;
             if (file.Open(tempFilePath, wxFile::write)) {
-                file.Write(jsonString);
+                file.Write(wxString::FromUTF8(jsonString));
                 file.Close();
                 if (fn.FileExists()) {
                     wxRemoveFile(fn.GetAbsolutePath());

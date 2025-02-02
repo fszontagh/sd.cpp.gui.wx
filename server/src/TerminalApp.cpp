@@ -647,6 +647,20 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         }
 
         auto addedItem = this->queueManager->AddItem(converted);
+
+        if (addedItem == nullptr) {
+            wxLogError("Failed to add item");
+            return;
+        }
+
+        // add missing infos
+        if (addedItem->image_info.empty() == false) {
+            for (auto& image : addedItem->image_info) {
+                image.server_id = this->configData->server_id;
+                image.jobid     = addedItem->id;
+            }
+        }
+
         // send back the new item to all connected clients
         auto newConverted = addedItem->convertToNetwork(false, this->configData->server_id);
         sd_gui_utils::networks::Packet packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
@@ -960,7 +974,11 @@ void TerminalApp::JobQueueThread() {
             //         this->queueManager->DeleteCurrentJob();
             //     }
             // }
-            this->SendLogEvent(wxString::Format("Current job: %" PRIu64 " status: %d", this->queueManager->GetCurrentJob()->id, QueueStatus_GUI_str.at(this->queueManager->GetCurrentJob()->status)), wxLOG_Debug);
+            if (this->queueManager->GetCurrentJob() != nullptr) {
+                this->SendLogEvent(wxString::Format("Current job: %" PRIu64 " status: %s", this->queueManager->GetCurrentJob()->id, QueueStatus_GUI_str.at(this->queueManager->GetCurrentJob()->status)), wxLOG_Debug);
+            } else {
+                this->SendLogEvent("Current job: null", wxLOG_Debug);
+            }
         }
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
