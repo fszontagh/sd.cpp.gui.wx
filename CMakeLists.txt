@@ -7,6 +7,10 @@ DESCRIPTION "Stable Diffusion C++ Desktop Gui"
 HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 )
 
+set(PROJECT_AUTHOR_NAME "Ferenc Szontágh")
+set(PROJECT_AUTHOR_EMAIL "szf@fsociety.hu")
+set(PROJECT_AUTHOR "${PROJECT_AUTHOR_NAME} <${PROJECT_AUTHOR_EMAIL}>")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
