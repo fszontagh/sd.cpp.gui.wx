@@ -428,6 +428,7 @@ jobs:
     name: Build & Push Docker Images
     needs: [package-ubuntu]
     runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
 
     strategy:
       matrix:
