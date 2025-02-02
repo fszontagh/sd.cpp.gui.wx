@@ -86,7 +86,7 @@ if(NOT SD_HIPBLAS)
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
 
-    if (SD_CUDA)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_CUDA)
 
         enable_language(CUDA)
         string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" CUDA_VERSION_MATCH ${CMAKE_CUDA_COMPILER_VERSION})
@@ -108,17 +108,18 @@ if(NOT SD_HIPBLAS)
 
         else()
             if (CUDA_MAJOR_VERSION STREQUAL "12")
-                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52;50")
+                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52")
                 string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
             elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
-                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60;53;52;50")
+                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60;53;52")
                 string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
             endif()
 
         endif()
 
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
-
+    else()
+        SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52")
     endif()
 
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
