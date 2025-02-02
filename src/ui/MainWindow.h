@@ -103,10 +103,10 @@ class mainUI : public wxFrame
 		wxStaticBitmap* m_controlnetImagePreview;
 		wxScrolledWindow* m_openPoseWindow;
 		wxFilePickerCtrl* m_controlnetImageOpen;
-		wxCheckBox* cnOnCpu;
 		wxChoice* m_controlnetModels;
+		wxCheckBox* cnOnCpu;
 		wxSpinCtrlDouble* m_controlnetStrength;
-		wxButton* m_controlnetImagePreviewButton;
+		wxBitmapButton* m_controlnetImagePreviewButton;
 		wxBitmapButton* m_controlnetImageDelete;
 		wxPanel* m_image2image_panel;
 		wxNotebook* m_notebook4;

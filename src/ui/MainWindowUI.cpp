@@ -4141,7 +4141,6 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
 
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_IMAGE_UPDATE) {
-        std::cout << "sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE" << std::endl;
         auto imageInfo = e.GetPayload<sd_gui_utils::networks::ImageInfo>();
         if (imageInfo.server_id.empty()) {
             return;
@@ -4823,9 +4822,12 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx"), img.width, img.height);
 
         if (std::string(BUILD_TYPE) == "Debug") {
-            tooltip.Append(wxString::Format("ID: %s\n", img.GetId()));
-            tooltip.Append(wxString::Format("Path: %s\n", img.target_filename));
-            tooltip.Append(wxString::Format("MD5: %s\n", img.md5_hash));
+            tooltip.Append("\n");
+            tooltip.Append(wxString::Format("ID: %s", img.GetId()));
+            tooltip.Append("\n");
+            tooltip.Append(wxString::Format("Path: %s", img.target_filename));
+            tooltip.Append("\n");
+            tooltip.Append(wxString::Format("MD5: %s", img.md5_hash));
         }
         if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::CONTROLNET)) {
             tooltip.Append("\n");

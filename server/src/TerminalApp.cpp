@@ -944,8 +944,8 @@ void TerminalApp::JobQueueThread() {
     while (this->queueNeedToRun.load()) {
         if (this->queueManager->GetCurrentJob() == nullptr && this->extprocessIsRunning.load()) {
             auto next_job = this->queueManager->GetNextPendingJob();
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             if (next_job == nullptr) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 continue;
             }
 
@@ -976,6 +976,14 @@ void TerminalApp::JobQueueThread() {
             // }
             if (this->queueManager->GetCurrentJob() != nullptr) {
                 this->SendLogEvent(wxString::Format("Current job: %" PRIu64 " status: %s", this->queueManager->GetCurrentJob()->id, QueueStatus_GUI_str.at(this->queueManager->GetCurrentJob()->status)), wxLOG_Debug);
+                // this is maybe a stucked in job?
+                if (this->queueManager->GetCurrentJob()->status == QueueStatus::PENDING ||
+                    this->queueManager->GetCurrentJob()->status == QueueStatus::FAILED ||
+                    this->queueManager->GetCurrentJob()->status == QueueStatus::MODEL_FAILED) {
+                    if (this->queueManager->GetCurrentJob()->updated_at == 0 || this->queueManager->GetCurrentJob()->updated_at + 30 < std::chrono::system_clock::now().time_since_epoch().count()) {
+                        this->queueManager->DeleteCurrentJob();
+                    }
+                }
             } else {
                 this->SendLogEvent("Current job: null", wxLOG_Debug);
             }

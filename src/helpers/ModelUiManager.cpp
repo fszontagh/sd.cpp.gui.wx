@@ -160,6 +160,7 @@ void ModelUiManager::DeleteByServerId(const std::string& serverId) {
                 choice->Delete(i);
             }
         }
+        choice->SetSelection(0);
     }
 }
 sd_gui_utils::ModelFileInfo* ModelUiManager::GetModelByItem(const wxTreeListItem item) {

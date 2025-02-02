@@ -336,32 +336,45 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	sizer0004->Add( bSizer811, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer34;
-	bSizer34 = new wxBoxSizer( wxHORIZONTAL );
+	bSizer34 = new wxBoxSizer( wxVERTICAL );
 
-	m_controlnetImageOpen = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_DEFAULT_STYLE|wxFLP_FILE_MUST_EXIST|wxFLP_OPEN );
+	wxBoxSizer* bSizer1080;
+	bSizer1080 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_controlnetImageOpen = new wxFilePickerCtrl( m_text2img_panel, wxID_ANY, wxEmptyString, _("Select a file"), _("Image files (*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG)|*.jpg;*.jpeg;*.png;*.JPG;*.JPEG;*.PNG"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
+	m_controlnetImageOpen->SetToolTip( _("Open controlnet image") );
 	m_controlnetImageOpen->SetMinSize( wxSize( 260,-1 ) );
 
-	bSizer34->Add( m_controlnetImageOpen, 0, wxALL, 5 );
-
-	cnOnCpu = new wxCheckBox( m_text2img_panel, wxID_ANY, _("CN on CPU"), wxDefaultPosition, wxDefaultSize, 0 );
-	cnOnCpu->SetToolTip( _("Keep controlnet on CPU") );
-
-	bSizer34->Add( cnOnCpu, 0, wxALL|wxEXPAND, 5 );
+	bSizer1080->Add( m_controlnetImageOpen, 0, wxALL, 5 );
 
 	wxArrayString m_controlnetModelsChoices;
 	m_controlnetModels = new wxChoice( m_text2img_panel, wxID_ANY, wxDefaultPosition, wxSize( 210,-1 ), m_controlnetModelsChoices, 0 );
 	m_controlnetModels->SetSelection( 0 );
-	bSizer34->Add( m_controlnetModels, 0, wxALL, 5 );
+	bSizer1080->Add( m_controlnetModels, 0, wxALL, 5 );
+
+
+	bSizer34->Add( bSizer1080, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer109;
+	bSizer109 = new wxBoxSizer( wxHORIZONTAL );
+
+	cnOnCpu = new wxCheckBox( m_text2img_panel, wxID_ANY, _("CN on CPU"), wxDefaultPosition, wxDefaultSize, 0 );
+	cnOnCpu->SetToolTip( _("Keep controlnet on CPU") );
+
+	bSizer109->Add( cnOnCpu, 0, wxALL|wxEXPAND, 5 );
 
 	m_controlnetStrength = new wxSpinCtrlDouble( m_text2img_panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 142,-1 ), wxSP_ARROW_KEYS, 0, 0.9, 0.9, 0.1 );
 	m_controlnetStrength->SetDigits( 1 );
-	bSizer34->Add( m_controlnetStrength, 0, wxALL, 5 );
+	m_controlnetStrength->SetToolTip( _("Strength of the control image") );
 
-	m_controlnetImagePreviewButton = new wxButton( m_text2img_panel, wxID_ANY, _("Show full"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer109->Add( m_controlnetStrength, 0, wxALL, 5 );
+
+	m_controlnetImagePreviewButton = new wxBitmapButton( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_controlnetImagePreviewButton->SetBitmap( picture_png_to_wx_bitmap() );
 	m_controlnetImagePreviewButton->Enable( false );
-	m_controlnetImagePreviewButton->SetToolTip( _("Show the original controlnet image") );
 
-	bSizer34->Add( m_controlnetImagePreviewButton, 0, wxALL, 5 );
+	bSizer109->Add( m_controlnetImagePreviewButton, 0, wxALL, 5 );
 
 	m_controlnetImageDelete = new wxBitmapButton( m_text2img_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
@@ -369,7 +382,10 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_controlnetImageDelete->Enable( false );
 	m_controlnetImageDelete->SetToolTip( _("Remove control image") );
 
-	bSizer34->Add( m_controlnetImageDelete, 0, wxALL, 5 );
+	bSizer109->Add( m_controlnetImageDelete, 0, wxALL, 5 );
+
+
+	bSizer34->Add( bSizer109, 0, wxEXPAND, 5 );
 
 
 	sizer0004->Add( bSizer34, 0, wxEXPAND, 5 );

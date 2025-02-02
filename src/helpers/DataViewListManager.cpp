@@ -116,7 +116,6 @@ void DataViewListManager::AddItem(std::shared_ptr<QueueItem> item) {
     this->parent->PrependItem(data, wxUIntPtr(item->id));
 }
 void DataViewListManager::RemoveRemoteItems(const std::string& server_id) {
-    std::cout << "Called RemoveRemoteItems, server_id: '" << server_id << "'" << std::endl;
     if (server_id.empty()) {
         return;
     }
@@ -125,12 +124,10 @@ void DataViewListManager::RemoveRemoteItems(const std::string& server_id) {
         auto id    = this->parent->GetItemData(item);
         auto qitem = this->queueManager->GetItemPtr(id);
         if (!qitem) {
-            std::cout << "RemoveRemoteItems: qitem is nullptr, delete" << std::endl;
             this->parent->DeleteItem(i);
             continue;
         }
         if (qitem->server == server_id) {
-            std::cout << "RemoveRemoteItems: delete" << std::endl;
             this->parent->DeleteItem(i);
         }
     }

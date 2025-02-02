@@ -95,6 +95,9 @@ public:
             } else if (isAmdGPU()) {
                 dllName       = libPrefix + "stable-diffusion_vulkan";
                 this->backend = "vulkan";
+            } else if (isIntelGPU()) {
+                dllName       = libPrefix + "stable-diffusion_vulkan";
+                this->backend = "vulkan";
             } else {
                 static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
                 if (features.avx512_fp16 || features.avx512_bf16 || features.avx512vl) {

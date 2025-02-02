@@ -1,9 +1,10 @@
 FROM ubuntu:24.04
 
-ARG BACKEND=avx
 
-# Build argumentumok (default értékek)
+# Build arguments possible values: avx,avx2,avx512,cuda,vulkan,all, all-gpu, all-cpu
 ARG BACKEND=avx
+ARG DOWNLOAD_DEFAULT_MODELS=1
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     libstdc++6 \
@@ -23,27 +24,27 @@ RUN mkdir /app/models/taesd
 RUN mkdir /app/models/controlnet
 RUN mkdir /app/models/esrgan
 
-RUN if [ "$BACKEND" = "cuda" ]; then \
+RUN if [ "$BACKEND" = "cuda" || "$BACKEND" = "all" || "$BACKEND" = "all-gpu" ]; then \
         echo "CUDA support enabled"; \
         apt update; apt install -y --no-install-recommends libcudart12 libcublas12 libnvidia-compute-565-server; \
     fi
 
 
-RUN if [ "$BACKEND" = "vulkan" ]; then \
+RUN if [ "$BACKEND" = "vulkan" || "$BACKEND" = "all" || "$BACKEND" = "all-gpu" ]; then \
         echo "Vulkan support enabled"; \
         apt install -y --no-install-recommends libvulkan1; \
     fi
 
-# AVX/AVX2/AVX512 beállítások, ha szükséges
-RUN if [ "$BACKEND" = "avx" ]; then \
+# AVX/AVX2/AVX512
+RUN if [ "$BACKEND" = "avx" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
         echo "AVX support enabled"; \
     fi
 
-RUN if [ "$BACKEND" = "avx2" ]; then \
+RUN if [ "$BACKEND" = "avx2" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
         echo "AVX2 support enabled"; \
     fi
 
-RUN if [ "$BACKEND" = "avx512" ]; then \
+RUN if [ "$BACKEND" = "avx512" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
         echo "AVX512 support enabled"; \
     fi
 
@@ -51,18 +52,24 @@ RUN if [ "$BACKEND" = "avx512" ]; then \
 COPY server/@SERVER_BINARY_NAME@ /app/@SERVER_BINARY_NAME@
 COPY server-config-example.json /app/config.json
 COPY extprocess/@PROJECT_BINARY_NAME@_diffuser /app/@PROJECT_BINARY_NAME@_diffuser
+COPY server/download_base_models.sh /app/download_base_models.sh
+
+
 
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN sed -i "s/\"backend\": \".*\"/\"backend\": \"$BACKEND\"/" /app/config.json
-# Fájl engedélyek beállítása
-RUN chmod +x /app/@SERVER_BINARY_NAME@
 
-# Munkakönyvtár beállítása
+RUN chmod +x /app/@SERVER_BINARY_NAME@
+RUN chmod +x /app/download_base_models.sh
+
+RUN if [ "$DOWNLOAD_DEFAULT_MODELS" = "1" ]; then \
+        /app/download_base_models.sh /app/config.json; \
+    fi
+
 WORKDIR /app
 
-# Indítási parancs
 CMD ["/app/@SERVER_BINARY_NAME@", "/app/config.json"]
 
 

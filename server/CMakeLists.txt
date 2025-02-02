@@ -51,11 +51,13 @@ endif()
 configure_file(platforms/Docker/Dockerfile.in ${PROJECT_BINARY_DIR}/Dockerfile)
 configure_file(server-config-example.json ${PROJECT_BINARY_DIR}/server.json @ONLY)
 configure_file(server-config-example-docker.json ${PROJECT_BINARY_DIR}/server-docker.json @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/platform/linux/download_base_models.sh ${PROJECT_BINARY_DIR}/download_base_models.sh COPYONLY)
 
 install(TARGETS ${SERVER_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install(FILES ${PROJECT_BINARY_DIR}/Dockerfile DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 install(FILES ${PROJECT_BINARY_DIR}/server-docker.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 install(FILES ${PROJECT_BINARY_DIR}/server.json DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
+install(FILES ${PROJECT_BINARY_DIR}/download_base_models.sh DESTINATION ${share_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}Server")
 
 
 if(WIN32)
