@@ -86,6 +86,40 @@ if(NOT SD_HIPBLAS)
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
 
+    if (SD_CUDA)
+
+        enable_language(CUDA)
+        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" CUDA_VERSION_MATCH ${CMAKE_CUDA_COMPILER_VERSION})
+
+        set(CUDA_MAJOR_VERSION "${CMAKE_MATCH_1}")
+        set(CUDA_MINOR_VERSION "${CMAKE_MATCH_2}")
+        set(CUDA_PATCH_VERSION "${CMAKE_MATCH_3}")
+
+        message(STATUS "CUDA Version: ${CUDA_MAJOR_VERSION}.${CUDA_MINOR_VERSION}.${CUDA_PATCH_VERSION}")
+
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+            include(FindCUDA/select_compute_arch)
+            CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+            string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+            string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+            string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+            SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+
+        else()
+            if (CUDA_MAJOR_VERSION STREQUAL "12")
+                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52;50")
+                string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+            elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
+                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60;53;52;50")
+                string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+            endif()
+
+        endif()
+
+        message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
+
+    endif()
 
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
@@ -94,19 +128,22 @@ if(NOT SD_HIPBLAS)
             GIT_TAG ${SD_GIT_TAG}
             #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
-            CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-            "-DSD_BUILD_EXAMPLES=OFF"
-            "-DSD_BUILD_SHARED_LIBS=ON"
-            "-DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}"
-            "-DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}"
-            "-DGGML_AVX=${SD_AVX}"
-            "-DGGML_AVX2=${SD_AVX2}"
-            "-DGGML_AVX512=${SD_AVX512}"
-            "-DGGML_CPU_AARCH64=OFF"
-            "-DSD_CUDA=${SD_CUDA}"
-            "-DSD_HIPBLAS=${SD_HIPBLAS}"
-            "-DSD_VULKAN=${SD_VULKAN}"
-            "-DGGML_ALL_WARNINGS=OFF"
+            LIST_SEPARATOR "|"
+            CMAKE_ARGS
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DSD_BUILD_EXAMPLES=OFF
+            -DSD_BUILD_SHARED_LIBS=ON
+            -DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}
+            -DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}
+            -DGGML_AVX=${SD_AVX}
+            -DGGML_AVX2=${SD_AVX2}
+            -DGGML_AVX512=${SD_AVX512}
+            -DGGML_CPU_AARCH64=OFF
+            -DSD_CUDA=${SD_CUDA}
+            -DSD_HIPBLAS=${SD_HIPBLAS}
+            -DSD_VULKAN=${SD_VULKAN}
+            -DGGML_ALL_WARNINGS=OFF
+            -DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
             BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
