@@ -212,16 +212,16 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_joblist = new wxDataViewListCtrl( m_jobs_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxDV_HORIZ_RULES|wxDV_MULTIPLE|wxDV_ROW_LINES|wxDV_VERT_RULES );
 	m_joblist->SetExtraStyle( wxWS_EX_VALIDATE_RECURSIVELY );
 
-	m_dataViewListColumn32 = m_joblist->AppendTextColumn( _("Id"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
-	m_dataViewListColumn321 = m_joblist->AppendTextColumn( _("Crated at"), wxDATAVIEW_CELL_INERT, 120, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
-	m_dataViewListColumn3211 = m_joblist->AppendTextColumn( _("Type"), wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn32112 = m_joblist->AppendTextColumn( _("Server"), wxDATAVIEW_CELL_INERT, 100, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn32111 = m_joblist->AppendTextColumn( _("Model"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn321111 = m_joblist->AppendTextColumn( _("Sampler"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn3211111 = m_joblist->AppendTextColumn( _("Seed"), wxDATAVIEW_CELL_INERT, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32 = m_joblist->AppendTextColumn( _("Id"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_HIDDEN|wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn321 = m_joblist->AppendTextColumn( _("Crated at"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE|wxDATAVIEW_COL_SORTABLE );
+	m_dataViewListColumn3211 = m_joblist->AppendTextColumn( _("Type"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32112 = m_joblist->AppendTextColumn( _("Server"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn32111 = m_joblist->AppendTextColumn( _("Model"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn321111 = m_joblist->AppendTextColumn( _("Sampler"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn3211111 = m_joblist->AppendTextColumn( _("Seed"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn32111111 = m_joblist->AppendProgressColumn( _("Progress"), wxDATAVIEW_CELL_INERT, 80, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn321111111 = m_joblist->AppendTextColumn( _("Speed"), wxDATAVIEW_CELL_INERT, 110, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
-	m_dataViewListColumn3211111111 = m_joblist->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_ACTIVATABLE, 150, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn321111111 = m_joblist->AppendTextColumn( _("Speed"), wxDATAVIEW_CELL_INERT, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
+	m_dataViewListColumn3211111111 = m_joblist->AppendTextColumn( _("Status"), wxDATAVIEW_CELL_ACTIVATABLE, -2, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	m_dataViewListColumn32111111111 = m_joblist->AppendTextColumn( wxEmptyString, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE );
 	bSizer78->Add( m_joblist, 1, wxEXPAND, 5 );
 
@@ -1061,7 +1061,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_prompt->SetSelForeground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHTTEXT ) );
 	m_prompt->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
 	m_prompt->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
-	m_prompt->SetMinSize( wxSize( -1,120 ) );
+	m_prompt->SetMinSize( wxSize( -1,140 ) );
 
 	bSizer99->Add( m_prompt, 1, wxEXPAND | wxALL, 1 );
 
@@ -1096,7 +1096,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_prompt2->MarkerDefine( wxSTC_MARKNUM_FOLDERTAIL, wxSTC_MARK_EMPTY );
 	m_prompt2->SetSelBackground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) );
 	m_prompt2->SetSelForeground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHTTEXT ) );
-	m_prompt2->SetMinSize( wxSize( -1,120 ) );
+	m_prompt2->SetMinSize( wxSize( -1,140 ) );
 
 	bSizer99->Add( m_prompt2, 1, wxEXPAND | wxALL, 1 );
 
@@ -1113,7 +1113,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer10006->Add( m_prompt_normalize, 0, wxALL, 5 );
 
 
-	bSizer99->Add( bSizer10006, 1, wxEXPAND, 5 );
+	bSizer99->Add( bSizer10006, 0, wxEXPAND, 5 );
 
 	m_staticText74 = new wxStaticText( m_promptPanel, wxID_ANY, _("Negative prompt:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText74->Wrap( -1 );
@@ -1152,7 +1152,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt->SetSelForeground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHTTEXT ) );
 	m_neg_prompt->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
 	m_neg_prompt->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
-	m_neg_prompt->SetMinSize( wxSize( -1,120 ) );
+	m_neg_prompt->SetMinSize( wxSize( -1,140 ) );
 
 	bSizer99->Add( m_neg_prompt, 1, wxEXPAND | wxALL, 5 );
 
@@ -1189,7 +1189,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_neg_prompt2->SetSelForeground( true, wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHTTEXT ) );
 	m_neg_prompt2->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
 	m_neg_prompt2->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BACKGROUND ) );
-	m_neg_prompt2->SetMinSize( wxSize( -1,120 ) );
+	m_neg_prompt2->SetMinSize( wxSize( -1,140 ) );
 
 	bSizer99->Add( m_neg_prompt2, 1, wxEXPAND | wxALL, 5 );
 
@@ -1206,7 +1206,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer10007->Add( m_nprompt_normalize, 0, wxALL, 5 );
 
 
-	bSizer99->Add( bSizer10007, 1, wxEXPAND, 5 );
+	bSizer99->Add( bSizer10007, 0, wxEXPAND, 5 );
 
 	m_staticText49 = new wxStaticText( m_promptPanel, wxID_ANY, _("Prompt presets:"), wxDefaultPosition, wxSize( 120,-1 ), 0 );
 	m_staticText49->Wrap( -1 );
@@ -1456,11 +1456,11 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer1041->Add( bSizer128, 0, wxEXPAND, 0 );
 
-	m_staticText75 = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("RESOLUTIONS"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
-	m_staticText75->Wrap( -1 );
-	m_staticText75->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
+	m_res_title = new wxStaticText( m_rightMainPanelScroll, wxID_ANY, _("RESOLUTIONS"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_res_title->Wrap( -1 );
+	m_res_title->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
 
-	bSizer1041->Add( m_staticText75, 0, wxALL|wxEXPAND, 5 );
+	bSizer1041->Add( m_res_title, 0, wxALL|wxEXPAND, 5 );
 
 	m_button7 = new wxBitmapButton( m_rightMainPanelScroll, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 

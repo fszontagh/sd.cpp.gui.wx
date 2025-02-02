@@ -20,11 +20,8 @@ QueueItem QueueItem::convertFromNetwork(sd_gui_utils::networks::RemoteQueueItem&
     // QueueItem newItem(item);
     QueueItem newItem(item);
     for (sd_gui_utils::networks::ImageInfo& img : newItem.image_info) {
-        img.target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "_%s_%s.png", item.id, img.md5_hash, item.server)).GetAbsolutePath().ToStdString();
-        if (!wxFileExists(img.target_filename) && !img.data.empty()) {
-            if (!sd_gui_utils::DecodeBase64ToFile(img.data, img.target_filename)) {
-                continue;
-            }
+        if (!img.convertFromNetwork(tempDir)) {
+            continue;
         }
     }
     return newItem;
@@ -129,7 +126,7 @@ void QueueItem::PrepareImagesForClients(const wxString& targetDir) {
 
         info.target_filename = newName.GetAbsolutePath().ToStdString();
         info.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
-        info.md5_hash              = sd_gui_utils::calculateMD5(newName.GetAbsolutePath().ToStdString());
+        info.md5_hash        = sd_gui_utils::calculateMD5(newName.GetAbsolutePath().ToStdString());
 
         this->image_info.emplace_back(info);
         counter++;
@@ -217,4 +214,24 @@ void QueueItem::ClearImageInfosData() {
     for (auto& img : this->image_info) {
         img.data.clear();
     }
+}
+void QueueItem::SetOrReplaceImageInfo(const sd_gui_utils::networks::ImageInfo& imageInfo) {
+    for (auto it = this->image_info.begin(); it != this->image_info.end();) {
+        if (it->GetId() == imageInfo.GetId()) {
+            *it = imageInfo;
+            return;
+        } else {
+            ++it;
+        }
+    }
+
+    this->image_info.emplace_back(imageInfo);
+}
+sd_gui_utils::ImageInfo QueueItem::GetImageInfo(const std::string& id) const {
+    for (const auto& img : this->image_info) {
+        if (img.GetId() == id) {
+            return img;
+        }
+    }
+    return sd_gui_utils::ImageInfo();
 }

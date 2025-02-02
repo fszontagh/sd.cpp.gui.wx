@@ -92,7 +92,19 @@ namespace sd_gui_utils {
             // @brief The image filename where it will be saved
             std::string target_filename = "";
             std::string data_filename   = "";
-            std::string GetId() const { return this->md5_hash + std::to_string(this->jobid); }
+            std::string GetId() const {
+                if (this->id.empty()) {
+                    return this->md5_hash + std::to_string(this->jobid) + this->server_id;
+                }
+                return this->id + std::to_string(this->jobid);
+            }
+            inline bool convertFromNetwork(wxString tempDir = wxFileName::GetTempDir()) {
+                this->target_filename = wxFileName(tempDir, wxString::Format("%" PRIu64 "%s%s.png", this->jobid, this->GetId(), this->server_id)).GetAbsolutePath().ToStdString();
+                if (!wxFileExists(this->target_filename) && !this->data.empty()) {
+                    return sd_gui_utils::DecodeBase64ToFile(this->data, this->target_filename);
+                }
+                return false;
+            }
             bool operator==(const ImageInfo& rhs) const { return this->GetId() == rhs.GetId(); }
         };
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, md5_hash, id, width, height, type, size, data, target_filename, data_filename)

@@ -242,7 +242,7 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText233;
 		wxBitmapButton* m_random_seed;
 		wxSpinCtrl* m_seed;
-		wxStaticText* m_staticText75;
+		wxStaticText* m_res_title;
 		wxBitmapButton* m_button7;
 		wxTextCtrl* m_width;
 		wxTextCtrl* m_height;

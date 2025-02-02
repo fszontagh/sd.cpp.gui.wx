@@ -14,18 +14,28 @@ public:
         long connected_at;
         long disconnected_at = 0;
         std::string apikey;
-        long last_keepalive = 0;
-        uint64_t client_id  = 0;
-        uint64_t tx         = 0;
-        uint64_t rx         = 0;
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(clientInfo, host, port, idx, connected_at, disconnected_at, apikey, last_keepalive, client_id, tx, rx)
+        long last_keepalive                    = 0;
+        uint64_t client_id                     = 0;
+        uint64_t tx                            = 0;
+        uint64_t rx                            = 0;
+        std::string version                    = {};
+        std::string application_system_name    = {};
+        std::string application_arch           = {};
+        std::string application_system_version = {};
+
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(clientInfo, host, port, idx, connected_at, disconnected_at, apikey, last_keepalive, client_id, tx, rx, version, application_system_name, application_arch, application_system_version)
         inline void copyFrom(const SocketApp::clientInfo& other) {
-            this->client_id       = other.client_id;
-            this->apikey          = other.apikey;
-            this->port            = other.port;
-            this->host            = other.host;
-            this->disconnected_at = other.disconnected_at;
-            this->last_keepalive  = other.last_keepalive;
+            this->client_id                  = other.client_id;
+            this->apikey                     = other.apikey;
+            this->port                       = other.port;
+            this->host                       = other.host;
+            this->disconnected_at            = other.disconnected_at;
+            this->last_keepalive             = other.last_keepalive;
+            this->version                    = other.version;
+            this->application_system_name    = other.application_system_name;
+            this->application_arch           = other.application_arch;
+            this->application_system_version = other.application_system_version;
+
             this->tx += other.tx;
             this->rx += other.rx;
         }

@@ -457,7 +457,7 @@ bool TerminalApp::ProcessEventHandler(std::string message) {
         }
 
     } catch (const std::exception& e) {
-        this->SendLogEvent(wxString::Format("Extprocess parse error: %s", e.what()), wxLOG_Error);
+        this->SendLogEvent(wxString::Format("Extprocess parse error: %s Message: \n'%s'", e.what()), wxLOG_Error);
         return true;
     }
 
@@ -494,17 +494,26 @@ void TerminalApp::ProcessReceivedSocketPackages(sd_gui_utils::networks::Packet& 
         this->SendLogEvent("Sent model list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST) {
-        auto item_id = packet.GetData<uint64_t>();
-        auto job     = this->queueManager->GetItem(item_id);
+        auto ReqData = packet.GetData<sd_gui_utils::networks::ImageRequest>();
+        auto job     = this->queueManager->GetItem(ReqData.job_id);
 
         if (job) {
             auto updatedJob = job->LoadImageInfos();
-
-            auto response = sd_gui_utils::networks::Packet(sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE, sd_gui_utils::networks::Packet::Param::PARAM_JOB_UPDATE);
-            if (response.SetData(updatedJob.convertToNetwork(false, this->configData->server_id))) {
-                this->socket->sendMsg(packet.source_idx, response);
-                this->SendLogEvent("Sent image list to client: " + std::to_string(packet.source_idx), wxLOG_Info);
+            auto imageInfo  = updatedJob.GetImageInfo(ReqData.image_id);
+            if (imageInfo.GetId().empty()) {
+                this->SendLogEvent("Image not found on image download: " + std::to_string(ReqData.job_id), wxLOG_Error);
+                return;  // image not found
             }
+
+            auto response = sd_gui_utils::networks::Packet(
+                sd_gui_utils::networks::Packet::Type::RESPONSE_TYPE,
+                sd_gui_utils::networks::Packet::Param::PARAM_JOB_IMAGE_LIST);
+            if (response.SetData(sd_gui_utils::networks::ImageResponse{imageInfo})) {
+                this->socket->sendMsg(packet.source_idx, response);
+                this->SendLogEvent("Sent image to client: " + std::to_string(packet.source_idx) + " for job: " + std::to_string(ReqData.job_id) + " image: " + ReqData.image_id, wxLOG_Info);
+            }
+        } else {
+            this->SendLogEvent("Job not found on image download: " + std::to_string(ReqData.job_id), wxLOG_Error);
         }
     }
     if (packet.param == sd_gui_utils::networks::Packet::Param::PARAM_JOB_LIST) {
@@ -858,7 +867,6 @@ void TerminalApp::SendLogEvent(wxString message, const wxLogLevel level) {
 }
 
 void TerminalApp::StoreClientStats(SocketApp::clientInfo& client) {
-    std::cout << "StoreClientStats: " << client.client_id << std::endl;
     if (client.client_id == 0 || client.apikey.empty()) {
         return;
     }
@@ -866,7 +874,6 @@ void TerminalApp::StoreClientStats(SocketApp::clientInfo& client) {
     std::lock_guard<std::mutex> lock(this->eventMutex);
     eventQueue.Push([this, client]() {
         std::lock_guard<std::mutex> lock(this->clientInfoMutex);
-        std::cout << "StoreClientStats run: " << client.client_id << std::endl;
 
         std::string clientDataFile = this->configData->GetClientDataPath() + std::to_string(client.client_id) + ".json";
 
@@ -887,11 +894,8 @@ void TerminalApp::StoreClientStats(SocketApp::clientInfo& client) {
                 auto oldInfo = jsonOld.get<SocketApp::clientInfo>();
                 oldInfo.copyFrom(client);
                 json = oldInfo;
-
-                std::cout << "StoreClientStats update: " << client.client_id << std::endl;
             } else {
                 json = client;
-                std::cout << "StoreClientStats create: " << client.client_id << std::endl;
             }
 
             std::ofstream file(clientDataFile);
@@ -956,8 +960,9 @@ void TerminalApp::JobQueueThread() {
             //         this->queueManager->DeleteCurrentJob();
             //     }
             // }
+            this->SendLogEvent(wxString::Format("Current job: %" PRIu64 " status: %d", this->queueManager->GetCurrentJob()->id, QueueStatus_GUI_str.at(this->queueManager->GetCurrentJob()->status)), wxLOG_Debug);
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 }
 SocketApp::clientInfo TerminalApp::ReReadClientInfo(uint64_t client_id, bool delete_old_file) {

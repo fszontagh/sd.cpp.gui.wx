@@ -104,7 +104,6 @@ namespace sd_gui_utils {
 
     // Fájlok kezelése
     inline bool EncodeFileToBase64(const std::string& inputFilePath, std::string& outputBase64) {
-        std::cout << "EncodeFileToBase64: " << inputFilePath << std::endl;
         std::ifstream file(inputFilePath, std::ios::binary);
         if (!file.is_open())
             return false;
@@ -117,7 +116,6 @@ namespace sd_gui_utils {
     }
 
     inline bool DecodeBase64ToFile(const std::string& inputBase64, const std::string& outputFilePath) {
-        std::cout << "DecodeBase64ToFile: " << inputBase64.length() << " -> " << outputFilePath << std::endl;
         auto decodedData = Base64Decode(inputBase64);
         std::ofstream file(outputFilePath, std::ios::binary);
         if (!file.is_open())
@@ -128,7 +126,6 @@ namespace sd_gui_utils {
     }
 
     static inline bool StoreBase64ToFile(const std::string& inputFilePath, const std::string& targetMetaFilename) {
-        std::cout << "StoreBase64ToFile: " << inputFilePath << " -> " << targetMetaFilename << std::endl;
         std::string inputBase64;
         if (!EncodeFileToBase64(inputFilePath, inputBase64)) {
             return false;
@@ -144,7 +141,6 @@ namespace sd_gui_utils {
     }
 
     static inline std::string ReadBase64FromFile(const std::string& metaFileName, bool decodeBase64 = false) {
-        std::cout << "ReadBase64FromFile: " << metaFileName << std::endl;
         std::ifstream file(metaFileName, std::ios::binary);
         if (!file) {
             return {};

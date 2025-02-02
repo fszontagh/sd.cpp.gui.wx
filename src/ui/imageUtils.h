@@ -575,6 +575,21 @@ namespace sd_gui_utils {
 
         image = blackBackground;
     }
+    inline std::string GetAspectRatioString(const wxImage& image) {
+        int width  = image.GetWidth();
+        int height = image.GetHeight();
+
+        if (height == 0) {
+            return "Invalid";
+        }
+
+        int gcd = std::gcd(width, height);
+
+        int aspectW = width / gcd;
+        int aspectH = height / gcd;
+
+        return std::to_string(aspectW) + ":" + std::to_string(aspectH);
+    }
 
 }
 #endif  // SRC_UI_IMAGEUTILS_H

@@ -4025,7 +4025,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->UpdateCurrentProgress(item, event);
                 break;
             case QueueEvents::ITEM_FAILED:  // GENERATION_ERROR
-                this->writeLog(wxString::Format(_("Generation error: %s\n"), item->status_message));
+                this->writeLog(wxString::Format(_("Generation error: %s\n"), wxString(item->status_message.data(), item->status_message.size())));
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->UpdateCurrentProgress(item, event);
                 break;
@@ -4130,18 +4130,20 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
 
-    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE) {
-        auto imagelist = e.GetPayload<std::vector<sd_gui_utils::networks::ImageInfo>>();
-        if (imagelist.size() > 0) {
-            auto jobitem = this->qmanager->GetItemPtr(imagelist.front().jobid);
-            if (jobitem) {
-                jobitem->image_info = imagelist;
-                auto updatedItem    = this->handleSdImages(jobitem, this->GetEventHandler());
-                if (this->qmanager->UpdateItem(*updatedItem)) {
-                    this->UpdateJobImagePreviews(updatedItem);
-                }
-            }
+    if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_IMAGE_UPDATE) {
+        std::cout << "sd_gui_utils::ThreadEvents::SERVER_IMAGE_LIST_UPDATE" << std::endl;
+        auto imageInfo = e.GetPayload<sd_gui_utils::networks::ImageInfo>();
+        if (imageInfo.server_id.empty()) {
+            return;
         }
+        auto jobitem = this->qmanager->GetItemPtr(imageInfo.jobid);
+        if (jobitem) {  // trigger the same events like a job update to handle the nem image
+            jobitem->SetOrReplaceImageInfo(imageInfo);
+            this->handleSdImages(jobitem, this->GetEventHandler());
+            this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, jobitem);
+            this->UpdateJobImagePreviews(jobitem);
+        }
+
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_AUTH_REQUEST) {
@@ -4467,7 +4469,7 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
     wxVector<wxVariant> data;
 
     data.push_back(wxVariant(_("ID")));
-    data.push_back(wxVariant(wxString::Format("%lu", item->id)));
+    data.push_back(wxVariant(wxString::Format("%" PRIu64, item->id)));
     this->m_joblist_item_details->AppendItem(data);
     data.clear();
 
@@ -4558,6 +4560,11 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
         if (item->mode != SDMode::CONVERT) {
+            data.push_back(wxVariant(_("Sampler")));
+            data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::samplerUiName.at(item->params.sample_method))));
+            this->m_joblist_item_details->AppendItem(data);
+            data.clear();
+
             data.push_back(wxVariant(_("Scheduler")));
             data.push_back(wxVariant(sd_gui_utils::sd_scheduler_gui_names[item->params.schedule]));
             this->m_joblist_item_details->AppendItem(data);
@@ -4613,11 +4620,6 @@ void MainWindowUI::UpdateJobInfoDetailsFromJobQueueList(std::shared_ptr<QueueIte
 
         data.push_back(wxVariant(_("Cfg scale")));
         data.push_back(wxVariant(wxString::Format("%.1f", item->params.cfg_scale)));
-        this->m_joblist_item_details->AppendItem(data);
-        data.clear();
-
-        data.push_back(wxVariant(_("Sampler")));
-        data.push_back(wxVariant(wxString::Format("%s", sd_gui_utils::samplerUiName.at(item->params.sample_method))));
         this->m_joblist_item_details->AppendItem(data);
         data.clear();
 
@@ -4808,7 +4810,13 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
 
     int index = 0;
     for (const auto& img : item->image_info) {
-        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx \nmd5: %s"), img.width, img.height, img.md5_hash);
+        wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx"), img.width, img.height);
+
+        if (std::string(BUILD_TYPE) == "Debug") {
+            tooltip.Append(wxString::Format("ID: %s\n", img.GetId()));
+            tooltip.Append(wxString::Format("Path: %s\n", img.target_filename));
+            tooltip.Append(wxString::Format("MD5: %s\n", img.md5_hash));
+        }
         if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::CONTROLNET)) {
             tooltip.Append("\n");
             tooltip.Append(_("Controlnet image"));
@@ -4869,8 +4877,8 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
 
                 if (!this->mapp->cfg->remote_download_images_immediately) {
                     auto srv = this->mapp->cfg->GetTcpServer(item->server);
-                    if (srv && item->image_download_requested == false) {
-                        srv->RequestImages(item->id);
+                    if (srv) {
+                        srv->RequestImages(item->id, img.GetId());
                         item->image_download_requested = true;
                     }
                 }
@@ -4879,17 +4887,19 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
         } else {
             wxStaticBitmap* bitmap = nullptr;
             if (!wxFileExists(img.target_filename)) {
-                bitmap                             = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, !item->server.empty() ? cloud_download_png_to_wx_bitmap() : deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+                bitmap = new wxStaticBitmap(this->m_scrolledWindow41, wxID_ANY, !item->server.empty() ? cloud_download_png_to_wx_bitmap() : deleted_png_to_wx_bitmap(), wxDefaultPosition, wxDefaultSize, 0);
+
                 this->jobImagePreviews[image_luid] = {bitmap,
-                                                      img.server_id.empty() == false,
+                                                      (item->server.empty() == false),
                                                       true,
                                                       false,
                                                       false,
-                                                      img.md5_hash};
+                                                      img.GetId()};
+
                 if (!this->mapp->cfg->remote_download_images_immediately && !img.server_id.empty()) {
                     auto srv = this->mapp->cfg->GetTcpServer(img.server_id);
-                    if (srv && item->image_download_requested == false) {
-                        srv->RequestImages(item->id);
+                    if (srv) {
+                        srv->RequestImages(item->id, img.GetId());
                         this->jobImagePreviews[image_luid].download_requested = true;
                         item->image_download_requested                        = true;
                     }
@@ -4905,7 +4915,7 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
                                                       false,
                                                       true,
                                                       false,
-                                                      img.md5_hash};
+                                                      img.GetId()};
             }
 
             bitmap->SetToolTip(tooltip);
@@ -5275,7 +5285,7 @@ void MainWindowUI::ShowNotification(std::shared_ptr<QueueItem> jobItem) {
     }
 
     if (jobItem->status == QueueStatus::FAILED && !jobItem->status_message.empty()) {
-        message.Append(wxString::Format("\n%s", jobItem->status_message));
+        message.Append(wxString::Format("\n%s", wxString::FromUTF8Unchecked(jobItem->status_message)));
     }
 
     if (!jobItem->server.empty()) {

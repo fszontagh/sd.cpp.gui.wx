@@ -1338,20 +1338,20 @@
                                 </object>
                               </object>
                             </object>
-                            <object class="sizeritem" expanded="false">
+                            <object class="sizeritem" expanded="true">
                               <property name="border">5</property>
                               <property name="flag">wxEXPAND</property>
                               <property name="proportion">2</property>
-                              <object class="wxBoxSizer" expanded="false">
+                              <object class="wxBoxSizer" expanded="true">
                                 <property name="minimum_size">-1,-1</property>
                                 <property name="name">bSizer78</property>
                                 <property name="orient">wxHORIZONTAL</property>
                                 <property name="permission">none</property>
-                                <object class="sizeritem" expanded="false">
+                                <object class="sizeritem" expanded="true">
                                   <property name="border">5</property>
                                   <property name="flag">wxEXPAND</property>
                                   <property name="proportion">1</property>
-                                  <object class="wxDataViewListCtrl" expanded="false">
+                                  <object class="wxDataViewListCtrl" expanded="true">
                                     <property name="bg"></property>
                                     <property name="context_help"></property>
                                     <property name="context_menu">1</property>
@@ -1386,7 +1386,7 @@
                                       <property name="name">m_dataViewListColumn32</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">-1</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1397,7 +1397,7 @@
                                       <property name="name">m_dataViewListColumn321</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">120</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1408,7 +1408,7 @@
                                       <property name="name">m_dataViewListColumn3211</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">100</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1419,7 +1419,7 @@
                                       <property name="name">m_dataViewListColumn32112</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">100</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1430,7 +1430,7 @@
                                       <property name="name">m_dataViewListColumn32111</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">-1</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1441,7 +1441,7 @@
                                       <property name="name">m_dataViewListColumn321111</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">-1</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1452,7 +1452,7 @@
                                       <property name="name">m_dataViewListColumn3211111</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">-1</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1474,7 +1474,7 @@
                                       <property name="name">m_dataViewListColumn321111111</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">110</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1485,7 +1485,7 @@
                                       <property name="name">m_dataViewListColumn3211111111</property>
                                       <property name="permission">protected</property>
                                       <property name="type">Text</property>
-                                      <property name="width">150</property>
+                                      <property name="width">-2</property>
                                     </object>
                                     <object class="dataViewListColumn" expanded="false">
                                       <property name="align">wxALIGN_LEFT</property>
@@ -1656,7 +1656,7 @@
                               <property name="border">5</property>
                               <property name="flag">wxALL|wxEXPAND</property>
                               <property name="proportion">1</property>
-                              <object class="wxDataViewListCtrl" expanded="true">
+                              <object class="wxDataViewListCtrl" expanded="false">
                                 <property name="bg"></property>
                                 <property name="context_help"></property>
                                 <property name="context_menu">1</property>
@@ -8273,7 +8273,7 @@
                 <property name="border">0</property>
                 <property name="flag">wxALL|wxEXPAND</property>
                 <property name="proportion">1</property>
-                <object class="wxScrolledWindow" expanded="false">
+                <object class="wxScrolledWindow" expanded="true">
                   <property name="BottomDockable">1</property>
                   <property name="LeftDockable">1</property>
                   <property name="RightDockable">1</property>
@@ -8327,16 +8327,16 @@
                   <property name="window_extra_style"></property>
                   <property name="window_name"></property>
                   <property name="window_style">wxBORDER_THEME|wxHSCROLL|wxVSCROLL</property>
-                  <object class="wxBoxSizer" expanded="false">
+                  <object class="wxBoxSizer" expanded="true">
                     <property name="minimum_size"></property>
                     <property name="name">bSizer103</property>
                     <property name="orient">wxVERTICAL</property>
                     <property name="permission">none</property>
-                    <object class="sizeritem" expanded="false">
+                    <object class="sizeritem" expanded="true">
                       <property name="border">5</property>
                       <property name="flag">wxEXPAND | wxALL</property>
                       <property name="proportion">0</property>
-                      <object class="wxPanel" expanded="false">
+                      <object class="wxPanel" expanded="true">
                         <property name="BottomDockable">1</property>
                         <property name="LeftDockable">1</property>
                         <property name="RightDockable">1</property>
@@ -8388,7 +8388,7 @@
                         <property name="window_extra_style"></property>
                         <property name="window_name"></property>
                         <property name="window_style">wxTAB_TRAVERSAL</property>
-                        <object class="wxBoxSizer" expanded="false">
+                        <object class="wxBoxSizer" expanded="true">
                           <property name="minimum_size"></property>
                           <property name="name">bSizer99</property>
                           <property name="orient">wxVERTICAL</property>
@@ -8497,7 +8497,7 @@
                               <property name="maximum_size"></property>
                               <property name="min_size"></property>
                               <property name="minimize_button">0</property>
-                              <property name="minimum_size">-1,120</property>
+                              <property name="minimum_size">-1,140</property>
                               <property name="moveable">1</property>
                               <property name="name">m_prompt</property>
                               <property name="pane_border">1</property>
@@ -8567,7 +8567,7 @@
                               <property name="maximum_size"></property>
                               <property name="min_size"></property>
                               <property name="minimize_button">0</property>
-                              <property name="minimum_size">-1,120</property>
+                              <property name="minimum_size">-1,140</property>
                               <property name="moveable">1</property>
                               <property name="name">m_prompt2</property>
                               <property name="pane_border">1</property>
@@ -8595,11 +8595,11 @@
                               <event name="OnKeyDown">OnPromptKeyDown</event>
                             </object>
                           </object>
-                          <object class="sizeritem" expanded="false">
+                          <object class="sizeritem" expanded="true">
                             <property name="border">5</property>
                             <property name="flag">wxEXPAND</property>
-                            <property name="proportion">1</property>
-                            <object class="wxBoxSizer" expanded="false">
+                            <property name="proportion">0</property>
+                            <object class="wxBoxSizer" expanded="true">
                               <property name="minimum_size"></property>
                               <property name="name">bSizer10006</property>
                               <property name="orient">wxHORIZONTAL</property>
@@ -8935,7 +8935,7 @@
                               <property name="maximum_size"></property>
                               <property name="min_size"></property>
                               <property name="minimize_button">0</property>
-                              <property name="minimum_size">-1,120</property>
+                              <property name="minimum_size">-1,140</property>
                               <property name="moveable">1</property>
                               <property name="name">m_neg_prompt</property>
                               <property name="pane_border">1</property>
@@ -9005,7 +9005,7 @@
                               <property name="maximum_size"></property>
                               <property name="min_size"></property>
                               <property name="minimize_button">0</property>
-                              <property name="minimum_size">-1,120</property>
+                              <property name="minimum_size">-1,140</property>
                               <property name="moveable">1</property>
                               <property name="name">m_neg_prompt2</property>
                               <property name="pane_border">1</property>
@@ -9033,11 +9033,11 @@
                               <event name="OnKeyDown">OnPromptKeyDown</event>
                             </object>
                           </object>
-                          <object class="sizeritem" expanded="false">
+                          <object class="sizeritem" expanded="true">
                             <property name="border">5</property>
                             <property name="flag">wxEXPAND</property>
-                            <property name="proportion">1</property>
-                            <object class="wxBoxSizer" expanded="false">
+                            <property name="proportion">0</property>
+                            <object class="wxBoxSizer" expanded="true">
                               <property name="minimum_size"></property>
                               <property name="name">bSizer10007</property>
                               <property name="orient">wxHORIZONTAL</property>
@@ -11948,7 +11948,7 @@
                               <property name="minimize_button">0</property>
                               <property name="minimum_size"></property>
                               <property name="moveable">1</property>
-                              <property name="name">m_staticText75</property>
+                              <property name="name">m_res_title</property>
                               <property name="pane_border">1</property>
                               <property name="pane_position"></property>
                               <property name="pane_size"></property>

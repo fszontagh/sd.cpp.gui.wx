@@ -34,7 +34,7 @@ namespace sd_gui_utils {
         SERVER_JOBLIST_UPDATE_FINISHED,
         SERVER_JOB_UPDATE,
         SERVER_JOB_DELETE,
-        SERVER_IMAGE_LIST_UPDATE
+        SERVER_JOB_IMAGE_UPDATE
     };
 }
 #endif  // __UI_THREADEVENTSTYPES__

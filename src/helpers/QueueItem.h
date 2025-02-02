@@ -65,7 +65,9 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     void RemoveGeneratedImages();                             ///< Deletes generated images if they exist.
     QueueItem* RemoveRawImageData();                          ///< Clears raw image data to reduce memory usage.
     [[nodiscard]] QueueItem LoadImageInfos() const;           ///< Loads additional image metadata from existing sources and create a copy
-    void ClearImageInfosData();                               ///< Clears image data, keep metadata
+    void ClearImageInfosData();                               ///< Clears image data, keep
+    void SetOrReplaceImageInfo(const sd_gui_utils::networks::ImageInfo& imageInfo);
+    sd_gui_utils::ImageInfo GetImageInfo(const std::string& id) const;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(QueueItem,

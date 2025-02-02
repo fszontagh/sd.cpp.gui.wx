@@ -65,7 +65,7 @@ jobs:
             cache-key: windows-avx512
 
           - name: CUDA
-            cmake_flags: "-DSD_CUDA=ON"
+            cmake_flags: "-DSD_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=all"
             targets: "stable_diffusion_cpp_cuda"
             cache-key: windows-cuda
 
@@ -342,7 +342,7 @@ jobs:
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
             cmake --build . --config Release --target stable_diffusion_cpp_vulkan
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=all
             cmake --build . --config Release --target stable_diffusion_cpp_cuda
           fi
 

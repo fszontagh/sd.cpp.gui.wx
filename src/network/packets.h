@@ -45,13 +45,16 @@ namespace sd_gui_utils {
             sd_gui_utils::networks::Packet::Type type = sd_gui_utils::networks::Packet::Type::INVALID_TYPE;
             sd_gui_utils::networks::Packet::Param param;
             // std::string version   = std::string(SD_GUI_VERSION);
-            std::string version        = std::string(SD_GUI_VERSION);
-            int source_idx             = -1;
-            int target_idx             = -1;
-            std::string server_id      = "";
-            std::string server_name    = "";
-            uint64_t client_session_id = 0;
-            long packet_added_time     = 0;
+            std::string version                    = std::string(SD_GUI_VERSION);
+            std::string application_system_name    = std::string(SD_GUI_SYSTEM_NAME);
+            std::string application_arch           = std::string(SD_GUI_ARCH);
+            std::string application_system_version = std::string(SD_GUI_SYSTEM_VERSION);
+            int source_idx                         = -1;
+            int target_idx                         = -1;
+            std::string server_id                  = "";
+            std::string server_name                = "";
+            uint64_t client_session_id             = 0;
+            long packet_added_time                 = 0;
             bool isValid() {
                 return this->type == sd_gui_utils::networks::Packet::Type::INVALID_TYPE ? false : true;
             }
@@ -161,6 +164,18 @@ namespace sd_gui_utils {
             std::string error = "";
         };
         NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DeleteResponse, job_id, state, error)
+
+        struct ImageRequest {
+            uint64_t job_id       = 0;
+            std::string image_id = {};
+        };
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageRequest, job_id, image_id)
+
+        struct ImageResponse {
+            ImageInfo image_info;
+        };
+
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageResponse, image_info)
 
     }  // namespace networks
 }  // namespace sd_gui_utils

@@ -193,6 +193,14 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
             return;
         }
 
+        // updat client info
+        if (this->m_clientInfo.contains(packet.source_idx)) {
+            this->m_clientInfo[packet.source_idx].application_arch           = packet.application_arch;
+            this->m_clientInfo[packet.source_idx].application_system_name    = packet.application_system_name;
+            this->m_clientInfo[packet.source_idx].application_system_version = packet.application_system_version;
+            this->m_clientInfo[packet.source_idx].version                    = packet.version;
+        }
+
         if (packet.type == sd_gui_utils::networks::Packet::Type::REQUEST_TYPE || packet.type == sd_gui_utils::networks::Packet::Type::DELETE_TYPE) {
             this->parent->ProcessReceivedSocketPackages(packet);
         }
@@ -202,7 +210,7 @@ void SocketApp::parseMsg(sd_gui_utils::networks::Packet& packet) {
                 {
                     // std::lock_guard<std::mutex> guard(m_mutex);
                     std::string packetData = packet.GetData<std::string>();
-                    this->parent->SendLogEvent("Got auth key: \n" + packetData + " our key: \n" + this->parent->configData->authkey, wxLOG_Debug);
+
                     if (packet.client_session_id > 0) {
                         this->m_clientInfo[packet.source_idx].client_id = packet.client_session_id;
                     } else {
