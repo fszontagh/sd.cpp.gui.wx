@@ -54,6 +54,8 @@ public:
     void RemoveRemoteItems(const std::string& server_id);
     void UpdateColumn(DataViewListManager::queueJobColumns column, std::shared_ptr<QueueItem> item, std::function<wxVariant()> callback);
     void UpdateColumns(DataViewListManager::queueJobColumns columns, std::shared_ptr<QueueItem> item);
+    wxDataViewItem JobToItem(std::shared_ptr<QueueItem> item);
+    wxDataViewItem RowToDataViewItem(unsigned int row);
 
 private:
     wxDataViewListCtrl* parent                     = nullptr;

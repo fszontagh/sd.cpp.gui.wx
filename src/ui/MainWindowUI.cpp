@@ -31,10 +31,25 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     this->TaskBarIcon = app_png_to_wx_bitmap();
     this->TaskBar->SetIcon(this->TaskBarIcon, wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
+    this->TaskBar->Bind(wxEVT_TASKBAR_LEFT_DOWN, [this](wxTaskBarIconEvent& event) {
+        if (this->IsIconized()) {
+            this->Raise();
+        } else {
+            this->Iconize();
+        }
+    });
 
     wxIcon icon;
     icon.CopyFromBitmap(this->TaskBarIcon);
     this->SetIcon(icon);
+
+    this->TaskBar->Bind(wxEVT_TASKBAR_RIGHT_DOWN, [this, icon](wxTaskBarIconEvent& event) {
+        wxMenu* taskMenu = new wxMenu();
+        taskMenu->Append(wxID_EXIT);
+        this->TaskBar->PopupMenu(taskMenu);
+        taskMenu->Bind(wxEVT_MENU, &MainWindowUI::OnExit, this);
+        delete taskMenu;
+    });
 
     if (this->mapp->cfg->enable_civitai == false) {
         this->m_civitai->Hide();
@@ -736,33 +751,37 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
                 delete menu;
                 return;
             }
-
-            menu->Append(1, _("Requeue"));
-            menu->Enable(1, false);
+            wxMenuItem* requeueItem = new wxMenuItem(menu, wxID_DUPLICATE, _("Requeue"));
+            requeueItem->SetBitmap(wxArtProvider::GetBitmap(wxART_COPY, wxART_MENU));
+            menu->Append(requeueItem);
+            menu->Enable(wxID_DUPLICATE, false);
 
             if (qitem->status & QueueStatusFlags::REQUEUEABLE_FLAG) {
-                menu->Enable(1, true);
+                menu->Enable(wxID_DUPLICATE, true);
             }
             if (qitem->mode != SDMode::CONVERT) {
                 if (qitem->mode == SDMode::IMG2IMG ||
                     qitem->mode == SDMode::UPSCALE) {
                     if (!std::filesystem::exists(qitem->initial_image)) {
-                        menu->Enable(1, false);
+                        menu->Enable(wxID_DUPLICATE, false);
                     }
                 }
             } else {
-                menu->Enable(1, false);
+                menu->Enable(wxID_DUPLICATE, false);
             }
 
             if (qitem->params.controlnet_path.length() > 0 &&
                 qitem->params.control_image_path.length() > 0 &&
                 !std::filesystem::exists(qitem->params.control_image_path)) {
-                menu->Enable(1, false);
+                menu->Enable(wxID_DUPLICATE, false);
             }
 
             if (qitem->mode != SDMode::UPSCALE &&
                 qitem->mode != SDMode::CONVERT) {
-                menu->Append(2, _("Load parameters"));
+                wxMenuItem* loadParamsItem = new wxMenuItem(menu, 2, _("Load parameters"));
+                loadParamsItem->SetBitmap(wxArtProvider::GetBitmap(wxART_PASTE, wxART_MENU));
+
+                menu->Append(loadParamsItem);
                 menu->Append(3, _("Copy prompts to text2img"));
                 menu->Append(4, _("Copy prompts to img2img"));
                 menu->Append(5, wxString::Format(_("Select model %s"), qitem->model));
@@ -787,11 +806,11 @@ void MainWindowUI::onContextMenu(wxDataViewEvent& event) {
             }
 
             menu->AppendSeparator();
-            menu->Append(99, _("Delete"));
-            menu->Enable(99, false);
+            menu->Append(wxID_DELETE);
+            menu->Enable(wxID_DELETE, false);
 
             if (qitem->status & QueueStatusFlags::DELETABLE_FLAG) {
-                menu->Enable(99, true);
+                menu->Enable(wxID_DELETE, true);
             }
             menu->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainWindowUI::OnPopupClick, this);
         }
@@ -3003,117 +3022,113 @@ void MainWindowUI::OnPopupClick(wxCommandEvent& evt) {
     evt.Skip();
     auto tu = evt.GetId();
 
-    // 100 for queueitem list table
-    if (tu < 100) {
-        wxDataViewListStore* store = this->m_joblist->GetStore();
-        auto currentRow            = this->m_joblist->GetSelectedRow();
-        if (currentRow == wxNOT_FOUND) {
-            return;
-        }
-        auto currentItem = this->m_joblist->RowToItem(currentRow);
-        if (currentItem.IsOk() == false) {
-            return;
-        }
-        auto id                          = store->GetItemData(currentItem);
-        std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
+    wxDataViewListStore* store = this->m_joblist->GetStore();
+    auto currentRow            = this->m_joblist->GetSelectedRow();
+    if (currentRow == wxNOT_FOUND) {
+        return;
+    }
+    auto currentItem = this->m_joblist->RowToItem(currentRow);
+    if (currentItem.IsOk() == false) {
+        return;
+    }
+    auto id                          = store->GetItemData(currentItem);
+    std::shared_ptr<QueueItem> qitem = this->qmanager->GetItemPtr(id);
 
-        /*
-                1 Copy and queue
-                2 copy to text2img
-                3 copy prompts to text2image
-                4 copy prompts to img2img
-                5 Details
-                99 delete
-        */
+    /*
+            1 Copy and queue
+            2 copy to text2img
+            3 copy prompts to text2image
+            4 copy prompts to img2img
+            5 Details
+            99 delete
+    */
 
-        switch (tu) {
-            case 1: {
-                if (qitem->server.empty() == false) {
-                    auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
-                    if (srv) {
-                        if (srv->IsEnabled() && srv->IsConnected()) {
-                            srv->DuplicateJob(qitem->id);
-                            return;
-                        }
+    switch (tu) {
+        case wxID_DUPLICATE: {
+            if (qitem->server.empty() == false) {
+                auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
+                if (srv) {
+                    if (srv->IsEnabled() && srv->IsConnected()) {
+                        srv->DuplicateJob(qitem->id);
+                        return;
                     }
+                }
+                return;
+            }
+            this->qmanager->Duplicate(qitem);
+        }
+        case 2:
+            this->ChangeGuiFromQueueItem(*qitem);
+            break;
+        case 3:
+            this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+            this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
+            break;
+        case 4:
+            this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
+            this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
+            break;
+        case 5: {
+            if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
+                if (std::filesystem::exists(qitem->params.diffusion_model_path)) {
+                    this->m_filePickerDiffusionModel->SetPath(qitem->params.diffusion_model_path);
+                } else {
+                    wxMessageDialog dialog(this, _("Diffusion model not found"), _("Error"), wxOK | wxICON_ERROR);
+                    dialog.ShowModal();
+                }
+            } else {
+                if (!qitem->hashes.model_hash.empty()) {
+                    auto model = this->ModelManager->getIntoPtrByHash(qitem->hashes.model_hash, qitem->server);
+                    this->ChangeModelByInfo(model);
+                } else {
+                    auto model = this->ModelManager->getIntoPtr(qitem->params.model_path);
+                    this->ChangeModelByInfo(model);
+                }
+            }
+        } break;
+        case 6: {
+            this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
+            this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
+            this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);  // switch to the upscaler
+        } break;
+        case 7: {
+            this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename), true);
+        } break;
+        case 8: {
+            if (qitem->server.empty()) {
+                if (qitem->status == QueueStatus::PAUSED) {
+                    this->qmanager->UnPauseItem(qitem);
                     return;
                 }
-                this->qmanager->Duplicate(qitem);
-            }
-            case 2:
-                this->ChangeGuiFromQueueItem(*qitem);
-                break;
-            case 3:
-                this->m_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
-                this->m_neg_prompt->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
-                break;
-            case 4:
-                this->m_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_prompt.empty() ? qitem->params.prompt : qitem->original_prompt));
-                this->m_neg_prompt2->SetValue(wxString::FromUTF8Unchecked(qitem->original_negative_prompt.empty() ? qitem->params.negative_prompt : qitem->original_negative_prompt));
-                break;
-            case 5: {
-                if (qitem->params.model_path.empty() && qitem->params.diffusion_model_path.empty() == false) {
-                    if (std::filesystem::exists(qitem->params.diffusion_model_path)) {
-                        this->m_filePickerDiffusionModel->SetPath(qitem->params.diffusion_model_path);
-                    } else {
-                        wxMessageDialog dialog(this, _("Diffusion model not found"), _("Error"), wxOK | wxICON_ERROR);
-                        dialog.ShowModal();
-                    }
-                } else {
-                    if (!qitem->hashes.model_hash.empty()) {
-                        auto model = this->ModelManager->getIntoPtrByHash(qitem->hashes.model_hash, qitem->server);
-                        this->ChangeModelByInfo(model);
-                    } else {
-                        auto model = this->ModelManager->getIntoPtr(qitem->params.model_path);
-                        this->ChangeModelByInfo(model);
-                    }
+                if (qitem->status == QueueStatus::PENDING) {
+                    this->qmanager->PauseItem(qitem);
+                    return;
                 }
-            } break;
-            case 6: {
-                this->m_upscaler_filepicker->SetPath(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
-                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename));
-                this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);  // switch to the upscaler
-            } break;
-            case 7: {
-                this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.back().target_filename), true);
-            } break;
-            case 8: {
-                if (qitem->server.empty()) {
+            } else {
+                auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
+                if (srv && srv->IsConnected()) {
                     if (qitem->status == QueueStatus::PAUSED) {
-                        this->qmanager->UnPauseItem(qitem);
+                        srv->ResumeJob(qitem->id);
                         return;
                     }
                     if (qitem->status == QueueStatus::PENDING) {
-                        this->qmanager->PauseItem(qitem);
+                        srv->PauseJob(qitem->id);
                         return;
                     }
-                } else {
-                    auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
-                    if (srv && srv->IsConnected()) {
-                        if (qitem->status == QueueStatus::PAUSED) {
-                            srv->ResumeJob(qitem->id);
-                            return;
-                        }
-                        if (qitem->status == QueueStatus::PENDING) {
-                            srv->PauseJob(qitem->id);
-                            return;
-                        }
-                    }
                 }
-            } break;
-            case 99: {
-                if (qitem->server.empty() == false) {
-                    auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
-                    if (srv && srv->IsConnected()) {
-                        srv->DeleteJob(qitem->id);
-                    }
-                } else {
-                    this->dataViewListManager->DeleteItem(qitem->id);
+            }
+        } break;
+        case wxID_DELETE: {
+            if (qitem->server.empty() == false) {
+                auto srv = this->mapp->cfg->GetTcpServer(qitem->server);
+                if (srv && srv->IsConnected()) {
+                    srv->DeleteJob(qitem->id);
                 }
-                this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
-            } break;
-        }
-        return;
+            } else {
+                this->dataViewListManager->DeleteItem(qitem->id);
+            }
+            this->m_static_number_of_jobs->SetLabel(wxString::Format(_("Number of jobs: %d"), this->m_joblist->GetItemCount()));
+        } break;
     }
 }
 
@@ -4110,6 +4125,9 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_FINISHED) {
         this->writeLog(_("Server job list update finished"), true);
+        if (this->m_joblist->GetItemCount() > 0) {
+            this->m_joblist->EnsureVisible(this->m_joblist->GetTopItem());
+        }
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_DELETE) {
@@ -4124,14 +4142,15 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOB_UPDATE) {
-        auto payload = e.GetPayload<QueueItem>();
-        // this->writeLog(wxString::Format(_("Server job update: %" PRIu64), payload.id), true);
-        //  this will add the item if not exists
+        auto payload   = e.GetPayload<QueueItem>();
         auto addedItem = this->qmanager->UpdateItem(payload);
 
         if (addedItem) {
             if (!this->dataViewListManager->ItemExists(addedItem->id)) {
                 this->dataViewListManager->AddItem(addedItem);
+                if (this->m_joblist->GetItemCount() > 0) {
+                    this->m_joblist->EnsureVisible(this->dataViewListManager->RowToDataViewItem(0));
+                }
             }
             this->handleSdImages(addedItem, this->GetEventHandler());
             this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);

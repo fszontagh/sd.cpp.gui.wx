@@ -25,6 +25,11 @@ if (DEFINED ENV{GITHUB_ACTIONS})
     set(CMAKE_VERBOSE_MAKEFILE OFF)
 endif()
 
+if (CMAKE_BUILD_TYPE STREQUAL "")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+
 include(FetchContent)
 include(ExternalProject)
 include(CMakePackageConfigHelpers)

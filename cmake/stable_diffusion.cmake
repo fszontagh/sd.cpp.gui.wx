@@ -86,41 +86,55 @@ if(NOT SD_HIPBLAS)
         set(_BINPATH "${_BINPATH}:$ENV{PATH}")
     endif ()
 
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_CUDA)
+    if (SD_CUDA)
 
-        enable_language(CUDA)
-        string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" CUDA_VERSION_MATCH ${CMAKE_CUDA_COMPILER_VERSION})
+        #enable_language(CUDA)
+        find_program(NVCC nvcc
+        HINTS
+            "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/bin"
+    )
+
+    if (NOT NVCC)
+        message(FATAL_ERROR "CUDA compiler (nvcc) not found!")
+    endif()
+
+    execute_process(
+        COMMAND ${NVCC} --version
+        OUTPUT_VARIABLE CUDA_COMPILER_OUTPUT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+        string(REGEX MATCH "release ([0-9]+)\\.([0-9]+), V([0-9]+)\\.([0-9]+)\\.([0-9]+)" CUDA_VERSION_MATCH "${CUDA_COMPILER_OUTPUT}")
 
         set(CUDA_MAJOR_VERSION "${CMAKE_MATCH_1}")
         set(CUDA_MINOR_VERSION "${CMAKE_MATCH_2}")
-        set(CUDA_PATCH_VERSION "${CMAKE_MATCH_3}")
+        set(CUDA_PATCH_VERSION "${CMAKE_MATCH_5}")
 
-        message(STATUS "CUDA Version: ${CUDA_MAJOR_VERSION}.${CUDA_MINOR_VERSION}.${CUDA_PATCH_VERSION}")
+        message(STATUS "Detected CUDA Version: ${CUDA_MAJOR_VERSION}.${CUDA_MINOR_VERSION}.${CUDA_PATCH_VERSION}")
 
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-            include(FindCUDA/select_compute_arch)
-            CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
-            string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-            string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-            string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
-            SET(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+            #include(FindCUDA/select_compute_arch)
+            #CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
+            #string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
+            #string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
+            #string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
+            SET(CMAKE_CUDA_ARCHITECTURES "native")
 
         else()
+
             if (CUDA_MAJOR_VERSION STREQUAL "12")
-                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52")
-                string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60")
             elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
-                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60;53;52")
-                string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60")
+
             endif()
 
         endif()
-
+        string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
-    else()
-        SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60;53;52")
     endif()
+
 
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(

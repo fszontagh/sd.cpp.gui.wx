@@ -217,3 +217,22 @@ void DataViewListManager::UpdateColumns(DataViewListManager::queueJobColumns col
         break;
     }
 }
+wxDataViewItem DataViewListManager::JobToItem(std::shared_ptr<QueueItem> item) {
+    if (item == nullptr) {
+        return wxDataViewItem();
+    }
+    for (unsigned int i = 0; i < this->store->GetItemCount(); i++) {
+        auto currentItem = store->GetItem(i);
+        auto id          = store->GetItemData(currentItem);
+        if (id == item->id) {
+            return currentItem;
+        }
+    }
+    return wxDataViewItem();
+}
+wxDataViewItem DataViewListManager::RowToDataViewItem(unsigned int row) {
+    if (store == nullptr) {
+        return wxDataViewItem();
+    }
+    return store->GetItem(row);
+}
