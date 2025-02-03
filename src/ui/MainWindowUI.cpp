@@ -360,6 +360,7 @@ void MainWindowUI::OnStopBackgroundProcess(wxCommandEvent& event) {
 }
 
 void MainWindowUI::onModelSelect(wxCommandEvent& event) {
+    event.Skip();
     // check if really selected a model, or just the first element, which is
     // always exists...
     if (this->m_model->GetSelection() == 0) {
@@ -388,6 +389,11 @@ void MainWindowUI::onModelSelect(wxCommandEvent& event) {
     } else {
         this->m_server->SetSelection(0);  // select the local
     }
+
+    this->HighLightPrompts(this->m_prompt);
+    this->HighLightPrompts(this->m_prompt2);
+    this->HighLightPrompts(this->m_neg_prompt);
+    this->HighLightPrompts(this->m_neg_prompt2);
 }
 
 void MainWindowUI::onTypeSelect(wxCommandEvent& event) {
@@ -1154,7 +1160,16 @@ void MainWindowUI::HighLightPrompts(wxStyledTextCtrl* stc) {
 
         const auto name = text.substr(colonPos + 1, colonPos2 - colonPos - 1);
 
-        if (this->ModelManager->NameStartsWith(name, sd_gui_utils::DirTypes::LORA) == nullptr) {
+        // get the current tcp srv
+        std::string server_id;
+        if (this->m_server->GetSelection() > 0 && this->m_server->GetSelection() != wxNOT_FOUND) {
+            auto server = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(this->m_server->GetSelection()));
+            if (server) {
+                server_id = server->GetId();
+            }
+        }
+
+        if (this->ModelManager->NameStartsWith(name, sd_gui_utils::DirTypes::LORA, server_id) == nullptr) {
             int tagLength = endPos - pos + 1;
             stc->StartStyling(pos);
             stc->SetStyling(tagLength, +sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND);
@@ -2240,6 +2255,10 @@ void MainWindowUI::OnShowWidget(wxCommandEvent& event) {
     }
 }
 void MainWindowUI::OnServerSelect(wxCommandEvent& event) {
+    this->HighLightPrompts(this->m_prompt);
+    this->HighLightPrompts(this->m_prompt2);
+    this->HighLightPrompts(this->m_neg_prompt);
+    this->HighLightPrompts(this->m_neg_prompt2);
 }
 
 void MainWindowUI::cleanUpImageInformations() {
@@ -4158,7 +4177,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         if (addedItem) {
             if (!this->dataViewListManager->ItemExists(addedItem->id)) {
                 this->dataViewListManager->AddItem(addedItem);
-                if (this->m_joblist->GetItemCount() > 0) {
+                if (this->m_joblist->GetItemCount() > 0 && addedItem->finished_at == 0 && (addedItem->status == QueueStatus::RUNNING || addedItem->status == QueueStatus::PENDING)) {
                     this->m_joblist->EnsureVisible(this->dataViewListManager->RowToDataViewItem(0));
                 }
             }
@@ -6047,6 +6066,10 @@ void MainWindowUI::UpdateCurrentProgress(std::shared_ptr<QueueItem> item, const 
 
     if (event == QueueEvents::ITEM_STATUS_CHANGED) {
         this->ShowNotification(item);
+        return;
+    }
+    // skip update if localqueue running and we got remote update
+    if (this->qmanager->IsRunning() && item->server.empty() == false) {
         return;
     }
 
