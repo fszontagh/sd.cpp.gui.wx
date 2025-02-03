@@ -4,6 +4,7 @@ set(SOURCES
     src/main.cpp
     src/TerminalApp.cpp
     src/SocketApp.cpp
+    src/stb.cpp
     ${CMAKE_SOURCE_DIR}/src/helpers/QueueItem.cpp
     )
 
@@ -66,7 +67,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/download_base_models.sh DESTINATION ${
 if(WIN32)
     target_link_libraries(${SERVER_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
 else(WIN32)
-    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
+    target_link_libraries(${SERVER_BINARY_NAME} PRIVATE wx::base OpenSSL::Crypto)
 endif(WIN32)
 
 add_custom_command(

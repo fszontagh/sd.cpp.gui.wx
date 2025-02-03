@@ -1,6 +1,6 @@
 #ifndef EXTPROCESS_APPLICATIONLOGIC_H
 #define EXTPROCESS_APPLICATIONLOGIC_H
-#include "libs/SharedLibrary.h"
+
 class ApplicationLogic {
 public:
     ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager);

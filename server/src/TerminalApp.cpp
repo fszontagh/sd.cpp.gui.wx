@@ -45,8 +45,6 @@ bool TerminalApp::OnInit() {
         return false;
     }
 
-    wxInitAllImageHandlers();
-
     if (this->configData->data_path.empty()) {
         wxLogError("'data_path' is empty!");
         return false;

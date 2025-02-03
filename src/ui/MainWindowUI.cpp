@@ -16,6 +16,9 @@
 #include "embedded_files/cloud_download.png.h"
 #endif
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../libs/stb_image.h"
+
 MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();

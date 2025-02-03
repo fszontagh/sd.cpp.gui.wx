@@ -1,22 +1,6 @@
 #include "ApplicationLogic.h"
 
-#ifndef STBI_NO_FAILURE_STRINGS
-#define STBI_NO_FAILURE_STRINGS
-#endif
 
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#include "libs/stb_image.h"
-#endif
-
-#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "libs/stb_image_write.h"
-#endif
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STB_IMAGE_RESIZE_STATIC
-#include "libs/stb_image_resize.h"
 
 ApplicationLogic::ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager)
     : sd_dll(libName), sharedMemoryManager(sharedMemoryManager) {

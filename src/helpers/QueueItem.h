@@ -1,6 +1,8 @@
 #ifndef HELPERS_QUEUE_ITEM_H
 #define HELPERS_QUEUE_ITEM_H
 
+#include "../libs/stb_image.h"
+
 struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     QueueItem() = default;
     QueueItem(const sd_gui_utils::networks::RemoteQueueItem& remoteItem)

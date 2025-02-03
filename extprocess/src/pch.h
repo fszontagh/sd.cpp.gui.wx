@@ -1,3 +1,5 @@
+#ifndef DIFFUSER_PCH
+#define DIFFUSER_PCH
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -18,12 +20,17 @@
 #include <dlfcn.h>
 #endif
 
+#include "libs/stb_image.h"
+#include "libs/stb_image_write.h"
+#include "libs/stb_image_resize.h"
+
 #include "libs/json.hpp"
 
 #include "ver.hpp"
 #include "config.hpp"
 
 #include "helpers/formatbytes.hpp"
+
 
 #include <wx/event.h>
 #include <wx/string.h>
@@ -50,3 +57,5 @@
 
 
 #include "ApplicationLogic.h"
+
+#endif // DIFFUSER_PCH

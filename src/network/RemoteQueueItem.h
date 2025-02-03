@@ -83,6 +83,8 @@ namespace sd_gui_utils {
             int width = 0;
             // @brief The image height
             int height = 0;
+            // @brief The image channels
+            int channels = 0;
             // @brief The image type
             sd_gui_utils::ImageType type = sd_gui_utils::ImageType::GENERATED;
             // @brief The image size
@@ -107,7 +109,7 @@ namespace sd_gui_utils {
             }
             bool operator==(const ImageInfo& rhs) const { return this->GetId() == rhs.GetId(); }
         };
-        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, md5_hash, id, width, height, type, size, data, target_filename, data_filename)
+        NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ImageInfo, jobid, server_id, md5_hash, id, width, height, channels, type, size, data, target_filename, data_filename)
 
         struct ModelHash {
             std::string model_hash      = "";

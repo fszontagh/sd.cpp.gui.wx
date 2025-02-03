@@ -108,10 +108,14 @@ void QueueItem::PrepareImagesForClients(const wxString& targetDir) {
         info.server_id = this->server;
         info.jobid     = this->id;
 
-        wxImage imageFile;
-        if (imageFile.LoadFile(img, wxBITMAP_TYPE_ANY)) {
-            info.width  = imageFile.GetWidth();
-            info.height = imageFile.GetHeight();
+        int width = 0, height = 0, channels = 0, ok = 0;
+
+        ok = stbi_info(img.c_str(), &width, &height, &channels);
+
+        if (ok == 1) {
+            info.width  = width;
+            info.height = height;
+            info.channels = channels;
         }
 
         wxFileName newName(targetDir, wxString::Format("%" PRIu64 "_%d_generated.png", this->id, counter));

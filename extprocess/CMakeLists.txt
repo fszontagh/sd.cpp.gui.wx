@@ -21,7 +21,7 @@ if (MSVC)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/minimal.rc)
 endif()
 
-add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp)
+add_executable(${EPROCESS_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp src/ApplicationLogic.cpp src/stb.cpp)
 
 target_precompile_headers(${EPROCESS_BINARY_NAME} PRIVATE src/pch.h)
 

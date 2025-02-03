@@ -1,3 +1,5 @@
+#ifndef SD_GUI_PCH_
+#define SD_GUI_PCH_
 #include <string>
 #include <vector>
 #include <map>
@@ -13,6 +15,8 @@
 
 #include "wx/wxprec.h"
 
+
+#include "libs/stb_image.h"
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -92,3 +96,5 @@
 
 #include "MainApp.h"
 
+
+#endif // SD_GUI_PCH_

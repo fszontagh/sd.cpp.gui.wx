@@ -22,7 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libstdc++6 \
     openssl \
     bash \
-    libgomp1
+    libgomp1 \
+    wget
 
 COPY *.so /usr/lib/
 
