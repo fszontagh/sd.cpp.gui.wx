@@ -12,3 +12,4 @@ CMakeToolchain
 cmake_layout
 [options]
 libcurl/*=schannel
+wxwidgets:shared=False

@@ -1,3 +1,9 @@
+if (MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /OPT:REF /OPT:ICF /WHOLEARCHIVE:NO")
+elseif (MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+endif()
+
 if (NOT WIN32)
     set(wxWidgets_USE_STATIC ON)
     set(wxBUILD_SHARED OFF)
@@ -44,10 +50,11 @@ if (NOT WIN32)
         set(wxWidgets_VERSION ${WXWIDGETS_VERSION})
     endif()
 else()
+
     find_package(wxWidgets REQUIRED)
     set(wxWidgets_TYPE "system")
-endif()
 
+endif()
 if (NOT wxWidgets_FOUND)
     message(FATAL_ERROR "wxWidgets not found")
 else()
