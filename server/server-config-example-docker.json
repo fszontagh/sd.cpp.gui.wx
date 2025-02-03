@@ -1,36 +1,21 @@
-/*
-Comments are welcome here
-
-FYI:
-- Model paths need to be exists before server start
-- Please verify your hardware capabilities before starting the server
-- Please verigy the selected libraries before starting the server
-- On the first start, the server will generate a random sha256 key which is required to authenticate the clients. Do not share the hash with anyone
-*/
 {
-    // the tcp port to listen
     "port": 8191,
-    // the host to listen, possible values: 0.0.0.0 -> listann all interfaces, 127.0.0.1 -> listen only on localhost, :: -> listen on all ipv6 interfaces, or any valid IP address and hostname
-    "host": "127.0.0.1",
-    // where the server will log
+    "host": "0.0.0.0",
     "logfile": "/app/log/stable-diffusion-server.log",
-    // where the diffusser process will log
     "diffuser_logfile": "/app/log/stable-diffusion-diffuser.log",
-    // the backend HW accelerator, valid values: avx, avx2, avx512, cuda, vulkan -> the required libraries must be installed
     "backend": "avx",
-    // maximum number of clients that can connect in parallel
     "max_clients": 10,
-    // the maximum interval in seconds to wait the client to send an authentication request
     "unauthorized_timeout": 4,
-    // where the connected client's info and image generation data (jobs, images) stored
     "data_path": "/app/data",
+    "exprocess_binary_path": "/app/stablediffusiongui_diffuser",
     "model_paths": {
-        "controlnet": "/app/modelscontrolnet",
-        "embedding": "/app/modelsembeddings",
-        "esrgan": "/app/modelsesrgan",
-        "lora": "/app/modelsloras",
-        "checkpoints": "/app/modelscheckpoints",
-        "taesd": "/app/modelstaesd",
-        "vae": "/app/modelsvae"
+        "controlnet": "/app/models/controlnet",
+        "embedding": "/app/models/embeddings",
+        "esrgan": "/app/models/esrgan",
+        "lora": "/app/models/loras",
+        "checkpoints": "/app/models/checkpoints",
+        "taesd": "/app/models/taesd",
+        "vae": "/app/models/vae"
     }
+
 }

@@ -52,15 +52,15 @@ while read -r filename url folder; do
     fi
 
 
-    #echo -en "📥 Download ${folder} model: \n ${dest_path}"
+    echo -en "📥 Download ${folder} model: \n ${dest_path}"
 
     mkdir -p "$(dirname "$dest_path")"
-    wget -q --show-progress -c -O "$dest_path" "$url"
+    wget -q -c -O "$dest_path" "$url"
 
     if [[ $? -eq 0 ]]; then
         echo -en "\r✅ Succesfully downloaded: $dest_path\t\n"
     else
-        echo "❌ Failed: $filename"
+        echo "❌ Failed: $filename -> $dest_path"
     fi
 
 done <<< "$MODEL_LIST"

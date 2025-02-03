@@ -3,7 +3,6 @@ FROM ubuntu:24.04
 
 # Build arguments possible values: avx,avx2,avx512,cuda,vulkan,all, all-gpu, all-cpu
 ARG BACKEND=avx
-ARG DOWNLOAD_DEFAULT_MODELS=1
 ARG PORT=8191
 
 
@@ -23,51 +22,52 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     bash \
     libgomp1 \
-    wget
+    wget \
+    jq \
+    ca-certificates
 
 COPY *.so /usr/lib/
 
-RUN mkdir -p /app /app/models /app/models/checkpoints /app/models/loras /app/models/vae /app/models/embeddings /app/models/taesd /app/models/controlnet /app/models/esrgan
+RUN mkdir -p /app /app/log /app/data /app/models /app/models/checkpoints /app/models/loras /app/models/vae /app/models/embeddings /app/models/taesd /app/models/controlnet /app/models/esrgan
 
 COPY server/@SERVER_BINARY_NAME@ /app/@SERVER_BINARY_NAME@
 COPY server/server-docker.json /app/config.json
 COPY server/@PROJECT_BINARY_NAME@_diffuser /app/@PROJECT_BINARY_NAME@_diffuser
 COPY server/download_base_models.sh /app/download_base_models.sh
 COPY server/entrypoint.sh /app/entrypoint.sh
-COPY *.so /usr/lib/
+COPY *.so /usr/lib/x86_64-linux-gnu/
 
-RUN if [ "$BACKEND" = "cuda" || "$BACKEND" = "all" || "$BACKEND" = "all-gpu" ]; then \
+RUN if [ "$BACKEND" = "cuda" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-gpu" ]; then \
         echo "CUDA support enabled"; \
-        apt update; apt install -y --no-install-recommends libcudart12 libcublas12 libnvidia-compute-565-server; \
-        else \
-        rm -f /usr/lib/libstable-diffusion_cuda*; \
+        apt update && apt install -y --no-install-recommends libcudart12 libcublas12 libnvidia-compute-565-server; \
+    else \
+        rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_cuda*; \
     fi
 
-
-RUN if [ "$BACKEND" = "vulkan" || "$BACKEND" = "all" || "$BACKEND" = "all-gpu" ]; then \
+RUN if [ "$BACKEND" = "vulkan" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-gpu" ]; then \
         echo "Vulkan support enabled"; \
-        apt install -y --no-install-recommends libvulkan1; \
-        else \
-        rm -f /usr/lib/libstable-diffusion_vulkan*; \
+        apt update && apt install -y --no-install-recommends libvulkan1; \
+    else \
+        rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_vulkan*; \
     fi
 
 # AVX/AVX2/AVX512
-RUN if [ "$BACKEND" = "avx" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
+RUN if [ "$BACKEND" = "avx" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-cpu" ]; then \
         echo "AVX support enabled"; \
-        else \
-        rm -f /usr/lib/libstable-diffusion_avx.*; \
+    else \
+        rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_avx.*; \
     fi
 
-RUN if [ "$BACKEND" = "avx2" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
+RUN if [ "$BACKEND" = "avx2" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-cpu" ]; then \
         echo "AVX2 support enabled"; \
-        else \
-        rm -f /usr/lib/libstable-diffusion_avx2.*; \
+    else \
+        rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_avx2.*; \
     fi
 
-RUN if [ "$BACKEND" = "avx512" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]; then \
+RUN if [ "$BACKEND" = "avx512" ] || [ "$BACKEND" = "all" ] ||  [ "$BACKEND" = "all-cpu" ]; then \
         echo "AVX512 support enabled"; \
-        else \
-        rm -f /usr/lib/libstable-diffusion_avx512.*; \
+    else \
+        rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_avx512.*; \
     fi
 
 
@@ -76,19 +76,16 @@ RUN if [ "$BACKEND" = "avx512" || "$BACKEND" = "all" || "$BACKEND" = "all-cpu" ]
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN sed -i "s/\"backend\": \".*\"/\"backend\": \"$BACKEND\"/" /app/config.json
-RUN sed -i "s/\"port\": .*/\"port\": $PORT/" /app/config.json
-RUN sed -i "s/\"exprocess_binary_path\": \".*\"/\"exprocess_binary_path\": \"\/app\/@PROJECT_BINARY_NAME@_diffuser\"/" /app/config.json
+RUN sed -i "s/\"port\": .*/\"port\": $PORT,/" /app/config.json
+#RUN sed -i "s/\"exprocess_binary_path\": \".*\"/\"exprocess_binary_path\": \"\/app\/@PROJECT_BINARY_NAME@_diffuser\"/" /app/config.json
+
 
 RUN chmod +x /app/download_base_models.sh
 RUN chmod +x /app/entrypoint.sh
 
-RUN if [ "$DOWNLOAD_DEFAULT_MODELS" = "1" ]; then \
-        /app/download_base_models.sh /app/config.json; \
-    fi
+ENV DOWNLOAD_BASE_MODELS="True"
 
 WORKDIR /app
-
-#CMD ["/app/@SERVER_BINARY_NAME@", "/app/config.json"]
 ENTRYPOINT ["/app/entrypoint.sh"]
 EXPOSE $PORT
 
