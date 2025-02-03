@@ -1455,6 +1455,7 @@ void MainWindowUI::InitPrompts() {
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {
+    this->m_queue->Disable();
     sd_gui_utils::ModelFileInfo* modelinfo = nullptr;
     wxArrayString errorlist;
 
@@ -1473,6 +1474,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             type = SDMode::UPSCALE;
             break;
         default:
+            this->m_queue->Enable();
             return;
             break;
     }
@@ -1492,6 +1494,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         auto esrganModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_upscaler_model->GetClientData(this->m_upscaler_model->GetSelection()));
         if (esrganModel == nullptr) {
             wxLogError(_("No upscaler model found!"));
+            this->m_queue->Enable();
             return;
         }
         wxString esrganPath = esrganModel->path;
@@ -1548,9 +1551,11 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             }
             wxMessageDialog dialog(this, error_strs, _("Error"), wxOK | wxICON_ERROR);
             dialog.ShowModal();
+            this->m_queue->Enable();
             return;
         }
         this->qmanager->AddItem(item);
+        this->m_queue->Enable();
         return;
     }
 
@@ -1611,6 +1616,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         auto taesdModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_taesd->GetClientData(this->m_taesd->GetCurrentSelection()));
         if (taesdModel == nullptr) {
             wxLogError(_("No TAESD model found!"));
+            this->m_queue->Enable();
             return;
         }
         if (!item->server.empty()) {
@@ -1632,6 +1638,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         auto vaeModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_vae->GetClientData(this->m_vae->GetCurrentSelection()));
         if (vaeModel == nullptr) {
             wxLogError(_("No VAE model found!"));
+            this->m_queue->Enable();
             return;
         }
         if (!item->server.empty()) {
@@ -1855,6 +1862,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             auto controlnetModel = static_cast<sd_gui_utils::ModelFileInfo*>(this->m_controlnetModels->GetClientData(this->m_controlnetModels->GetSelection()));
             if (controlnetModel == nullptr) {
                 wxLogError(_("No controlnet model found!"));
+                this->m_queue->Enable();
                 return;
             }
             if (controlnetModel->sha256.empty() == false) {
@@ -1923,9 +1931,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
             }
             wxMessageDialog dialog(this, error_strs, _("Error"), wxOK | wxICON_ERROR);
             dialog.ShowModal();
+            this->m_queue->Enable();
             return;
         }
-
+        this->m_queue->Enable();
         return;
     }
 
@@ -1935,6 +1944,7 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
     this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath());
     this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(GenerationMode_str.at(type)));
     this->mapp->config->Flush(true);
+    this->m_queue->Enable();
 }
 
 void MainWindowUI::OnControlnetImageOpen(wxFileDirPickerEvent& event) {

@@ -124,10 +124,9 @@ if(NOT SD_HIPBLAS)
         else()
 
             if (CUDA_MAJOR_VERSION STREQUAL "12")
-                SET(CMAKE_CUDA_ARCHITECTURES "90;89;87;86;80;75;72;70;62;61;60")
+                SET(CMAKE_CUDA_ARCHITECTURES "90;89;80;75")
             elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
-                SET(CMAKE_CUDA_ARCHITECTURES "87;86;80;75;72;70;62;61;60")
-
+                SET(CMAKE_CUDA_ARCHITECTURES "52;61;70;75")
             endif()
 
         endif()
