@@ -451,6 +451,16 @@ jobs:
           docker tag fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx512:latest
           docker tag fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }} fszontagh/stablediffusiongui-server-cuda:latest
           docker tag fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }} fszontagh/stablediffusiongui-server-vulkan:latest
+          docker push fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }}
+          docker push fszontagh/stablediffusiongui-server-avx:latest
+          docker push fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }}
+          docker push fszontagh/stablediffusiongui-server-avx2:latest
+          docker push fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }}
+          docker push fszontagh/stablediffusiongui-server-avx512:latest
+          docker push fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }}
+          docker push fszontagh/stablediffusiongui-server-cuda:latest
+          docker push fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }}
+          docker push fszontagh/stablediffusiongui-server-vulkan:latest
 
   merge-packages:
     name: Merge packages
