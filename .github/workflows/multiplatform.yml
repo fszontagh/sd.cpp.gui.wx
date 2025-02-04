@@ -430,47 +430,27 @@ jobs:
           compression-level: 0
           overwrite: true
 
-  docker-build-push:
-    name: Build & Push Docker Images
-    needs: [package-ubuntu]
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.push_docker == 'true' }}
-
-    strategy:
-      matrix:
-        backend: [cuda, avx, avx2, avx512, vulkan]
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Download built binaries
-        uses: actions/download-artifact@v4
-        with:
-          path: build
-          pattern: prebuild-packages-*
-          merge-multiple: true
-
       - name: Log in to Docker Hub
+        if: ${{ (matrix.os == 'ubuntu-24.04') && (startsWith(github.ref, 'refs/tags/') || github.event.inputs.push_docker == 'true') }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Build Docker images
+        if: ${{ (matrix.os == 'ubuntu-24.04') && (startsWith(github.ref, 'refs/tags/') || github.event.inputs.push_docker == 'true') }}
         run: |
           cd build
-          docker build --build-arg BACKEND=${{ matrix.backend }} -t fszontagh/stablediffusiongui-server-${{ matrix.backend }}:${{ github.ref_name }} -f server/Dockerfile .
-
-      - name: Tag latest
-        run: |
-          docker tag fszontagh/stablediffusiongui-server-${{ matrix.backend }}:${{ github.ref_name }} fszontagh/stablediffusiongui-server-${{ matrix.backend }}:latest
-
-      - name: Push Docker images
-        run: |
-          docker push fszontagh/stablediffusiongui-server-${{ matrix.backend }}:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-${{ matrix.backend }}:latest
-
+          docker build --build-arg BACKEND=avx -t fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }} -f server/Dockerfile .
+          docker build --build-arg BACKEND=avx2 -t fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }} -f server/Dockerfile .
+          docker build --build-arg BACKEND=avx512 -t fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }} -f server/Dockerfile .
+          docker build --build-arg BACKEND=cuda -t fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }} -f server/Dockerfile .
+          docker build --build-arg BACKEND=vulkan -t fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }} -f server/Dockerfile .
+          docker tag fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx:latest
+          docker tag fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx2:latest
+          docker tag fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx512:latest
+          docker tag fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }} fszontagh/stablediffusiongui-server-cuda:latest
+          docker tag fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }} fszontagh/stablediffusiongui-server-vulkan:latest
 
   merge-packages:
     name: Merge packages
