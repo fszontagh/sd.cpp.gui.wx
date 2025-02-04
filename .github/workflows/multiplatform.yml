@@ -441,26 +441,41 @@ jobs:
         if: ${{ (matrix.os == 'ubuntu-24.04') && (startsWith(github.ref, 'refs/tags/') || github.event.inputs.push_docker == 'true') }}
         run: |
           cd build
-          docker build --build-arg BACKEND=avx -t fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }} -f server/Dockerfile .
-          docker build --build-arg BACKEND=avx2 -t fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }} -f server/Dockerfile .
-          docker build --build-arg BACKEND=avx512 -t fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }} -f server/Dockerfile .
-          docker build --build-arg BACKEND=cuda -t fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }} -f server/Dockerfile .
-          docker build --build-arg BACKEND=vulkan -t fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }} -f server/Dockerfile .
-          docker tag fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx:latest
-          docker tag fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx2:latest
-          docker tag fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }} fszontagh/stablediffusiongui-server-avx512:latest
-          docker tag fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }} fszontagh/stablediffusiongui-server-cuda:latest
-          docker tag fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }} fszontagh/stablediffusiongui-server-vulkan:latest
-          docker push fszontagh/stablediffusiongui-server-avx:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-avx:latest
-          docker push fszontagh/stablediffusiongui-server-avx2:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-avx2:latest
-          docker push fszontagh/stablediffusiongui-server-avx512:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-avx512:latest
-          docker push fszontagh/stablediffusiongui-server-cuda:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-cuda:latest
-          docker push fszontagh/stablediffusiongui-server-vulkan:${{ github.ref_name }}
-          docker push fszontagh/stablediffusiongui-server-vulkan:latest
+          docker build --build-arg BACKEND=all -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-all -f server/Dockerfile .
+          docker build --build-arg BACKEND=all-cpu -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allcpu -f server/Dockerfile .
+          docker build --build-arg BACKEND=all-gpu -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allgpu -f server/Dockerfile .
+          docker build --build-arg BACKEND=avx -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx -f server/Dockerfile .
+          docker build --build-arg BACKEND=avx2 -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx2 -f server/Dockerfile .
+          docker build --build-arg BACKEND=avx512 -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx512 -f server/Dockerfile .
+          docker build --build-arg BACKEND=cuda -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-cuda -f server/Dockerfile .
+          docker build --build-arg BACKEND=vulkan -t fszontagh/stablediffusiongui-server:${{ github.ref_name }}-vulkan -f server/Dockerfile .
+
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-all fszontagh/stablediffusiongui-server:latest-all
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allcpu fszontagh/stablediffusiongui-server:latest-allcpu
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allgpu fszontagh/stablediffusiongui-server:latest-allgpu
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx fszontagh/stablediffusiongui-server:latest-avx
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx2 fszontagh/stablediffusiongui-server:latest-avx2
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx512 fszontagh/stablediffusiongui-server:latest-avx512
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-cuda fszontagh/stablediffusiongui-server:latest-cuda
+          docker tag fszontagh/stablediffusiongui-server:${{ github.ref_name }}-vulkan fszontagh/stablediffusiongui-server:latest-vulkan
+
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-all
+          docker push fszontagh/stablediffusiongui-server:latest-all
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allcpu
+          docker push fszontagh/stablediffusiongui-server:latest-allcpu
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-allgpu
+          docker push fszontagh/stablediffusiongui-server:latest-allgpu
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx
+          docker push fszontagh/stablediffusiongui-server:latest-avx
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx2
+          docker push fszontagh/stablediffusiongui-server:latest-avx2
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-avx512
+          docker push fszontagh/stablediffusiongui-server:latest-avx512
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-cuda
+          docker push fszontagh/stablediffusiongui-server:latest-cuda
+          docker push fszontagh/stablediffusiongui-server:${{ github.ref_name }}-vulkan
+          docker push fszontagh/stablediffusiongui-server:latest-vulkan
+
 
   merge-packages:
     name: Merge packages
