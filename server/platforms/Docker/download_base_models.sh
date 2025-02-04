@@ -13,7 +13,7 @@ fi
 
 # 📌 List of modells (format: "filename URL target folder")
 MODEL_LIST=$(cat <<EOF
-openpose_sd15.safetensors https://huggingface.co/lllyasviel/control_v11p_sd15_openpose/blob/main/diffusion_pytorch_model.fp16.safetensors controlnet
+control_v11p_sd15_openpose.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_openpose.pth controlnet
 sd_15_base.safetensors https://huggingface.co/fp16-guy/Stable-Diffusion-v1-5_fp16_cleaned/resolve/main/sd_1.5.safetensors checkpoint
 perfectWorld_v6Baked_inp_fp16.safetensors https://huggingface.co/fp16-guy/Perfect_World_fp16_cleaned/resolve/main/perfectWorld_v6Baked_inp_fp16.safetensors checkpoint
 picX_real.safetensors https://huggingface.co/fp16-guy/PicX_real/resolve/main/picX_real.safetensors checkpoint

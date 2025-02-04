@@ -249,6 +249,10 @@ void MainWindowUI::onSettings(wxCommandEvent& event) {
         wxMessageDialog(this, _("Please wait to finish the currently running jobs!")).ShowModal();
         return;
     }
+    if (this->settingsWindow != nullptr) {
+        this->settingsWindow->Destroy();
+        this->settingsWindow = nullptr;
+    }
     auto bitmap = app_png_to_wx_bitmap();
     wxIcon icon;
     icon.CopyFromBitmap(bitmap);
@@ -3579,6 +3583,8 @@ void MainWindowUI::OnCloseSettings(wxCloseEvent& event) {
     // this->Thaw();
     this->Refresh();
     this->Update();
+    this->settingsWindow->Destroy();
+    this->settingsWindow = nullptr;
     // this->Show();
 }
 void MainWindowUI::OnCloseCivitWindow(wxCloseEvent& event) {
