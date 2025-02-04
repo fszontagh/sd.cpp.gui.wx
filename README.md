@@ -13,6 +13,7 @@ Licensed under the MIT License.
 -   **Image-to-image (img2img)** generation
 -   **Inpaint & Outpaint**, save / load masks, built-in inpaint / outpaint editor
 -   **Tiling** for low memory
+-   **Headless** computation with [SDGUI Server](https://github.com/fszontagh/sd.cpp.gui.wx/wiki/SD-GUI-Server) even in containerized mode
 -   Model **quantization** in-fly or manually
 -   Built-in **upscaling** capabilities
 -   **ControlNet** integration
