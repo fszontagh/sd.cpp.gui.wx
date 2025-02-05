@@ -28,18 +28,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY *.so /usr/lib/
 
-RUN mkdir -p /app /app/log /app/data /app/models /app/models/checkpoints /app/models/loras /app/models/vae /app/models/embeddings /app/models/taesd /app/models/controlnet /app/models/esrgan
+RUN mkdir -p /app /app/config /app/bin /app/log /app/data /app/models /app/models/checkpoints /app/models/loras /app/models/vae /app/models/embeddings /app/models/taesd /app/models/controlnet /app/models/esrgan
 
-COPY server/@SERVER_BINARY_NAME@ /app/@SERVER_BINARY_NAME@
-COPY server/server-docker.json /app/config.json
-COPY server/@PROJECT_BINARY_NAME@_diffuser /app/@PROJECT_BINARY_NAME@_diffuser
-COPY server/download_base_models.sh /app/download_base_models.sh
-COPY server/entrypoint.sh /app/entrypoint.sh
+COPY server/@SERVER_BINARY_NAME@ /app/bin/@SERVER_BINARY_NAME@
+COPY server/server-docker.json /app/config/server.json
+COPY server/@PROJECT_BINARY_NAME@_diffuser /app/bin/@PROJECT_BINARY_NAME@_diffuser
+COPY server/download_base_models.sh /app/bin/download_base_models.sh
+COPY server/entrypoint.sh /app/bin/entrypoint.sh
 COPY *.so /usr/lib/x86_64-linux-gnu/
 
 RUN if [ "$BACKEND" = "cuda" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-gpu" ]; then \
         echo "CUDA support enabled"; \
-        apt update && apt install -y --no-install-recommends libcudart12 libcublas12 libnvidia-compute-565-server; \
+        apt update && apt install -y --no-install-recommends libcublas12 libcudart12 libcublaslt12; \
     else \
         rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_cuda*; \
     fi
@@ -75,18 +75,17 @@ RUN if [ "$BACKEND" = "avx512" ] || [ "$BACKEND" = "all" ] ||  [ "$BACKEND" = "a
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN sed -i "s/\"backend\": \".*\"/\"backend\": \"$BACKEND\"/" /app/config.json
-RUN sed -i "s/\"port\": .*/\"port\": $PORT,/" /app/config.json
-#RUN sed -i "s/\"exprocess_binary_path\": \".*\"/\"exprocess_binary_path\": \"\/app\/@PROJECT_BINARY_NAME@_diffuser\"/" /app/config.json
+RUN sed -i "s/\"backend\": \".*\"/\"backend\": \"$BACKEND\"/" /app/config/server.json
+RUN sed -i "s/\"port\": .*/\"port\": $PORT,/" /app/config/server.json
 
 
-RUN chmod +x /app/download_base_models.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/bin/download_base_models.sh
+RUN chmod +x /app/bin/entrypoint.sh
 
 ENV DOWNLOAD_BASE_MODELS="True"
 
 WORKDIR /app
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/bin/entrypoint.sh"]
 EXPOSE $PORT
 
 #docker build --build-arg BACKEND=cuda -t myimage-cuda .
