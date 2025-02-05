@@ -19,7 +19,7 @@ perfectWorld_v6Baked_inp_fp16.safetensors https://huggingface.co/fp16-guy/Perfec
 picX_real.safetensors https://huggingface.co/fp16-guy/PicX_real/resolve/main/picX_real.safetensors checkpoint
 sd_15_inpainting.safetensors https://huggingface.co/fp16-guy/Stable-Diffusion-v1-5_fp16_cleaned/resolve/main/sd_1.5_inpaint.safetensors checkpoint
 vae-ft-mse-840000-ema-pruned_fp16.safetensors https://huggingface.co/fp16-guy/anything_kl-f8-anime2_vae-ft-mse-840000-ema-pruned_blessed_clearvae_fp16_cleaned/resolve/main/vae-ft-mse-840000-ema-pruned_fp16.safetensors vae
-tinyauto.safetensors https://huggingface.co/madebyollin/taesd/blob/main/diffusion_pytorch_model.safetensors taesd
+tinyauto.safetensors https://huggingface.co/madebyollin/taesd/resolve/main/diffusion_pytorch_model.safetensors taesd
 RealESRGAN_x4plus_anime_6B.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth esrgan
 sdxl_vae.safetensors https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/blob/main/sdxl_vae.safetensors vae
 EOF
