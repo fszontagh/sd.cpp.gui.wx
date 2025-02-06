@@ -197,7 +197,7 @@ elseif(UNIX AND NOT APPLE)
     if (DISTRO_VER GREATER 23)
         set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     else()
-        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
+        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11 | libcudart11.0, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
     endif()
 
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_CONFLICTS "stablediffusiongui-server")
