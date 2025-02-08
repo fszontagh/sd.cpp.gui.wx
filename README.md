@@ -24,7 +24,8 @@ Licensed under the MIT License.
 -   **VAE** support
 -   **TAESD** support
 -   Customizable **generation presets**
--   ComfyUI compatible **Prompt presets **
+-   Customizable [**output file names**](https://github.com/fszontagh/sd.cpp.gui.wx/wiki/GUI-howtos#image-output-filename-format)
+-   ComfyUI compatible [**Prompt styles**](https://github.com/fszontagh/sd.cpp.gui.wx/wiki/GUI-howtos#prompt-presets--styles)
 -   **Generation queue** for batch processing
 -   Real-time **progress monitoring** during generation
 -   Save and load metadata directly from images
