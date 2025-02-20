@@ -25,7 +25,7 @@ sdxl_vae.safetensors https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/blob/m
 EOF
 )
 
-# 🔍 JSON-ből mappák beolvasása
+# Retrieve folders from JSON
 CHECKPOINTS_PATH=$(jq -r '.model_paths.checkpoints' "$1")
 CONTROLNET_PATH=$(jq -r '.model_paths.controlnet' "$1")
 ESRGAN_PATH=$(jq -r '.model_paths.esrgan' "$1")
