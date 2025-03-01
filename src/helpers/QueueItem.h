@@ -69,6 +69,23 @@ struct QueueItem : public sd_gui_utils::networks::RemoteQueueItem {
     [[nodiscard]] QueueItem LoadImageInfos() const;           ///< Loads additional image metadata from existing sources and create a copy
     void ClearImageInfosData();                               ///< Clears image data, keep
     void SetOrReplaceImageInfo(const sd_gui_utils::networks::ImageInfo& imageInfo);
+    inline void CopyFromProcess(QueueItem& other) {
+        updated_at         = other.updated_at;
+        update_index       = other.update_index;
+        finished_at        = other.finished_at;
+        started_at         = other.started_at;
+        status             = other.status;
+        stats              = other.stats;
+        step               = other.step;
+        steps              = other.steps;
+        hash_fullsize      = other.hash_fullsize;
+        hash_progress_size = other.hash_progress_size;
+        time               = other.time;
+        mode               = other.mode;
+        status_message     = other.status_message;
+        upscale_factor     = other.upscale_factor;
+        rawImages          = other.rawImages;
+    };
     sd_gui_utils::ImageInfo GetImageInfo(const std::string& id) const;
 };
 

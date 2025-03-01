@@ -1943,6 +1943,9 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
         }
     }
     if (errorlist.empty()) {
+        if (item->mode == SDMode::IMG2IMG) {
+            this->handleSdImages(item);
+        }
         this->qmanager->AddItem(item);
     } else {
         if (errorlist.size() > 0) {
@@ -4194,7 +4197,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                     this->m_joblist->EnsureVisible(this->dataViewListManager->RowToDataViewItem(0));
                 }
             }
-            this->handleSdImages(addedItem, this->GetEventHandler());
+            this->handleSdImages(addedItem);
             this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, addedItem);
             this->UpdateJobImagePreviews(addedItem);
         }
@@ -4209,7 +4212,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         auto jobitem = this->qmanager->GetItemPtr(imageInfo.jobid);
         if (jobitem) {  // trigger the same events like a job update to handle the nem image
             jobitem->SetOrReplaceImageInfo(imageInfo);
-            this->handleSdImages(jobitem, this->GetEventHandler());
+            this->handleSdImages(jobitem);
             this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_UPDATED, jobitem);
             this->UpdateJobImagePreviews(jobitem);
         }
@@ -5059,6 +5062,10 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
             menu->Append(9, _("Send image to img2img mask"));
         }
 
+        menu->AppendSeparator();
+        menu->Append(10, _("Copy image to clipboard"));
+        menu->Append(11, _("Copy image path to clipboard"));
+
         menu->Bind(wxEVT_COMMAND_MENU_SELECTED, [this, img, item, gen_index](wxCommandEvent& evt) {
             evt.Skip();
             auto id = evt.GetId();
@@ -5098,6 +5105,18 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
                     event.SetEventObject(this->m_inpaintOpenMask);
                     this->m_inpaintOpenMask->GetEventHandler()->ProcessEvent(event);
                 } break;
+                case 10: {
+                    if (wxTheClipboard->Open()) {
+                        wxTheClipboard->SetData(new wxBitmapDataObject(wxBitmap(img.target_filename, wxBITMAP_TYPE_ANY)));
+                        wxTheClipboard->Close();
+                    }
+                } break;
+                case 11: {
+                    if (wxTheClipboard->Open()) {
+                        wxTheClipboard->SetData(new wxTextDataObject(wxString::FromUTF8Unchecked(img.target_filename)));
+                    }
+                } break;
+
                 default: {
                     return;
                 } break;
@@ -5107,7 +5126,7 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
         delete menu;
     });
 }
-std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> item, wxEvtHandler* eventHandler) {
+std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueItem> item) {
     std::lock_guard<std::mutex> lock(this->qmanager->GetMutex());
     wxString extension = ".jpg";
     auto imgHandler    = wxBITMAP_TYPE_JPEG;
@@ -5120,6 +5139,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
+    std::cout << "handleSdImages: image format: " << extension << std::endl;
 
     wxString server_name;
     if (!item->server.empty()) {
@@ -5128,10 +5148,15 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
             server_name = srv->GetName();
         }
     }
+    std::cout << "handleSdImages: server_name: " << server_name << std::endl;
 
     const auto baseFileName = sd_gui_utils::formatFileName(*item, this->mapp->cfg->output_filename_format, server_name);
 
+    std::cout << "handleSdImages: baseFileName: " << baseFileName << std::endl;
+
     wxString baseFullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
+
+    std::cout << "handleSdImages: baseFullName: " << baseFullName << std::endl;
     std::vector<sd_gui_utils::networks::ImageInfo> needExif;
     // the raw images are the generated images. Only presents when the generation is done without errors
     for (const auto& rimage : item->rawImages) {
@@ -5143,6 +5168,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         rawImage.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
         item->image_info.push_back(rawImage);
         needExif.push_back(rawImage);
+        std::cout << "handleSdImages: rawImage: " << rawImage.target_filename << std::endl;
     }
     // count generated images
     int generated_images = 0;
@@ -5184,7 +5210,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         if (nameSuffix.empty()) {
             currentimgHandler = imgHandler;
         }
-
+        std::cout << "handleSdImages: image info img.target_filename: " << img.target_filename << std::endl;
         // wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
         wxFileName newTargetName(baseFullName);
         newTargetName.SetExt(ext);
@@ -5197,6 +5223,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::MOVEABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
+                std::cout << "handleSdImages: moving image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
                 wxImage tmp;
                 tmp.LoadFile(origName.GetAbsolutePath());
                 tmp.SetOption(wxIMAGE_OPTION_FILENAME, newTargetName.GetName());
@@ -5220,6 +5247,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::COPYABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
+                std::cout << "handleSdImages: copying image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
                 wxImage tmp;
                 tmp.LoadFile(origName.GetAbsolutePath());
                 tmp.SetOption(wxIMAGE_OPTION_FILENAME, newTargetName.GetName());
@@ -5245,11 +5273,14 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         // update the item's paths too
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
             item->mask_image = newTargetName.GetAbsolutePath();
+            std::cout << "handleSdImages: updating mask_image: " << item->mask_image << std::endl;
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
             item->initial_image = newTargetName.GetAbsolutePath();
+            std::cout << "handleSdImages: updating initial_image: " << item->initial_image << std::endl;
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
+            std::cout << "handleSdImages: updating control_image_path: " << item->params.control_image_path << std::endl;
             item->params.control_image_path = newTargetName.GetAbsolutePath();
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
@@ -5260,6 +5291,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
     for (const auto& img : needExif) {
         if (wxFileExists(img.target_filename) && sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
+            std::cout << "handleSdImages: updating exif: " << img.target_filename << std::endl;
             //
             if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
                 std::string comment = this->paramsToImageComment(*item).utf8_string();
@@ -5811,10 +5843,11 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
 
         auto oldStatus = originalItem->status;
         if (originalItem->update_index != updatedItem.update_index) {
-            *originalItem = updatedItem;
+            //*originalItem = updatedItem;
+            originalItem->CopyFromProcess(updatedItem);
 
             if (!originalItem->rawImages.empty()) {
-                this->handleSdImages(originalItem, this->GetEventHandler());
+                this->handleSdImages(originalItem);
             }
             if (originalItem->status == QueueStatus::FAILED) {
                 if (this->extprocessLastError.empty() == false) {
