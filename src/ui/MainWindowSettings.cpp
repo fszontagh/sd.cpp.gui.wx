@@ -448,3 +448,6 @@ void MainWindowSettings::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
 }
+void MainWindowSettings::OnOutputFilenameText(wxCommandEvent& event) {
+    this->cfg->output_filename_format = this->m_output_filename_format->GetValue();
+};

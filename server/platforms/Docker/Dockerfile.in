@@ -46,7 +46,7 @@ RUN if [ "$BACKEND" = "cuda" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-
 
 RUN if [ "$BACKEND" = "vulkan" ] || [ "$BACKEND" = "all" ] || [ "$BACKEND" = "all-gpu" ]; then \
         echo "Vulkan support enabled"; \
-        apt update && apt install -y --no-install-recommends libvulkan1 libcudart12 libcublas12 libnvidia-compute-565-server; \
+        apt update && apt install -y --no-install-recommends libvulkan1 libcudart12 libcublas12; \
     else \
         rm -f /usr/lib/x86_64-linux-gnu/libstable-diffusion_vulkan*; \
     fi

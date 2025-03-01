@@ -1962,7 +1962,10 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
     this->mapp->config->Write("/last_prompt", this->m_prompt->GetValue());
     this->mapp->config->Write("/last_neg_prompt", this->m_neg_prompt->GetValue());
-    this->mapp->config->Write("/last_model", this->m_model->GetStringSelection());
+    if (modelinfo != nullptr) {
+        this->mapp->config->Write("/last_model", wxString(modelinfo->path.data(), modelinfo->path.size()));
+    }
+
     this->mapp->config->Write("/last_diffusion_model", this->m_filePickerDiffusionModel->GetPath());
     this->mapp->config->Write("/last_generation_mode", wxString::FromUTF8Unchecked(GenerationMode_str.at(type)));
     this->mapp->config->Flush(true);
@@ -4155,6 +4158,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_ERROR) {
         sd_gui_utils::sdServer* server = e.GetPayload<sd_gui_utils::sdServer*>();
         this->writeLog(wxString::Format(_("Server error: %s - %s - %s"), server->GetName(), server->GetDisconnectReason(), content));
+        this->mapp->cfg->ServerEnable(server->GetInternalId(), false, true);
         return;
     }
     if (threadEvent == sd_gui_utils::ThreadEvents::SERVER_JOBLIST_UPDATE_START) {
@@ -4238,6 +4242,14 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         const std::string server_name = server->GetServerNameFromPacket(packet_id);
         if (!server_name.empty()) {
             this->mapp->cfg->ServerChangeName(server->GetInternalId(), server_name);
+            // update the server name in the server list
+            for (int i = this->m_server->GetCount() - 1; i > 0; i--) {
+                auto srv = static_cast<sd_gui_utils::sdServer*>(this->m_server->GetClientData(i));
+                if (srv && srv->GetId() == server->GetId()) {
+                    this->m_server->SetString(i, srv->GetName());
+                    break;
+                }
+            }
         }
         const std::string server_id = server->GetServerIdFromPacket(packet_id);
         if (server_id.empty() == false) {

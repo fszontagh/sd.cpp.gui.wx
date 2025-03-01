@@ -742,6 +742,7 @@ namespace sd_gui_utils {
                 this->configBase->Write("/remote/download_images_immediately", this->remote_download_images_immediately);
                 this->configBase->Write("/image_type", sd_gui_utils::image_types_str.at(this->image_type));
                 this->configBase->Write("/png_compression_level", this->png_compression_level);
+                this->configBase->Write("/output_filename_format", this->output_filename_format);
 
                 if (this->configBase->HasGroup("/Servers")) {
                     this->configBase->DeleteGroup("/Servers");
@@ -1400,7 +1401,7 @@ namespace sd_gui_utils {
         if (!vversion.ToInt(&vver)) {
             return false;
         }
-        return cver == vver;
+        return cver >= vver; // TODO: check if this is correct
     }
 }  // namespace sd_gui_utils
 #endif

@@ -323,7 +323,7 @@ jobs:
           wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc
           echo "deb https://packages.lunarg.com/vulkan ${DISTRIB_CODENAME} main" | sudo tee /etc/apt/sources.list.d/lunarg-vulkan-${DISTRIB_CODENAME}.list
           sudo apt update
-          sudo apt install -y vulkan-sdk
+          sudo apt install -y vulkan-sdk glslc
 
       - name: Install CUDA toolkit
         if: ${{ matrix.variant == 'CUDA' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}

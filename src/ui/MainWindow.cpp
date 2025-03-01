@@ -1228,9 +1228,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_staticText49->Wrap( -1 );
 	bSizer99->Add( m_staticText49, 0, wxALL|wxEXPAND, 5 );
 
-	wxArrayString m_promptPresetsChoices;
-	m_promptPresets = new wxChoice( m_promptPanel, wxID_ANY, wxDefaultPosition, wxSize( 160,-1 ), m_promptPresetsChoices, 0 );
-	m_promptPresets->SetSelection( 0 );
+	wxArrayString m_promptPresets_oldChoices;
+	m_promptPresets_old = new wxChoice( m_promptPanel, wxID_ANY, wxDefaultPosition, wxSize( 160,-1 ), m_promptPresets_oldChoices, 0 );
+	m_promptPresets_old->SetSelection( 0 );
+	m_promptPresets_old->Enable( false );
+	m_promptPresets_old->Hide();
+
+	bSizer99->Add( m_promptPresets_old, 0, wxALL|wxEXPAND, 5 );
+
+	m_promptPresets = new wxListBox( m_promptPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_SINGLE );
 	m_promptPresets->Enable( false );
 
 	bSizer99->Add( m_promptPresets, 0, wxALL|wxEXPAND, 5 );

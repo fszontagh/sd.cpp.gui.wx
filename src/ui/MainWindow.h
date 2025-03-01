@@ -43,6 +43,7 @@
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
 #include <wx/stc/stc.h>
+#include <wx/listbox.h>
 #include <wx/statusbr.h>
 #include <wx/frame.h>
 #include <wx/radiobox.h>
@@ -204,7 +205,8 @@ class mainUI : public wxFrame
 		wxButton* m_nprompt_clear;
 		wxButton* m_nprompt_normalize;
 		wxStaticText* m_staticText49;
-		wxChoice* m_promptPresets;
+		wxChoice* m_promptPresets_old;
+		wxListBox* m_promptPresets;
 		wxBitmapButton* m_bpButton25;
 		wxStaticText* m_staticText522;
 		wxSpinCtrlDouble* slgScale;

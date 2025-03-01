@@ -28,6 +28,7 @@ protected:
     void OnServerListItemValueChanged(wxDataViewEvent& event) override;
     void OnServerEnableToggle(wxCommandEvent& event) override;
     void OnRemoteImageDownload(wxCommandEvent& event) override;
+    void OnOutputFilenameText(wxCommandEvent& event) override;
 
 public:
     /** Constructor */
