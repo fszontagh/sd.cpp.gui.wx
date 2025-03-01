@@ -161,6 +161,11 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     // setup shared memory
     this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
 
+    wxAcceleratorEntry entries[1];
+    entries[0].Set(wxACCEL_CTRL, WXK_RETURN, this->m_queue->GetId());  // Ctrl + Enter -> gomb eseménykezelője
+    wxAcceleratorTable accel(1, entries);
+    SetAcceleratorTable(accel);
+
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
 
@@ -1007,6 +1012,7 @@ void MainWindowUI::onTxt2ImgFileDrop(wxDropFilesEvent& event) {
 
     this->readMetaDataFromImage(file, SDMode::TXT2IMG, true);
 }
+
 void MainWindowUI::readMetaDataFromImage(const wxFileName& file, const SDMode mode, bool askForLoadParameters) {
     auto getParams = this->getMetaDataFromImage(file);
     if (getParams.size() > 0 && askForLoadParameters == true) {
@@ -5140,7 +5146,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
-    std::cout << "handleSdImages: image format: " << extension << std::endl;
+    if (BUILD_TYPE == "Debug") {
+        std::cout << "handleSdImages: image format: " << extension << std::endl;
+    }
 
     wxString server_name;
     if (!item->server.empty()) {
@@ -5149,15 +5157,19 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
             server_name = srv->GetName();
         }
     }
-    std::cout << "handleSdImages: server_name: " << server_name << std::endl;
+    if (BUILD_TYPE == "Debug") {
+        std::cout << "handleSdImages: server_name: " << server_name << std::endl;
+    }
 
     const auto baseFileName = sd_gui_utils::formatFileName(*item, this->mapp->cfg->output_filename_format, server_name);
 
-    std::cout << "handleSdImages: baseFileName: " << baseFileName << std::endl;
-
+    if (BUILD_TYPE == "Debug") {
+        std::cout << "handleSdImages: baseFileName: " << baseFileName << std::endl;
+    }
     wxString baseFullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
-
-    std::cout << "handleSdImages: baseFullName: " << baseFullName << std::endl;
+    if (BUILD_TYPE == "Debug") {
+        std::cout << "handleSdImages: baseFullName: " << baseFullName << std::endl;
+    }
     std::vector<sd_gui_utils::networks::ImageInfo> needExif;
     // the raw images are the generated images. Only presents when the generation is done without errors
     for (const auto& rimage : item->rawImages) {
@@ -5169,7 +5181,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         rawImage.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
         item->image_info.push_back(rawImage);
         needExif.push_back(rawImage);
-        std::cout << "handleSdImages: rawImage: " << rawImage.target_filename << std::endl;
+        if (BUILD_TYPE == "Debug") {
+            std::cout << "handleSdImages: rawImage: " << rawImage.target_filename << std::endl;
+        }
     }
     // count generated images
     int generated_images = 0;
@@ -5211,7 +5225,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         if (nameSuffix.empty()) {
             currentimgHandler = imgHandler;
         }
-        std::cout << "handleSdImages: image info img.target_filename: " << img.target_filename << std::endl;
+        if (BUILD_TYPE == "Debug") {
+            std::cout << "handleSdImages: image info img.target_filename: " << img.target_filename << std::endl;
+        }
         // wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
         wxFileName newTargetName(baseFullName);
         newTargetName.SetExt(ext);
@@ -5224,7 +5240,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::MOVEABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
-                std::cout << "handleSdImages: moving image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
+                if (BUILD_TYPE == "Debug") {
+                    std::cout << "handleSdImages: moving image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
+                }
                 wxImage tmp;
                 tmp.LoadFile(origName.GetAbsolutePath());
                 tmp.SetOption(wxIMAGE_OPTION_FILENAME, newTargetName.GetName());
@@ -5248,7 +5266,9 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::COPYABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
-                std::cout << "handleSdImages: copying image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
+                if (BUILD_TYPE == "Debug") {
+                    std::cout << "handleSdImages: copying image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
+                }
                 wxImage tmp;
                 tmp.LoadFile(origName.GetAbsolutePath());
                 tmp.SetOption(wxIMAGE_OPTION_FILENAME, newTargetName.GetName());
@@ -5274,15 +5294,21 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         // update the item's paths too
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
             item->mask_image = newTargetName.GetAbsolutePath();
-            std::cout << "handleSdImages: updating mask_image: " << item->mask_image << std::endl;
+            if (BUILD_TYPE == "Debug") {
+                std::cout << "handleSdImages: updating mask_image: " << item->mask_image << std::endl;
+            }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
             item->initial_image = newTargetName.GetAbsolutePath();
-            std::cout << "handleSdImages: updating initial_image: " << item->initial_image << std::endl;
+            if (BUILD_TYPE == "Debug") {
+                std::cout << "handleSdImages: updating initial_image: " << item->initial_image << std::endl;
+            }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
             std::cout << "handleSdImages: updating control_image_path: " << item->params.control_image_path << std::endl;
-            item->params.control_image_path = newTargetName.GetAbsolutePath();
+            if (BUILD_TYPE == "Debug") {
+                item->params.control_image_path = newTargetName.GetAbsolutePath();
+            }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             needExif.emplace_back(img);
@@ -5292,8 +5318,10 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
     for (const auto& img : needExif) {
         if (wxFileExists(img.target_filename) && sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
-            std::cout << "handleSdImages: updating exif: " << img.target_filename << std::endl;
-            //
+            if (BUILD_TYPE == "Debug") {
+                std::cout << "handleSdImages: updating exif: " << img.target_filename << std::endl;
+            }
+
             if (this->mapp->cfg->image_type == sd_gui_utils::imageTypes::JPG || this->mapp->cfg->image_type == sd_gui_utils::imageTypes::PNG) {
                 std::string comment = this->paramsToImageComment(*item).utf8_string();
 

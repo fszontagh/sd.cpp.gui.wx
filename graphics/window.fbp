@@ -61,6 +61,7 @@
       <property name="window_style">wxBORDER_DEFAULT</property>
       <property name="xrc_skip_sizer">1</property>
       <event name="OnClose">OnClose</event>
+      <event name="OnKeyDown">OnGlobalKeyDown</event>
       <object class="wxBoxSizer" expanded="true">
         <property name="minimum_size">-1,-1</property>
         <property name="name">sizer0001</property>

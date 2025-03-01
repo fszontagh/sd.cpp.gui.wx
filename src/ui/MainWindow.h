@@ -271,6 +271,7 @@ class mainUI : public wxFrame
 
 		// Virtual event handlers, override them in your derived class
 		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
+		virtual void OnGlobalKeyDown( wxKeyEvent& event ) { event.Skip(); }
 		virtual void onSettings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onModelsRefresh( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAboutButton( wxCommandEvent& event ) { event.Skip(); }

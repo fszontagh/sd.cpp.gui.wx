@@ -1696,6 +1696,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	// Connect Events
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( mainUI::OnClose ) );
+	this->Connect( wxEVT_KEY_DOWN, wxKeyEventHandler( mainUI::OnGlobalKeyDown ) );
 	m_settings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
 	m_refrersh->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
@@ -1830,6 +1831,7 @@ mainUI::~mainUI()
 {
 	// Disconnect Events
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( mainUI::OnClose ) );
+	this->Disconnect( wxEVT_KEY_DOWN, wxKeyEventHandler( mainUI::OnGlobalKeyDown ) );
 	m_settings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onSettings ), NULL, this );
 	m_refrersh->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::onModelsRefresh ), NULL, this );
 	m_about->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnAboutButton ), NULL, this );
