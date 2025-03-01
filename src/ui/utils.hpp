@@ -906,6 +906,8 @@ namespace sd_gui_utils {
         "ipndm",
         "ipndm_v",
         "lcm",
+        "ddim_trailing",
+        "tcd",
     };
     inline const char* schedule_str[] = {
         "default",
@@ -913,7 +915,8 @@ namespace sd_gui_utils {
         "karras",
         "exponential",
         "ays",
-        "gits"};
+        "gits",
+    };
 
     inline const std::unordered_map<SDMode, wxString> SDModeGUINames = {
         {SDMode::TXT2IMG, _("TXT2IMG")},
@@ -932,6 +935,9 @@ namespace sd_gui_utils {
         {sample_method_t::LCM, _("LCM")},
         {sample_method_t::IPNDM, _("IPNDM")},
         {sample_method_t::IPNDM_V, _("IPNDM_V")},
+        {sample_method_t::DDIM_TRAILING, _("DDIM Trailing")},
+        {sample_method_t::TCD, _("TCD")},
+
     };
 
     inline const std::unordered_map<sample_method_t, std::string> samplerSdWebuiNames = {
@@ -946,8 +952,9 @@ namespace sd_gui_utils {
         {sample_method_t::LCM, "LCM"},
         {sample_method_t::IPNDM, "IPNDM"},
         {sample_method_t::IPNDM_V, "IPNDM_V"},
+        {sample_method_t::DDIM_TRAILING, "DDIM Trailing"},
+        {sample_method_t::TCD, "TCD"}
     };
-
     inline const std::unordered_map<schedule_t, std::string> schedulerSdWebuiNames = {
         {schedule_t::DEFAULT, "Automatic"},
         {schedule_t::N_SCHEDULES, "Automatic"},
@@ -1401,7 +1408,7 @@ namespace sd_gui_utils {
         if (!vversion.ToInt(&vver)) {
             return false;
         }
-        return cver >= vver; // TODO: check if this is correct
+        return cver >= vver;  // TODO: check if this is correct
     }
 }  // namespace sd_gui_utils
 #endif

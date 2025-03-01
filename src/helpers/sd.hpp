@@ -27,6 +27,8 @@ enum sample_method_t {
     IPNDM,
     IPNDM_V,
     LCM,
+    DDIM_TRAILING,
+    TCD,
     N_SAMPLE_METHODS
 };
 
@@ -155,6 +157,7 @@ typedef sd_image_t* (*Txt2ImgFunction)(sd_ctx_t*,             // pointer
                                        int,                   // clip_skip,
                                        float,                 // cfg_scale,
                                        float,                 // guidance,
+                                       float,                 // eta
                                        int,                   // width,
                                        int,                   // height,
                                        enum sample_method_t,  // sample_method,
@@ -182,6 +185,7 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        int,                   // clip_skip,
                                        float,                 // cfg_scale,
                                        float,                 // guidance,
+                                       float,                 // eta
                                        int,                   // width,
                                        int,                   // height,
                                        enum sample_method_t,  // sample_method,
@@ -191,7 +195,7 @@ typedef sd_image_t* (*Img2ImgFunction)(sd_ctx_t*,             // pointer
                                        int,                   // batch_count,
                                        const sd_image_t*,     // control_cond,
                                        float,                 // control_strength,
-                                       float,                 // style_ratio,
+                                       float,                 // style_strength,
                                        bool,                  // normalize_input,
                                        const char*,           // input_id_images_path_c_str
                                        int*,                  // skip_layers
@@ -253,6 +257,7 @@ struct SDParams {
     float guidance    = 3.5f;
     float style_ratio = 20.f;
     int clip_skip     = -1;  // <= 0 represents unspecified
+    float eta         = 0.f;
     int width         = 512;
     int height        = 512;
     int batch_count   = 1;

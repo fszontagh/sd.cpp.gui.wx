@@ -5042,7 +5042,7 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
         menu->Append(7, _("Open parent folder"));
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             menu->AppendSeparator();
-            menu->Append(0, wxString::Format(_("Copy seed %" PRId64), item->params.seed + gen_index));
+            menu->Append(0, wxString::Format(_("Copy seed ") + "%" PRId64, item->params.seed + gen_index));
             menu->Append(1, _("Copy prompts to text2img"));
             menu->Append(2, _("Copy prompts to img2img"));
             menu->Append(3, _("Send the image to img2img"));
@@ -5114,6 +5114,7 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
                 case 11: {
                     if (wxTheClipboard->Open()) {
                         wxTheClipboard->SetData(new wxTextDataObject(wxString::FromUTF8Unchecked(img.target_filename)));
+                        wxTheClipboard->Close();
                     }
                 } break;
 
