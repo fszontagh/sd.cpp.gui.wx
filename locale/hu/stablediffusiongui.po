@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: StableDiffusionGUI 0.1.9\n"
 "Report-Msgid-Bugs-To: sdgui@fsociety.hu\n"
 "POT-Creation-Date: 2025-03-01 15:56+0100\n"
-"PO-Revision-Date: 2025-03-01 15:57+0100\n"
+"PO-Revision-Date: 2025-03-01 16:01+0100\n"
 "Last-Translator: Ferenc Szontágh <szf@fsociety.hu>\n"
 "Language-Team: Hungarian <>\n"
 "Language: hu_HU\n"
@@ -2285,7 +2285,7 @@ msgstr "Szülő mappa megnyitása"
 
 #: src/ui/MainWindowUI.cpp:5045
 msgid "Copy seed "
-msgstr "Seed másolása"
+msgstr "Seed másolása "
 
 #: src/ui/MainWindowUI.cpp:5048 src/ui/MainWindowUI.cpp:5058
 msgid "Send the image to img2img"
