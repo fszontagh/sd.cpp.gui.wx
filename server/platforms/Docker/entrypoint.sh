@@ -8,7 +8,7 @@ mkdir -p /app /app/log /app/data /app/models /app/models/checkpoints /app/models
 if [ "$DOWNLOAD_BASE_MODELS" = "True" ]; then
     if [ ! -f "$INIT_FLAG" ]; then
         echo "First run, downloading base models..."
-        /app/download_base_models.sh /app/config.json
+        /app/bin/download_base_models.sh /app/config/server.json
         touch "$INIT_FLAG"
     else
         echo "Skipping base model download (already initialized)"
@@ -17,4 +17,4 @@ else
     echo "Skipping base model download (DOWNLOAD_BASE_MODELS=False)"
 fi
 
-exec /app/@SERVER_BINARY_NAME@ /app/config.json
+exec /app/bin/@SERVER_BINARY_NAME@ /app/config/server.json

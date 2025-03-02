@@ -7,7 +7,7 @@
     "max_clients": 10,
     "unauthorized_timeout": 4,
     "data_path": "/app/data",
-    "exprocess_binary_path": "/app/stablediffusiongui_diffuser",
+    "exprocess_binary_path": "/app/bin/stablediffusiongui_diffuser",
     "model_paths": {
         "controlnet": "/app/models/controlnet",
         "embedding": "/app/models/embeddings",
