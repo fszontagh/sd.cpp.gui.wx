@@ -63,17 +63,17 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer97;
 	bSizer97 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_settings = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
+	m_settings = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxBU_AUTODRAW|0 );
 
 	m_settings->SetBitmap( settings_png_to_wx_bitmap() );
 	bSizer97->Add( m_settings, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_refrersh = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
+	m_refrersh = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxBU_AUTODRAW|0 );
 
 	m_refrersh->SetBitmap( refresh_png_to_wx_bitmap() );
 	bSizer97->Add( m_refrersh, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_about = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
+	m_about = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxBU_AUTODRAW|0 );
 
 	m_about->SetBitmap( cube_png_to_wx_bitmap() );
 	m_about->SetToolTip( _("About the sd.cpp.gui.wx") );
@@ -81,7 +81,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer97->Add( m_about, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_civitai = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
+	m_civitai = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxBU_AUTODRAW|0 );
 
 	m_civitai->SetBitmap( civitai_png_to_wx_bitmap() );
 	m_civitai->SetToolTip( _("Open CivitAi.com model browser") );
@@ -89,14 +89,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer97->Add( m_civitai, 0, wxALL|wxRESERVE_SPACE_EVEN_IF_HIDDEN|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_showWidget = new wxBitmapToggleButton( m_panel10, wxID_ANY, images_png_to_wx_bitmap(), wxDefaultPosition, wxSize( 32,-1 ), 0 );
+	m_showWidget = new wxBitmapToggleButton( m_panel10, wxID_ANY, images_png_to_wx_bitmap(), wxDefaultPosition, wxSize( -1,-1 ), 0 );
 
 	m_showWidget->SetBitmap( images_png_to_wx_bitmap() );
 	m_showWidget->SetToolTip( _("Show Widget") );
 
 	bSizer97->Add( m_showWidget, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( 32,-1 ), wxBU_AUTODRAW|0 );
+	m_stop_background_process = new wxBitmapButton( m_panel10, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize( -1,-1 ), wxBU_AUTODRAW|0 );
 
 	m_stop_background_process->SetBitmap( cross_circle_png_to_wx_bitmap() );
 	m_stop_background_process->Enable( false );
@@ -2927,4 +2927,76 @@ DesktopWidget::~DesktopWidget()
 	this->Disconnect( wxEVT_MOTION, wxMouseEventHandler( DesktopWidget::OnMouseMotion ) );
 	this->Disconnect( wxEVT_PAINT, wxPaintEventHandler( DesktopWidget::OnWidgetPaint ) );
 
+}
+
+FirstRun::FirstRun( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name ) : wxPanel( parent, id, pos, size, style, name )
+{
+	wxGridSizer* gSizer5;
+	gSizer5 = new wxGridSizer( 4, 2, 5, 5 );
+
+	wxStaticBoxSizer* sbSizer2;
+	sbSizer2 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("SD1x Models") ), wxVERTICAL );
+
+	m_checkBox16 = new wxCheckBox( sbSizer2->GetStaticBox(), wxID_ANY, _("Realistic_Vision_V6.0_B1_noVAE"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_checkBox16->SetValue(true);
+	sbSizer2->Add( m_checkBox16, 0, wxALL, 5 );
+
+	m_checkBox161 = new wxCheckBox( sbSizer2->GetStaticBox(), wxID_ANY, _("Fluently-v4-LCM"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_checkBox161->SetValue(true);
+	sbSizer2->Add( m_checkBox161, 0, wxALL, 5 );
+
+
+	gSizer5->Add( sbSizer2, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer3;
+	sbSizer3 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("SDXL models") ), wxVERTICAL );
+
+	m_checkBox20 = new wxCheckBox( sbSizer3->GetStaticBox(), wxID_ANY, _("Juggernaut-XL-v9"), wxDefaultPosition, wxDefaultSize, 0 );
+	sbSizer3->Add( m_checkBox20, 0, wxALL, 5 );
+
+
+	gSizer5->Add( sbSizer3, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer5;
+	sbSizer5 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("SD1x Loras") ), wxVERTICAL );
+
+
+	gSizer5->Add( sbSizer5, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer6;
+	sbSizer6 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("SDXL loras") ), wxVERTICAL );
+
+
+	gSizer5->Add( sbSizer6, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer61;
+	sbSizer61 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Presets") ), wxVERTICAL );
+
+
+	gSizer5->Add( sbSizer61, 1, wxEXPAND, 5 );
+
+	wxStaticBoxSizer* sbSizer611;
+	sbSizer611 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Prompt styles") ), wxVERTICAL );
+
+
+	gSizer5->Add( sbSizer611, 1, wxEXPAND, 5 );
+
+	m_staticText78 = new wxStaticText( this, wxID_ANY, _("The download process may take a long time, depending on your internet speed and the selected models.\nAdditionally, the models require a significant amount of disk space.\n\nPlease ensure you have enough storage before proceeding."), wxDefaultPosition, wxDefaultSize, 0|wxBORDER_STATIC|wxBORDER_THEME|wxHSCROLL|wxVSCROLL );
+	m_staticText78->Wrap( -1 );
+	gSizer5->Add( m_staticText78, 1, wxALL|wxEXPAND, 5 );
+
+	m_button22 = new wxButton( this, wxID_ANY, _("Download"), wxDefaultPosition, wxDefaultSize, 0 );
+	gSizer5->Add( m_button22, 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_CENTER_HORIZONTAL, 5 );
+
+	m_gauge3 = new wxGauge( this, wxID_ANY, 100, wxDefaultPosition, wxSize( -1,20 ), wxGA_HORIZONTAL|wxGA_SMOOTH );
+	m_gauge3->SetValue( 17 );
+	gSizer5->Add( m_gauge3, 0, wxALL, 5 );
+
+
+	this->SetSizer( gSizer5 );
+	this->Layout();
+}
+
+FirstRun::~FirstRun()
+{
 }

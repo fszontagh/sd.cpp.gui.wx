@@ -647,3 +647,26 @@ class DesktopWidget : public wxFrame
 
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// Class FirstRun
+///////////////////////////////////////////////////////////////////////////////
+class FirstRun : public wxPanel
+{
+	private:
+
+	protected:
+		wxCheckBox* m_checkBox16;
+		wxCheckBox* m_checkBox161;
+		wxCheckBox* m_checkBox20;
+		wxStaticText* m_staticText78;
+		wxButton* m_button22;
+		wxGauge* m_gauge3;
+
+	public:
+
+		FirstRun( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,600 ), long style = wxTAB_TRAVERSAL, const wxString& name = wxEmptyString );
+
+		~FirstRun();
+
+};
+
