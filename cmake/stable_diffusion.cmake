@@ -1,48 +1,12 @@
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0079 NEW)
 
-set(SD_BUILD_EXAMPLES OFF)
-set(SD_BUILD_SHARED_LIBS ON)
+
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS ON)
 
 
-
-option(SD_AVX "Enable AVX library build" OFF)
-option(SD_AVX2 "Enable AVX2 library build" OFF)
-option(SD_AVX512 "Enable AVX512 library build" OFF)
-option(SD_CUDA "Enable CUDA library build" OFF)
-option(SD_HIPBLAS "Enable HIPBLAS library build" OFF)
-option(SD_VULKAN "Enable Vulkan library build" OFF)
-
 set(SD_GIT_TAG "tags/master-${SDCPP_VERSION}")
 
-if (SD_AVX)
-    set(SDGUI_AVX ON)
-endif()
-
-
-if (SD_AVX2)
-    set(SDGUI_AVX2 ON)
-endif()
-
-if (SD_AVX512)
-    set(SDGUI_AVX512 ON)
-endif()
-
-
-if (SD_CUDA)
-    set(SDGUI_CUBLAS ON)
-endif()
-
-
-if (SD_HIPBLAS)
-    set(SDGUI_HIPBLAS ON)
-endif()
-
-
-if (SD_VULKAN)
-    set(SDGUI_VULKAN ON)
-endif()
 
 # Helper macro to build stable diffusion with different settings
 macro(build_stable_diffusion variant_name avx_flag avx2_flag avx512_flag cublas_flag hipblas_flag vulkan_flag)

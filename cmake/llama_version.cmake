@@ -1,0 +1,1 @@
+set(LLAMA_VERSION "b4932" CACHE STRING "LLAMA C++ Version")

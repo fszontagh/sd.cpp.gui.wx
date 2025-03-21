@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(cmake/sdcpp_version.cmake)
+include(cmake/llama_version.cmake)
 include(cmake/wxWidgets_version.cmake)
 
 set(PROJECT_BINARY_NAME "stablediffusiongui")
@@ -72,6 +73,7 @@ execute_process(
 )
 message(STATUS "GIT HASH: ${GIT_HASH}")
 message(STATUS "SD.CPP VERSION: ${SDCPP_VERSION}")
+message(STATUS "LLAMA.CPP VERSION: ${LLAMA_VERSION}")
 
 configure_file(src/ver.hpp.in ver.hpp)
 
@@ -145,27 +147,27 @@ endif()
 
 
 if (SDGUI_AVX)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx llama_avx)
 endif()
 
 if (SDGUI_AVX2)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2 llama_avx2)
 endif()
 
 if(SDGUI_AVX512)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512 llama_avx512)
 endif()
 
 if(SDGUI_CUBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda llama_cuda)
 endif()
 
 if(SDGUI_VULKAN)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan llama_vulkan)
 endif()
 
 if (SDGUI_HIPBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_hipblas)
+  list(APPEND APPDEPENDS stable_diffusion_cpp_hipblas llama_hipblas)
 endif()
 
 
@@ -227,5 +229,43 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${GTK3_LIBRARIES})
 endif()
 
+
+option(SD_AVX "Enable AVX library build" OFF)
+option(SD_AVX2 "Enable AVX2 library build" OFF)
+option(SD_AVX512 "Enable AVX512 library build" OFF)
+option(SD_CUDA "Enable CUDA library build" OFF)
+option(SD_HIPBLAS "Enable HIPBLAS library build" OFF)
+option(SD_VULKAN "Enable Vulkan library build" OFF)
+
+if (SD_AVX)
+    set(SDGUI_AVX ON)
+endif()
+
+
+if (SD_AVX2)
+    set(SDGUI_AVX2 ON)
+endif()
+
+if (SD_AVX512)
+    set(SDGUI_AVX512 ON)
+endif()
+
+
+if (SD_CUDA)
+    set(SDGUI_CUBLAS ON)
+endif()
+
+
+if (SD_HIPBLAS)
+    set(SDGUI_HIPBLAS ON)
+endif()
+
+
+if (SD_VULKAN)
+    set(SDGUI_VULKAN ON)
+endif()
+
+
 include(cmake/stable_diffusion.cmake)
+include(cmake/llama.cmake)
 include(cmake/cpack.cmake)

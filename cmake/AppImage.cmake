@@ -9,27 +9,27 @@ set(APPIMGDEPENDS ${PROJECT_BINARY_NAME})
 list(APPEND APPIMGDEPENDS ${PROJECT_BINARY_NAME}_diffuser)
 
 if (SDGUI_AVX)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx llama_avx)
 endif()
 
 if (SDGUI_AVX2)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx2)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx2 llama_avx2)
 endif()
 
 if(SDGUI_AVX512)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx512)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx512 llama_avx512)
 endif()
 
 if(SDGUI_CUBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_cuda)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_cuda llama_cuda)
 endif()
 
 if(SDGUI_VULKAN)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_vulkan)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_vulkan llama_vulkan)
 endif()
 
 if (SDGUI_HIPBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_hipblas)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_hipblas llama_hipblas)
 endif()
 
 
