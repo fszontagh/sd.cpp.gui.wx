@@ -109,6 +109,7 @@ if(NOT SD_HIPBLAS)
             BINARY_DIR ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
             LIST_SEPARATOR "|"
             CMAKE_ARGS
+            -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DSD_BUILD_EXAMPLES=OFF
             -DSD_BUILD_SHARED_LIBS=ON

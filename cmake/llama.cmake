@@ -88,6 +88,7 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         BINARY_DIR ${CMAKE_BINARY_DIR}/llama_${variant_name}
         LIST_SEPARATOR "|"
         CMAKE_ARGS
+            -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/llama_${variant_name}
             -DBUILD_SHARED_LIBS_DEFAULT=ON
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
