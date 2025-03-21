@@ -17,6 +17,12 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
     set(SD_VULKAN "${vulkan_flag}")
 
 
+    set(GGML_CPU OFF)
+
+    if (SD_AVX OR SD_AVX2 OR SD_AVX512)
+        set(GGML_CPU ON)
+    endif()
+
     if (MSVC)
         set(DISABLE_WARNINGS_FLAGS "/W0")
     else()
@@ -65,9 +71,11 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
 
             SET(CMAKE_CUDA_ARCHITECTURES "native")
             SET(GGMAL_NATIVE ON)
+            SET(GGML_CACHE OFF)
 
         else()
         SET(GGMAL_NATIVE OFF)
+        SET(GGML_CACHE OFF)
             if (CUDA_MAJOR_VERSION STREQUAL "12")
                 SET(CMAKE_CUDA_ARCHITECTURES "90;89;80;75")
             elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
@@ -86,21 +94,23 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         GIT_REPOSITORY https://github.com/ggerganov/llama.cpp.git
         GIT_TAG ${LLAMA_VERSION}
         BINARY_DIR ${CMAKE_BINARY_DIR}/llama_${variant_name}
+        SOURCE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}
         LIST_SEPARATOR "|"
         CMAKE_ARGS
             -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
             -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/llama_${variant_name}
-            -DBUILD_SHARED_LIBS_DEFAULT=ON
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}
             -DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}
             -DLLAMA_BUILD_TESTS=OFF
             -DLLAMA_BUILD_EXAMPLES=OFF
-            -DBUILD_SHARED_LIBS=ON
             -DLLAMA_BUILD_SERVER=OFF
+            -DLLAMA_BUILD_COMMON=OFF
             -DLLAMA_ALL_WARNINGS=OFF
             -DLLAMA_ALL_WARNINGS_3RD_PARTY=OFF
             -DLLAMA_CURL=OFF
+            -DLLAMA_LLGUIDANCE=OFF
+            -DGGML_CPU_AARCH64=OFF
             -DGGML_AVX=${SD_AVX}
             -DGGML_AVX2=${SD_AVX2}
             -DGGML_AVX512=${SD_AVX512}
@@ -108,12 +118,16 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             -DGGML_VULKAN=${SD_VULKAN}
             -DGGML_ALL_WARNINGS=OFF
             -DGGML_NATIVE=${GGML_NATIVE}
-            -DGGML_BACKEND_DL=ON
+            -DGGML_BACKEND_DL=OFF
+            -DGGML_CCACHE=${GGML_CACHE}
+            -DGGML_CPU=${GGML_CPU}
             -DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}
+            PATCH_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/ollama_CMakeLists.txt ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/CMakeLists.txt
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/llama_${variant_name} --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/llama_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
             BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
     )
+
 endmacro()
 
 if (SDGUI_AVX)

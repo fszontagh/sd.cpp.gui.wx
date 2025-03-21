@@ -265,6 +265,7 @@ if (SD_VULKAN)
     set(SDGUI_VULKAN ON)
 endif()
 
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 
 include(cmake/stable_diffusion.cmake)
 include(cmake/llama.cmake)
