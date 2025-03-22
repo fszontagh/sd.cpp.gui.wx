@@ -11,31 +11,31 @@ SharedMemoryManager::SharedMemoryManager(const std::string& shmName, size_t size
     if (isMaster) {
         shmHandle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, static_cast<DWORD>(shmSize), shmName.c_str());
         if (shmHandle == NULL)
-            throw std::runtime_error("Failed to create shared memory.");
+            throw std::runtime_error("Failed to create shared memory: " + std::string(strerror(GetLastError())) + " " + shmName);
     } else {
         shmHandle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shmName.c_str());
         if (shmHandle == NULL)
-            throw std::runtime_error("Failed to open shared memory.");
+            throw std::runtime_error("Failed to open shared memory: " + std::string(strerror(errno)) +  " " + shmName);;
     }
     shmPtr = MapViewOfFile(shmHandle, FILE_MAP_ALL_ACCESS, 0, 0, shmSize);
     if (shmPtr == nullptr)
-        throw std::runtime_error("Failed to map shared memory.");
+        throw std::runtime_error("Failed to map shared memory: " + std::string(strerror(errno)) + " " + shmName);
 
 #else
     if (isMaster) {
         shmFd = shm_open(shmName.c_str(), O_CREAT | O_RDWR, 0666);
         if (shmFd == -1)
-            throw std::runtime_error("Failed to create shared memory.");
+            throw std::runtime_error("Failed to create shared memory: " + std::string(strerror(errno)) + " " + shmName);
         if (ftruncate(shmFd, shmSize) == -1)
             throw std::runtime_error("Failed to set size for shared memory.");
     } else {
         shmFd = shm_open(shmName.c_str(), O_RDWR, 0666);
         if (shmFd == -1)
-            throw std::runtime_error("Failed to open shared memory.");
+            throw std::runtime_error("Failed to open shared memory: " + std::string(strerror(errno)) + " " + shmName);
     }
     shmPtr = mmap(0, shmSize, PROT_READ | PROT_WRITE, MAP_SHARED, shmFd, 0);
     if (shmPtr == MAP_FAILED)
-        throw std::runtime_error("Failed to map shared memory.");
+        throw std::runtime_error("Failed to map shared memory: " + std::string(strerror(errno)) + " " + shmName);
 #endif
 
     if (isMaster) {

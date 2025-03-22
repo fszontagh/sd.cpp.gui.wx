@@ -6,7 +6,11 @@ set(SD_BUILD_SHARED_LIBS ON)
 set(ALLOW_DUPLICATE_CUSTOM_TARGETS ON)
 
 
+
+
 macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_flag vulkan_flag)
+
+
     set(LOG_DIR ${CMAKE_BINARY_DIR}/llama_${variant_name})
 
     set(SD_AVX "${avx_flag}")
@@ -40,7 +44,6 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
     endif()
 
     message(STATUS "Building llama.cpp variant: ${variant_name} with flags: ${SD_AVX} ${SD_AVX2} ${SD_AVX512} ${SD_CUDA} ${SD_HIPBLAS} ${SD_VULKAN} EPREFIX: ${EPREFIX} Generator: ${CMAKE_GENERATOR}")
-
     if (SD_CUDA)
 
         #enable_language(CUDA)
@@ -87,7 +90,8 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     endif()
 
-
+    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include)
+    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/ggml/include)
 
     ExternalProject_Add(
         llama_cpp_${variant_name}
@@ -126,6 +130,7 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/llama_${variant_name} --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/llama_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
             BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+            BUILD_ALWAYS OFF
     )
 
 endmacro()
@@ -153,3 +158,5 @@ endif()
 if (SDGUI_VULKAN)
     build_llama("vulkan" OFF OFF OFF OFF OFF ON)
 endif()
+
+message(STATUS "LLAMA_INCLUDE_DIR: ${LLAMA_INCLUDE_DIR}")

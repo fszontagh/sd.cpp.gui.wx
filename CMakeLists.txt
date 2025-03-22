@@ -109,6 +109,7 @@ endif()
 add_subdirectory(extprocess)
 
 option(SD_SERVER "Build socket server" OFF)
+option(LLAMA_DISABLE "Disable llama.cpp" OFF)
 
 
 
@@ -268,5 +269,10 @@ endif()
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
 
 include(cmake/stable_diffusion.cmake)
-include(cmake/llama.cmake)
+if (LLAMA_DISABLE EQUAL OFF)
+    include(cmake/llama.cmake)
+    add_subdirectory(llama)
+endif()
+
 include(cmake/cpack.cmake)
+
