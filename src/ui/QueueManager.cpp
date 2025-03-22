@@ -294,9 +294,11 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
             return;
         }
         if (event == QueueEvents::ITEM_START) {
-            this->SetStatus(QueueStatus::RUNNING, payload);
-            this->isRunning   = true;
-            this->currentItem = payload;
+            if (payload->status == QueueStatus::PENDING) {
+                this->SetStatus(QueueStatus::RUNNING, payload);
+                this->isRunning   = true;
+                this->currentItem = payload;
+            }
             return;
         }
         if (event == QueueEvents::ITEM_FINISHED) {

@@ -158,92 +158,55 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
     */
     this->m_upscalerHelp->SetPage(wxString::Format((_("Officially from sd.cpp, the following upscaler model is supported: <br/><a href=\"%s\">RealESRGAN_x4Plus Anime 6B</a><br/>This is working sometimes too: <a href=\"%s\">RealESRGAN_x4Plus</a>")), wxString("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"), wxString("https://civitai.com/models/147817/realesrganx4plus")));
 
-    // setup shared memory
-    this->sharedMemory = std::make_shared<SharedMemoryManager>(SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE, true);
-
     wxAcceleratorEntry entries[1];
-    entries[0].Set(wxACCEL_CTRL, WXK_RETURN, this->m_queue->GetId());  // Ctrl + Enter -> gomb eseménykezelője
+    entries[0].Set(wxACCEL_CTRL, WXK_RETURN, this->m_queue->GetId());  // Ctrl + Enter
     wxAcceleratorTable accel(1, entries);
     SetAcceleratorTable(accel);
 
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
+        wxArrayString params;
 
-        // search the binary in the main app's path/extprocess
-        wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
-        wxFileName f(currentPath, "");
-        f.SetName(EPROCESS_BINARY_NAME);
+        params.Add(ExternalProcessHelper::buildDllPathFromName(dllName));
+        params.Add(this->extProcessLogFile);
 
-        if (f.Exists() == false) {
-            f.AppendDir("extprocess");
-        }
-        if (f.Exists() == false) {
-            f.AppendDir("Debug");
-        }
+        auto helper = std::make_shared<ExternalProcessHelper>(EPROCESS_BINARY_NAME, ExternalProcessHelper::ProcessType::diffuser, params, SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE);
+        this->writeLog(wxString::Format(_("Starting external process: %s"), helper->GetFullCommand()));
 
-        this->extprocessCommand = f.GetFullPath();
-        if (f.Exists() == false) {
-            this->disableExternalProcessHandling = true;  // disable process handling
-            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand), _("Error"), wxOK | wxICON_ERROR);
-            this->writeLog(wxString::Format(_("An error occurred when trying to start external process: %s.\n Please try again."), this->extprocessCommand));
-            errorDialog.ShowModal();
-            this->TaskBar->Destroy();
-            this->deInitLog();
-            this->Destroy();
-            return;
-        }
+        helper->onStart = [this, &helper]() {
+            this->writeLog(wxString::Format(_("External process started: %s"), helper->GetFullCommand()));
+            wxThreadEvent* event = new wxThreadEvent();
+            event->SetString(_("Process is ready"));
+            event->SetId(9999);
+            wxQueueEvent(this, event);
+        };
 
-        wxString dllfullname;
+        helper->onExit = [this, &helper]() {
+            this->writeLog(wxString::Format(_("External process stopped")));
+            wxThreadEvent* event = new wxThreadEvent();
+            event->SetString(_("External process stopped"));
+            event->SetId(9999);
+            wxQueueEvent(this, event);
+        };
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-        wxString dllFullPath = currentPath + wxFileName::GetPathSeparator() + wxString::FromUTF8Unchecked(dllName.c_str());
-        dllfullname          = dllFullPath + ".dll";
+        helper->onStdErr = [this](const char* data, size_t size) {
+            this->ProcessStdErrEvent(data, size);
+        };
 
-        if (std::filesystem::exists(dllfullname.utf8_string()) == false) {
-            wxMessageDialog errorDialog(this, wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), dllfullname), _("Error"), wxOK | wxICON_ERROR);
-            this->writeLog(wxString::Format(_("An error occurred when trying to start external process. Shared lib not found: %s.\n Please try again."), dllfullname));
-            errorDialog.ShowModal();
-            this->TaskBar->Destroy();
-            this->deInitLog();
-            this->Destroy();
-            return;
-        }
-#else
-        dllfullname.Append(dllName);
-        dllfullname.Append(".so");
-#endif
-        this->extProcessParams.Add(dllfullname);
-        this->extProcessParams.Add(this->extProcessLogFile);
+        helper->onStdOut = [this](const char* data, size_t size) {
+            this->ProcessStdOutEvent(data, size);
+        };
+        helper->onShmMessage = [this, &helper](const char* data, size_t size) {
+            return this->ProcessEventHandler(std::string(data, size));
+        };
 
-        this->extProcessRunning.store(false);
-
-        std::vector<const char*> command_line;
-        command_line.push_back(this->extprocessCommand.c_str());
-        wxString fullcommand = this->extprocessCommand;
-
-        for (auto const& p : this->extProcessParams) {
-            command_line.push_back(p.c_str().AsChar());
-            fullcommand.Append(" " + p);
+        if (helper->Start()) {
+            this->writeLog(wxString::Format(_("External process just started: %s"), helper->GetFullCommand()));
+        } else {
+            this->writeLog(wxString::Format(_("External process failed to start: %s"), helper->GetFullCommand()));
         }
 
-        command_line.push_back(nullptr);
-
-        this->writeLog(wxString::Format(_("Starting external process: %s"), fullcommand));
-
-        this->subprocess = new subprocess_s();
-
-        int result = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
-        if (0 != result) {
-            wxMessageDialog errorDialog(this, _("An error occurred when trying to start external process. Please try again."), _("Error"), wxOK | wxICON_ERROR);
-            errorDialog.ShowModal();
-            delete this->subprocess;
-            this->subprocess = nullptr;
-            this->Destroy();
-            return;
-        }
-        this->extProcessNeedToRun.store(true);
-        this->processCheckThread  = std::make_shared<std::thread>(&MainWindowUI::ProcessCheckThread, this);
-        this->processHandleOutput = std::make_shared<std::thread>(&MainWindowUI::ProcessOutputThread, this);
+        this->processHelpers.push_back(std::move(helper));
     }
 }
 void MainWindowUI::OnClose(wxCloseEvent& event) {
@@ -362,13 +325,7 @@ void MainWindowUI::OnCivitAitButton(wxCommandEvent& event) {
 }
 
 void MainWindowUI::OnStopBackgroundProcess(wxCommandEvent& event) {
-    if (this->subprocess != nullptr &&              // we have subprocess
-        subprocess_alive(this->subprocess) != 0 &&  // is running
-        this->extProcessNeedToRun.load() &&         // need to run, eg. not in stopping state
-        this->qmanager->GetCurrentItem() == nullptr) {
-        this->m_stop_background_process->Disable();
-        subprocess_terminate(this->subprocess);
-    }
+    // stop the background process
 }
 
 void MainWindowUI::onModelSelect(wxCommandEvent& event) {
@@ -2790,34 +2747,6 @@ MainWindowUI::~MainWindowUI() {
     if (this->widget != nullptr) {
         this->widget->Destroy();
     }
-    this->extProcessNeedToRun.store(false);
-
-    if (this->disableExternalProcessHandling == false && this->subprocess != nullptr && subprocess_alive(this->subprocess) != 0) {
-        if (this->processCheckThread != nullptr && this->processCheckThread->joinable()) {
-            this->processCheckThread->join();
-        }
-        int result = 0;
-        result     = subprocess_terminate(subprocess);
-        if (0 != result) {
-            std::cerr << "Can not terminate extprocess" << std::endl;
-        }
-        result = subprocess_join(subprocess, NULL);
-        if (0 != result) {
-            std::cerr << "Can not join extprocess" << std::endl;
-        }
-        result = subprocess_destroy(subprocess);
-        if (0 != result) {
-            std::cerr << "Can not destroy extprocess" << std::endl;
-        }
-
-        if (this->processHandleOutput != nullptr && this->processHandleOutput->joinable()) {
-            this->processHandleOutput->join();
-        }
-    }
-
-    // for (auto& srv : this->mapp->cfg->ListRemoteServers()) {
-    //     srv->Stop();
-    // }
 
     for (auto& threadPtr : this->threads) {
         if (threadPtr->joinable()) {
@@ -3881,27 +3810,34 @@ void MainWindowUI::onUpscaleImageOpen(const wxString& file) {
 
 void MainWindowUI::StartGeneration(std::shared_ptr<QueueItem> myJob) {
     if (this->disableExternalProcessHandling == false) {
-        if (subprocess_alive(this->subprocess) == 0) {
-            wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process."), wxT("Error"), wxOK | wxICON_ERROR);
-            myJob->status_message = _("Error accessing to the background process. Please try again.");
-            // this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_FAILED, myJob);
-            this->qmanager->SetStatus(QueueStatus::FAILED, myJob);
-            errorDialog.ShowModal();
-            return;
+        for (auto& p : this->processHelpers) {
+            if (p && p->GetProcessType() == ExternalProcessHelper::ProcessType::diffuser) {
+                if (p->IsAlive() == false) {
+                    wxMessageDialog errorDialog(NULL, wxT("An error occurred while starting the generation process"), wxT("Error"), wxOK | wxICON_ERROR);
+                    myJob->status_message = _("Error accessing to the background process. Please try again");
+                    myJob->status         = QueueStatus::FAILED;
+                    this->qmanager->SetStatus(QueueStatus::FAILED, myJob);
+                    errorDialog.ShowModal();
+                    continue;
+                }
+
+                try {
+                    myJob->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                    this->qmanager->SetStatus(QueueStatus::PENDING, myJob);
+                    nlohmann::json j = myJob->ConvertToSharedMemory();
+                    std::string msg  = j.dump();
+                    p->write(wxString(msg.data(), msg.size()));
+                } catch (const std::exception& e) {
+                    std::cerr << __FILE__ << ":" << __LINE__ << e.what() << std::endl;
+                }
+
+                break;
+            }
         }
-    }
-
-    try {
-        myJob->updated_at = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        this->qmanager->SetStatus(QueueStatus::PENDING, myJob);
-        nlohmann::json j = myJob->ConvertToSharedMemory();
-        std::string msg  = j.dump();
-        this->sharedMemory->write(msg.data(), msg.size());
-
-        //  this->qmanager->SendEventToMainWindow(QueueEvents::ITEM_GENERATION_STARTED, myJob);
-
-    } catch (const std::exception& e) {
-        std::cerr << __FILE__ << ":" << __LINE__ << e.what() << std::endl;
+    } else {
+        myJob->status_message = _("Local diffusion is disabled");
+        myJob->status         = QueueStatus::FAILED;
+        this->qmanager->SetStatus(QueueStatus::FAILED, myJob);
     }
 }
 
@@ -4029,6 +3965,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->UpdateJobInfoDetailsFromJobQueueList(item);
                 this->dataViewListManager->UpdateColumns(DataViewListManager::queueJobColumns::STATUS | DataViewListManager::queueJobColumns::STATUS_MESSAGE, item);
                 this->UpdateCurrentProgress(item, event);
+                if (isDEBUG) {
+                    auto status_str = QueueStatus_GUI_str.at(item->status);
+                    this->writeLog(wxString::Format(_("Job status changed: %s job id: %d status: %s"), item->status_message, item->id, status_str), true);
+                }
             } break;
                 // item updated... -> set the progress bar in the queue
             case QueueEvents::ITEM_UPDATED: {
@@ -4899,7 +4839,7 @@ void MainWindowUI::UpdateJobImagePreviews(std::shared_ptr<QueueItem> item) {
     for (const auto& img : item->image_info) {
         wxString tooltip = wxString::Format(_("Image width: %dpx, height: %dpx"), img.width, img.height);
 
-        if (std::string(BUILD_TYPE) == "Debug") {
+        if (isDEBUG) {
             tooltip.Append("\n");
             tooltip.Append(wxString::Format("ID: %s", img.GetId()));
             tooltip.Append("\n");
@@ -5146,28 +5086,28 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         extension  = ".jpg";
         imgHandler = wxBITMAP_TYPE_JPEG;
     }
-    if (BUILD_TYPE == "Debug") {
+    if (isDEBUG) {
         std::cout << "handleSdImages: image format: " << extension << std::endl;
     }
 
-    wxString server_name;
+    wxString server_name = wxEmptyString;
     if (!item->server.empty()) {
         auto srv = this->mapp->cfg->GetTcpServer(item->server);
         if (srv) {
             server_name = srv->GetName();
         }
     }
-    if (BUILD_TYPE == "Debug") {
+    if (isDEBUG) {
         std::cout << "handleSdImages: server_name: " << server_name << std::endl;
     }
 
     const auto baseFileName = sd_gui_utils::formatFileName(*item, this->mapp->cfg->output_filename_format, server_name);
 
-    if (BUILD_TYPE == "Debug") {
+    if (isDEBUG) {
         std::cout << "handleSdImages: baseFileName: " << baseFileName << std::endl;
     }
     wxString baseFullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
-    if (BUILD_TYPE == "Debug") {
+    if (isDEBUG) {
         std::cout << "handleSdImages: baseFullName: " << baseFullName << std::endl;
     }
     std::vector<sd_gui_utils::networks::ImageInfo> needExif;
@@ -5181,7 +5121,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         rawImage.type            = sd_gui_utils::networks::ImageType::GENERATED | sd_gui_utils::networks::ImageType::MOVEABLE;
         item->image_info.push_back(rawImage);
         needExif.push_back(rawImage);
-        if (BUILD_TYPE == "Debug") {
+        if (isDEBUG) {
             std::cout << "handleSdImages: rawImage: " << rawImage.target_filename << std::endl;
         }
     }
@@ -5225,7 +5165,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         if (nameSuffix.empty()) {
             currentimgHandler = imgHandler;
         }
-        if (BUILD_TYPE == "Debug") {
+        if (isDEBUG) {
             std::cout << "handleSdImages: image info img.target_filename: " << img.target_filename << std::endl;
         }
         // wxString fullName = sd_gui_utils::CreateFilePath(baseFileName, extension, wxString::FromUTF8Unchecked(this->mapp->cfg->output));
@@ -5240,7 +5180,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::MOVEABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
-                if (BUILD_TYPE == "Debug") {
+                if (isDEBUG) {
                     std::cout << "handleSdImages: moving image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
                 }
                 wxImage tmp;
@@ -5266,7 +5206,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
         if (sd_gui_utils::networks::hasImageType(sd_gui_utils::networks::ImageHandleFlags::COPYABLE_FLAG, img.type)) {
             if (wxFileExists(img.target_filename) && !wxFileExists(newTargetName.GetAbsolutePath())) {
-                if (BUILD_TYPE == "Debug") {
+                if (isDEBUG) {
                     std::cout << "handleSdImages: copying image: " << img.target_filename << " to " << newTargetName.GetAbsolutePath() << std::endl;
                 }
                 wxImage tmp;
@@ -5294,20 +5234,20 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         // update the item's paths too
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MASK_USED)) {
             item->mask_image = newTargetName.GetAbsolutePath();
-            if (BUILD_TYPE == "Debug") {
+            if (isDEBUG) {
                 std::cout << "handleSdImages: updating mask_image: " << item->mask_image << std::endl;
             }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::INITIAL)) {
             item->initial_image = newTargetName.GetAbsolutePath();
-            if (BUILD_TYPE == "Debug") {
+            if (isDEBUG) {
                 std::cout << "handleSdImages: updating initial_image: " << item->initial_image << std::endl;
             }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::CONTROLNET)) {
-            std::cout << "handleSdImages: updating control_image_path: " << item->params.control_image_path << std::endl;
-            if (BUILD_TYPE == "Debug") {
-                item->params.control_image_path = newTargetName.GetAbsolutePath();
+            item->params.control_image_path = newTargetName.GetAbsolutePath();
+            if (isDEBUG) {
+                std::cout << "handleSdImages: updating control_image_path: " << item->params.control_image_path << std::endl;
             }
         }
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
@@ -5318,7 +5258,7 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
 
     for (const auto& img : needExif) {
         if (wxFileExists(img.target_filename) && sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
-            if (BUILD_TYPE == "Debug") {
+            if (isDEBUG) {
                 std::cout << "handleSdImages: updating exif: " << img.target_filename << std::endl;
             }
 
@@ -5851,7 +5791,7 @@ void MainWindowUI::OnNormalizePrompt(wxCommandEvent& event) {
     }
 }
 
-bool MainWindowUI::ProcessEventHandler(std::string message) {
+bool MainWindowUI::ProcessEventHandler(const std::string& message, const std::string& error) {
     try {
         nlohmann::json msg    = nlohmann::json::parse(message);
         QueueItem updatedItem = msg.get<QueueItem>();
@@ -5879,9 +5819,8 @@ bool MainWindowUI::ProcessEventHandler(std::string message) {
                 this->handleSdImages(originalItem);
             }
             if (originalItem->status == QueueStatus::FAILED) {
-                if (this->extprocessLastError.empty() == false) {
-                    originalItem->status_message = this->extprocessLastError;
-                    this->extprocessLastError    = "";
+                if (error.empty() == false) {
+                    originalItem->status_message = error;
                 }
             }
 
@@ -5959,131 +5898,6 @@ void MainWindowUI::ProcessStdErrEvent(const char* bytes, size_t n) {
     }
 }
 
-void MainWindowUI::ProcessOutputThread() {
-    while (this->extProcessNeedToRun == true) {
-        if (subprocess_alive(this->subprocess) != 0) {
-            static char stddata[1024]    = {0};
-            static char stderrdata[1024] = {0};
-
-            unsigned int size             = sizeof(stderrdata);
-            unsigned int stdout_read_size = 0;
-            unsigned int stderr_read_size = 0;
-
-            stdout_read_size = subprocess_read_stdout(this->subprocess, stddata, size);
-            stderr_read_size = subprocess_read_stderr(this->subprocess, stderrdata, size);
-
-            if (stdout_read_size > 0 && std::string(stddata).find("(null)") == std::string::npos) {
-                this->ProcessStdOutEvent(stddata, stdout_read_size);
-            }
-            if (stderr_read_size > 0 && std::string(stderrdata).find("(null)") == std::string::npos) {
-                this->ProcessStdErrEvent(stderrdata, stderr_read_size);
-            }
-        }
-        if (this->qmanager->GetCurrentItem() != nullptr) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME / 2));
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-        }
-    }
-}
-
-void MainWindowUI::ProcessCheckThread() {
-    while (this->extProcessNeedToRun.load()) {
-        if (subprocess_alive(this->subprocess) != 0) {
-            std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
-
-            this->sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE);
-
-            if (std::strlen(buffer.get()) > 0) {
-                bool state = this->ProcessEventHandler(std::string(buffer.get(), std::strlen(buffer.get())));
-                if (state == true) {
-                    this->sharedMemory->clear();
-                }
-            }
-
-            if (this->extProcessNeedToRun.load() == false) {
-                std::string exitMsg = "exit";
-                this->sharedMemory->write(exitMsg.c_str(), exitMsg.size());
-                {
-                    wxThreadEvent* event = new wxThreadEvent();
-                    event->SetString(_("Stopping..."));
-                    event->SetId(9999);
-                    wxQueueEvent(this, event);
-                }
-                // std::this_thread::sleep_for(std::chrono::milliseconds(EPROCESS_SLEEP_TIME));
-                return;
-            }
-            float sleepTime = EPROCESS_SLEEP_TIME;
-            if (this->qmanager->GetCurrentItem() != nullptr && this->qmanager->GetCurrentItem()->status == QueueStatus::RUNNING) {
-                if (this->qmanager->GetCurrentItem()->stats.time_min > 0) {
-                    sleepTime = this->qmanager->GetCurrentItem()->stats.time_min;
-                } else {
-                    sleepTime = static_cast<float>(EPROCESS_SLEEP_TIME) / 4.f;
-                }
-            }
-            {  // it will be updated again, when a  job is finished
-                if (this->jobsCountSinceSegfault.load() == 0) {
-                    {
-                        wxThreadEvent* event = new wxThreadEvent();
-                        event->SetString(_("Process is ready"));
-                        event->SetId(9999);
-                        wxQueueEvent(this, event);
-                    }
-
-                    if (this->qmanager->GetCurrentItem() == nullptr) {
-                        this->m_stop_background_process->Enable();
-                    } else {
-                        this->m_stop_background_process->Disable();
-                    }
-                }
-            }
-            if (this->extProcessNeedToRun.load()) {
-                std::this_thread::sleep_for(std::chrono::duration<float, std::milli>(sleepTime));
-            }
-
-            continue;
-        }
-        // clear the last job to avoid restarting the failed job
-        this->sharedMemory->clear();
-        this->qmanager->resetRunning(_("External process stopped"));
-        {
-            wxThreadEvent* event = new wxThreadEvent();
-            event->SetString(_("Process is stopped"));
-            event->SetId(9999);
-            wxQueueEvent(this, event);
-        }
-        delete this->subprocess;
-        // restart
-        // const char* command_line[] = {this->extprocessCommand.c_str(), this->extProcessParam.c_str(), nullptr};
-
-        std::vector<const char*> command_line;
-        command_line.push_back(this->extprocessCommand.c_str());
-
-        for (auto const& p : this->extProcessParams) {
-            command_line.push_back(p.c_str().AsChar());
-        }
-
-        command_line.push_back(nullptr);
-
-        this->subprocess = new subprocess_s();
-
-        int result = subprocess_create(command_line.data(), subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment, this->subprocess);
-        if (0 != result) {
-            {
-                wxThreadEvent* event = new wxThreadEvent();
-                event->SetString(_("Failed to restart the background process..."));
-                event->SetId(9999);
-                wxQueueEvent(this, event);
-                this->m_stop_background_process->Disable();
-            }
-        }
-        this->jobsCountSinceSegfault.store(0);
-        this->stepsCountSinceSegfault.store(0);
-        if (this->extProcessNeedToRun.load()) {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
-    }
-}
 void MainWindowUI::initLog() {
     if (logfile.IsOpened() == false) {
         wxFileName fn(this->mapp->cfg->datapath + wxFileName::GetPathSeparator() + "app.log");

@@ -26,8 +26,8 @@ public:
 
 private:
     std::string shmName;
-    size_t shmSize;
-    bool isMaster;
+    size_t shmSize = 0;
+    bool isMaster  = false;
     std::mutex mutex;
 
 #ifdef _WIN32

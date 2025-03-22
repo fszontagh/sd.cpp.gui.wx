@@ -15,7 +15,8 @@ SharedMemoryManager::SharedMemoryManager(const std::string& shmName, size_t size
     } else {
         shmHandle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shmName.c_str());
         if (shmHandle == NULL)
-            throw std::runtime_error("Failed to open shared memory: " + std::string(strerror(errno)) +  " " + shmName);;
+            throw std::runtime_error("Failed to open shared memory: " + std::string(strerror(errno)) + " " + shmName);
+        ;
     }
     shmPtr = MapViewOfFile(shmHandle, FILE_MAP_ALL_ACCESS, 0, 0, shmSize);
     if (shmPtr == nullptr)
@@ -76,7 +77,7 @@ bool SharedMemoryManager::write(const void* data, size_t size) {
 }
 
 bool SharedMemoryManager::read(void* buffer, size_t size) {
-    if (size > shmSize) {
+    if (size > this->shmSize) {
         return false;
     }
     std::lock_guard<std::mutex> lock(mutex);
@@ -85,5 +86,5 @@ bool SharedMemoryManager::read(void* buffer, size_t size) {
 }
 
 void SharedMemoryManager::clear() {
-    std::memset(shmPtr, 0, shmSize);
+    std::memset(shmPtr, 0, this->shmSize);
 }

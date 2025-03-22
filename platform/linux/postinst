@@ -4,6 +4,7 @@ set -e
 
 chmod -f +x /usr/bin/stablediffusiongui_server
 chmod -f +x /usr/bin/stablediffusiongui_diffuser
+chmod -f +x /usr/bin/stablediffusiongui_llama
 
 if [ -d /run/systemd/system ]; then
 
