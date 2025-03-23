@@ -193,7 +193,7 @@ jobs:
       - name: Compile main application
         run: |
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default
+          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default -DSDGUI_WINDOWLESS=OFF -DSDGUI_SERVER=ON
           cmake --build . --config Release --target po-compile
           cmake --build . --config Release
 
@@ -243,7 +243,8 @@ jobs:
           restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
 
       - name: Maximize build space
-        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.variant == 'VULKAN' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        # if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.variant == 'VULKAN' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ (matrix.variant  == 'HIPBLAS' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: AdityaGarg8/remove-unwanted-software@v4.1
         with:
           remove-android: 'true'
