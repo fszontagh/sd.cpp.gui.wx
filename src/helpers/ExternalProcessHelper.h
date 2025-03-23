@@ -5,7 +5,7 @@ class ExternalProcessHelper {
 public:
     enum class ProcessType { none,
                              diffuser,
-                             ollama };
+                             llama };
 
     std::function<void()> onStart;
     std::function<void(const char*, size_t)> onStdOut;
@@ -159,7 +159,7 @@ private:
         wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
         wxFileName f(currentPath, binary_name);
         if (!f.Exists()) {
-            f.AppendDir(processType == ExternalProcessHelper::ProcessType::ollama ? "llama" : "extprocess");
+            f.AppendDir(processType == ExternalProcessHelper::ProcessType::llama ? "llama" : "extprocess");
             f.SetName(binary_name);
         }
 

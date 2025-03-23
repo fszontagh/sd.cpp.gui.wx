@@ -182,7 +182,7 @@ class mainUI : public wxFrame
 		wxButton* m_imageInfoLoadToimg2img;
 		wxFilePickerCtrl* m_imageInfoOpen;
 		wxBitmapButton* m_cleanImageInfo;
-		wxPanel* m_ollama;
+		wxPanel* m_llama;
 		wxPanel* m_panel30;
 		wxStaticText* m_staticText731;
 		wxChoice* m_languageModel;
@@ -410,8 +410,8 @@ class Settings : public wxFrame
 		wxNotebook* m_notebook1696;
 		wxPanel* m_path_panel;
 		wxStaticText* m_staticText1801317201;
-		wxDirPickerCtrl* m_ollama_dir;
-		wxBitmapButton* m_openOllamaPath;
+		wxDirPickerCtrl* m_llama_dir;
+		wxBitmapButton* m_openLlamaPath;
 		wxStaticLine* m_staticLine2231;
 		wxStaticText* m_staticText172410;
 		wxDirPickerCtrl* m_model_dir;

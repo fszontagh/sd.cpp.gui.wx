@@ -19,7 +19,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../libs/stb_image.h"
 
-MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& ollamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
+MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& llamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
 
@@ -206,30 +206,30 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
 
         this->processHelpers.push_back(std::move(sdProcess));
 
-        wxArrayString ollamaParams;
+        wxArrayString llamaParams;
 
-        ollamaParams.Add(ExternalProcessHelper::buildDllPathFromName(ollamaDllName));
-        ollamaParams.Add(this->ollamaLogFile);
+        llamaParams.Add(ExternalProcessHelper::buildDllPathFromName(llamaDllName));
+        llamaParams.Add(this->llamaLogFile);
 
-        auto ollamaProcess     = std::make_shared<ExternalProcessHelper>(LLAMA_BINARY_NAME, ExternalProcessHelper::ProcessType::ollama, ollamaParams, SHARED_MEMORY_PATH_LLAMA, SHARED_MEMORY_SIZE_LLAMA);
-        ollamaProcess->onStart = [this, &ollamaProcess]() {
-            this->writeLog(wxString::Format(_("Ollama process started: %s"), ollamaProcess->GetFullCommand()));
+        auto llamaProcess     = std::make_shared<ExternalProcessHelper>(LLAMA_BINARY_NAME, ExternalProcessHelper::ProcessType::llama, llamaParams, SHARED_MEMORY_PATH_LLAMA, SHARED_MEMORY_SIZE_LLAMA);
+        llamaProcess->onStart = [this, &llamaProcess]() {
+            this->writeLog(wxString::Format(_("Llama process started: %s"), llamaProcess->GetFullCommand()));
             wxThreadEvent* event = new wxThreadEvent();
-            event->SetString(_("Ollama is ready"));
+            event->SetString(_("Llama is ready"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
-        ollamaProcess->onStdErr = [this](const char* data, size_t size) {
+        llamaProcess->onStdErr = [this](const char* data, size_t size) {
             this->ProcessStdErrEvent(data, size);
         };
 
-        ollamaProcess->onStdOut = [this](const char* data, size_t size) {
+        llamaProcess->onStdOut = [this](const char* data, size_t size) {
             this->ProcessStdOutEvent(data, size);
         };
-        if (ollamaProcess->Start()) {
-            this->writeLog(wxString::Format(_("Ollama process just started: %s"), ollamaProcess->GetFullCommand()));
+        if (llamaProcess->Start()) {
+            this->writeLog(wxString::Format(_("Llama process just started: %s"), llamaProcess->GetFullCommand()));
         } else {
-            this->writeLog(wxString::Format(_("Ollama process failed to start: %s"), ollamaProcess->GetFullCommand()));
+            this->writeLog(wxString::Format(_("Llama process failed to start: %s"), llamaProcess->GetFullCommand()));
         }
     }
 }
@@ -5944,9 +5944,9 @@ void MainWindowUI::initLog() {
         this->extProcessLogFile = fn2.GetFullPath();
 
         wxFileName fn3(fn);
-        fn3.SetName("ollama");
+        fn3.SetName("llama");
         fn3.SetExt("log");
-        this->ollamaLogFile = fn3.GetFullPath();
+        this->llamaLogFile = fn3.GetFullPath();
 
         if (logfile.Open(fn.GetAbsolutePath(), wxFile::write_append)) {
             logfile.SeekEnd();

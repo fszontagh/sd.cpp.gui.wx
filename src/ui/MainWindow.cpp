@@ -947,13 +947,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 		m_notebook1302->SetPageImage( m_notebook1302Index, m_notebook1302Index );
 		m_notebook1302Index++;
 	}
-	m_ollama = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_ollama->SetToolTip( _("Interact with the AI assistant powered by Ollama") );
+	m_llama = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_llama->SetToolTip( _("Interact with the AI assistant powered by Llama") );
 
 	wxBoxSizer* bSizer111;
 	bSizer111 = new wxBoxSizer( wxVERTICAL );
 
-	m_panel30 = new wxPanel( m_ollama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel30 = new wxPanel( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer114;
 	bSizer114 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -972,7 +972,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer114->Fit( m_panel30 );
 	bSizer111->Add( m_panel30, 0, wxEXPAND | wxALL, 5 );
 
-	m_chatListBook = new wxListbook( m_ollama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_RIGHT );
+	m_chatListBook = new wxListbook( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_RIGHT );
 	m_panel29 = new wxPanel( m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer110;
 	bSizer110 = new wxBoxSizer( wxVERTICAL );
@@ -1001,20 +1001,20 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1151;
 	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_chatInput = new wxTextCtrl( m_ollama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, 0 );
+	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer1151->Add( m_chatInput, 1, wxALL|wxEXPAND, 5 );
 
-	m_sendChat = new wxButton( m_ollama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_sendChat = new wxButton( m_llama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer1151->Add( m_sendChat, 0, wxALL, 5 );
 
 
 	bSizer111->Add( bSizer1151, 0, wxEXPAND, 5 );
 
 
-	m_ollama->SetSizer( bSizer111 );
-	m_ollama->Layout();
-	bSizer111->Fit( m_ollama );
-	m_notebook1302->AddPage( m_ollama, _("Chat Assistant"), false );
+	m_llama->SetSizer( bSizer111 );
+	m_llama->Layout();
+	bSizer111->Fit( m_llama );
+	m_notebook1302->AddPage( m_llama, _("Chat Assistant"), false );
 	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("models") );
 	m_models_panel->SetMinSize( wxSize( 300,-1 ) );
 
@@ -2046,23 +2046,23 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* bSizer211;
 	bSizer211 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText1801317201 = new wxStaticText( m_path_panel, wxID_ANY, _("Ollama models path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1801317201 = new wxStaticText( m_path_panel, wxID_ANY, _("Llama models path"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText1801317201->Wrap( 0 );
 	m_staticText1801317201->SetMinSize( wxSize( 150,-1 ) );
 
 	bSizer211->Add( m_staticText1801317201, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_ollama_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
-	m_ollama_dir->SetMinSize( wxSize( 200,-1 ) );
+	m_llama_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_llama_dir->SetMinSize( wxSize( 200,-1 ) );
 
-	bSizer211->Add( m_ollama_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer211->Add( m_llama_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_openOllamaPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+	m_openLlamaPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
 
-	m_openOllamaPath->SetBitmap( file_import_png_to_wx_bitmap() );
-	m_openOllamaPath->SetToolTip( _("Open folder") );
+	m_openLlamaPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openLlamaPath->SetToolTip( _("Open folder") );
 
-	bSizer211->Add( m_openOllamaPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer211->Add( m_openLlamaPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	sizer2011->Add( bSizer211, 0, 0, 5 );
@@ -2640,7 +2640,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	this->Centre( wxBOTH );
 
 	// Connect Events
-	m_openOllamaPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openLlamaPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openModelsPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openLorasPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openVaesPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
@@ -2688,7 +2688,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 Settings::~Settings()
 {
 	// Disconnect Events
-	m_openOllamaPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
+	m_openLlamaPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openModelsPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openLorasPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openVaesPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );

@@ -66,11 +66,11 @@ public:
 #endif
 
         this->stableDiffusionDllName = libPrefix + "stable-diffusion";
-        this->ollamaDllName          = libPrefix + "ollama";
+        this->llamaDllName          = libPrefix + "llama";
 
         if (!forceType.empty()) {
             this->stableDiffusionDllName += "_" + forceType;
-            this->ollamaDllName += "_" + forceType;
+            this->llamaDllName += "_" + forceType;
         } else {
             static const cpu_features::X86Features features = cpu_features::GetX86Info().features;
             if (isNvidiaGPU()) {
@@ -86,7 +86,7 @@ public:
             }
 
             this->stableDiffusionDllName += "_" + this->backend;
-            this->ollamaDllName += "_" + this->backend;
+            this->llamaDllName += "_" + this->backend;
         }
 
         auto configLang = this->config->Read("/language", wxUILocale::GetSystemLocaleId().GetLanguage());
@@ -110,7 +110,7 @@ public:
             this->mainFrame->Destroy();
         }
         this->ChangeLocale(newLangName);
-        this->mainFrame = new MainWindowUI(nullptr, this->stableDiffusionDllName.utf8_string(), this->ollamaDllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
+        this->mainFrame = new MainWindowUI(nullptr, this->stableDiffusionDllName.utf8_string(), this->llamaDllName.utf8_string(), this->backend.utf8_string(), disableExternalProcessHandling, this);
 
         // load models
         this->mainFrame->LoadPresets();
@@ -188,7 +188,7 @@ public:
 private:
     MainWindowUI* mainFrame         = nullptr;
     wxString stableDiffusionDllName = wxEmptyString;
-    wxString ollamaDllName          = wxEmptyString;
+    wxString llamaDllName          = wxEmptyString;
     wxString backend                = wxEmptyString;
     wxLocale* m_Locale              = nullptr;
 };

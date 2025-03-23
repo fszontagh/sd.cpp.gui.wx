@@ -44,7 +44,7 @@ namespace sd_gui_utils {
         UPSCALER         = 512,   // The UPSCALER option represents the 9th bit
         EMBEDDING        = 1024,  // The EMBEDDING option represents the 10th bit
         PROMPT_TEMPLATES = 2048,  // The PROMPT_TEMPLATES option represents the 11th bit
-        OLLAMA_MODELS    = 4096,  // The OLLAMA_MODELS option represents the 12th bit
+        LLAMA_MODELS    = 4096,  // The LLAMA_MODELS option represents the 12th bit
         ALL              = -1,    // All options are set
         UNKNOWN          = -2     // The unknown option
     };
@@ -80,7 +80,7 @@ namespace sd_gui_utils {
         {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
         {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
         {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
-        {sd_gui_utils::DirTypes::OLLAMA_MODELS, "OLLAMA_MODELS"},
+        {sd_gui_utils::DirTypes::LLAMA_MODELS, "LLAMA_MODELS"},
         {sd_gui_utils::DirTypes::ALL, "ALL"},
         {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"},
     };
@@ -98,7 +98,7 @@ namespace sd_gui_utils {
         {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER},
         {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING},
         {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES},
-        {wxT("OLLAMA_MODELS"), sd_gui_utils::DirTypes::OLLAMA_MODELS},
+        {wxT("LLAMA_MODELS"), sd_gui_utils::DirTypes::LLAMA_MODELS},
         {wxT("ALL"), sd_gui_utils::DirTypes::ALL},
         {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN},
     };

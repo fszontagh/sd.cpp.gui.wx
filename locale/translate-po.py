@@ -45,7 +45,7 @@ def main():
     parser.add_argument("input_file", help="Input gettext PO file path")
     parser.add_argument("output_file", help="Output translated gettext PO file path")
     parser.add_argument("model", help="Model for translation")
-    parser.add_argument("--api", default="http://127.0.0.1:11434", help="ollama API url")
+    parser.add_argument("--api", default="http://127.0.0.1:11434", help="llama API url")
     parser.add_argument("--debug", default=False,action="store_true", help="debug print translated")
     parser.add_argument("--prompt", default="You are a professional document translator who is proficient in multiple languages. Please translate the following English part into German, and keep the RST content, without translating special symbols or punctuation marks."
                                                     "Do not translate \":ref:\" Only output the result:\n", help="translation prompt")
@@ -66,7 +66,7 @@ def main():
         text = entry.msgstr or entry.msgid
 
         # 忽略 rst 中的特殊标记
-        
+
         if ":ref:" in text:
 
             bar.finish()

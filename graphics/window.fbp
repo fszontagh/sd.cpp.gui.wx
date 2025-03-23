@@ -7776,7 +7776,7 @@
                       <property name="minimize_button">0</property>
                       <property name="minimum_size"></property>
                       <property name="moveable">1</property>
-                      <property name="name">m_ollama</property>
+                      <property name="name">m_llama</property>
                       <property name="pane_border">1</property>
                       <property name="pane_position"></property>
                       <property name="pane_size"></property>
@@ -7788,7 +7788,7 @@
                       <property name="size"></property>
                       <property name="subclass">; ; forward_declare</property>
                       <property name="toolbar_pane">0</property>
-                      <property name="tooltip">Interact with the AI assistant powered by Ollama</property>
+                      <property name="tooltip">Interact with the AI assistant powered by Llama</property>
                       <property name="window_extra_style"></property>
                       <property name="window_name"></property>
                       <property name="window_style">wxTAB_TRAVERSAL</property>
@@ -14403,7 +14403,7 @@
                           <property name="gripper">0</property>
                           <property name="hidden"></property>
                           <property name="id">wxID_ANY</property>
-                          <property name="label">Ollama models path</property>
+                          <property name="label">Llama models path</property>
                           <property name="markup">0</property>
                           <property name="max_size"></property>
                           <property name="maximize_button">0</property>
@@ -14473,7 +14473,7 @@
                           <property name="minimize_button">0</property>
                           <property name="minimum_size">200,-1</property>
                           <property name="moveable">1</property>
-                          <property name="name">m_ollama_dir</property>
+                          <property name="name">m_llama_dir</property>
                           <property name="pane_border">1</property>
                           <property name="pane_position"></property>
                           <property name="pane_size"></property>
@@ -14546,7 +14546,7 @@
                           <property name="minimize_button">0</property>
                           <property name="minimum_size"></property>
                           <property name="moveable">1</property>
-                          <property name="name">m_openOllamaPath</property>
+                          <property name="name">m_openLlamaPath</property>
                           <property name="pane_border">1</property>
                           <property name="pane_position"></property>
                           <property name="pane_size"></property>

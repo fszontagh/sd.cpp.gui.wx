@@ -71,8 +71,8 @@ void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
     if (object == this->m_openOutputPath) {
         wxLaunchDefaultApplication(this->m_images_output->GetPath());
     }
-    if (object == this->m_openOllamaPath) {
-        wxLaunchDefaultApplication(this->m_ollama_dir->GetPath());
+    if (object == this->m_openLlamaPath) {
+        wxLaunchDefaultApplication(this->m_llama_dir->GetPath());
     }
 }
 void MainWindowSettings::OnAddServer(wxCommandEvent& event) {
@@ -102,7 +102,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         }
     }
 
-    this->cfg->ollamapath             = this->m_ollama_dir->GetPath().utf8_string();
+    this->cfg->llamapath             = this->m_llama_dir->GetPath().utf8_string();
     this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
     this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
     this->cfg->vae                    = this->m_vae_dir->GetPath().utf8_string();
@@ -145,7 +145,7 @@ void MainWindowSettings::InitConfig() {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 
-    this->m_ollama_dir->SetPath(this->cfg->ollamapath);
+    this->m_llama_dir->SetPath(this->cfg->llamapath);
     this->m_lora_dir->SetPath(this->cfg->lora);
     this->m_model_dir->SetPath(this->cfg->model);
     this->m_vae_dir->SetPath(this->cfg->vae);

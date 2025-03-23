@@ -116,7 +116,7 @@ protected:
 
 public:
     /** Constructor */
-    MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& ollamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
+    MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& llamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
     //// end generated class members
     ~MainWindowUI();
     void OnThreadMessage(wxThreadEvent& e);
@@ -194,7 +194,7 @@ private:
     // external process
     std::vector<std::shared_ptr<ExternalProcessHelper>> processHelpers;
     wxString extProcessLogFile = wxEmptyString;
-    wxString ollamaLogFile     = wxEmptyString;
+    wxString llamaLogFile     = wxEmptyString;
     // external process
 
     sd_gui_utils::LastItemNotification lastItemNotification = {};
