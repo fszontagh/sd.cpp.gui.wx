@@ -81,7 +81,7 @@ jobs:
             cache-key: windows-vulkan
 
 #          - name: HIPBLAS
-#            cmake_flags: "-DSD_HIPBLAS=ON"
+#            cmake_flags: "-DSDGUI_HIPBLAS=ON"
 #            targets: "stable_diffusion_cpp_hipblas"
 #            cache-key: windows-hipblas
     steps:
@@ -311,13 +311,13 @@ jobs:
           mkdir -p build
           cd build
           if [ "${{ matrix.variant }}" = "CPU" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_AVX=ON -DSDGUI_AVX2=ON -DSDGUI_AVX512=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_HIPBLAS=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_VULKAN=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_CUDA=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           fi
           cmake --build . --config Release
 
