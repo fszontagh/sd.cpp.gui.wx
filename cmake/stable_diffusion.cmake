@@ -100,6 +100,7 @@ if(NOT SD_HIPBLAS)
     endif()
 
 
+
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
             stable_diffusion_cpp_${variant_name}
@@ -124,7 +125,7 @@ if(NOT SD_HIPBLAS)
             -DSD_VULKAN=${SD_VULKAN}
             -DGGML_ALL_WARNINGS=OFF
             -DGGML_NATIVE=${GGML_NATIVE}
-            -DCMAKE_CUDA_STANDARD=${CMAKE_CXX_STANDARD}
+            -DCMAKE_CUDA_STANDARD=17
             -DCMAKE_CUDA_STANDARD_REQUIRED=ON
             -DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
