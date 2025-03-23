@@ -947,6 +947,74 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 		m_notebook1302->SetPageImage( m_notebook1302Index, m_notebook1302Index );
 		m_notebook1302Index++;
 	}
+	m_ollama = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_ollama->SetToolTip( _("Interact with the AI assistant powered by Ollama") );
+
+	wxBoxSizer* bSizer111;
+	bSizer111 = new wxBoxSizer( wxVERTICAL );
+
+	m_panel30 = new wxPanel( m_ollama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer114;
+	bSizer114 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText731 = new wxStaticText( m_panel30, wxID_ANY, _("Language model"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText731->Wrap( -1 );
+	bSizer114->Add( m_staticText731, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	wxArrayString m_languageModelChoices;
+	m_languageModel = new wxChoice( m_panel30, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_languageModelChoices, 0 );
+	m_languageModel->SetSelection( 0 );
+	bSizer114->Add( m_languageModel, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	m_panel30->SetSizer( bSizer114 );
+	m_panel30->Layout();
+	bSizer114->Fit( m_panel30 );
+	bSizer111->Add( m_panel30, 0, wxEXPAND | wxALL, 5 );
+
+	m_chatListBook = new wxListbook( m_ollama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_RIGHT );
+	m_panel29 = new wxPanel( m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer110;
+	bSizer110 = new wxBoxSizer( wxVERTICAL );
+
+	m_scrolledWindow10 = new wxScrolledWindow( m_panel29, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
+	m_scrolledWindow10->SetScrollRate( 5, 5 );
+	bSizer110->Add( m_scrolledWindow10, 1, wxEXPAND | wxALL, 5 );
+
+
+	m_panel29->SetSizer( bSizer110 );
+	m_panel29->Layout();
+	bSizer110->Fit( m_panel29 );
+	m_chatListBook->AddPage( m_panel29, _("a page"), false );
+	#ifdef __WXGTK__ // Small icon style not supported in GTK
+	wxListView* m_chatListBookListView = m_chatListBook->GetListView();
+	long m_chatListBookFlags = m_chatListBookListView->GetWindowStyleFlag();
+	if( m_chatListBookFlags & wxLC_SMALL_ICON )
+	{
+		m_chatListBookFlags = ( m_chatListBookFlags & ~wxLC_SMALL_ICON ) | wxLC_ICON;
+	}
+	m_chatListBookListView->SetWindowStyleFlag( m_chatListBookFlags );
+	#endif
+
+	bSizer111->Add( m_chatListBook, 1, wxEXPAND | wxALL, 5 );
+
+	wxBoxSizer* bSizer1151;
+	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_chatInput = new wxTextCtrl( m_ollama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer1151->Add( m_chatInput, 1, wxALL|wxEXPAND, 5 );
+
+	m_sendChat = new wxButton( m_ollama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer1151->Add( m_sendChat, 0, wxALL, 5 );
+
+
+	bSizer111->Add( bSizer1151, 0, wxEXPAND, 5 );
+
+
+	m_ollama->SetSizer( bSizer111 );
+	m_ollama->Layout();
+	bSizer111->Fit( m_ollama );
+	m_notebook1302->AddPage( m_ollama, _("Chat Assistant"), false );
 	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("models") );
 	m_models_panel->SetMinSize( wxSize( 300,-1 ) );
 
@@ -1690,7 +1758,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	this->SetSizer( sizer0001 );
 	this->Layout();
-	m_statusBar166 = this->CreateStatusBar( 3, wxSTB_SIZEGRIP, wxID_ANY );
+	m_statusBar166 = this->CreateStatusBar( 4, wxSTB_SIZEGRIP, wxID_ANY );
 
 	this->Centre( wxBOTH );
 

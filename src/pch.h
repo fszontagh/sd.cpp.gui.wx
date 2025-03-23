@@ -70,6 +70,7 @@
 #include "libs/TcpClient.h"
 
 #include "extprocess/config.hpp"
+#include "llama/config.hpp"
 #include "exiv2/exiv2.hpp"
 
 #include "helpers/cpuinfo_x86.hpp"

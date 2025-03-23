@@ -19,12 +19,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../libs/stb_image.h"
 
-MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
+MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& ollamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp)
     : mainUI(parent), usingBackend(usingBackend), disableExternalProcessHandling(disableExternalProcessHandling), mapp(mapp) {
     this->ControlnetOrigPreviewBitmap = this->m_controlnetImagePreview->GetBitmap();
-    // this->AppOrigPlaceHolderBitmap    = this->m_img2img_preview->GetBitmap();
 
-    if (std::string(BUILD_TYPE) != "Release") {
+    if (isDEBUG) {
         this->SetTitle(wxString::Format("%s - %s (%s) - %s", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH, BUILD_TYPE));
     } else {
         this->SetTitle(wxString::Format("%s - %s (%s)", PROJECT_DISPLAY_NAME, SD_GUI_VERSION, GIT_HASH));
@@ -165,23 +164,22 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
 
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
-        wxArrayString params;
+        wxArrayString sdParams;
 
-        params.Add(ExternalProcessHelper::buildDllPathFromName(dllName));
-        params.Add(this->extProcessLogFile);
+        sdParams.Add(ExternalProcessHelper::buildDllPathFromName(stablediffusionDllName));
+        sdParams.Add(this->extProcessLogFile);
 
-        auto helper = std::make_shared<ExternalProcessHelper>(EPROCESS_BINARY_NAME, ExternalProcessHelper::ProcessType::diffuser, params, SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE);
-        this->writeLog(wxString::Format(_("Starting external process: %s"), helper->GetFullCommand()));
+        auto sdProcess = std::make_shared<ExternalProcessHelper>(EPROCESS_BINARY_NAME, ExternalProcessHelper::ProcessType::diffuser, sdParams, SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE);
 
-        helper->onStart = [this, &helper]() {
-            this->writeLog(wxString::Format(_("External process started: %s"), helper->GetFullCommand()));
+        sdProcess->onStart = [this, &sdProcess]() {
+            this->writeLog(wxString::Format(_("External process started: %s"), sdProcess->GetFullCommand()));
             wxThreadEvent* event = new wxThreadEvent();
             event->SetString(_("Process is ready"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
 
-        helper->onExit = [this, &helper]() {
+        sdProcess->onExit = [this, &sdProcess]() {
             this->writeLog(wxString::Format(_("External process stopped")));
             wxThreadEvent* event = new wxThreadEvent();
             event->SetString(_("External process stopped"));
@@ -189,24 +187,50 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string dllName, const st
             wxQueueEvent(this, event);
         };
 
-        helper->onStdErr = [this](const char* data, size_t size) {
+        sdProcess->onStdErr = [this](const char* data, size_t size) {
             this->ProcessStdErrEvent(data, size);
         };
 
-        helper->onStdOut = [this](const char* data, size_t size) {
+        sdProcess->onStdOut = [this](const char* data, size_t size) {
             this->ProcessStdOutEvent(data, size);
         };
-        helper->onShmMessage = [this, &helper](const char* data, size_t size) {
+        sdProcess->onShmMessage = [this, &sdProcess](const char* data, size_t size) {
             return this->ProcessEventHandler(std::string(data, size));
         };
 
-        if (helper->Start()) {
-            this->writeLog(wxString::Format(_("External process just started: %s"), helper->GetFullCommand()));
+        if (sdProcess->Start()) {
+            this->writeLog(wxString::Format(_("External process just started: %s"), sdProcess->GetFullCommand()));
         } else {
-            this->writeLog(wxString::Format(_("External process failed to start: %s"), helper->GetFullCommand()));
+            this->writeLog(wxString::Format(_("External process failed to start: %s"), sdProcess->GetFullCommand()));
         }
 
-        this->processHelpers.push_back(std::move(helper));
+        this->processHelpers.push_back(std::move(sdProcess));
+
+        wxArrayString ollamaParams;
+
+        ollamaParams.Add(ExternalProcessHelper::buildDllPathFromName(ollamaDllName));
+        ollamaParams.Add(this->ollamaLogFile);
+
+        auto ollamaProcess     = std::make_shared<ExternalProcessHelper>(LLAMA_BINARY_NAME, ExternalProcessHelper::ProcessType::ollama, ollamaParams, SHARED_MEMORY_PATH_LLAMA, SHARED_MEMORY_SIZE_LLAMA);
+        ollamaProcess->onStart = [this, &ollamaProcess]() {
+            this->writeLog(wxString::Format(_("Ollama process started: %s"), ollamaProcess->GetFullCommand()));
+            wxThreadEvent* event = new wxThreadEvent();
+            event->SetString(_("Ollama is ready"));
+            event->SetId(9999);
+            wxQueueEvent(this, event);
+        };
+        ollamaProcess->onStdErr = [this](const char* data, size_t size) {
+            this->ProcessStdErrEvent(data, size);
+        };
+
+        ollamaProcess->onStdOut = [this](const char* data, size_t size) {
+            this->ProcessStdOutEvent(data, size);
+        };
+        if (ollamaProcess->Start()) {
+            this->writeLog(wxString::Format(_("Ollama process just started: %s"), ollamaProcess->GetFullCommand()));
+        } else {
+            this->writeLog(wxString::Format(_("Ollama process failed to start: %s"), ollamaProcess->GetFullCommand()));
+        }
     }
 }
 void MainWindowUI::OnClose(wxCloseEvent& event) {
@@ -1206,6 +1230,14 @@ void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
         event.Skip();
         return;
     }
+    if (keyCode == WXK_RETURN) {
+        this->CheckQueueButton();
+        if (this->m_queue->IsEnabled()) {
+            wxCommandEvent clickEvent(wxEVT_BUTTON, this->m_queue->GetId());
+            wxPostEvent(this->m_queue, clickEvent);
+            return;
+        }
+    }
     if (keyCode != WXK_UP && keyCode != WXK_DOWN) {
         event.Skip();
         return;
@@ -1233,7 +1265,6 @@ void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
             bracketEnd++;
         }
 
-        // Ha találtunk megfelelő zárójelet, azt használjuk
         if (bracketStart > 0 && bracketEnd < (long)text.Length() && text[bracketStart - 1] == '(' && text[bracketEnd] == ')') {
             from = bracketStart - 1;
             to   = bracketEnd + 1;
@@ -3916,6 +3947,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         return;
     }
 
+    if (e.GetId() == 10000) {
+        this->m_statusBar166->SetStatusText(e.GetString(), 2);
+        return;
+    }
+
     auto msg = e.GetString().utf8_string();
 
     std::string token                      = msg.substr(0, msg.find(":"));
@@ -3967,7 +4003,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
                 this->UpdateCurrentProgress(item, event);
                 if (isDEBUG) {
                     auto status_str = QueueStatus_GUI_str.at(item->status);
-                    this->writeLog(wxString::Format(_("Job status changed: %s job id: %d status: %s"), item->status_message, item->id, status_str), true);
+                    this->writeLog(wxString::Format(_("Job status changed: %s job id: %" PRIu64 " status: %s"), item->status_message, item->id, status_str), true);
                 }
             } break;
                 // item updated... -> set the progress bar in the queue
@@ -5906,6 +5942,11 @@ void MainWindowUI::initLog() {
         fn2.SetName("diffuser");
         fn2.SetExt("log");
         this->extProcessLogFile = fn2.GetFullPath();
+
+        wxFileName fn3(fn);
+        fn3.SetName("ollama");
+        fn3.SetExt("log");
+        this->ollamaLogFile = fn3.GetFullPath();
 
         if (logfile.Open(fn.GetAbsolutePath(), wxFile::write_append)) {
             logfile.SeekEnd();

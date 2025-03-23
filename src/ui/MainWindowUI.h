@@ -116,7 +116,7 @@ protected:
 
 public:
     /** Constructor */
-    MainWindowUI(wxWindow* parent, const std::string dllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
+    MainWindowUI(wxWindow* parent, const std::string& stablediffusionDllName, const std::string& ollamaDllName, const std::string& usingBackend, bool disableExternalProcessHandling, MainApp* mapp);
     //// end generated class members
     ~MainWindowUI();
     void OnThreadMessage(wxThreadEvent& e);
@@ -194,6 +194,7 @@ private:
     // external process
     std::vector<std::shared_ptr<ExternalProcessHelper>> processHelpers;
     wxString extProcessLogFile = wxEmptyString;
+    wxString ollamaLogFile     = wxEmptyString;
     // external process
 
     sd_gui_utils::LastItemNotification lastItemNotification = {};
@@ -222,7 +223,7 @@ private:
     void UpdateJobImagePreviews(std::shared_ptr<QueueItem> jobItem = nullptr);
     void AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::shared_ptr<QueueItem> item, const sd_gui_utils::ImageInfo img, int gen_index);
     // external process callbacks
-    bool ProcessEventHandler(const std::string &message, const std::string &error = "");
+    bool ProcessEventHandler(const std::string& message, const std::string& error = "");
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
     // external process callbacks
@@ -230,6 +231,21 @@ private:
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
+    // chat things
+    inline void addChatPanel(const wxString& title = _("New Chat"), bool select = true) {
+        auto panel        = new wxPanel(this->m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+        auto scrolledWindow = new wxScrolledWindow(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
+        scrolledWindow->SetScrollRate(5, 5);
+        sizer->Add(scrolledWindow, 1, wxEXPAND | wxALL, 5);
+
+        panel->SetSizer(sizer);
+        panel->Layout();
+        sizer->Fit(panel);
+        this->m_chatListBook->AddPage(panel, title, select);
+    }
+    // chat things
 
     inline static size_t findLoraDistance(const wxString& text, size_t cursorPos) {
         const wxString pattern = "<lora:";

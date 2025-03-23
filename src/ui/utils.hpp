@@ -1346,6 +1346,7 @@ namespace sd_gui_utils {
         PANEL_IMG2IMG,
         PANEL_UPSCALER,
         PANEL_IMAGEINFO,
+        PANEL_OLLAMA,
         PANEL_MODELS
     };
 

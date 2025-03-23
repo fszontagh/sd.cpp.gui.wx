@@ -15,7 +15,7 @@ public:
 
     ExternalProcessHelper(wxString processName, ProcessType type, wxArrayString params, wxString shmName, unsigned long shmSize)
         : processType(type), extProcessArguments(params), shmSize(shmSize), shmName(shmName) {
-        this->extProcessCommand = findBinary(processName);
+        this->extProcessCommand = findBinary(processName, type);
         if (this->extProcessCommand.IsEmpty()) {
             this->error = "Failed to find the external process binary";
             throw std::runtime_error(this->error.ToStdString());
@@ -154,16 +154,17 @@ public:
     }
 
 private:
-    wxString findBinary(const wxString& binary_name) {
+    wxString findBinary(const wxString& binary_name, ExternalProcessHelper::ProcessType processType) {
         wxString path;
         wxString currentPath = wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath();
         wxFileName f(currentPath, binary_name);
         if (!f.Exists()) {
-            f.AppendDir("extprocess");
+            f.AppendDir(processType == ExternalProcessHelper::ProcessType::ollama ? "llama" : "extprocess");
             f.SetName(binary_name);
         }
+
         if (!f.Exists()) {
-            f.AppendDir("Debug");
+            f.AppendDir(isDEBUG ? "Debug" : "Release");
             f.SetName(binary_name);
         }
         if (f.Exists()) {

@@ -39,6 +39,8 @@
 #include <wx/textctrl.h>
 #include <wx/html/htmlwin.h>
 #include <wx/splitter.h>
+#include <wx/listbook.h>
+#include <wx/listctrl.h>
 #include <wx/treelist.h>
 #include <wx/hyperlink.h>
 #include <wx/imaglist.h>
@@ -180,6 +182,15 @@ class mainUI : public wxFrame
 		wxButton* m_imageInfoLoadToimg2img;
 		wxFilePickerCtrl* m_imageInfoOpen;
 		wxBitmapButton* m_cleanImageInfo;
+		wxPanel* m_ollama;
+		wxPanel* m_panel30;
+		wxStaticText* m_staticText731;
+		wxChoice* m_languageModel;
+		wxListbook* m_chatListBook;
+		wxPanel* m_panel29;
+		wxScrolledWindow* m_scrolledWindow10;
+		wxTextCtrl* m_chatInput;
+		wxButton* m_sendChat;
 		wxPanel* m_models_panel;
 		wxTreeListCtrl* m_modelTreeList;
 		wxScrolledWindow* m_modelDetailsImageList;
