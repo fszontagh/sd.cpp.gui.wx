@@ -948,8 +948,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 		m_notebook1302Index++;
 	}
 	m_llama = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_llama->SetToolTip( _("Interact with the AI assistant powered by Llama") );
-
 	wxBoxSizer* bSizer111;
 	bSizer111 = new wxBoxSizer( wxVERTICAL );
 
@@ -964,6 +962,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxArrayString m_languageModelChoices;
 	m_languageModel = new wxChoice( m_panel30, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_languageModelChoices, 0 );
 	m_languageModel->SetSelection( 0 );
+	m_languageModel->Enable( false );
+
 	bSizer114->Add( m_languageModel, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -973,19 +973,6 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer111->Add( m_panel30, 0, wxEXPAND | wxALL, 5 );
 
 	m_chatListBook = new wxListbook( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_RIGHT );
-	m_panel29 = new wxPanel( m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	wxBoxSizer* bSizer110;
-	bSizer110 = new wxBoxSizer( wxVERTICAL );
-
-	m_scrolledWindow10 = new wxScrolledWindow( m_panel29, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledWindow10->SetScrollRate( 5, 5 );
-	bSizer110->Add( m_scrolledWindow10, 1, wxEXPAND | wxALL, 5 );
-
-
-	m_panel29->SetSizer( bSizer110 );
-	m_panel29->Layout();
-	bSizer110->Fit( m_panel29 );
-	m_chatListBook->AddPage( m_panel29, _("a page"), false );
 	#ifdef __WXGTK__ // Small icon style not supported in GTK
 	wxListView* m_chatListBookListView = m_chatListBook->GetListView();
 	long m_chatListBookFlags = m_chatListBookListView->GetWindowStyleFlag();
@@ -1001,11 +988,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1151;
 	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, 0 );
+	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_ENTER );
+	m_chatInput->SetMinSize( wxSize( -1,60 ) );
+
 	bSizer1151->Add( m_chatInput, 1, wxALL|wxEXPAND, 5 );
 
 	m_sendChat = new wxButton( m_llama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer1151->Add( m_sendChat, 0, wxALL, 5 );
+	bSizer1151->Add( m_sendChat, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
 	bSizer111->Add( bSizer1151, 0, wxEXPAND, 5 );
@@ -1015,6 +1004,14 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_llama->Layout();
 	bSizer111->Fit( m_llama );
 	m_notebook1302->AddPage( m_llama, _("Chat Assistant"), false );
+	m_notebook1302Bitmap = text_box_dots_png_to_wx_bitmap();
+	if ( m_notebook1302Bitmap.Ok() )
+	{
+		m_notebook1302Image = m_notebook1302Bitmap.ConvertToImage();
+		m_notebook1302Images->Add( m_notebook1302Image.Scale( m_notebook1302ImageSize.GetWidth(), m_notebook1302ImageSize.GetHeight() ) );
+		m_notebook1302->SetPageImage( m_notebook1302Index, m_notebook1302Index );
+		m_notebook1302Index++;
+	}
 	m_models_panel = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, wxT("models") );
 	m_models_panel->SetMinSize( wxSize( 300,-1 ) );
 
@@ -1847,6 +1844,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageInfoLoadToimg2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
+	m_chatInput->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
+	m_sendChat->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Connect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );
 	m_modelTreeList->Connect( wxEVT_TREELIST_ITEM_ACTIVATED, wxTreeListEventHandler( mainUI::OnDataModelTreeActivated ), NULL, this );
 	m_modelTreeList->Connect( wxEVT_TREELIST_ITEM_CONTEXT_MENU, wxTreeListEventHandler( mainUI::OnDataModelTreeContextMenu ), NULL, this );
@@ -1982,6 +1981,8 @@ mainUI::~mainUI()
 	m_imageInfoLoadToimg2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
+	m_chatInput->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
+	m_sendChat->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Disconnect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );
 	m_modelTreeList->Disconnect( wxEVT_TREELIST_ITEM_ACTIVATED, wxTreeListEventHandler( mainUI::OnDataModelTreeActivated ), NULL, this );
 	m_modelTreeList->Disconnect( wxEVT_TREELIST_ITEM_CONTEXT_MENU, wxTreeListEventHandler( mainUI::OnDataModelTreeContextMenu ), NULL, this );
@@ -2065,7 +2066,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	bSizer211->Add( m_openLlamaPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	sizer2011->Add( bSizer211, 0, 0, 5 );
+	sizer2011->Add( bSizer211, 0, wxALL, 5 );
 
 	m_staticLine2231 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	sizer2011->Add( m_staticLine2231, 0, wxEXPAND | wxALL, 5 );

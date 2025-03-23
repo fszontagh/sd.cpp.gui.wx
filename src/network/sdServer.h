@@ -1,5 +1,5 @@
-#ifndef _NETWORK_SD_SERVER_H_
-#define _NETWORK_SD_SERVER_H_
+#ifndef _NETWORK_SDGUI_SERVER_H_
+#define _NETWORK_SDGUI_SERVER_H_
 #include "../libs/TcpClient.h"
 
 namespace sd_gui_utils {
@@ -477,4 +477,4 @@ namespace sd_gui_utils {
         }
     };
 };  // namespace sd_gui_utils
-#endif  // _NETWORK_SD_SERVER_H_
+#endif  // _NETWORK_SDGUI_SERVER_H_

@@ -167,9 +167,9 @@ if (SDGUI_AVX512)
     build_stable_diffusion("avx512" OFF OFF ON OFF OFF OFF)
 endif()
 
-if(SDGUI_CUBLAS)
+if(SDGUI_CUDA)
     build_stable_diffusion("cuda" OFF OFF OFF ON OFF OFF)
-endif(SDGUI_CUBLAS)
+endif(SDGUI_CUDA)
 
 if (SDGUI_HIPBLAS)
     build_stable_diffusion("hipblas" OFF OFF OFF OFF ON OFF)

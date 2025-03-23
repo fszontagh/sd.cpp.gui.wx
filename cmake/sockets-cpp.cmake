@@ -9,5 +9,5 @@ ExternalProject_Add(
   BUILD_COMMAND ""
 )
 ExternalProject_Get_property(sockets_cpp SOURCE_DIR)
-set(sockets_cpp_SOURCE ${SOURCE_DIR}/include)
+set(sockets_cpp_SOURCE ${SOURCE_DIR}/include CACHE PATH "Path to sockets-cpp headers")
 message(STATUS "sockets_cpp_SOURCE: ${sockets_cpp_SOURCE}")

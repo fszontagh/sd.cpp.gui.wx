@@ -56,27 +56,27 @@ jobs:
       matrix:
         variant:
           - name: CPU avx
-            cmake_flags: "-DSD_AVX=ON"
+            cmake_flags: "-DSDGUI_AVX=ON"
             targets: "stable_diffusion_cpp_avx"
             cache-key: windows-avx
 
           - name: CPU avx2
-            cmake_flags: "-DSD_AVX2=ON"
+            cmake_flags: "-DSDGUI_AVX2=ON"
             targets: "stable_diffusion_cpp_avx2"
             cache-key: windows-avx2
 
           - name: CPU avx512
-            cmake_flags: "-DSD_AVX512=ON"
+            cmake_flags: "-DSDGUI_AVX512=ON"
             targets: "stable_diffusion_cpp_avx512"
             cache-key: windows-avx512
 
           - name: CUDA
-            cmake_flags: "-DSD_CUDA=ON"
+            cmake_flags: "-DSDGUI_CUDA=ON"
             targets: "stable_diffusion_cpp_cuda"
             cache-key: windows-cuda
 
           - name: VULKAN
-            cmake_flags: "-DSD_VULKAN=ON"
+            cmake_flags: "-DSDGUI_VULKAN=ON"
             targets: "stable_diffusion_cpp_vulkan"
             cache-key: windows-vulkan
 
@@ -95,24 +95,6 @@ jobs:
           path: build/Release/*.dll
           key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
           restore-keys: ${{ matrix.variant.cache-key }}-
-
-      - name: Cache Conan
-        if: steps.cache-build.outputs.cache-hit != 'true'
-        id: cache-conan
-        uses: actions/cache@v4
-        with:
-          path: |
-           ~/.conan2
-           build\generators
-           CMakeUserPresets.json
-          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.txt') }}
-          restore-keys: ${{ runner.os }}-conan
-
-      - name: Install Conan
-        if: steps.cache-build.outputs.cache-hit != 'true'
-        run: |
-          python -m pip install --upgrade pip
-          pip install conan
 
       - name: Install CUDA Toolkit
         if: ${{ matrix.variant.name == 'CUDA' && steps.cache-build.outputs.cache-hit != 'true' }}
@@ -149,26 +131,19 @@ jobs:
           Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
           Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
 
-      - name: Set up Conan
-        if: steps.cache-build.outputs.cache-hit != 'true' && steps.cache-conan.outputs.cache-hit != 'true'
-        run: |
-          New-Item -ItemType Directory -Force -Path build
-          cd build
-          conan profile detect
-          conan install .. -s compiler.cppstd=17 --build=never
 
       - name: Configure CMake
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
           New-Item -ItemType Directory -Force -Path build
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_TOOLKIT_ROOT_DIR="${{steps.cuda-toolkit.outputs.CUDA_PATH}}" ${{ matrix.variant.cmake_flags }} --preset conan-default
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_WINDOWLESS=ON -DSDGUI_SERVER=OFF -DCUDA_TOOLKIT_ROOT_DIR="${{steps.cuda-toolkit.outputs.CUDA_PATH}}" ${{ matrix.variant.cmake_flags }}
 
       - name: Build Targets
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
           cd build
-          cmake --build . --config Release --target ${{ matrix.variant.targets }}
+          cmake --build . --config Release
 
       - name: Upload Build Outputs
         uses: actions/upload-artifact@v4
@@ -220,8 +195,7 @@ jobs:
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default
           cmake --build . --config Release --target po-compile
-          cmake --build . --config Release --target stablediffusiongui_diffuser
-          cmake --build . --config Release --target stablediffusiongui
+          cmake --build . --config Release
 
 
       - name: Generate installer
@@ -337,20 +311,15 @@ jobs:
           mkdir -p build
           cd build
           if [ "${{ matrix.variant }}" = "CPU" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_avx
-            cmake --build . --config Release --target stable_diffusion_cpp_avx2
-            cmake --build . --config Release --target stable_diffusion_cpp_avx512
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
-            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_cuda
+            cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           fi
+          cmake --build . --config Release
 
 
       - name: Upload Build Outputs
@@ -399,11 +368,9 @@ jobs:
       - name: Configure & Compile main application
         run: |
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_SERVER=ON
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_SERVER=ON -DSDGUI_WINDOWLESS=OFF
           cmake --build . --config Release --target po-compile
-          cmake --build . --config Release --target stablediffusiongui_diffuser
-          cmake --build . --config Release --target stablediffusiongui
-          cmake --build . --config Release --target stablediffusiongui_server
+          cmake --build . --config Release
 
       - name: Package main application
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}

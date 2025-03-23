@@ -113,6 +113,10 @@ protected:
     void OnInpaintZoomSliderScroll(wxScrollEvent& event) override;
 
     void OnServerSelect(wxCommandEvent& event) override;
+    // chat things
+    void OnSendChat(wxCommandEvent& event) override;
+    void OnChatInputTextEnter(wxCommandEvent& event) override;
+    // chat things
 
 public:
     /** Constructor */
@@ -194,7 +198,7 @@ private:
     // external process
     std::vector<std::shared_ptr<ExternalProcessHelper>> processHelpers;
     wxString extProcessLogFile = wxEmptyString;
-    wxString llamaLogFile     = wxEmptyString;
+    wxString llamaLogFile      = wxEmptyString;
     // external process
 
     sd_gui_utils::LastItemNotification lastItemNotification = {};
@@ -202,6 +206,8 @@ private:
     // std::ofstream logfile;
     wxFile logfile;
     std::unordered_map<wxString, wxString> lastImageInfoParams;
+
+    std::vector<wxPanel*> chatPanels;
 
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
@@ -244,6 +250,7 @@ private:
         panel->Layout();
         sizer->Fit(panel);
         this->m_chatListBook->AddPage(panel, title, select);
+        this->chatPanels.push_back(panel);
     }
     // chat things
 

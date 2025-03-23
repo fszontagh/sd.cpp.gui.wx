@@ -187,8 +187,6 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText731;
 		wxChoice* m_languageModel;
 		wxListbook* m_chatListBook;
-		wxPanel* m_panel29;
-		wxScrolledWindow* m_scrolledWindow10;
 		wxTextCtrl* m_chatInput;
 		wxButton* m_sendChat;
 		wxPanel* m_models_panel;
@@ -338,6 +336,8 @@ class mainUI : public wxFrame
 		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnCleanImageInfo( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnChatInputTextEnter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnSendChat( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeColSorted( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeActivated( wxTreeListEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeContextMenu( wxTreeListEvent& event ) { event.Skip(); }

@@ -6,37 +6,54 @@ configure_file(${CMAKE_SOURCE_DIR}/platform/linux/AppImageRecipe.yml.in ${CMAKE_
 
 
 set(APPIMGDEPENDS ${PROJECT_BINARY_NAME})
-list(APPEND APPIMGDEPENDS ${PROJECT_BINARY_NAME}_diffuser)
-
-if (SDGUI_AVX)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx llama_avx)
+if (SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS ${PROJECT_BINARY_NAME}_diffuser)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS ${PROJECT_BINARY_NAME}_llama)
+  endif()
 endif()
 
-if (SDGUI_AVX2)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx2 llama_avx2)
+if (SDGUI_AVX AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_avx)
+  endif()
 endif()
 
-if(SDGUI_AVX512)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx512 llama_avx512)
+if (SDGUI_AVX2 AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx2)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_avx2)
+  endif()
 endif()
 
-if(SDGUI_CUBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_cuda llama_cuda)
+if(SDGUI_AVX512 AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx512)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_avx512)
+  endif()
 endif()
 
-if(SDGUI_VULKAN)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_vulkan llama_vulkan)
+if(SDGUI_CUDA AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_cuda)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_cuda)
+  endif()
 endif()
 
-if (SDGUI_HIPBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_hipblas llama_hipblas)
+if(SDGUI_VULKAN AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_vulkan)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_vulkan)
+  endif()
 endif()
 
-
-
-
-message(STATUS "APPIMGDEPENDS: ${APPIMGDEPENDS}")
-
+if (SDGUI_HIPBLAS AND SDGUI_LOCAL_DISABLE EQUAL OFF)
+  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_hipblas)
+  if (SDGUI_LLAMA_DISABLE EQUAL OFF)
+    list(APPEND APPIMGDEPENDS llama_cpp_hipblas)
+  endif()
+endif()
 add_custom_target(
   AppImage
   DEPENDS ${APPIMGDEPENDS}

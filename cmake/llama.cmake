@@ -90,8 +90,9 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     endif()
 
-    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include)
-    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/ggml/include)
+    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include CACHE PATH "Path to llama.cpp include directory" FORCE)
+    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/ggml/include CACHE PATH "Path to GGML include directory" FORCE)
+
 
     ExternalProject_Add(
         llama_cpp_${variant_name}
@@ -106,14 +107,14 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}
             -DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}
-            -DLLAMA_BUILD_TESTS=OFF
-            -DLLAMA_BUILD_EXAMPLES=OFF
-            -DLLAMA_BUILD_SERVER=OFF
-            -DLLAMA_BUILD_COMMON=OFF
-            -DLLAMA_ALL_WARNINGS=OFF
-            -DLLAMA_ALL_WARNINGS_3RD_PARTY=OFF
-            -DLLAMA_CURL=OFF
-            -DLLAMA_LLGUIDANCE=OFF
+            #-DLLAMA_BUILD_TESTS=OFF
+            #-DLLAMA_BUILD_EXAMPLES=OFF
+            #-DLLAMA_BUILD_SERVER=OFF
+            #-DLLAMA_BUILD_COMMON=OFF
+            #-DLLAMA_ALL_WARNINGS=OFF
+            #-DLLAMA_ALL_WARNINGS_3RD_PARTY=OFF
+            #-DLLAMA_CURL=OFF
+            #-DLLAMA_LLGUIDANCE=OFF
             -DGGML_CPU_AARCH64=OFF
             -DGGML_AVX=${SD_AVX}
             -DGGML_AVX2=${SD_AVX2}
@@ -147,7 +148,7 @@ if (SDGUI_AVX512)
     build_llama("avx512" OFF OFF ON OFF OFF OFF)
 endif()
 
-if (SDGUI_CUBLAS)
+if (SDGUI_CUDA)
     build_llama("cuda" OFF OFF OFF ON OFF OFF)
 endif()
 

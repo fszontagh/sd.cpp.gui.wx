@@ -444,3 +444,107 @@ wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_
 
     return folderGroupName;
 }
+unsigned int ModelInfo::Manager::GetCount(sd_gui_utils::DirTypes type) {
+    if (this->ModelCount.contains(type)) {
+        return this->ModelCount[type];
+    }
+    return 0;
+}
+const std::unordered_map<wxString, wxFileName> ModelInfo::Manager::getFolderGroups() const {
+    return this->folderGroups;
+}
+bool ModelInfo::Manager::folderGroupExists(const wxString& group_name) {
+    for (const auto& group : this->folderGroups) {
+        if (group.second.GetName() == group_name) {
+            return true;
+        }
+    }
+    return false;
+}
+void ModelInfo::Manager::deleteModel(std::string model_path) {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    if (this->ModelInfos.contains(model_path)) {
+        auto model = this->ModelInfos[model_path];
+        if (model->CivitAiInfo.images.empty() == false) {
+            for (auto image : model->CivitAiInfo.images) {
+                if (wxFileName::Exists(wxString::FromUTF8Unchecked(image.local_path))) {
+                    wxRemoveFile(wxString::FromUTF8Unchecked(image.local_path));
+                }
+            }
+        }
+        // delete the meta file
+        if (wxFileName::Exists(wxString::FromUTF8Unchecked(model->meta_file))) {
+            wxRemoveFile(wxString::FromUTF8Unchecked(model->meta_file));
+        }
+        if (wxFileName::Exists(wxString::FromUTF8Unchecked(model_path))) {
+            if (wxRemoveFile(wxString::FromUTF8Unchecked(model_path))) {
+                delete model;
+                model = nullptr;
+                this->ModelInfos.erase(model_path);
+            }
+        }
+    }
+}
+void ModelInfo::Manager::UnloadModelsByServer(sd_gui_utils::sdServer* server) {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    if (this->ModelInfos.empty()) {
+        return;
+    }
+    for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
+        if (server->GetId().empty() == false && it->second->server_id == server->GetId()) {
+            this->ModelCount[it->second->model_type]--;
+            delete it->second;
+            it = this->ModelInfos.erase(it);
+        } else {
+            it++;
+        }
+    }
+}
+void ModelInfo::Manager::resetModels(sd_gui_utils::DirTypes type) {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    if (this->ModelInfos.empty()) {
+        return;
+    }
+    for (auto it = this->ModelInfos.begin(); it != this->ModelInfos.end();) {
+        if (it->second->model_type == type) {
+            if (it->second) {
+                delete it->second;
+            }
+            it->second = nullptr;
+            it         = this->ModelInfos.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (this->ModelCount.contains(type)) {
+        this->ModelCount[type] = 0;
+    }
+}
+const std::map<std::string, std::string> ModelInfo::Manager::ListModelNamesByType(sd_gui_utils::DirTypes type, const wxString& filter) {
+    std::map<std::string, std::string> list;
+    for (const auto& it : this->ModelInfos) {
+        wxString modelName(it.second->name);
+        wxString modelNameL = modelName.Lower();
+        if (it.second->model_type == type) {
+            if (filter.empty() == false && modelNameL.StartsWith(filter.Lower()) == false) {
+                continue;
+            }
+            // cut the name on the last .
+
+            if (modelName.Contains('.')) {
+                modelName = modelName.BeforeLast('.');
+            }
+            list[it.second->name] = modelName.ToStdString();
+        }
+    }
+    return list;
+}
+sd_gui_utils::ModelFileInfo* ModelInfo::Manager::NameStartsWith(const wxString& keyword, const sd_gui_utils::DirTypes& type, std::string server) {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    for (const auto& m : this->ModelInfos) {
+        if (m.second->model_type == type && m.second->name.starts_with(keyword) && m.second->server_id == server) {
+            return m.second;
+        }
+    }
+    return nullptr;
+}

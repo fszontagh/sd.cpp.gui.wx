@@ -4,7 +4,6 @@ elseif (MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 endif()
 
-
 if (NOT WIN32)
     set(wxWidgets_USE_STATIC ON)
     set(wxBUILD_SHARED OFF)
@@ -12,7 +11,6 @@ if (NOT WIN32)
     set(wxBUILD_TESTS OFF)
     set(wxBUILD_DEMOS OFF)
     set(wxBUILD_BENCHMARKS OFF)
-
 
     set(WXWIDGETS_EXTRA_PATH "" CACHE STRING "wxWidget extra search path, default: \"\"")
 
@@ -26,6 +24,7 @@ if (NOT WIN32)
     else()
         find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET)
     endif()
+
 
     if (wxWidgets_FOUND)
         set(wxWidgets_TYPE "system")
@@ -50,14 +49,12 @@ if (NOT WIN32)
         set(wxWidgets_FOUND ON)
         set(wxWidgets_VERSION ${WXWIDGETS_VERSION})
     endif()
-else()
-
+else(IF NOT WIN32)
     find_package(wxWidgets REQUIRED)
     set(wxWidgets_TYPE "system")
-
 endif()
+
 if (NOT wxWidgets_FOUND)
     message(FATAL_ERROR "wxWidgets not found")
-else()
-    message(STATUS "wxWidgets found: ${wxWidgets_VERSION} (${wxWidgets_TYPE}) at ${wxWidgets_DIR}")
 endif()
+

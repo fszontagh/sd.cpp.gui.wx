@@ -7,46 +7,84 @@ message(STATUS "STACK_SIZE: ${STACK_SIZE}")
 
 configure_file(config.hpp.in config.hpp)
 
-
-
 set(SOURCES src/main.cpp src/ApplicationLogic.cpp)
 
-if (MSVC)
-    set(BNAME ${LLAMA_BINARY_NAME})
-    set(COMPONENT_NAME "${PROJECT_DISPLAY_NAME} Diffuser")
-    configure_file(../platform/msvc/app.rc.in app.rc)
-    configure_file(../platform/msvc/minimal.rc.in minimal.rc)
-    list(APPEND SOURCES minimal.rc)
-    list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/app.rc)
-    list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/minimal.rc)
+if(MSVC)
+        set(BNAME ${LLAMA_BINARY_NAME})
+        set(COMPONENT_NAME "${PROJECT_DISPLAY_NAME} Diffuser")
+        configure_file(../platform/msvc/app.rc.in app.rc)
+        configure_file(../platform/msvc/minimal.rc.in minimal.rc)
+        list(APPEND SOURCES minimal.rc)
+        list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/app.rc)
+        list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/minimal.rc)
 endif()
 
 add_executable(${LLAMA_BINARY_NAME} ${SOURCES} ${CMAKE_SOURCE_DIR}/src/libs/SharedLibrary.cpp ${CMAKE_SOURCE_DIR}/src/libs/SharedMemoryManager.cpp)
 
 target_precompile_headers(${LLAMA_BINARY_NAME} PRIVATE src/pch.h)
 
-if (MSVC)
-    target_link_options(${LLAMA_BINARY_NAME} PRIVATE /STACK:${STACK_SIZE})
-    target_compile_options(${LLAMA_BINARY_NAME} PRIVATE /Zc:__cplusplus)
+if(MSVC)
+        target_link_options(${LLAMA_BINARY_NAME} PRIVATE /STACK:${STACK_SIZE})
+        target_compile_options(${LLAMA_BINARY_NAME} PRIVATE /Zc:__cplusplus)
 else()
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,stack-size=${STACK_SIZE}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,stack-size=${STACK_SIZE}")
 endif()
-target_compile_options(${LLAMA_BINARY_NAME} PRIVATE -Wno-unused-parameter)
-target_include_directories(${LLAMA_BINARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src ${wxWidgets_SOURCE_DIR}/include ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${LLAMA_INCLUDE_DIR} ${GGML_INCLUDE_DIR})
 
+target_compile_options(${LLAMA_BINARY_NAME} PRIVATE -Wno-unused-parameter)
+target_include_directories(${LLAMA_BINARY_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${wxWidgets_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${LLAMA_INCLUDE_DIR}
+        ${GGML_INCLUDE_DIR}
+)
 
 set(bin_INSTALL_PATH_NSIS "bin")
 
-
-if (WIN32)
-	set(bin_INSTALL_PATH_NSIS ".")
+if(WIN32)
+        set(bin_INSTALL_PATH_NSIS ".")
 endif()
 
-
-install(TARGETS ${LLAMA_BINARY_NAME} RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS} COMPONENT "${CMAKE_PROJECT_NAME}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(TARGETS ${LLAMA_BINARY_NAME}
+        RUNTIME DESTINATION ${bin_INSTALL_PATH_NSIS}
+        COMPONENT "${CMAKE_PROJECT_NAME}"
+        PERMISSIONS
+            OWNER_READ OWNER_WRITE OWNER_EXECUTE
+            GROUP_READ GROUP_EXECUTE
+            WORLD_READ WORLD_EXECUTE
+)
 
 if(WIN32)
-    target_link_libraries(${LLAMA_BINARY_NAME} PRIVATE  wxWidgets::wxWidgets OpenSSL::Crypto)
-else(WIN32)
-    target_link_libraries(${LLAMA_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
-endif(WIN32)
+        target_link_libraries(${LLAMA_BINARY_NAME} PRIVATE wxWidgets::wxWidgets OpenSSL::Crypto)
+else()
+        target_link_libraries(${LLAMA_BINARY_NAME} PRIVATE wx::base wx::core OpenSSL::Crypto)
+endif()
+
+if(SDGUI_AVX)
+        list(APPEND DEPENDENCIES llama_cpp_avx)
+endif()
+
+if(SDGUI_AVX2)
+        list(APPEND DEPENDENCIES llama_cpp_avx2)
+endif()
+
+if(SDGUI_AVX512)
+        list(APPEND DEPENDENCIES llama_cpp_avx512)
+endif()
+
+if(SDGUI_CUDA)
+        list(APPEND DEPENDENCIES llama_cpp_cuda)
+endif()
+
+if(SDGUI_VULKAN)
+        list(APPEND DEPENDENCIES llama_cpp_vulkan)
+endif()
+
+if(SDGUI_HIPBLAS)
+        list(APPEND DEPENDENCIES llama_cpp_hipblas)
+endif()
+
+add_dependencies(${LLAMA_BINARY_NAME} ${DEPENDENCIES})
+
+add_dependencies(${PROJECT_BINARY_NAME} ${LLAMA_BINARY_NAME})

@@ -22,9 +22,6 @@ find_program(GETTEXT_XGETTEXT_EXECUTABLE xgettext PATHS "C:\\msys64\\usr\\bin\\"
 find_program(GETTEXT_MSGMERGE_EXECUTABLE msgmerge PATHS "C:\\msys64\\usr\\bin\\")
 find_program(GETTEXT_MSGFMT_EXECUTABLE msgfmt PATHS "C:\\msys64\\usr\\bin\\")
 
-message(STATUS " xgettext: ${GETTEXT_XGETTEXT_EXECUTABLE}")
-message(STATUS " msgmerge: ${GETTEXT_MSGMERGE_EXECUTABLE}")
-message(STATUS " msgfmt: ${GETTEXT_MSGFMT_EXECUTABLE}")
 
 if (GETTEXT_XGETTEXT_EXECUTABLE)
     file(GLOB_RECURSE CPP_FILES CONFIGURE_DEPENDS RELATIVE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/src/*.cpp ${CMAKE_SOURCE_DIR}/src/*.h ${CMAKE_SOURCE_DIR}/extprocess/*.cpp ${CMAKE_SOURCE_DIR}/extprocess/*.h)
@@ -57,7 +54,7 @@ if (GETTEXT_XGETTEXT_EXECUTABLE)
 
 endif (GETTEXT_XGETTEXT_EXECUTABLE)
 
-if (GETTEXT_MSGMERGE_EXECUTABLE)   
+if (GETTEXT_MSGMERGE_EXECUTABLE)
 
     add_custom_target(
         pot-merge
@@ -71,7 +68,7 @@ if (GETTEXT_MSGMERGE_EXECUTABLE)
         add_custom_command(
             TARGET pot-merge
             PRE_BUILD
-            COMMAND 
+            COMMAND
                 ${GETTEXT_MSGMERGE_EXECUTABLE}
                 -o ${PO_FILE}
                 ${PO_FILE}
@@ -85,7 +82,7 @@ endif (GETTEXT_MSGMERGE_EXECUTABLE)
 if (GETTEXT_MSGFMT_EXECUTABLE)
 
     message(DEBUG " msgmerge: ${GETTEXT_MSGFMT_EXECUTABLE}")
-    file(GLOB PO_LANGS 
+    file(GLOB PO_LANGS
         RELATIVE ${CMAKE_SOURCE_DIR}/locale
         LIST_DIRECTORIES true
         ${CMAKE_SOURCE_DIR}/locale/*
@@ -118,4 +115,4 @@ if (GETTEXT_MSGFMT_EXECUTABLE)
         endif()
     endforeach()
 
-endif (GETTEXT_MSGFMT_EXECUTABLE) 
+endif (GETTEXT_MSGFMT_EXECUTABLE)

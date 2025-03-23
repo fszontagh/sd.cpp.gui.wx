@@ -73,6 +73,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
     this->modelUiManager->AddDirTypeSelector(this->m_vae, sd_gui_utils::DirTypes::VAE);
     this->modelUiManager->AddDirTypeSelector(this->m_upscaler_model, sd_gui_utils::DirTypes::ESRGAN);
     this->modelUiManager->AddDirTypeSelector(this->m_controlnetModels, sd_gui_utils::DirTypes::CONTROLNET);
+    this->modelUiManager->AddDirTypeSelector(this->m_languageModel, sd_gui_utils::DirTypes::LLAMA_MODELS);
 
     this->dataViewListManager = std::make_unique<DataViewListManager>(this->m_joblist, this->qmanager, this->mapp->cfg);
 
@@ -3320,6 +3321,12 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
             this->m_model->Select(0);
             basepath = this->mapp->cfg->model;
         } break;
+        case sd_gui_utils::DirTypes::LLAMA_MODELS: {
+            this->m_languageModel->Clear();
+            this->m_languageModel->Append(_("Select one"));
+            this->m_languageModel->Select(0);
+            basepath = this->mapp->cfg->llamapath;
+        } break;
         case sd_gui_utils::DirTypes::PRESETS: {
             this->Presets.clear();
             this->m_preset_list->Clear();
@@ -3380,6 +3387,8 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         // File extension filtering
         if ((type == sd_gui_utils::DirTypes::CHECKPOINT &&
              std::find(CHECKPOINT_FILE_EXTENSIONS.begin(), CHECKPOINT_FILE_EXTENSIONS.end(), ext.ToStdString()) == CHECKPOINT_FILE_EXTENSIONS.end()) ||
+            (type == sd_gui_utils::DirTypes::LLAMA_MODELS &&
+             std::find(LLAMA_MODEL_FILES_EXTENSION.begin(), LLAMA_MODEL_FILES_EXTENSION.end(), ext.ToStdString()) == LLAMA_MODEL_FILES_EXTENSION.end()) ||
             (type == sd_gui_utils::DirTypes::LORA &&
              std::find(LORA_FILE_EXTENSIONS.begin(), LORA_FILE_EXTENSIONS.end(), ext.ToStdString()) == LORA_FILE_EXTENSIONS.end()) ||
             (type == sd_gui_utils::DirTypes::EMBEDDING &&
@@ -3403,6 +3412,11 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
                 this->modelUiManager->AddItem(model_info);
             }
 
+        } else if (type == sd_gui_utils::DirTypes::LLAMA_MODELS) {
+            auto lamamodel = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
+            if (lamamodel) {
+                this->modelUiManager->AddItem(lamamodel);
+            }
         } else if (type == sd_gui_utils::DirTypes::LORA) {
             auto lora = this->ModelManager->addModel(file.GetAbsolutePath(), type, basepath);
             if (lora) {
@@ -3508,6 +3522,9 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
 
     if (type == sd_gui_utils::DirTypes::PROMPT_TEMPLATES) {
         this->m_promptPresets->Enable((counted > 0));
+    }
+    if (type == sd_gui_utils::DirTypes::LLAMA_MODELS) {
+        this->m_languageModel->Enable((counted > 0));
     }
 }
 void MainWindowUI::loadLoraList() {
@@ -5499,6 +5516,7 @@ void MainWindowUI::ChangeModelByInfo(sd_gui_utils::ModelFileInfo* info) {
 
 void MainWindowUI::loadModelList() {
     this->LoadFileList(sd_gui_utils::DirTypes::CHECKPOINT);
+    this->LoadFileList(sd_gui_utils::DirTypes::LLAMA_MODELS);
 
     auto lastSelection = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
     this->modelUiManager->SelectItemByModelPath(lastSelection.utf8_string());
@@ -6379,3 +6397,9 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
                                                                   static_cast<int>(this->inpaintHelper->GetOriginalSize().GetHeight() * this->inpaintHelper->GetZoomFactor())));
     }
 }
+void MainWindowUI::OnSendChat(wxCommandEvent& event) {
+
+};
+void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
+    event.Skip();
+};

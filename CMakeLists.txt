@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.7...3.16 FATAL_ERROR)
 
 project(StableDiffusionGUI
-LANGUAGES CXX C
-VERSION 0.2.7
-DESCRIPTION "Stable Diffusion C++ Desktop Gui"
-HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
+    LANGUAGES CXX C
+    VERSION 0.2.7
+    DESCRIPTION "Stable Diffusion C++ Desktop Gui"
+    HOMEPAGE_URL "https://github.com/fszontagh/sd.cpp.gui.wx"
 )
 
 set(PROJECT_AUTHOR_NAME "Ferenc Szontágh")
@@ -15,13 +15,68 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(SDGUI_SERVER "Build socket server" OFF)
+option(SDGUI_LLAMA_DISABLE "Disable llama.cpp" OFF)
+option(SDGUI_LOCAL_DISABLE "Disable local generation, this will disable the server component too" OFF)
+option(SDGUI_WINDOWLESS "Build without the main application" OFF)
+
+if (SDGUI_LOCAL_DISABLE EQUAL ON)
+    set(SDGUI_SERVER OFF)
+    set(SDGUI_WINDOWLESS OFF)
+endif()
+
+option(SDGUI_AVX "Enable AVX" OFF)
+option(SDGUI_AVX2 "Enable AVX2" OFF)
+option(SDGUI_AVX512 "Enable AVX512" OFF)
+option(SDGUI_CUDA "Enable CUDA" OFF)
+option(SDGUI_VULKAN "Enable VULKAN" OFF)
+option(SDGUI_METAL "Enable Metal" OFF)
+option(SDGUI_HIPBLAS "Enable HIPBLAS" OFF)
+
+if (SDGUI_METAL)
+   message(FATAL ERROR "Metal is not supported")
+endif()
+
+# check if all backend is disabled
+if (NOT SDGUI_LOCAL_DISABLE)
+    if (SDGUI_SERVER OR NOT SDGUI_WINDOWLESS)
+        if (NOT SDGUI_AVX AND NOT SDGUI_AVX2 AND NOT SDGUI_AVX512 AND NOT SDGUI_CUDA AND NOT SDGUI_VULKAN AND NOT SDGUI_METAL AND NOT SDGUI_HIPBLAS)
+            message(FATAL_ERROR "You must enable at least one backend.")
+        endif()
+    endif()
+endif()
+
+if (SDGUI_WINDOWLESS AND NOT SDGUI_SERVER)
+    message(WARNING "Building only libs")
+endif()
+
+
+message(STATUS "Build options: ")
+message("\t SDGUI_AVX: \t\t${SDGUI_AVX}")
+message("\t SDGUI_AVX2: \t\t${SDGUI_AVX2}")
+message("\t SDGUI_AVX512: \t\t${SDGUI_AVX512}")
+message("\t SDGUI_CUDA: \t\t${SDGUI_CUDA}")
+message("\t SDGUI_VULKAN: \t\t${SDGUI_VULKAN}")
+message("\t SDGUI_METAL: \t\t${SDGUI_METAL}")
+message("\t SDGUI_HIPBLAS: \t${SDGUI_HIPBLAS}")
+message("\t SDGUI_SERVER: \t\t${SDGUI_SERVER}")
+message("\t SDGUI_LLAMA_DISABLE: \t${SDGUI_LLAMA_DISABLE}")
+message("\t SDGUI_LOCAL_DISABLE: \t${SDGUI_LOCAL_DISABLE}")
+message("\t SDGUI_WINDOWLESS: \t${SDGUI_WINDOWLESS}")
+
+include(cmake/definitions.cmake)
+
 include(cmake/sdcpp_version.cmake)
 include(cmake/llama_version.cmake)
-include(cmake/wxWidgets_version.cmake)
 
+
+if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
+    include(cmake/wxWidgets_version.cmake)
+endif()
 set(PROJECT_BINARY_NAME "stablediffusiongui")
 set(PROJECT_DISPLAY_NAME "Stable Diffusion GUI")
-# in github workflow to minimize output..
+
 if (DEFINED ENV{GITHUB_ACTIONS})
     set(CMAKE_VERBOSE_MAKEFILE OFF)
 endif()
@@ -30,37 +85,40 @@ if (CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-
 include(FetchContent)
 include(ExternalProject)
 include(CMakePackageConfigHelpers)
 
 set(BUILD_SHARED_LIBS OFF)
 
-if (WIN32)
-    set(OPENSSL_USE_STATIC_LIBS TRUE)
+if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
+    if (WIN32)
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+    endif()
+
+    find_package(OpenSSL CONFIG QUIET)
+    if (NOT OpenSSL_FOUND)
+        find_package(OpenSSL REQUIRED)
+    endif()
+
+    find_package(CURL CONFIG QUIET)
+    if (NOT CURL_FOUND)
+        find_package(CURL REQUIRED)
+    endif()
 endif()
+if (NOT SDGUI_WINDOWLESS)
+    find_package(exiv2 CONFIG QUIET)
+
+    if (NOT exiv2_FOUND)
+        find_package(exiv2 REQUIRED)
+    endif()
 
 
-
-find_package(OpenSSL CONFIG QUIET)
-if (NOT OpenSSL_FOUND)
-    find_package(OpenSSL REQUIRED)
 endif()
-
-find_package(CURL CONFIG QUIET)
-if (NOT CURL_FOUND)
-    find_package(CURL REQUIRED)
+if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
+    include(cmake/wxWidgets.cmake)
+    include(cmake/CpuFeatures.cmake)
 endif()
-
-find_package(exiv2 CONFIG QUIET)
-if (NOT exiv2_FOUND)
-    find_package(exiv2 REQUIRED)
-endif()
-
-
-include(cmake/wxWidgets.cmake)
-include(cmake/CpuFeatures.cmake)
 
 
 
@@ -72,207 +130,67 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 message(STATUS "GIT HASH: ${GIT_HASH}")
-message(STATUS "SD.CPP VERSION: ${SDCPP_VERSION}")
-message(STATUS "LLAMA.CPP VERSION: ${LLAMA_VERSION}")
+
+if (NOT SDGUI_LOCAL_DISABLE)
+    message(STATUS "SD.CPP VERSION: ${SDCPP_VERSION}")
+endif()
+
+if (NOT SDGUI_LLAMA_DISABLE)
+    message(STATUS "LLAMA.CPP VERSION: ${LLAMA_VERSION}")
+endif()
 
 configure_file(src/ver.hpp.in ver.hpp)
 
-
-# Source files
-set(SOURCES
-    src/main.cpp
-    src/ui/MainWindow.cpp
-    src/ui/MainWindowAboutDialog.cpp
-    src/ui/MainWindowSettings.cpp
-    src/ui/MainWindowCivitAiWindow.cpp
-    src/ui/MainWindowImageDialog.cpp
-    src/ui/MainWindowUI.cpp
-    src/ui/MainWindowDesktopWidget.cpp
-    src/ui/QueueManager.cpp
-    src/ui/ModelInfo.cpp
-    src/libs/SharedMemoryManager.cpp
-    src/libs/TcpClient.cpp
-    src/helpers/QueueItem.cpp
-    src/helpers/DataViewListManager.cpp
-    src/helpers/ModelUiManager.cpp
-)
-
-if (WIN32)
-    set(BNAME ${PROJECT_BINARY_NAME})
-    set(COMPONENT_NAME ${PROJECT_DISPLAY_NAME})
-    configure_file(platform/msvc/app.rc.in app.rc)
-    configure_file(platform/msvc/minimal.rc.in minimal.rc)
-    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/app.rc)
-    list(APPEND SOURCES ${CMAKE_BINARY_DIR}/minimal.rc)
+if (NOT SDGUI_WINDOWLESS)
+    add_subdirectory(src)
 endif()
 
-add_subdirectory(extprocess)
+if (NOT SDGUI_LOCAL_DISABLE)
+    if (SDGUI_AVX OR SDGUI_AVX2 OR SDGUI_AVX512 OR SDGUI_CUDA OR SDGUI_VULKAN OR SDGUI_METAL OR SDGUI_HIPBLAS)
+        include(cmake/stable_diffusion.cmake)
 
-option(SD_SERVER "Build socket server" OFF)
-option(LLAMA_DISABLE "Disable llama.cpp" OFF)
+        if (NOT SDGUI_LLAMA_DISABLE)
+            include(cmake/llama.cmake)
+        endif()
+    endif()
 
 
+    if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
+    add_subdirectory(extprocess)
+    add_dependencies(${PROJECT_BINARY_NAME} ${PROJECT_BINARY_NAME}_diffuser)
+        if (NOT SDGUI_LLAMA_DISABLE)
+            add_subdirectory(llama)
+            add_dependencies(${PROJECT_BINARY_NAME} ${PROJECT_BINARY_NAME}_llama)
+        endif()
+    endif()
 
-# Set target for the application
-add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
-target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE src/pch.h)
-
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(${PROJECT_BINARY_NAME} PRIVATE -Wunused)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        target_compile_options(${PROJECT_BINARY_NAME} PRIVATE /w44265)
+    if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
+        include(cmake/sockets-cpp.cmake)
+        message(STATUS "Socket server: ${SDGUI_SERVER}")
+        if (SDGUI_SERVER)
+            add_subdirectory(server)
+            add_dependencies(${PROJECT_BINARY_NAME}_server ${PROJECT_BINARY_NAME}_llama)
+            add_dependencies(${PROJECT_BINARY_NAME}_server ${PROJECT_BINARY_NAME}_diffuser)
+        endif()
     endif()
 endif()
 
 
-if (NOT WIN32)
-
-set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::stc)
-
-else()
-    set(APPDEPENDS wxWidgets::wxWidgets)
-    if (MSVC)
-        set_target_properties(${PROJECT_BINARY_NAME} PROPERTIES
-            COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"
-            LINK_FLAGS "/MANIFEST:NO"
-        )
-    endif()
-endif()
-
-include(cmake/sockets-cpp.cmake)
-
-if (SD_SERVER)
-    add_subdirectory(server)
-endif()
-
-
-if (SDGUI_AVX)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx llama_avx)
-endif()
-
-if (SDGUI_AVX2)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2 llama_avx2)
-endif()
-
-if(SDGUI_AVX512)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512 llama_avx512)
-endif()
-
-if(SDGUI_CUBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda llama_cuda)
-endif()
-
-if(SDGUI_VULKAN)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan llama_vulkan)
-endif()
-
-if (SDGUI_HIPBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_hipblas llama_hipblas)
-endif()
-
-
-list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 
 include(cmake/intl.cmake)
-
-add_dependencies(${PROJECT_BINARY_NAME} ${APPDEPENDS} po-compile sockets_cpp)
-
-# Include directories
-target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CpuFeatures_SOURCE_DIR}
-    ${wxWidgets_SOURCE_DIR}/include
-    ${sockets_cpp_SOURCE}
-)
-message(STATUS "APPDEPS: ${APPDEPENDS}")
-
-
-target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${APPDEPENDS})
-
-
-
-# Windows-specific options
-if(WIN32)
-    target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE comsuppw.lib wbemuuid.lib)
-    target_compile_definitions(${PROJECT_BINARY_NAME} PRIVATE
-        _CRT_SECURE_NO_WARNINGS
-       _UNICODE
-        UNICODE
-        WIN32
-        _WINDOWS
-        wxUSE_RC_MANIFEST=1
-        __WXMSW__
-    )
-    set_property(TARGET ${PROJECT_BINARY_NAME} PROPERTY WIN32_EXECUTABLE TRUE)
-    set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-    )
-    foreach(CompilerFlag ${CompilerFlags})
-        string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-    endforeach()
-endif()
-
-# Linux-specific options
-if(UNIX AND NOT APPLE)
-    target_compile_definitions(${PROJECT_BINARY_NAME} PRIVATE
-        __WXGTK__
-        _FILE_OFFSET_BITS=64
-    )
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    target_include_directories(${PROJECT_BINARY_NAME} PRIVATE ${GTK3_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${GTK3_LIBRARIES})
-endif()
-
-
-option(SD_AVX "Enable AVX library build" OFF)
-option(SD_AVX2 "Enable AVX2 library build" OFF)
-option(SD_AVX512 "Enable AVX512 library build" OFF)
-option(SD_CUDA "Enable CUDA library build" OFF)
-option(SD_HIPBLAS "Enable HIPBLAS library build" OFF)
-option(SD_VULKAN "Enable Vulkan library build" OFF)
-
-if (SD_AVX)
-    set(SDGUI_AVX ON)
-endif()
-
-
-if (SD_AVX2)
-    set(SDGUI_AVX2 ON)
-endif()
-
-if (SD_AVX512)
-    set(SDGUI_AVX512 ON)
-endif()
-
-
-if (SD_CUDA)
-    set(SDGUI_CUBLAS ON)
-endif()
-
-
-if (SD_HIPBLAS)
-    set(SDGUI_HIPBLAS ON)
-endif()
-
-
-if (SD_VULKAN)
-    set(SDGUI_VULKAN ON)
-endif()
-
-message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-
-include(cmake/stable_diffusion.cmake)
-if (LLAMA_DISABLE EQUAL OFF)
-    include(cmake/llama.cmake)
-    add_subdirectory(llama)
-endif()
-
 include(cmake/cpack.cmake)
 
+# show a summary of the build configuration
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+message(STATUS "Components: ")
+foreach(item IN LISTS CPACK_COMPONENTS_ALL)
+    message("\t\t * ${item}")
+endforeach()
+
+if (PO_FILES)
+    message(STATUS "Translations: ")
+    foreach(item IN LISTS PO_FILES)
+        message("\t\t * ${item}")
+    endforeach()
+endif()
