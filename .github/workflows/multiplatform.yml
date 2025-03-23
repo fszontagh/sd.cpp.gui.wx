@@ -255,6 +255,14 @@ jobs:
           remove-large-packages: 'true'
           remove-swapfile: 'true'
 
+      - name: Change g++ version
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          sudo apt install -y --no-install-recommends gcc-12 g++-12
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 120 --force
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 120 --force
+          sudo update-alternatives --set gcc /usr/bin/gcc-12
+          sudo update-alternatives --set g++ /usr/bin/g++-12
 
       - name: Install base dependencies
         if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
