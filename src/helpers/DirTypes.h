@@ -44,6 +44,7 @@ namespace sd_gui_utils {
         UPSCALER         = 512,   // The UPSCALER option represents the 9th bit
         EMBEDDING        = 1024,  // The EMBEDDING option represents the 10th bit
         PROMPT_TEMPLATES = 2048,  // The PROMPT_TEMPLATES option represents the 11th bit
+        OLLAMA_MODELS    = 4096,  // The OLLAMA_MODELS option represents the 12th bit
         ALL              = -1,    // All options are set
         UNKNOWN          = -2     // The unknown option
     };
@@ -66,22 +67,40 @@ namespace sd_gui_utils {
         UNKNOWN          = -2,       // The unknown option
     };
 
-        inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
-            {sd_gui_utils::DirTypes::LORA, "LORA"},
-            {sd_gui_utils::DirTypes::CHECKPOINT, "CHECKPOINT"},
-            {sd_gui_utils::DirTypes::VAE, "VAE"},
-            {sd_gui_utils::DirTypes::PRESETS, "PRESETS"},
-            {sd_gui_utils::DirTypes::PROMPTS, "PROMPTS"},
-            {sd_gui_utils::DirTypes::NEG_PROMPTS, "NEG_PROMPTS"},
-            {sd_gui_utils::DirTypes::TAESD, "TAESD"},
-            {sd_gui_utils::DirTypes::ESRGAN, "ESRGAN"},
-            {sd_gui_utils::DirTypes::CONTROLNET, "CONTROLNET"},
-            {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
-            {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
-            {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
-            {sd_gui_utils::DirTypes::ALL, "ALL"},
-            {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"}};
+    inline std::unordered_map<DirTypes, std::string> dirtypes_str = {
+        {sd_gui_utils::DirTypes::LORA, "LORA"},
+        {sd_gui_utils::DirTypes::CHECKPOINT, "CHECKPOINT"},
+        {sd_gui_utils::DirTypes::VAE, "VAE"},
+        {sd_gui_utils::DirTypes::PRESETS, "PRESETS"},
+        {sd_gui_utils::DirTypes::PROMPTS, "PROMPTS"},
+        {sd_gui_utils::DirTypes::NEG_PROMPTS, "NEG_PROMPTS"},
+        {sd_gui_utils::DirTypes::TAESD, "TAESD"},
+        {sd_gui_utils::DirTypes::ESRGAN, "ESRGAN"},
+        {sd_gui_utils::DirTypes::CONTROLNET, "CONTROLNET"},
+        {sd_gui_utils::DirTypes::UPSCALER, "UPSCALER"},
+        {sd_gui_utils::DirTypes::EMBEDDING, "EMBEDDING"},
+        {sd_gui_utils::DirTypes::PROMPT_TEMPLATES, "PROMPT_TEMPLATES"},
+        {sd_gui_utils::DirTypes::OLLAMA_MODELS, "OLLAMA_MODELS"},
+        {sd_gui_utils::DirTypes::ALL, "ALL"},
+        {sd_gui_utils::DirTypes::UNKNOWN, "UNKNOWN"},
+    };
 
-        inline std::unordered_map<wxString, DirTypes> dirtypes_wxstr = {{wxT("LORA"), sd_gui_utils::DirTypes::LORA}, {wxT("CHECKPOINT"), sd_gui_utils::DirTypes::CHECKPOINT}, {wxT("VAE"), sd_gui_utils::DirTypes::VAE}, {wxT("PRESETS"), sd_gui_utils::DirTypes::PRESETS}, {wxT("PROMPTS"), sd_gui_utils::DirTypes::PROMPTS}, {wxT("NEG_PROMPTS"), sd_gui_utils::DirTypes::NEG_PROMPTS}, {wxT("TAESD"), sd_gui_utils::DirTypes::TAESD}, {wxT("ESRGAN"), sd_gui_utils::DirTypes::ESRGAN}, {wxT("CONTROLNET"), sd_gui_utils::DirTypes::CONTROLNET}, {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER}, {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING}, {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES}, {wxT("ALL"), sd_gui_utils::DirTypes::ALL}, {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN}};
-    }  // namespace sd_gui_utils
+    inline std::unordered_map<wxString, DirTypes> dirtypes_wxstr = {
+        {wxT("LORA"), sd_gui_utils::DirTypes::LORA},
+        {wxT("CHECKPOINT"), sd_gui_utils::DirTypes::CHECKPOINT},
+        {wxT("VAE"), sd_gui_utils::DirTypes::VAE},
+        {wxT("PRESETS"), sd_gui_utils::DirTypes::PRESETS},
+        {wxT("PROMPTS"), sd_gui_utils::DirTypes::PROMPTS},
+        {wxT("NEG_PROMPTS"), sd_gui_utils::DirTypes::NEG_PROMPTS},
+        {wxT("TAESD"), sd_gui_utils::DirTypes::TAESD},
+        {wxT("ESRGAN"), sd_gui_utils::DirTypes::ESRGAN},
+        {wxT("CONTROLNET"), sd_gui_utils::DirTypes::CONTROLNET},
+        {wxT("UPSCALER"), sd_gui_utils::DirTypes::UPSCALER},
+        {wxT("EMBEDDING"), sd_gui_utils::DirTypes::EMBEDDING},
+        {wxT("PROMPT_TEMPLATES"), sd_gui_utils::DirTypes::PROMPT_TEMPLATES},
+        {wxT("OLLAMA_MODELS"), sd_gui_utils::DirTypes::OLLAMA_MODELS},
+        {wxT("ALL"), sd_gui_utils::DirTypes::ALL},
+        {wxT("UNKNOWN"), sd_gui_utils::DirTypes::UNKNOWN},
+    };
+}  // namespace sd_gui_utils
 #endif  // _HELPERS_DIR_TYPES_H_

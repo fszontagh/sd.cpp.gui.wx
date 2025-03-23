@@ -186,10 +186,10 @@ public:
     sd_gui_utils::config* cfg = nullptr;
 
 private:
-    MainWindowUI* mainFrame = nullptr;
-    wxString stableDiffusionDllName;
-    wxString ollamaDllName;
-    wxString backend;
-    wxLocale* m_Locale = nullptr;
+    MainWindowUI* mainFrame         = nullptr;
+    wxString stableDiffusionDllName = wxEmptyString;
+    wxString ollamaDllName          = wxEmptyString;
+    wxString backend                = wxEmptyString;
+    wxLocale* m_Locale              = nullptr;
 };
 #endif

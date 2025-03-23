@@ -409,6 +409,10 @@ class Settings : public wxFrame
 	protected:
 		wxNotebook* m_notebook1696;
 		wxPanel* m_path_panel;
+		wxStaticText* m_staticText1801317201;
+		wxDirPickerCtrl* m_ollama_dir;
+		wxBitmapButton* m_openOllamaPath;
+		wxStaticLine* m_staticLine2231;
 		wxStaticText* m_staticText172410;
 		wxDirPickerCtrl* m_model_dir;
 		wxBitmapButton* m_openModelsPath;

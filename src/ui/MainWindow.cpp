@@ -2043,6 +2043,33 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	wxBoxSizer* sizer2011;
 	sizer2011 = new wxBoxSizer( wxVERTICAL );
 
+	wxBoxSizer* bSizer211;
+	bSizer211 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText1801317201 = new wxStaticText( m_path_panel, wxID_ANY, _("Ollama models path"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText1801317201->Wrap( 0 );
+	m_staticText1801317201->SetMinSize( wxSize( 150,-1 ) );
+
+	bSizer211->Add( m_staticText1801317201, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_ollama_dir = new wxDirPickerCtrl( m_path_panel, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDefaultSize, wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE );
+	m_ollama_dir->SetMinSize( wxSize( 200,-1 ) );
+
+	bSizer211->Add( m_ollama_dir, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_openOllamaPath = new wxBitmapButton( m_path_panel, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW|0 );
+
+	m_openOllamaPath->SetBitmap( file_import_png_to_wx_bitmap() );
+	m_openOllamaPath->SetToolTip( _("Open folder") );
+
+	bSizer211->Add( m_openOllamaPath, 0, wxALIGN_CENTER_VERTICAL, 5 );
+
+
+	sizer2011->Add( bSizer211, 0, 0, 5 );
+
+	m_staticLine2231 = new wxStaticLine( m_path_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
+	sizer2011->Add( m_staticLine2231, 0, wxEXPAND | wxALL, 5 );
+
 	wxBoxSizer* bSizer16;
 	bSizer16 = new wxBoxSizer( wxHORIZONTAL );
 
@@ -2613,6 +2640,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	this->Centre( wxBOTH );
 
 	// Connect Events
+	m_openOllamaPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openModelsPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openLorasPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openVaesPath->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
@@ -2660,6 +2688,7 @@ Settings::Settings( wxWindow* parent, wxWindowID id, const wxString& title, cons
 Settings::~Settings()
 {
 	// Disconnect Events
+	m_openOllamaPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openModelsPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openLorasPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );
 	m_openVaesPath->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( Settings::OnOpenFolder ), NULL, this );

@@ -321,6 +321,7 @@ namespace sd_gui_utils {
     public:
         // store the servers in map: int -> internal_id
         std::map<int, sd_gui_utils::sdServer*> servers;
+        wxString ollamapath                     = "";
         wxString model                          = "";
         wxString vae                            = "";
         wxString lora                           = "";
@@ -571,6 +572,8 @@ namespace sd_gui_utils {
                     return this->presets;
                 case sd_gui_utils::DirTypes::PROMPT_TEMPLATES:
                     return this->prompt_templates;
+                case sd_gui_utils::DirTypes::OLLAMA_MODELS:
+                    return this->ollamapath;
                 default:
                     return wxEmptyString;
             }
@@ -579,6 +582,9 @@ namespace sd_gui_utils {
             : configBase(config) {
             wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
             wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
+
+            wxString ollamapath = datapath;
+            ollamapath.append("ollama");
 
             wxString model_path = datapath;
             model_path.append("checkpoints");
@@ -621,6 +627,7 @@ namespace sd_gui_utils {
             this->thumbs_path = thumbs_path;
             this->tmppath     = tmp_path;
 
+            this->ollamapath                         = config->Read("/paths/ollama", ollamapath);
             this->lora                               = config->Read("/paths/lora", lora_path);
             this->model                              = config->Read("/paths/model", model_path);
             this->vae                                = config->Read("/paths/vae", vae_path);
@@ -659,6 +666,10 @@ namespace sd_gui_utils {
             // check if directories exists
             if (wxFileName::DirExists(datapath) == false) {
                 wxFileName(datapath).Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (wxFileName::DirExists(ollamapath) == false) {
+                wxFileName::Mkdir(ollamapath, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
 
             if (wxFileName::DirExists(model_path) == false) {
@@ -714,6 +725,7 @@ namespace sd_gui_utils {
         }
         void FlushConfig() {
             if (this->configBase != nullptr) {
+                this->configBase->Write("/paths/ollama", this->ollamapath);
                 this->configBase->Write("/paths/model", this->model);
                 this->configBase->Write("/paths/lora", this->lora);
                 this->configBase->Write("/paths/vae", this->vae);
@@ -953,8 +965,7 @@ namespace sd_gui_utils {
         {sample_method_t::IPNDM, "IPNDM"},
         {sample_method_t::IPNDM_V, "IPNDM_V"},
         {sample_method_t::DDIM_TRAILING, "DDIM Trailing"},
-        {sample_method_t::TCD, "TCD"}
-    };
+        {sample_method_t::TCD, "TCD"}};
     inline const std::unordered_map<schedule_t, std::string> schedulerSdWebuiNames = {
         {schedule_t::DEFAULT, "Automatic"},
         {schedule_t::N_SCHEDULES, "Automatic"},

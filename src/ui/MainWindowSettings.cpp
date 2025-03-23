@@ -71,6 +71,9 @@ void MainWindowSettings::OnOpenFolder(wxCommandEvent& event) {
     if (object == this->m_openOutputPath) {
         wxLaunchDefaultApplication(this->m_images_output->GetPath());
     }
+    if (object == this->m_openOllamaPath) {
+        wxLaunchDefaultApplication(this->m_ollama_dir->GetPath());
+    }
 }
 void MainWindowSettings::OnAddServer(wxCommandEvent& event) {
     auto host = this->m_AddServerHost->GetValue();
@@ -99,6 +102,7 @@ void MainWindowSettings::onSave(wxCommandEvent& event) {
         }
     }
 
+    this->cfg->ollamapath             = this->m_ollama_dir->GetPath().utf8_string();
     this->cfg->lora                   = this->m_lora_dir->GetPath().utf8_string();
     this->cfg->model                  = this->m_model_dir->GetPath().utf8_string();
     this->cfg->vae                    = this->m_vae_dir->GetPath().utf8_string();
@@ -141,6 +145,7 @@ void MainWindowSettings::InitConfig() {
         this->m_civitai_api_key->SetValue(password.GetAsString());
     }
 
+    this->m_ollama_dir->SetPath(this->cfg->ollamapath);
     this->m_lora_dir->SetPath(this->cfg->lora);
     this->m_model_dir->SetPath(this->cfg->model);
     this->m_vae_dir->SetPath(this->cfg->vae);
@@ -372,7 +377,7 @@ void MainWindowSettings::OnServerEnableToggle(wxCommandEvent& event) {
     auto row  = this->m_serverList->ItemToRow(item);
     if (item.IsOk()) {
         auto internal_id = static_cast<int>(this->m_serverList->GetItemData(item));
-        auto srv = this->cfg->GetTcpServer(internal_id);
+        auto srv         = this->cfg->GetTcpServer(internal_id);
         if (srv) {
             if (srv->GetAuthKeyState() == false || srv->GetHost().empty() || srv->GetPort() == 0) {
                 wxMessageDialog(this, _("Please fill all required fields before enabling the server")).ShowModal();
