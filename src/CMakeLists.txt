@@ -21,6 +21,7 @@ set(SOURCES
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE pch.h)
 
+add_dependencies(${PROJECT_BINARY_NAME} sockets_cpp po-compile)
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CpuFeatures_SOURCE_DIR}
@@ -55,7 +56,7 @@ list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl e
 
 target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${APPDEPENDS})
 
-add_dependencies(${PROJECT_BINARY_NAME} sockets_cpp po-compile)
+
 if (WIN32)
     target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE comsuppw.lib wbemuuid.lib)
     target_compile_definitions(${PROJECT_BINARY_NAME} PRIVATE

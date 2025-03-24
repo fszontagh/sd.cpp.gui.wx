@@ -120,6 +120,7 @@ endif()
 if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
     include(cmake/wxWidgets.cmake)
     include(cmake/CpuFeatures.cmake)
+    include(cmake/sockets-cpp.cmake)
 endif()
 
 
@@ -167,7 +168,6 @@ if (NOT SDGUI_LOCAL_DISABLE)
     endif()
 
     if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
-        include(cmake/sockets-cpp.cmake)
         message(STATUS "Socket server: ${SDGUI_SERVER}")
         if (SDGUI_SERVER)
             add_subdirectory(server)
