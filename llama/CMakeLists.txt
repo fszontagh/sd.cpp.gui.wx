@@ -85,6 +85,7 @@ if(SDGUI_HIPBLAS)
         list(APPEND DEPENDENCIES llama_cpp_hipblas)
 endif()
 
-add_dependencies(${LLAMA_BINARY_NAME} ${DEPENDENCIES})
+if (DEPENDENCIES)
+        add_dependencies(${LLAMA_BINARY_NAME} ${DEPENDENCIES})
+endif()
 
-add_dependencies(${PROJECT_BINARY_NAME} ${LLAMA_BINARY_NAME})

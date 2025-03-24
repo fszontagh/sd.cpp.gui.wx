@@ -89,4 +89,7 @@ if(SDGUI_HIPBLAS)
     list(APPEND DEPENDENCIES stable_diffusion_cpp_hipblas)
 endif()
 
-add_dependencies(${EPROCESS_BINARY_NAME} ${DEPENDENCIES})
+
+if (DEPENDENCIES)
+    add_dependencies(${EPROCESS_BINARY_NAME} ${DEPENDENCIES})
+endif()
