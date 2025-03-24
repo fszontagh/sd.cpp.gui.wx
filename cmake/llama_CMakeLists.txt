@@ -181,3 +181,21 @@ configure_file(cmake/llama.pc.in
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/llama.pc"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+
+add_custom_command(
+    TARGET llama
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_BINARY_DIR}/include
+    COMMENT "Copying llama header files to build directory..."
+)
+add_custom_command(
+    TARGET llama
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/ggml/include
+        ${CMAKE_BINARY_DIR}/include
+    COMMENT "Copying ggml header files to build directory..."
+)

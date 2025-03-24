@@ -90,8 +90,8 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     endif()
 
-    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include CACHE PATH "Path to llama.cpp include directory" FORCE)
-    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/ggml/include CACHE PATH "Path to GGML include directory" FORCE)
+    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to llama.cpp include directory" FORCE)
+    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to GGML include directory" FORCE)
 
 
     ExternalProject_Add(
@@ -107,14 +107,6 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DCMAKE_CXX_FLAGS=${DISABLE_WARNINGS_FLAGS}
             -DCMAKE_C_FLAGS=${DISABLE_WARNINGS_FLAGS}
-            #-DLLAMA_BUILD_TESTS=OFF
-            #-DLLAMA_BUILD_EXAMPLES=OFF
-            #-DLLAMA_BUILD_SERVER=OFF
-            #-DLLAMA_BUILD_COMMON=OFF
-            #-DLLAMA_ALL_WARNINGS=OFF
-            #-DLLAMA_ALL_WARNINGS_3RD_PARTY=OFF
-            #-DLLAMA_CURL=OFF
-            #-DLLAMA_LLGUIDANCE=OFF
             -DGGML_CPU_AARCH64=OFF
             -DGGML_AVX=${SD_AVX}
             -DGGML_AVX2=${SD_AVX2}
@@ -127,12 +119,15 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             -DGGML_CCACHE=${GGML_CACHE}
             -DGGML_CPU=${GGML_CPU}
             -DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}
-            PATCH_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/llama_CMakeLists.txt ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/CMakeLists.txt
-            BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/llama_${variant_name} --config ${CMAKE_BUILD_TYPE}
-            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/llama_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-            BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
-            BUILD_ALWAYS OFF
+        PATCH_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/llama_CMakeLists.txt ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/CMakeLists.txt
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/llama_${variant_name} --config ${CMAKE_BUILD_TYPE}
+        INSTALL_COMMAND
+            ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/llama_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX} &&
+            ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include ${CMAKE_BINARY_DIR}/include
+        BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        BUILD_ALWAYS OFF
     )
+
 
 endmacro()
 
