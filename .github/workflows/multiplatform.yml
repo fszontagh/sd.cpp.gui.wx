@@ -340,7 +340,7 @@ jobs:
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_CUDA=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           fi
-          cmake --build . --config Release
+          cmake --build . --config Release -j2
 
 
       - name: Upload Build Outputs
