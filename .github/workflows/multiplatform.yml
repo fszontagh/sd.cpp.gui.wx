@@ -135,13 +135,11 @@ jobs:
       - name: Configure CMake
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cmake -S . -B build -G "Ninja Multi-Config" -DCMAKE_BUILD_TYPE=Release -DSDGUI_WINDOWLESS=ON -DSDGUI_SERVER=OFF -DCUDA_TOOLKIT_ROOT_DIR="${{steps.cuda-toolkit.outputs.CUDA_PATH}}" ${{ matrix.variant.cmake_flags }}
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSDGUI_WINDOWLESS=ON -DSDGUI_SERVER=OFF -DCUDA_TOOLKIT_ROOT_DIR="${{steps.cuda-toolkit.outputs.CUDA_PATH}}" ${{ matrix.variant.cmake_flags }}
 
       - name: Build Targets
         if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cmake --build build --config Release
 
       - name: Upload Build Outputs

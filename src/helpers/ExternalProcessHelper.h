@@ -209,7 +209,6 @@ private:
     }
 
     void ProcessMonitorLoop() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         while (this->extProcessNeedToRun) {
             if (!this->IsAlive()) {
                 this->extProcessNeedToRun = false;
