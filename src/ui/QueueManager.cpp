@@ -260,7 +260,8 @@ void QM::QueueManager::SendEventToMainWindow(QueueEvents eventType, std::shared_
 void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     e.Skip();
 
-    if (e.GetId() == 9999) {
+    // skip statusbar events
+    if (e.GetId() == 9999 || e.GetId() == 10000) {
         return;
     }
     auto msg = e.GetString();

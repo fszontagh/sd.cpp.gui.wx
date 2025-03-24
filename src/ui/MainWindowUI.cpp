@@ -217,7 +217,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             this->writeLog(wxString::Format(_("Llama process started: %s"), llamaProcess->GetFullCommand()));
             wxThreadEvent* event = new wxThreadEvent();
             event->SetString(_("Llama is ready"));
-            event->SetId(9999);
+            event->SetId(10000);
             wxQueueEvent(this, event);
         };
         llamaProcess->onStdErr = [this](const char* data, size_t size) {
@@ -226,6 +226,13 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
 
         llamaProcess->onStdOut = [this](const char* data, size_t size) {
             this->ProcessStdOutEvent(data, size);
+        };
+        llamaProcess->onExit = [this, &llamaProcess]() {
+            this->writeLog(wxString::Format(_("Llama process stopped: %s"), llamaProcess->GetFullCommand()));
+            wxThreadEvent* event = new wxThreadEvent();
+            event->SetString(_("Llama is down"));
+            event->SetId(10000);
+            wxQueueEvent(this, event);
         };
         if (llamaProcess->Start()) {
             this->writeLog(wxString::Format(_("Llama process just started: %s"), llamaProcess->GetFullCommand()));
