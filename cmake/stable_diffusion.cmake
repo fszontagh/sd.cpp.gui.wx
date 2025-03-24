@@ -88,11 +88,37 @@ if(NOT SD_HIPBLAS)
 
         else()
         SET(GGMAL_NATIVE OFF)
-            if (CUDA_MAJOR_VERSION STREQUAL "12")
-                SET(CMAKE_CUDA_ARCHITECTURES "90;89;80;75")
-            elseif (CUDA_MAJOR_VERSION STREQUAL "11" AND CUDA_MINOR_VERSION STREQUAL "5")
+
+
+# CUDA 12.x	                90;89;80;75
+# CUDA 11.5 OR 11.6	        52;61;70;75
+# CUDA 11.7 OR newest	    72;75;80;86;87
+#
+# CUDA architectures and corresponding NVIDIA GPU series:
+# 90 - Hopper (H100)
+# 89 - Ada Lovelace (RTX 40xx: 4060, 4070, 4080, 4090)
+# 87 - Ampere (Jetson Orin)
+# 86 - Ampere (RTX 30xx: 3060, 3070, 3080, 3090)
+# 80 - Ampere (A100)
+# 75 - Turing (RTX 20xx: 2060, 2070, 2080, Titan RTX)
+# 72 - Volta (Jetson AGX Xavier)
+# 70 - Volta (Tesla V100)
+# 61 - Pascal (GTX 10xx: 1070, 1080, Titan X Pascal)
+# 52 - Maxwell (GTX 900)
+
+
+        if (CUDA_MAJOR_VERSION STREQUAL "12")
+            SET(CMAKE_CUDA_ARCHITECTURES "75;80;86;87;89;90")
+        elseif (CUDA_MAJOR_VERSION STREQUAL "11")
+            if (CUDA_MINOR_VERSION GREATER_EQUAL 5)
                 SET(CMAKE_CUDA_ARCHITECTURES "52;61;70;75")
             endif()
+            if (CUDA_MINOR_VERSION GREATER_EQUAL 7)
+                SET(CMAKE_CUDA_ARCHITECTURES "72;75;80;86;87")
+            endif()
+        endif()
+
+
 
         endif()
         string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
@@ -125,8 +151,6 @@ if(NOT SD_HIPBLAS)
             -DSD_VULKAN=${SD_VULKAN}
             -DGGML_ALL_WARNINGS=OFF
             -DGGML_NATIVE=${GGML_NATIVE}
-            -DCMAKE_CUDA_STANDARD=17
-            -DCMAKE_CUDA_STANDARD_REQUIRED=ON
             -DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}
             BUILD_COMMAND ${CMAKE_COMMAND} -E env PATH=${_BINPATH} ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/sdcpp_${variant_name} --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}stable-diffusion_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}

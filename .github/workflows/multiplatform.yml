@@ -244,7 +244,7 @@ jobs:
 
       - name: Maximize build space
         # if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.variant == 'VULKAN' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
-        if: ${{ (matrix.variant  == 'HIPBLAS' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ (matrix.variant  == 'HIPBLAS' || matrix.variant == 'CUDA' || matrix.os == 'ubuntu-22.04' ) && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         uses: AdityaGarg8/remove-unwanted-software@v4.1
         with:
           remove-android: 'true'
@@ -255,20 +255,11 @@ jobs:
           remove-large-packages: 'true'
           remove-swapfile: 'true'
 
-      - name: Change g++ version
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
-        run: |
-          sudo apt install -y --no-install-recommends gcc-10 g++-10
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 120 --force
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 120 --force
-          sudo update-alternatives --set gcc /usr/bin/gcc-10
-          sudo update-alternatives --set g++ /usr/bin/g++-10
-
       - name: Install base dependencies
         if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt update
-          sudo apt install -y fuse3 cmake gettext git build-essential ninja-build libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev libomp-dev >/dev/null
+          sudo apt install -y --no-install-recommends fuse3 cmake gettext git build-essential ninja-build libexiv2-dev libssl-dev libjpeg-dev libpng-dev libtiff-dev libgtk-3-dev libcurl4-openssl-dev libsecret-1-dev libnotify-dev libwebkit2gtk-4.1-dev libsdl2-dev libomp-dev >/dev/null
 
       - name: CACHE ROCM installer
         if: ${{ matrix.variant == 'HIPBLAS' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
@@ -309,10 +300,23 @@ jobs:
           sudo apt install -y vulkan-sdk
 
       - name: Install CUDA toolkit
-        if: ${{ matrix.variant == 'CUDA' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        if: ${{ matrix.variant == 'CUDA' && matrix.os == 'ubuntu-24.04' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           sudo apt update
           sudo apt install -y nvidia-cuda-toolkit
+
+      - name: Install CUDA 11.7
+        if: ${{ matrix.variant == 'CUDA' && matrix.os == 'ubuntu-22.04' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
+        run: |
+          sudo apt update; sudo apt install -y wget software-properties-common
+          sudo wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+          sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+          sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
+          sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
+          sudo apt-get install -y --no-install-recommends cuda-compiler-11-7 cuda-cudart-11-7 cuda-cudart-dev-11-7 cuda-driver-dev-11-7 cuda-nvcc-11-7 cuda-libraries-dev-11-7
+          export PATH=/usr/local/cuda-11.7/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/local/cuda-11.7/lib64:$LD_LIBRARY_PATH
+          export CUDADIR=/usr/local/cuda-11.7
 
       - name: Configure & Build
         if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
