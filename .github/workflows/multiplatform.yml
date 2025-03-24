@@ -314,15 +314,23 @@ jobs:
           sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub
           sudo add-apt-repository -y "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
           sudo apt-get install -y --no-install-recommends cuda-compiler-11-7 cuda-cudart-11-7 cuda-cudart-dev-11-7 cuda-driver-dev-11-7 cuda-nvcc-11-7 cuda-libraries-dev-11-7
-          export PATH=/usr/local/cuda-11.7/bin:$PATH
-          export LD_LIBRARY_PATH=/usr/local/cuda-11.7/lib64:$LD_LIBRARY_PATH
-          export CUDADIR=/usr/local/cuda-11.7
+          sudo ln -s /usr/local/cuda-11.7 /usr/local/cuda
+          export PATH=/usr/local/cuda/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+          export CUDADIR=/usr/local/cuda
 
       - name: Configure & Build
         if: ${{ steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
         run: |
           mkdir -p build
           cd build
+          # Set CUDA environment variables only for Ubuntu 22.04
+          if [ "${{ matrix.os }}" = "ubuntu-22.04" ]; then
+            export PATH=/usr/local/cuda/bin:$PATH
+            export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+            export CUDADIR=/usr/local/cuda
+          fi
+
           if [ "${{ matrix.variant }}" = "CPU" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSDGUI_AVX=ON -DSDGUI_AVX2=ON -DSDGUI_AVX512=ON -DSDGUI_SERVER=OFF -DSDGUI_WINDOWLESS=ON
           elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
