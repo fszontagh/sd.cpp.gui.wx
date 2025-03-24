@@ -124,6 +124,7 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         INSTALL_COMMAND
             ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/llama_${variant_name}/bin/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX} &&
             ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/include ${CMAKE_BINARY_DIR}/include
+            ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/llama_src_${variant_name}/ggml/include ${CMAKE_BINARY_DIR}/include
         BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         BUILD_ALWAYS OFF
     )
