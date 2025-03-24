@@ -149,7 +149,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.variant.cache-key }}
-          path: build/Release/*.dll
+          path: |
+            build/*.dll
+            build/include/
           compression-level: 0
           overwrite: true
 
@@ -347,7 +349,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-${{ matrix.variant }}
-          path: build/*.so
+          path: |
+            build/*.so
+            build/include/
           compression-level: 0
           overwrite: true
 
