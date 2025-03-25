@@ -148,9 +148,10 @@ jobs:
           name: ${{ matrix.variant.cache-key }}
           path: |
             build/*.dll
-            build/include/
+            build/include
           compression-level: 0
           overwrite: true
+
 
   package-installer:
     name: Build main Application
@@ -341,14 +342,13 @@ jobs:
           fi
           cmake --build . --config Release -j2
 
-
       - name: Upload Build Outputs
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-${{ matrix.variant }}
           path: |
             build/*.so
-            build/include/
+            build/include
           compression-level: 0
           overwrite: true
 
