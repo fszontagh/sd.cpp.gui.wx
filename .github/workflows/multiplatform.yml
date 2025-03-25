@@ -92,8 +92,10 @@ jobs:
         id: cache-build
         uses: actions/cache@v4
         with:
-          path: build/Release/*.dll
-          key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          path: |
+            build/Release/*.dll
+            build/include
+          key: ${{ matrix.variant.cache-key }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}-${{ hashFiles('cmake/llama_version.cmake') }}
           restore-keys: ${{ matrix.variant.cache-key }}-
 
       - name: Install CUDA Toolkit
@@ -235,11 +237,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Cache builds
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: sd-cpp-cache
         with:
-          path: build/*.so
-          key: ${{ matrix.os }}-build-${{ matrix.variant }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}
+          path: |
+            build/*.so
+            build/include
+          key: ${{ matrix.os }}-build-${{ matrix.variant }}-${{ hashFiles('cmake/sdcpp_version.cmake') }}-${{ hashFiles('cmake/llama_version.cmake') }}
           restore-keys: ${{ matrix.os }}-build-${{ matrix.variant }}-
 
       - name: Maximize build space
@@ -263,7 +267,7 @@ jobs:
 
       - name: CACHE ROCM installer
         if: ${{ matrix.variant == 'HIPBLAS' && steps.sd-cpp-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: ubuntu-rocm-installer
         with:
           path: /tmp/amdgpu-install.deb
