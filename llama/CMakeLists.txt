@@ -30,7 +30,6 @@ else()
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,stack-size=${STACK_SIZE}")
 endif()
 
-target_compile_options(${LLAMA_BINARY_NAME} PRIVATE -Wno-unused-parameter)
 target_include_directories(${LLAMA_BINARY_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
         ${wxWidgets_SOURCE_DIR}/include
