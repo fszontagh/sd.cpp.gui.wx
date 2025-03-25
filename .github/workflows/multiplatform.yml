@@ -149,7 +149,7 @@ jobs:
         with:
           name: ${{ matrix.variant.cache-key }}
           path: |
-            build/*.dll
+            build/Release/*.dll
             build/include
           compression-level: 0
           overwrite: true
