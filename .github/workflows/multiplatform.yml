@@ -193,7 +193,7 @@ jobs:
       - name: Compile main application
         run: |
           cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default -DSDGUI_WINDOWLESS=OFF -DSDGUI_SERVER=ON
+          cmake .. -DCMAKE_BUILD_TYPE=Release --preset conan-default -DSDGUI_WINDOWLESS=OFF -DSDGUI_SERVER=OFF
           cmake --build . --config Release --target po-compile
           cmake --build . --config Release
 
