@@ -90,8 +90,6 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     endif()
 
-    set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to llama.cpp include directory" FORCE)
-    set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to GGML include directory" FORCE)
 
 
     ExternalProject_Add(

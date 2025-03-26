@@ -5,6 +5,12 @@ math(EXPR STACK_SIZE "${SHARED_MEMORY_SIZE} + ((1024*1024)*4)")
 message(STATUS "SHARED_MEMORY_SIZE: ${SHARED_MEMORY_SIZE}")
 message(STATUS "STACK_SIZE: ${STACK_SIZE}")
 
+set(LLAMA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to llama.cpp include directory" FORCE)
+set(GGML_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include CACHE PATH "Path to GGML include directory" FORCE)
+
+message(STATUS "LLAMA_INCLUDE_DIR: ${LLAMA_INCLUDE_DIR}")
+message(STATUS "GGML_INCLUDE_DIR: ${GGML_INCLUDE_DIR}")
+
 configure_file(config.hpp.in config.hpp)
 
 set(SOURCES src/main.cpp src/ApplicationLogic.cpp)
