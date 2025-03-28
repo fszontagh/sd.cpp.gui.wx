@@ -116,6 +116,7 @@ protected:
     // chat things
     void OnSendChat(wxCommandEvent& event) override;
     void OnChatInputTextEnter(wxCommandEvent& event) override;
+    void OnLanguageModelSelect(wxCommandEvent& event) override;
     // chat things
 
 public:

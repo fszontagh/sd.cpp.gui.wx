@@ -3,7 +3,6 @@
 
 namespace sd_gui_utils {
 
-
     enum llvmstatus {
         PENDING,
         MODEL_LOADED,
@@ -18,9 +17,15 @@ namespace sd_gui_utils {
         GENERATE_TEXT_STREAM
     };
 
-    struct llvmMessage {
+    class llvmMessage {
+    public:
+        llvmMessage() {
+            id = std::chrono::duration_cast<std::chrono::milliseconds>(
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
+        }
         uint64_t id                = 0;
-        std::string message        = "";
+        std::string prompt        = "";
         std::string response       = "";
         std::string model_path     = "";
         std::string status_message = "";
@@ -29,7 +34,7 @@ namespace sd_gui_utils {
         int ngl                    = 99;
         int n_ctx                  = 2048;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(llvmMessage, message, response, model_path, status_message, status, command, ngl, n_ctx);
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(llvmMessage, id, prompt, response, model_path, status_message, status, command, ngl, n_ctx);
 };
 
 #endif  // LLVM_H

@@ -336,6 +336,7 @@ class mainUI : public wxFrame
 		virtual void OnImageInfoLoadImg2img( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnImageInfoOpen( wxFileDirPickerEvent& event ) { event.Skip(); }
 		virtual void OnCleanImageInfo( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnLanguageModelSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnChatInputTextEnter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnSendChat( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnDataModelTreeColSorted( wxTreeListEvent& event ) { event.Skip(); }

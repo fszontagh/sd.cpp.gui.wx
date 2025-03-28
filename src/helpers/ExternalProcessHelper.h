@@ -1,7 +1,12 @@
 #ifndef EXTERNALPROCESSHELPER_H
 #define EXTERNALPROCESSHELPER_H
 
+#include <queue>
 class ExternalProcessHelper {
+private:
+    std::queue<std::function<void()>> taskQueue;
+    std::mutex queueMutex;
+
 public:
     enum class ProcessType { none,
                              diffuser,
@@ -27,18 +32,17 @@ public:
             this->storedArgs.emplace_back(p.ToStdString());
         }
 
-        this->sharedMemory = std::make_shared<SharedMemoryManager>(shmName.ToStdString(), shmSize, true);
+        this->sharedMemory         = std::make_shared<SharedMemoryManager>(shmName.ToStdString(), shmSize, true);
+        this->queueThreadNeedToRun = true;
+        this->processQueueThread   = std::thread(&ExternalProcessHelper::ProcessQueueWorker, this);
     }
 
     ~ExternalProcessHelper() {
         std::lock_guard<std::mutex> lock(this->processMutex);
-        if (!this->subprocess) {
-            return;
-        }
-        subprocess_terminate(this->subprocess);
-        delete this->subprocess;
-        this->subprocess          = nullptr;
-        this->extProcessNeedToRun = false;
+
+        this->extProcessNeedToRun  = false;
+        this->queueThreadNeedToRun = false;
+
         if (this->processMonitorThread.joinable()) {
             this->processMonitorThread.join();
         }
@@ -47,6 +51,26 @@ public:
         }
         if (this->sharedMemoryThread.joinable()) {
             this->sharedMemoryThread.join();
+        }
+        if (this->processQueueThread.joinable()) {
+            this->processQueueThread.join();
+        }
+
+        if (this->sharedMemory) {
+            std::string exit_command = "exit";
+            this->sharedMemory->write(exit_command.c_str(), exit_command.size());
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (this->subprocess) {
+            int state = subprocess_terminate(this->subprocess);
+            std::cout << "Terminatin process... " << std::endl;
+            while (state != 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                state = subprocess_terminate(this->subprocess);
+            }
+            delete this->subprocess;
+            this->subprocess = nullptr;
         }
     }
 
@@ -76,12 +100,16 @@ public:
             return false;
         }
         this->extProcessNeedToRun = true;
-        if (this->onStart) {
-            this->onStart();
-        }
+
         this->processMonitorThread = std::thread(&ExternalProcessHelper::ProcessMonitorLoop, this);
         this->processOutputsThread = std::thread(&ExternalProcessHelper::HandleProcessOutputs, this);
         this->sharedMemoryThread   = std::thread(&ExternalProcessHelper::SharedMemoryThread, this);
+
+        if (this->onStart) {
+            std::lock_guard<std::mutex> lock(queueMutex);
+            taskQueue.push(this->onStart);
+        }
+
         return true;
     }
     inline const wxString GetFullCommand() const {
@@ -91,14 +119,11 @@ public:
         }
         return cmd;
     }
-    bool Stop() {
+    bool Stop(bool is_restart = false) {
         std::lock_guard<std::mutex> lock(this->processMutex);
         if (!this->subprocess) {
             return false;
         }
-        subprocess_terminate(this->subprocess);
-        delete this->subprocess;
-        this->subprocess          = nullptr;
         this->extProcessNeedToRun = false;
         if (this->processMonitorThread.joinable()) {
             this->processMonitorThread.join();
@@ -106,17 +131,37 @@ public:
         if (this->processOutputsThread.joinable()) {
             this->processOutputsThread.join();
         }
-        if (this->onExit) {
-            this->onExit();
+        if (this->sharedMemoryThread.joinable()) {
+            this->sharedMemoryThread.join();
         }
+
+        if (!is_restart && this->onExit) {
+            std::cout << "Called onExit white on stop and not restart" << std::endl;
+            // push to the queue
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                taskQueue.push(this->onExit);
+            }
+        }
+
+        if (this->IsAlive()) {
+            subprocess_terminate(this->subprocess);
+        }
+        delete this->subprocess;
+        this->subprocess = nullptr;
         return true;
     }
 
     bool Restart() {
-        this->Stop();
+        this->Stop(true);
         return this->Start();
     }
-    bool IsAlive() { return this->subprocess && subprocess_alive(this->subprocess) != 0; }
+    bool IsAlive() {
+        if (this->subprocess) {
+            return subprocess_alive(this->subprocess) != 0;
+        }
+        return false;
+    }
     wxString GetError() const { return this->error; }
     ExternalProcessHelper::ProcessType GetProcessType() const { return this->processType; }
 
@@ -211,17 +256,39 @@ private:
     void ProcessMonitorLoop() {
         while (this->extProcessNeedToRun) {
             if (!this->IsAlive()) {
-                this->extProcessNeedToRun = false;
-                if (this->onExit) {
-                    this->onExit();
+                std::cout << "Task died... " << std::endl;
+                {
+                    if (this->onExit) {
+                        std::lock_guard<std::mutex> lock(queueMutex);
+                        taskQueue.push(this->onExit);
+                    }
                 }
-                break;
+
+                this->extProcessNeedToRun = false;
+                return;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
+    void ProcessQueueWorker() {
+        while (this->queueThreadNeedToRun) {
+            std::function<void()> task;
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                if (!taskQueue.empty()) {
+                    task = std::move(taskQueue.front());
+                    taskQueue.pop();
+                }
+            }
+            if (task) {
+                task();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
 
     std::atomic<bool> extProcessNeedToRun             = {false};
+    std::atomic<bool> queueThreadNeedToRun            = {true};
     std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
     const int subprocessOptions                       = subprocess_option_no_window | subprocess_option_enable_async | subprocess_option_search_user_path | subprocess_option_inherit_environment;
     ProcessType processType                           = ProcessType::none;
@@ -232,9 +299,10 @@ private:
     wxString shmName                = wxEmptyString;
     struct subprocess_s* subprocess = nullptr;
     std::vector<const char*> command_line;
-    std::thread processMonitorThread;
-    std::thread processOutputsThread;
-    std::thread sharedMemoryThread;
+    std::thread processMonitorThread = {};
+    std::thread processOutputsThread = {};
+    std::thread sharedMemoryThread   = {};
+    std::thread processQueueThread   = {};
     std::mutex processMutex;
     std::vector<std::string> storedArgs;
 };

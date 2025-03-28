@@ -988,12 +988,15 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1151;
 	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, _("Ask anything..."), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_ENTER );
+	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_ENTER );
+	m_chatInput->Enable( false );
 	m_chatInput->SetMinSize( wxSize( -1,60 ) );
 
 	bSizer1151->Add( m_chatInput, 1, wxALL|wxEXPAND, 5 );
 
 	m_sendChat = new wxButton( m_llama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_sendChat->Enable( false );
+
 	bSizer1151->Add( m_sendChat, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
@@ -1844,6 +1847,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageInfoLoadToimg2img->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
+	m_languageModel->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnLanguageModelSelect ), NULL, this );
 	m_chatInput->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
 	m_sendChat->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Connect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );
@@ -1981,6 +1985,7 @@ mainUI::~mainUI()
 	m_imageInfoLoadToimg2img->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnImageInfoLoadImg2img ), NULL, this );
 	m_imageInfoOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
+	m_languageModel->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnLanguageModelSelect ), NULL, this );
 	m_chatInput->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
 	m_sendChat->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Disconnect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );

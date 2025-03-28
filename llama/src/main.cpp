@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
                         wxLogWarning("[EXTPROCESS] Got a wrong id: 0");
                     } else if (item.id != lastId && item.status == sd_gui_utils::llvmstatus::PENDING) {
                         sharedMemory->clear();
-                        wxLogInfo("New message: %" PRIu64, item.id);
+                        wxLogInfo("New message: %" PRIu64 " msg: %s\n", item.id, j.dump(2));
                         lastId = item.id;
                         appLogic.processMessage(item);
                     }

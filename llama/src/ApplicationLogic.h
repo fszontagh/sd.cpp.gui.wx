@@ -16,9 +16,10 @@ private:
     std::string error;
     std::atomic<bool> modelLoaded = {false};
     llama_model* model            = nullptr;
-    llama_context* ctx            = nullptr;
     llama_sampler* smplr          = nullptr;
     std::string currentModelPath  = "";
+    llama_context* ctx            = nullptr;
+    llama_vocab* vocab            = nullptr;
 
     // llama functions
     using LlamaInitFromModelFunction     = llama_context* (*)(llama_model*, llama_context_params);
@@ -35,6 +36,13 @@ private:
     using LlamaSamplerInitTemp           = struct llama_sampler* (*)(float t);
     using LlamaSamplerInitDist           = struct llama_sampler* (*)(uint32_t seed);
     using LlamaSamplerFree               = void (*)(struct llama_sampler* smpl);
+    using LlamaModelGetVocab             = llama_vocab* (*)(struct llama_model* model);
+    using LlamaBatchGetOne               = llama_batch (*)(llama_token* tokens, int32_t n_tokens);
+    using LlamaTokenize                  = int32_t (*)(const struct llama_vocab* vocab, const char* text, int32_t text_len, llama_token* tokens, int32_t n_tokens_max, bool add_special, bool parse_special);
+    using LlamaVocabIsEog                = bool (*)(const struct llama_vocab* vocab, llama_token token);
+    using LlamaDecode                    = int32_t (*)(struct llama_context* ctx, struct llama_batch batch);
+    using LlamaSamplerSample             = llama_token (*)(struct llama_sampler* smpl, struct llama_context* ctx, int32_t idx);
+    using LlamaTokenToPiece              = int32_t (*)(const struct llama_vocab* vocab, llama_token token, char* buf, int32_t length, int32_t lstrip, bool special);
 
     LlamaInitFromModelFunction llama_init_from_model                  = nullptr;
     LlamaFreeFunction llama_free                                      = nullptr;
@@ -50,13 +58,21 @@ private:
     LlamaSamplerInitTemp llama_sampler_init_temp                      = nullptr;
     LlamaSamplerInitDist llama_sampler_init_dist                      = nullptr;
     LlamaSamplerFree llama_sampler_free                               = nullptr;
+    LlamaModelGetVocab llama_model_get_vocab                          = nullptr;
+    LlamaBatchGetOne llama_batch_get_one                              = nullptr;
+    LlamaTokenize llama_tokenize                                      = nullptr;
+    LlamaVocabIsEog llama_vocab_is_eog                                = nullptr;
+    LlamaDecode llama_decode                                          = nullptr;
+    LlamaSamplerSample llama_sampler_sample                           = nullptr;
+    LlamaTokenToPiece llama_token_to_piece                            = nullptr;
 
     bool loadModel(const sd_gui_utils::llvmMessage& message);
     void unloadModel();
 
     bool loadContext(const sd_gui_utils::llvmMessage& message);
-
     void unloadContext();
+
+    void generateText(const sd_gui_utils::llvmMessage& message, std::string& response);
 };
 
 #endif  // EXTPROCESS_APPLICATIONLOGIC_H

@@ -76,6 +76,7 @@
 #include "helpers/cpuinfo_x86.hpp"
 #include "helpers/vcardinfo.hpp"
 #include "helpers/civitai.hpp"
+#include "helpers/llvm.h"
 
 
 #include "libs/SharedMemoryManager.h"

@@ -165,80 +165,103 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
 
     if (this->disableExternalProcessHandling == false) {
         this->m_stop_background_process->Show();
+
+        // external process for stable diffusion
         wxArrayString sdParams;
 
         sdParams.Add(ExternalProcessHelper::buildDllPathFromName(stablediffusionDllName));
         sdParams.Add(this->extProcessLogFile);
 
-        auto sdProcess = std::make_shared<ExternalProcessHelper>(EPROCESS_BINARY_NAME, ExternalProcessHelper::ProcessType::diffuser, sdParams, SHARED_MEMORY_PATH, SHARED_MEMORY_SIZE);
+        auto processRef = std::make_shared<ExternalProcessHelper>(
+            EPROCESS_BINARY_NAME,
+            ExternalProcessHelper::ProcessType::diffuser,
+            sdParams,
+            SHARED_MEMORY_PATH,
+            SHARED_MEMORY_SIZE);
+        this->processHelpers.push_back(processRef);
 
-        sdProcess->onStart = [this, &sdProcess]() {
-            this->writeLog(wxString::Format(_("External process started: %s"), sdProcess->GetFullCommand()));
-            wxThreadEvent* event = new wxThreadEvent();
+
+        processRef->onStart = [this, processRef]() {
+            this->writeLog(wxString::Format(_("External process started: %s"), processRef->GetFullCommand()));
+            auto* event = new wxThreadEvent();
             event->SetString(_("Process is ready"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
 
-        sdProcess->onExit = [this, &sdProcess]() {
-            this->writeLog(wxString::Format(_("External process stopped")));
-            wxThreadEvent* event = new wxThreadEvent();
+        processRef->onExit = [this, processRef]() {
+            this->writeLog(_("External process stopped"));
+            auto* event = new wxThreadEvent();
             event->SetString(_("External process stopped"));
             event->SetId(9999);
             wxQueueEvent(this, event);
+            processRef->Restart();
         };
 
-        sdProcess->onStdErr = [this](const char* data, size_t size) {
+        processRef->onStdErr = [this](const char* data, size_t size) {
             this->ProcessStdErrEvent(data, size);
         };
 
-        sdProcess->onStdOut = [this](const char* data, size_t size) {
+        processRef->onStdOut = [this](const char* data, size_t size) {
             this->ProcessStdOutEvent(data, size);
         };
-        sdProcess->onShmMessage = [this, &sdProcess](const char* data, size_t size) {
+
+        processRef->onShmMessage = [this](const char* data, size_t size) {
             return this->ProcessEventHandler(std::string(data, size));
         };
 
-        if (sdProcess->Start()) {
-            this->writeLog(wxString::Format(_("External process just started: %s"), sdProcess->GetFullCommand()));
+        if (processRef->Start()) {
+            this->writeLog(wxString::Format(_("External process just started: %s"), processRef->GetFullCommand()));
         } else {
-            this->writeLog(wxString::Format(_("External process failed to start: %s"), sdProcess->GetFullCommand()));
+            this->writeLog(wxString::Format(_("External process failed to start: %s"), processRef->GetFullCommand()));
         }
-
-        this->processHelpers.push_back(std::move(sdProcess));
-
+        this->addChatPanel();
+        // external process for stable diffusion
+        // external process for llama
         wxArrayString llamaParams;
 
         llamaParams.Add(ExternalProcessHelper::buildDllPathFromName(llamaDllName));
         llamaParams.Add(this->llamaLogFile);
 
-        auto llamaProcess     = std::make_shared<ExternalProcessHelper>(LLAMA_BINARY_NAME, ExternalProcessHelper::ProcessType::llama, llamaParams, SHARED_MEMORY_PATH_LLAMA, SHARED_MEMORY_SIZE_LLAMA);
-        llamaProcess->onStart = [this, &llamaProcess]() {
-            this->writeLog(wxString::Format(_("Llama process started: %s"), llamaProcess->GetFullCommand()));
-            wxThreadEvent* event = new wxThreadEvent();
+        auto llamaRef = std::make_shared<ExternalProcessHelper>(
+            LLAMA_BINARY_NAME,
+            ExternalProcessHelper::ProcessType::llama,
+            llamaParams,
+            SHARED_MEMORY_PATH_LLAMA,
+            SHARED_MEMORY_SIZE_LLAMA);
+        this->processHelpers.emplace_back(llamaRef);
+
+        llamaRef->onStart = [this, llamaRef]() {
+            this->writeLog(wxString::Format(_("Llama process started: %s"), llamaRef->GetFullCommand()));
+            auto* event = new wxThreadEvent();
             event->SetString(_("Llama is ready"));
             event->SetId(10000);
             wxQueueEvent(this, event);
         };
-        llamaProcess->onStdErr = [this](const char* data, size_t size) {
+
+        llamaRef->onStdErr = [this](const char* data, size_t size) {
             this->ProcessStdErrEvent(data, size);
         };
 
-        llamaProcess->onStdOut = [this](const char* data, size_t size) {
+        llamaRef->onStdOut = [this](const char* data, size_t size) {
             this->ProcessStdOutEvent(data, size);
         };
-        llamaProcess->onExit = [this, &llamaProcess]() {
-            this->writeLog(wxString::Format(_("Llama process stopped: %s"), llamaProcess->GetFullCommand()));
-            wxThreadEvent* event = new wxThreadEvent();
+
+        llamaRef->onExit = [this, llamaRef]() {
+            this->writeLog(wxString::Format(_("Llama process stopped: %s"), llamaRef->GetFullCommand()));
+            auto* event = new wxThreadEvent();
             event->SetString(_("Llama is down"));
             event->SetId(10000);
             wxQueueEvent(this, event);
+            llamaRef->Restart();
         };
-        if (llamaProcess->Start()) {
-            this->writeLog(wxString::Format(_("Llama process just started: %s"), llamaProcess->GetFullCommand()));
+
+        if (llamaRef->Start()) {
+            this->writeLog(wxString::Format(_("Llama process just started: %s"), llamaRef->GetFullCommand()));
         } else {
-            this->writeLog(wxString::Format(_("Llama process failed to start: %s"), llamaProcess->GetFullCommand()));
+            this->writeLog(wxString::Format(_("Llama process failed to start: %s"), llamaRef->GetFullCommand()));
         }
+        // external process for llama
     }
 }
 void MainWindowUI::OnClose(wxCloseEvent& event) {
@@ -6405,8 +6428,34 @@ void MainWindowUI::OnImg2ImgMouseWheel(wxMouseEvent& event) {
     }
 }
 void MainWindowUI::OnSendChat(wxCommandEvent& event) {
+    // model
+
+    auto mindex    = this->m_languageModel->GetCurrentSelection();
+    auto data      = this->m_languageModel->GetClientData(mindex);
+    auto modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(data);
+    if (!modelinfo) {
+        return;
+    }
+
+    sd_gui_utils::llvmMessage msg;
+    msg.prompt    = this->m_chatInput->GetValue();
+    msg.command    = sd_gui_utils::llvmCommand::GENERATE_TEXT;
+    msg.model_path = modelinfo->path;
+
+    for (auto helper : this->processHelpers) {
+        if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
+            nlohmann::json j = nlohmann::json(msg);
+            helper->write(j.dump());
+        }
+    }
 
 };
 void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
     event.Skip();
+};
+void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
+    event.Skip();
+
+    this->m_chatInput->Enable(this->m_languageModel->GetSelection() > 0);
+    this->m_sendChat->Enable(this->m_languageModel->GetSelection() > 0);
 };
