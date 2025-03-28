@@ -1,4 +1,5 @@
 
+#include "helpers/llvm.h"
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <dynamiclib_name> <targetlogfile.log> [shared_memory_path]" << std::endl;
@@ -49,6 +50,7 @@ int main(int argc, char* argv[]) {
     }
 
     bool needToRun  = true;
+    uint64_t lastId = 0;
     while (needToRun) {
         std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE_LLAMA]);
 
@@ -60,6 +62,21 @@ int main(int argc, char* argv[]) {
                     wxLogWarning("Got exit command, exiting...");
                     needToRun = false;
                     break;
+                }
+                try {
+                    nlohmann::json j = nlohmann::json::parse(message);
+                    auto item        = j.get<sd_gui_utils::llvmMessage>();
+
+                    if (item.id == 0) {
+                        wxLogWarning("[EXTPROCESS] Got a wrong id: 0");
+                    } else if (item.id != lastId && item.status == sd_gui_utils::llvmstatus::PENDING) {
+                        sharedMemory->clear();
+                        wxLogInfo("New message: %" PRIu64, item.id);
+                        lastId = item.id;
+                        appLogic.processMessage(item);
+                    }
+                } catch (std::exception& e) {
+                    wxLogError("Cannot parse JSON message: %s", e.what());
                 }
             }
         } else {
