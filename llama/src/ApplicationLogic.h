@@ -81,18 +81,12 @@ private:
     std::vector<llama_chat_message> messages = {};
     std::vector<char> formatted              = {};
     int prev_len                             = 0;
-
     bool loadModel();
     void unloadModel();
-
     bool loadContext();
     void unloadContext();
-
     void generateText();
-
-    inline void UpdateCurrentSession() {
-        this->sharedMemoryManager->write(this->currentMessage->toString());
-    }
+    void UpdateCurrentSession();
 
     std::string LlamaGenerate(const std::string& prompt);
 };

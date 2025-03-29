@@ -398,7 +398,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
         printf("%s", piece.c_str());
         fflush(stdout);
         response += piece;
-        this->currentMessage->AppendOrCreateLastAssistantAnswer(piece);
+        this->currentMessage->UpdateOrCreateAssistantAnswer(piece);
         this->UpdateCurrentSession();
 
         // prepare the next batch with the sampled token
@@ -406,4 +406,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
     }
 
     return response;
+}
+void ApplicationLogic::UpdateCurrentSession() {
+    this->sharedMemoryManager->write(this->currentMessage->toString());
 }

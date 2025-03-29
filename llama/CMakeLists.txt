@@ -13,7 +13,7 @@ message(STATUS "GGML_INCLUDE_DIR: ${GGML_INCLUDE_DIR}")
 
 configure_file(config.hpp.in config.hpp)
 
-set(SOURCES src/main.cpp src/ApplicationLogic.cpp)
+set(SOURCES src/main.cpp src/ApplicationLogic.cpp ../src/helpers/llvm.cpp)
 
 if(MSVC)
         set(BNAME ${LLAMA_BINARY_NAME})

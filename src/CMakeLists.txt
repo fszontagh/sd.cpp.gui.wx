@@ -16,6 +16,7 @@ set(SOURCES
     helpers/QueueItem.cpp
     helpers/DataViewListManager.cpp
     helpers/ModelUiManager.cpp
+    helpers/llvm.cpp
 )
 
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})

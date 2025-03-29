@@ -202,6 +202,7 @@ private:
     wxString llamaLogFile      = wxEmptyString;
     // external process
     // chat sessions
+    std::mutex chat_mutex;
     std::shared_ptr<sd_gui_utils::llvmMessage> chat_currentMessage = nullptr;
     // chat sessions
 
@@ -212,6 +213,7 @@ private:
     std::unordered_map<wxString, wxString> lastImageInfoParams;
 
     std::vector<wxPanel*> chatPanels;
+    wxPanel* currentChatPanel = nullptr;
 
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
@@ -237,25 +239,88 @@ private:
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
     // external process callbacks
+    // chat updated event
+    void UpdateChatGui();
+    // chat update event
     void UpdateCurrentProgress(std::shared_ptr<QueueItem> item, const QueueEvents& event);
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
     // chat things
+    struct PanelData {
+        wxScrolledWindow* scrolledWindow;
+        wxBoxSizer* chatSizer;
+        std::shared_ptr<sd_gui_utils::llvmMessage> chatData = nullptr;
+        std::unordered_map<uint64_t, wxTextCtrl*> messageTextCtrls;
+    };
+
     inline void addChatPanel(const wxString& title = _("New Chat"), bool select = true) {
         auto panel        = new wxPanel(this->m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
         wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
         auto scrolledWindow = new wxScrolledWindow(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
         scrolledWindow->SetScrollRate(5, 5);
-        sizer->Add(scrolledWindow, 1, wxEXPAND | wxALL, 5);
 
+        wxBoxSizer* chatSizer = new wxBoxSizer(wxVERTICAL);
+        scrolledWindow->SetSizer(chatSizer);
+        scrolledWindow->Layout();
+
+        sizer->Add(scrolledWindow, 1, wxEXPAND | wxALL, 5);
         panel->SetSizer(sizer);
         panel->Layout();
-        sizer->Fit(panel);
+
         this->m_chatListBook->AddPage(panel, title, select);
+        this->currentChatPanel = panel;
         this->chatPanels.push_back(panel);
+
+        auto* panelData = new PanelData{scrolledWindow, chatSizer, std::make_shared<sd_gui_utils::llvmMessage>()};
+        panel->SetClientData(panelData);
     }
+
+    void UpdateChatPanel(wxPanel* chatPanel) {
+        std::lock_guard<std::mutex> lock(this->chat_mutex);
+        if (!chatPanel || !this->chat_currentMessage)
+            return;
+
+        auto* panelData = static_cast<PanelData*>(chatPanel->GetClientData());
+        if (!panelData || !panelData->chatData)
+            return;
+
+        if (panelData->chatData->CheckUpdatedAt(this->chat_currentMessage->GetUpdatedAt())) {
+            return;
+        }
+
+        for (const auto& [id, msg] : this->chat_currentMessage->GetMessages()) {
+            wxString formattedMessage = wxString::Format("%s - %s: %s",
+                                                         wxDateTime::Now().FormatISOCombined(' '),
+                                                         (msg.sender == sd_gui_utils::llvmTextSender::USER) ? "User" : "Assistant",
+                                                         msg.text);
+
+            auto it = panelData->messageTextCtrls.find(id);
+            if (it != panelData->messageTextCtrls.end()) {
+                std::cout << "Update: " << id << std::endl;
+                it->second->SetValue(formattedMessage);
+
+                int textHeight = it->second->GetTextExtent(formattedMessage).y * (it->second->GetNumberOfLines() + 1);
+                it->second->SetMinSize(wxSize(-1, textHeight));
+            } else {
+                std::cout << "Create: " << id << std::endl;
+                wxTextCtrl* newTextCtrl = new wxTextCtrl(panelData->scrolledWindow, wxID_ANY, formattedMessage,
+                                                         wxDefaultPosition, wxDefaultSize,
+                                                         wxTE_MULTILINE | wxTE_READONLY | wxTE_RICH2);
+
+                int textHeight = newTextCtrl->GetTextExtent(formattedMessage).y * (newTextCtrl->GetNumberOfLines() + 1);
+                newTextCtrl->SetMinSize(wxSize(-1, textHeight));
+
+                panelData->chatSizer->Add(newTextCtrl, 0, wxEXPAND | wxALL, 5);
+                panelData->messageTextCtrls[id] = newTextCtrl;
+            }
+        }
+
+        panelData->chatSizer->Layout();
+        panelData->scrolledWindow->FitInside();
+    }
+
     // chat things
 
     inline static size_t findLoraDistance(const wxString& text, size_t cursorPos) {

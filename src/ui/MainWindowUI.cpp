@@ -264,9 +264,12 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             try {
                 const auto msg                       = nlohmann::json::parse(std::string(data, size));
                 const sd_gui_utils::llvmMessage lmsg = msg.get<sd_gui_utils::llvmMessage>();
+                std::lock_guard<std::mutex> lock(this->chat_mutex);
                 if (this->chat_currentMessage->CheckUpdatedAt(lmsg.GetUpdatedAt()) == false) {
-                    *this->chat_currentMessage = lmsg;
-                    wxLogInfo("Update current chat message...");
+                    this->chat_currentMessage->Update(lmsg);
+                    auto* event = new wxThreadEvent();
+                    event->SetId(10001);
+                    wxQueueEvent(this, event);
                     return true;
                 }
                 return false;  // true to clear the shm false to keep it
@@ -4022,6 +4025,11 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         this->m_statusBar166->SetStatusText(e.GetString(), 2);
         return;
     }
+    // chat updated
+    if (e.GetId() == 10001) {
+        this->UpdateChatGui();
+        return;
+    }
 
     auto msg = e.GetString().utf8_string();
 
@@ -6460,11 +6468,12 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
     if (!modelinfo) {
         return;
     }
-
+    std::lock_guard<std::mutex> lock(this->chat_mutex);
     if (this->chat_currentMessage == nullptr) {
         this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
         this->chat_currentMessage->SetId();
     }
+    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
     this->chat_currentMessage->AppendUserPrompt(this->m_chatInput->GetValue().ToStdString());
 
     this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::GENERATE_TEXT);
@@ -6478,8 +6487,6 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
         }
     }
     this->m_chatInput->SetValue(wxEmptyString);
-    // this->m_chatInput->Enable(false);
-    // this->m_sendChat->Enable(false);
 };
 void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
     event.Skip();
@@ -6489,4 +6496,7 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
 
     this->m_chatInput->Enable(this->m_languageModel->GetSelection() > 0);
     this->m_sendChat->Enable(this->m_languageModel->GetSelection() > 0);
+};
+void MainWindowUI::UpdateChatGui() {
+    this->UpdateChatPanel(this->currentChatPanel);
 };

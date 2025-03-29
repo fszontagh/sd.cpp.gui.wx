@@ -26,14 +26,27 @@ namespace sd_gui_utils {
     struct llvmText {
         llvmTextSender sender = SENDER_NONE;
         std::string text      = "";
+        uint64_t updated_at   = 0;
+
+        void UpdateText(const std::string& str) {
+            this->text.append(str);
+            this->updated_at = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::system_clock::now().time_since_epoch())
+                                   .count();
+        }
+        void Update(const llvmText& t) {
+            this->sender     = t.sender;
+            this->text       = t.text;
+            this->updated_at = t.updated_at;
+        }
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(llvmText, sender, text)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(llvmText, sender, text, updated_at)
 
     class llvmMessage {
     private:
         uint64_t id                           = 0;
         uint64_t updated_at                   = 0;
-        std::map<uint64_t, llvmText> messages = {};
+        std::map<uint64_t, sd_gui_utils::llvmText> messages = {};
         std::string model_path                = "";
         std::string status_message            = "";
         std::string title                     = "";
@@ -43,117 +56,82 @@ namespace sd_gui_utils {
         int n_ctx                             = 0;  // 0 - load from model (trained batch size)
         int n_batch                           = 0;
         int n_threads                         = 0;
+        uint64_t next_message_id              = 1;
+        mutable std::mutex mutex;
 
     public:
-        void SetId() {
-            this->id = GenerateId();
+        llvmMessage()                              = default;
+        llvmMessage(const sd_gui_utils::llvmMessage&)            = delete;
+        llvmMessage& operator=(const sd_gui_utils::llvmMessage&) = delete;
+        // Allow moving
+        llvmMessage(sd_gui_utils::llvmMessage&& other) noexcept
+            : id(std::exchange(other.id, 0)),
+              updated_at(std::exchange(other.updated_at, 0)),
+              messages(std::move(other.messages)),
+              model_path(std::move(other.model_path)),
+              status_message(std::move(other.status_message)),
+              title(std::move(other.title)),
+              status(std::exchange(other.status, llvmstatus::PENDING)),
+              command(std::exchange(other.command, llvmCommand::MODEL_LOAD)),
+              ngl(std::exchange(other.ngl, 4096)),
+              n_ctx(std::exchange(other.n_ctx, 0)),
+              n_batch(std::exchange(other.n_batch, 0)),
+              n_threads(std::exchange(other.n_threads, 0)),
+              next_message_id(std::exchange(other.next_message_id, 1)),
+              mutex() {}
+        llvmMessage& operator=(sd_gui_utils::llvmMessage&& other) noexcept {
+            if (this != &other) {
+                id              = std::exchange(other.id, 0);
+                updated_at      = std::exchange(other.updated_at, 0);
+                messages        = std::move(other.messages);
+                model_path      = std::move(other.model_path);
+                status_message  = std::move(other.status_message);
+                title           = std::move(other.title);
+                status          = std::exchange(other.status, llvmstatus::PENDING);
+                command         = std::exchange(other.command, llvmCommand::MODEL_LOAD);
+                ngl             = std::exchange(other.ngl, 4096);
+                n_ctx           = std::exchange(other.n_ctx, 0);
+                n_batch         = std::exchange(other.n_batch, 0);
+                n_threads       = std::exchange(other.n_threads, 0);
+                next_message_id = std::exchange(other.next_message_id, 1);
+            }
+            return *this;
         }
-        uint64_t GetId() {
-            return this->id;
-        }
-        const uint64_t GetUpdatedAt() const {
-            return this->updated_at;
-        }
-        bool CheckUpdatedAt(const uint64_t &updated_at) {
-            return this->updated_at == updated_at;
-        }
-        void SetCommandType(llvmCommand cmd) {
-            this->command = cmd;
-        }
-        llvmCommand GetCommandType() {
-            return this->command;
-        }
-        void SetModelPath(const std::string& path) {
-            this->model_path = path;
-        }
-        const std::string GetModelPath() {
-            return this->model_path;
-        }
-        void SetStatus(llvmstatus status) {
-            this->status = status;
-        }
-        llvmstatus GetStatus() {
-            return this->status;
-        }
-        void SetTitle(const std::string& title) {
-            this->title = title;
-        }
-        void SetNgl(int ngl) {
-            this->ngl = ngl;
-        }
-        int GetNgl() {
-            return this->ngl;
-        }
-        void SetNCtx(int n_ctx) {
-            this->n_ctx = n_ctx;
-        }
-        int GetNctx() {
-            return this->n_ctx;
-        }
-        void SetNThreads(int n_threads) {
-            this->n_threads = n_threads;
-        }
-        int GetNThreads() {
-            return this->n_threads;
-        }
-        void SetNBatch(int n_batch) {
-            this->n_batch = n_batch;
-        }
-        int GetNBatch() {
-            return this->n_batch;
-        }
-        void SetStatusMessage(const std::string& msg) {
-            this->status_message = msg;
-            this->updated_at     = this->GenerateId();
-        }
-        std::string GetStatusMessage() {
-            return this->status_message;
-        }
+        void Update(const sd_gui_utils::llvmMessage& other);
+        std::map<uint64_t, sd_gui_utils::llvmText> GetMessages();
+        void InsertMessage(const sd_gui_utils::llvmText& message, uint64_t id = 0);
+        sd_gui_utils::llvmText GetMessage(uint64_t id);
+        uint64_t GetNextMessageId();
+        void SetId();
+        uint64_t GetId();
+        const uint64_t GetUpdatedAt() const;
+        bool CheckUpdatedAt(const uint64_t& updated_at);
+        void SetCommandType(sd_gui_utils::llvmCommand cmd);
+        sd_gui_utils::llvmCommand GetCommandType();
+        void SetModelPath(const std::string& path);
+        const std::string GetModelPath();
+        void SetStatus(sd_gui_utils::llvmstatus status);
+        sd_gui_utils::llvmstatus GetStatus();
+        void SetTitle(const std::string& title);
+        void SetNgl(int ngl);
+        int GetNgl();
+        void SetNCtx(int n_ctx);
+        int GetNctx();
+        void SetNThreads(int n_threads);
+        int GetNThreads();
+        void SetNBatch(int n_batch);
+        int GetNBatch();
+        void SetStatusMessage(const std::string& msg);
+        std::string GetStatusMessage();
+        int GenerateId();
+        const std::string GetLatestUserPrompt();
+        const sd_gui_utils::llvmText GetLatestMessage();
+        void UpdateOrCreateAssistantAnswer(const std::string& str);
+        void AppendUserPrompt(const std::string& str);
+        std::string toString();
 
-        // generate unix timestamp as id
-        int GenerateId() {
-            return std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch())
-                .count();
-        }
-        const std::string GetLatestUserPrompt() {
-            for (const auto& p : this->messages) {
-                if (p.second.sender == llvmTextSender::USER) {
-                    return p.second.text;
-                }
-            }
-            return "";
-        }
-
-        void AppendOrCreateLastAssistantAnswer(const std::string& str) {
-            if (this->messages.empty()) {
-                return;
-            }
-            auto last = this->messages.rbegin();
-            if (last->second.sender == llvmTextSender::ASSISTANT) {
-                last->second.text += str;
-            } else {
-                this->messages[this->GenerateId()] = llvmText{llvmTextSender::ASSISTANT, str};
-            }
-            this->updated_at = this->GenerateId();
-        }
-        void AppendUserPrompt(const std::string& str) {
-            this->messages[this->GenerateId()] = llvmText{llvmTextSender::USER, str};
-            this->updated_at                   = this->GenerateId();
-        }
-        std::string toString() {
-            try {
-                nlohmann::json j = *this;
-                return j.dump();
-            } catch (const std::exception& e) {
-                // return "Error converting to string: " + std::string(e.what());
-                std::cerr << "Error converting to string: " << e.what() << __FILE__ << ": " << __LINE__ << std::endl;
-                return "";
-            }
-        }
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(llvmMessage, id, updated_at, messages, model_path, status_message, status, command, ngl, n_ctx, n_batch, n_threads);
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(sd_gui_utils::llvmMessage, id, updated_at, messages, model_path, status_message, title, status, command, ngl, n_ctx, n_batch, n_threads, next_message_id);
     };
 
 };
-
 #endif  // LLVM_H

@@ -264,6 +264,10 @@ void QM::QueueManager::OnThreadMessage(wxThreadEvent& e) {
     if (e.GetId() == 9999 || e.GetId() == 10000) {
         return;
     }
+    // skip chat messages
+    if (e.GetId() == 10001) {
+        return;
+    }
     auto msg = e.GetString();
 
     wxString token   = msg.substr(0, msg.find(":", 0));
