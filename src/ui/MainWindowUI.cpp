@@ -180,7 +180,6 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             SHARED_MEMORY_SIZE);
         this->processHelpers.push_back(processRef);
 
-
         processRef->onStart = [this, processRef]() {
             this->writeLog(wxString::Format(_("External process started: %s"), processRef->GetFullCommand()));
             auto* event = new wxThreadEvent();
@@ -189,13 +188,15 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             wxQueueEvent(this, event);
         };
 
-        processRef->onExit = [this, processRef]() {
+        processRef->onExit = [this, processRef](bool restart) {
+            if (restart) {
+                return;
+            }
             this->writeLog(_("External process stopped"));
             auto* event = new wxThreadEvent();
             event->SetString(_("External process stopped"));
             event->SetId(9999);
             wxQueueEvent(this, event);
-            processRef->Restart();
         };
 
         processRef->onStdErr = [this](const char* data, size_t size) {
@@ -247,13 +248,32 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             this->ProcessStdOutEvent(data, size);
         };
 
-        llamaRef->onExit = [this, llamaRef]() {
+        llamaRef->onExit = [this, llamaRef](bool restart) {
+            if (restart) {
+                return;
+            }
             this->writeLog(wxString::Format(_("Llama process stopped: %s"), llamaRef->GetFullCommand()));
             auto* event = new wxThreadEvent();
             event->SetString(_("Llama is down"));
             event->SetId(10000);
             wxQueueEvent(this, event);
             llamaRef->Restart();
+        };
+
+        llamaRef->onShmMessage = [this](const char* data, size_t size) {
+            try {
+                const auto msg                       = nlohmann::json::parse(std::string(data, size));
+                const sd_gui_utils::llvmMessage lmsg = msg.get<sd_gui_utils::llvmMessage>();
+                if (this->chat_currentMessage->CheckUpdatedAt(lmsg.GetUpdatedAt()) == false) {
+                    *this->chat_currentMessage = lmsg;
+                    wxLogInfo("Update current chat message...");
+                    return true;
+                }
+                return false;  // true to clear the shm false to keep it
+            } catch (const std::exception& e) {
+                return false;
+            }
+            return false;
         };
 
         if (llamaRef->Start()) {
@@ -2816,6 +2836,7 @@ MainWindowUI::~MainWindowUI() {
         }
         delete threadPtr;
     }
+    this->threads.clear();
 
     for (auto& v : this->voids) {
         delete v;
@@ -2830,6 +2851,9 @@ MainWindowUI::~MainWindowUI() {
 
     for (auto& b : this->jobImagePreviews) {
         b.second.bitmap->Destroy();
+    }
+    for (auto& h : this->processHelpers) {
+        h->Stop(true);
     }
     this->jobImagePreviews.clear();
     this->TaskBar->Destroy();
@@ -6437,18 +6461,25 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
         return;
     }
 
-    sd_gui_utils::llvmMessage msg;
-    msg.prompt    = this->m_chatInput->GetValue();
-    msg.command    = sd_gui_utils::llvmCommand::GENERATE_TEXT;
-    msg.model_path = modelinfo->path;
+    if (this->chat_currentMessage == nullptr) {
+        this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
+        this->chat_currentMessage->SetId();
+    }
+    this->chat_currentMessage->AppendUserPrompt(this->m_chatInput->GetValue().ToStdString());
+
+    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::GENERATE_TEXT);
+    this->chat_currentMessage->SetModelPath(modelinfo->path);
+    this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
     for (auto helper : this->processHelpers) {
         if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
-            nlohmann::json j = nlohmann::json(msg);
-            helper->write(j.dump());
+            helper->write(this->chat_currentMessage->toString());
+            break;
         }
     }
-
+    this->m_chatInput->SetValue(wxEmptyString);
+    // this->m_chatInput->Enable(false);
+    // this->m_sendChat->Enable(false);
 };
 void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
     event.Skip();

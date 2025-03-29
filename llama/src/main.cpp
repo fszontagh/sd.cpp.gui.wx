@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     }
 
     bool needToRun  = true;
-    uint64_t lastId = 0;
+    uint64_t lastUpdate = 0;
     while (needToRun) {
         std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE_LLAMA]);
 
@@ -67,12 +67,12 @@ int main(int argc, char* argv[]) {
                     nlohmann::json j = nlohmann::json::parse(message);
                     auto item        = j.get<sd_gui_utils::llvmMessage>();
 
-                    if (item.id == 0) {
+                    if (item.GetId() == 0) {
                         wxLogWarning("[EXTPROCESS] Got a wrong id: 0");
-                    } else if (item.id != lastId && item.status == sd_gui_utils::llvmstatus::PENDING) {
+                    } else if (item.GetUpdatedAt() != lastUpdate && item.GetStatus() == sd_gui_utils::llvmstatus::PENDING) {
                         sharedMemory->clear();
-                        wxLogInfo("New message: %" PRIu64 " msg: %s\n", item.id, j.dump(2));
-                        lastId = item.id;
+                        wxLogInfo("New message: %" PRIu64 " msg: %s\n", item.GetId(), j.dump(2));
+                        lastUpdate = item.GetUpdatedAt();
                         appLogic.processMessage(item);
                     }
                 } catch (std::exception& e) {

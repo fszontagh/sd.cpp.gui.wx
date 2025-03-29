@@ -15,7 +15,7 @@ public:
     std::function<void()> onStart;
     std::function<void(const char*, size_t)> onStdOut;
     std::function<void(const char*, size_t)> onStdErr;
-    std::function<void()> onExit;
+    std::function<void(bool)> onExit;
     std::function<bool(const char*, size_t)> onShmMessage;
 
     ExternalProcessHelper(wxString processName, ProcessType type, wxArrayString params, wxString shmName, unsigned long shmSize)
@@ -38,6 +38,7 @@ public:
     }
 
     ~ExternalProcessHelper() {
+        std::cout << "Deconstruct... ";
         std::lock_guard<std::mutex> lock(this->processMutex);
 
         this->extProcessNeedToRun  = false;
@@ -63,15 +64,21 @@ public:
         }
 
         if (this->subprocess) {
-            int state = subprocess_terminate(this->subprocess);
             std::cout << "Terminatin process... " << std::endl;
-            while (state != 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                state = subprocess_terminate(this->subprocess);
-            }
+            subprocess_terminate(this->subprocess);
+
             delete this->subprocess;
             this->subprocess = nullptr;
         }
+    }
+    [[nodiscard]] const wxString GetFullCommand() {        wxString command;
+        for (const auto& arg : this->command_line) {
+            if (arg != nullptr) {
+                command += arg;
+                command += " ";
+            }
+        }
+        return command;
     }
 
     bool Start() {
@@ -112,13 +119,7 @@ public:
 
         return true;
     }
-    inline const wxString GetFullCommand() const {
-        wxString cmd;
-        for (const auto& arg : this->storedArgs) {
-            cmd += arg + " ";
-        }
-        return cmd;
-    }
+
     bool Stop(bool is_restart = false) {
         std::lock_guard<std::mutex> lock(this->processMutex);
         if (!this->subprocess) {
@@ -135,12 +136,14 @@ public:
             this->sharedMemoryThread.join();
         }
 
-        if (!is_restart && this->onExit) {
-            std::cout << "Called onExit white on stop and not restart" << std::endl;
-            // push to the queue
+        if (this->onExit) {
+            std::cout << "Called onExit with " << (is_restart ? "restart" : "no restart") << std::endl;
+            // Push to the queue with the restart flag
             {
                 std::lock_guard<std::mutex> lock(queueMutex);
-                taskQueue.push(this->onExit);
+                taskQueue.push([this, is_restart]() {
+                    this->onExit(is_restart);
+                });
             }
         }
 
@@ -156,12 +159,14 @@ public:
         this->Stop(true);
         return this->Start();
     }
+
     bool IsAlive() {
         if (this->subprocess) {
             return subprocess_alive(this->subprocess) != 0;
         }
         return false;
     }
+
     wxString GetError() const { return this->error; }
     ExternalProcessHelper::ProcessType GetProcessType() const { return this->processType; }
 
@@ -172,6 +177,11 @@ public:
             msg = wxString(buffer.get());
         }
         return msg;
+    }
+
+    inline void write(const std::string &msg) {
+        size_t size = std::min(msg.size(), this->shmSize);
+        this->sharedMemory->write(msg.c_str(), size);
     }
 
     inline void write(const wxString& msg) {
@@ -234,6 +244,7 @@ private:
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
+
     void HandleProcessOutputs() {
         while (this->extProcessNeedToRun) {
             if (this->IsAlive()) {
@@ -243,10 +254,20 @@ private:
                 unsigned int stdoutRead = subprocess_read_stdout(this->subprocess, stdoutBuffer, size);
                 unsigned int stderrRead = subprocess_read_stderr(this->subprocess, stderrBuffer, size);
                 if (stdoutRead > 0 && this->onStdOut) {
-                    this->onStdOut(stdoutBuffer, stdoutRead);
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    {
+                        taskQueue.push([this, &stdoutBuffer, &stdoutRead]() {
+                            this->onStdOut(stdoutBuffer, stdoutRead);
+                        });
+                    }
                 }
                 if (stderrRead > 0 && this->onStdErr) {
-                    this->onStdErr(stderrBuffer, stderrRead);
+                    std::lock_guard<std::mutex> lock(queueMutex);
+                    {
+                        taskQueue.push([this, &stderrBuffer, &stderrRead]() {
+                            this->onStdErr(stderrBuffer, stderrRead);
+                        });
+                    }
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -260,7 +281,10 @@ private:
                 {
                     if (this->onExit) {
                         std::lock_guard<std::mutex> lock(queueMutex);
-                        taskQueue.push(this->onExit);
+                        // Pass 'false' to signify no restart
+                        taskQueue.push([this]() {
+                            this->onExit(false);
+                        });
                     }
                 }
 
@@ -270,6 +294,7 @@ private:
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
+
     void ProcessQueueWorker() {
         while (this->queueThreadNeedToRun) {
             std::function<void()> task;

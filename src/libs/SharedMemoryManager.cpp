@@ -65,6 +65,9 @@ SharedMemoryManager::~SharedMemoryManager() {
 #endif
 }
 
+bool SharedMemoryManager::write(const std::string& data) {
+    return this->write(data.c_str(), data.size());
+}
 bool SharedMemoryManager::write(const void* data, size_t size) {
     if (size > shmSize) {
         return false;
@@ -72,7 +75,7 @@ bool SharedMemoryManager::write(const void* data, size_t size) {
     std::lock_guard<std::mutex> lock(mutex);
     // clear before write
     this->clear();
-    std::memcpy(shmPtr, data, size);
+    std::memmove(shmPtr, data, size);
     return true;
 }
 
@@ -81,7 +84,10 @@ bool SharedMemoryManager::read(void* buffer, size_t size) {
         return false;
     }
     std::lock_guard<std::mutex> lock(mutex);
-    std::memcpy(buffer, shmPtr, size);
+    if (shmPtr == nullptr || shmPtr == MAP_FAILED) {
+        throw std::runtime_error("Invalid shared memory pointer.");
+    }
+    std::memmove(buffer, shmPtr, size);
     return true;
 }
 

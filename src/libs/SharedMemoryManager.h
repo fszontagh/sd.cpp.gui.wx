@@ -19,6 +19,7 @@ public:
     SharedMemoryManager(const std::string& shmName, size_t size, bool isMaster);
     ~SharedMemoryManager();
 
+    bool write(const std::string& data);
     bool write(const void* data, size_t size);
     bool read(void* buffer, size_t size);
     void clear();

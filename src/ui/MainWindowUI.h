@@ -201,6 +201,9 @@ private:
     wxString extProcessLogFile = wxEmptyString;
     wxString llamaLogFile      = wxEmptyString;
     // external process
+    // chat sessions
+    std::shared_ptr<sd_gui_utils::llvmMessage> chat_currentMessage = nullptr;
+    // chat sessions
 
     sd_gui_utils::LastItemNotification lastItemNotification = {};
 

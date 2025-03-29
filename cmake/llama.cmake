@@ -21,7 +21,24 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
     set(SD_VULKAN "${vulkan_flag}")
 
 
+    set(GGML_NATIVE OFF)
     set(GGML_CPU OFF)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+        SET(CMAKE_CUDA_ARCHITECTURES "native")
+        SET(GGML_NATIVE ON)
+        set(GGML_CPU ON)
+        SET(GGML_CACHE OFF)
+
+    else()
+        SET(GGML_NATIVE OFF)
+        SET(GGML_CACHE OFF)
+
+    endif()
+
+
+
 
     if (SD_AVX OR SD_AVX2 OR SD_AVX512)
         set(GGML_CPU ON)
@@ -73,11 +90,11 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
             SET(CMAKE_CUDA_ARCHITECTURES "native")
-            SET(GGMAL_NATIVE ON)
+            SET(GGML_NATIVE ON)
             SET(GGML_CACHE OFF)
 
         else()
-        SET(GGMAL_NATIVE OFF)
+        SET(GGML_NATIVE OFF)
         SET(GGML_CACHE OFF)
             if (CUDA_MAJOR_VERSION STREQUAL "12")
                 SET(CMAKE_CUDA_ARCHITECTURES "90;89;80;75")
@@ -86,9 +103,10 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
             endif()
 
         endif()
+
         string(REPLACE ";" "|" CMAKE_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
-    endif()
+    endif(SD_CUDA)
 
 
 
@@ -126,7 +144,8 @@ macro(build_llama variant_name avx_flag avx2_flag avx512_flag cuda_flag hipblas_
         BYPRODUCTS ${CMAKE_BINARY_DIR}/${EPREFIX}${CMAKE_SHARED_LIBRARY_PREFIX}llama_${variant_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
         BUILD_ALWAYS OFF
     )
-
+# print out the cmake args
+    message(STATUS "CMAKE_ARGS: \n - CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD} \n - GGML_CPU_AARCH64=OFF \n - GGML_AVX=${SD_AVX} \n - GGML_AVX2=${SD_AVX2} \n - GGML_AVX512=${SD_AVX512} \n - GGML_CUDA=${SD_CUDA} \n - GGML_VULKAN=${SD_VULKAN} \n - GGML_ALL_WARNINGS=OFF \n - GGML_NATIVE=${GGML_NATIVE} \n - GGML_BACKEND_DL=OFF \n - GGML_CCACHE=${GGML_CACHE} \n - GGML_CPU=${GGML_CPU} \n - DCMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
 
 endmacro()
 

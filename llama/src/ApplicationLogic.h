@@ -11,17 +11,19 @@ public:
 
 private:
     SharedLibrary sd_dll;
-    std::shared_ptr<SharedMemoryManager> sharedMemoryManager;
-    std::string tempPath;
-    std::string error;
-    std::atomic<bool> modelLoaded = {false};
-    llama_model* model            = nullptr;
-    llama_sampler* smplr          = nullptr;
-    std::string currentModelPath  = "";
-    llama_context* ctx            = nullptr;
-    llama_vocab* vocab            = nullptr;
+    std::string tempPath                                      = "";
+    std::shared_ptr<SharedMemoryManager> sharedMemoryManager  = nullptr;
+    std::atomic<bool> modelLoaded                             = {false};
+    std::string currentModelPath                              = "";
+    llama_model* model                                        = nullptr;
+    llama_sampler* smplr                                      = nullptr;
+    llama_context* ctx                                        = nullptr;
+    llama_vocab* vocab                                        = nullptr;
+    std::shared_ptr<sd_gui_utils::llvmMessage> currentMessage = nullptr;
 
     // llama functions
+    using GgmlBackendLoadAll             = void (*)(void);
+    using LlamaBackendInit               = void (*)(void);
     using LlamaInitFromModelFunction     = llama_context* (*)(llama_model*, llama_context_params);
     using LlamaFreeFunction              = void (*)(llama_context*);
     using LlamaModelLoadFromFile         = llama_model* (*)(const char* path, llama_model_params params);
@@ -43,7 +45,13 @@ private:
     using LlamaDecode                    = int32_t (*)(struct llama_context* ctx, struct llama_batch batch);
     using LlamaSamplerSample             = llama_token (*)(struct llama_sampler* smpl, struct llama_context* ctx, int32_t idx);
     using LlamaTokenToPiece              = int32_t (*)(const struct llama_vocab* vocab, llama_token token, char* buf, int32_t length, int32_t lstrip, bool special);
+    using LlamaKvselfUsedCells           = int32_t (*)(const struct llama_context* ctx);
+    using LlamaNCtx                      = int32_t (*)(const struct llama_context* ctx);
+    using LlamaModelChatTemplate         = const char* (*)(const struct llama_model* model, const char* name);
+    using LlamaChatApplyTemplate         = int32_t (*)(const char* tmpl, const struct llama_chat_message* chat, size_t n_msg, bool add_ass, char* buf, int32_t length);
 
+    LlamaBackendInit llama_backend_init                               = nullptr;
+    GgmlBackendLoadAll ggml_backend_load_all                          = nullptr;
     LlamaInitFromModelFunction llama_init_from_model                  = nullptr;
     LlamaFreeFunction llama_free                                      = nullptr;
     LlamaModelLoadFromFile llama_model_load_from_file                 = nullptr;
@@ -65,14 +73,28 @@ private:
     LlamaDecode llama_decode                                          = nullptr;
     LlamaSamplerSample llama_sampler_sample                           = nullptr;
     LlamaTokenToPiece llama_token_to_piece                            = nullptr;
+    LlamaKvselfUsedCells llama_kv_self_used_cells                     = nullptr;
+    LlamaNCtx llama_n_ctx                                             = nullptr;
+    LlamaModelChatTemplate llama_model_chat_template                  = nullptr;
+    LlamaChatApplyTemplate llama_chat_apply_template                  = nullptr;
 
-    bool loadModel(const sd_gui_utils::llvmMessage& message);
+    std::vector<llama_chat_message> messages = {};
+    std::vector<char> formatted              = {};
+    int prev_len                             = 0;
+
+    bool loadModel();
     void unloadModel();
 
-    bool loadContext(const sd_gui_utils::llvmMessage& message);
+    bool loadContext();
     void unloadContext();
 
-    void generateText(const sd_gui_utils::llvmMessage& message, std::string& response);
+    void generateText();
+
+    inline void UpdateCurrentSession() {
+        this->sharedMemoryManager->write(this->currentMessage->toString());
+    }
+
+    std::string LlamaGenerate(const std::string& prompt);
 };
 
 #endif  // EXTPROCESS_APPLICATIONLOGIC_H
