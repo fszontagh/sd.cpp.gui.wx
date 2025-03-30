@@ -22,6 +22,7 @@ std::map<uint64_t, sd_gui_utils::llvmText> sd_gui_utils::llvmMessage::GetMessage
     std::lock_guard<std::mutex> lock(mutex);
     return this->messages;
 }
+
 void sd_gui_utils::llvmMessage::InsertMessage(const llvmText& message, uint64_t id) {
     std::lock_guard<std::mutex> lock(mutex);
     if (id == 0) {
@@ -74,7 +75,8 @@ const std::string sd_gui_utils::llvmMessage::GetModelPath() {
 }
 void sd_gui_utils::llvmMessage::SetStatus(llvmstatus status) {
     std::lock_guard<std::mutex> lock(mutex);
-    this->status = status;
+    this->status     = status;
+    this->updated_at = this->GenerateId();
 }
 sd_gui_utils::llvmstatus sd_gui_utils::llvmMessage::GetStatus() {
     std::lock_guard<std::mutex> lock(mutex);
@@ -116,6 +118,7 @@ int sd_gui_utils::llvmMessage::GetNBatch() {
     std::lock_guard<std::mutex> lock(mutex);
     return this->n_batch;
 }
+#ifdef stablediffusiongui_llama
 void sd_gui_utils::llvmMessage::SetStatusMessage(const std::string& msg) {
     std::lock_guard<std::mutex> lock(mutex);
     this->status_message = msg;
@@ -125,6 +128,18 @@ std::string sd_gui_utils::llvmMessage::GetStatusMessage() {
     std::lock_guard<std::mutex> lock(mutex);
     return this->status_message;
 }
+#else
+void sd_gui_utils::llvmMessage::SetStatusMessage(const wxString& msg) {
+    std::lock_guard<std::mutex> lock(mutex);
+    this->status_message = msg.ToStdString();
+    this->updated_at     = this->GenerateId();
+}
+wxString sd_gui_utils::llvmMessage::GetStatusMessage() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return wxString(this->status_message.data(), wxConvUTF8);
+}
+#endif
+
 int sd_gui_utils::llvmMessage::GenerateId() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::system_clock::now().time_since_epoch())
@@ -132,9 +147,9 @@ int sd_gui_utils::llvmMessage::GenerateId() {
 }
 const std::string sd_gui_utils::llvmMessage::GetLatestUserPrompt() {
     std::lock_guard<std::mutex> lock(mutex);
-    for (const auto& p : this->messages) {
-        if (p.second.sender == llvmTextSender::USER) {
-            return p.second.text;
+    for (auto it = this->messages.rbegin(); it != this->messages.rend(); ++it) {
+        if (it->second.sender == llvmTextSender::USER) {
+            return it->second.text;
         }
     }
     return "";
@@ -185,3 +200,26 @@ void sd_gui_utils::llvmMessage::UpdateOrCreateAssistantAnswer(const std::string&
 
     this->updated_at = this->GenerateId();
 };
+
+void sd_gui_utils::llvmMessage::SetPromptTemplate(const std::string& prompt_template) {
+    std::lock_guard<std::mutex> lock(mutex);
+    this->prompt_template = prompt_template;
+}
+std::string sd_gui_utils::llvmMessage::GetPromptTemplate() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return this->prompt_template;
+}
+#ifdef stablediffusiongui_llama
+llama_message_list sd_gui_utils::llvmMessage::GetChatMessages() {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    llama_message_list messages;
+    for (auto& [id, message] : this->messages) {
+        llama_chat_message msg;
+        msg.content = message.text.c_str();
+        msg.role    = (message.sender == llvmTextSender::USER) ? "user" : "assistant";
+        messages.emplace_back(msg);
+    }
+    return messages;
+};
+#endif

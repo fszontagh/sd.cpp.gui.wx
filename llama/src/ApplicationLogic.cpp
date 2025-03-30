@@ -19,6 +19,18 @@ bool ApplicationLogic::loadLibrary() {
     try {
         sd_dll.load();
 
+        this->llama_model_meta_val_str = sd_dll.getFunction<LlamaModelMetaValStr>("llama_model_meta_val_str");
+        if (this->llama_model_meta_val_str == nullptr) {
+            wxLogError("Failed to load function: llama_model_meta_val_str");
+            return false;
+        }
+
+        this->llama_chat_builtin_templates = sd_dll.getFunction<LlamaChatBuiltInTemplates>("llama_chat_builtin_templates");
+        if (this->llama_chat_builtin_templates == nullptr) {
+            wxLogError("Failed to load function: llama_chat_builtin_templates");
+            return false;
+        }
+
         this->llama_chat_apply_template = sd_dll.getFunction<LlamaChatApplyTemplate>("llama_chat_apply_template");
         if (this->llama_chat_apply_template == nullptr) {
             wxLogError("Failed to load function: llama_chat_apply_template");
@@ -47,7 +59,6 @@ bool ApplicationLogic::loadLibrary() {
             wxLogError("Failed to load function: llama_backend_init");
             return false;
         }
-        // this->llama_backend_init();
 
         this->ggml_backend_load_all = (GgmlBackendLoadAll)sd_dll.getFunction<GgmlBackendLoadAll>("ggml_backend_load_all");
         if (this->ggml_backend_load_all == nullptr) {
@@ -172,51 +183,63 @@ bool ApplicationLogic::loadLibrary() {
         return false;
     }
 }
+
 void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
-    if (this->currentMessage == nullptr) {
+    if (!this->currentMessage) {
         this->currentMessage = std::make_shared<sd_gui_utils::llvmMessage>(std::move(message));
     } else {
         this->currentMessage->Update(std::move(message));
     }
 
-    this->UpdateCurrentSession(); // send back to the user the current session
+    this->UpdateCurrentSession();
+    std::this_thread::sleep_for(std::chrono::milliseconds(LLAMA_SLEEP_TIME));
+
     switch (this->currentMessage->GetCommandType()) {
-        case sd_gui_utils::MODEL_LOAD: {
+        case sd_gui_utils::llvmCommand::MODEL_LOAD: {
             if (!this->loadModel()) {
+                this->UpdateCurrentSession();
+            } else {
+                this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::MODEL_LOADED);
                 this->UpdateCurrentSession();
             }
         } break;
-        case sd_gui_utils::MODEL_UNLOAD: {
+        case sd_gui_utils::llvmCommand::MODEL_UNLOAD: {
             this->unloadModel();
+            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::MODEL_UNLOADED);
+            this->UpdateCurrentSession();
         } break;
-        case sd_gui_utils::GENERATE_TEXT: {
+        case sd_gui_utils::llvmCommand::GENERATE_TEXT: {
             wxLogInfo("CMD: GENERATE_TEXT");
-            if (this->currentMessage->GetModelPath() != this->currentModelPath) {
+            if (this->currentMessage->GetModelPath() != this->currentModelPath || !this->model) {
                 this->loadModel();
-                if (!this->ctx) {
-                    this->loadContext();
-                }
+            }
+            if (!this->ctx) {
+                this->loadContext();
             }
             this->generateText();
-            //this->UpdateCurrentSession();
         } break;
-        case sd_gui_utils::GENERATE_TEXT_STREAM: {
+        case sd_gui_utils::llvmCommand::GENERATE_TEXT_STREAM: {
+            // Handle stream case if needed
         } break;
     }
-};
+}
+
 bool ApplicationLogic::loadModel() {
     ggml_backend_load_all();
-    //  unload previous model
+    // unload previous model if necessary
     if (this->model != nullptr && this->currentModelPath != this->currentMessage->GetModelPath()) {
-        llama_model_free(model);
-        this->model = nullptr;
+        this->unloadModel();
     }
+    if (this->ctx) {
+        this->unloadContext();
+    }
+
     llama_model_params params = llama_model_default_params();
     {
         std::lock_guard<std::mutex> lock(this->mutex);
         this->currentModelPath = this->currentMessage->GetModelPath();
         params.n_gpu_layers    = this->currentMessage->GetNgl();
-        params.use_mmap        = false;
+        params.use_mmap        = true;
         params.devices         = nullptr;
     }
     wxLogInfo("Loading model: %s ngl: %d", this->currentModelPath.c_str(), params.n_gpu_layers);
@@ -229,15 +252,12 @@ bool ApplicationLogic::loadModel() {
         this->currentModelPath = "";
         {
             std::lock_guard<std::mutex> lock(this->mutex);
-            this->currentMessage->SetStatusMessage("Failed to load model: " + this->currentModelPath);
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            wxLogError(this->currentMessage->GetStatusMessage().c_str());
-            this->UpdateCurrentSession();
+            REPORT_ERROR("Failed to load model: %s", this->currentMessage->GetModelPath());
         }
         return false;
     }
     return true;
-};
+}
 
 void ApplicationLogic::unloadModel() {
     if (this->model != nullptr) {
@@ -252,9 +272,7 @@ bool ApplicationLogic::loadContext() {
     if (!this->model) {
         {
             std::lock_guard<std::mutex> lock(this->mutex);
-            this->currentMessage->SetStatusMessage("Model not loaded");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            this->UpdateCurrentSession();
+            REPORT_ERROR("Model not loaded");
         }
         return false;
     }
@@ -264,26 +282,31 @@ bool ApplicationLogic::loadContext() {
     if (!this->vocab) {
         {
             std::lock_guard<std::mutex> lock(this->mutex);
-            this->currentMessage->SetStatusMessage("Failed to load vocab");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            this->UpdateCurrentSession();
+            REPORT_ERROR("Failed to load vocab");
         }
         return false;
     }
 
+    const auto n_batch = this->currentMessage->GetNBatch();
+
     llama_context_params ctx_params = llama_context_default_params();
     ctx_params.n_ctx                = this->currentMessage->GetNctx();
-    ctx_params.n_batch              = this->currentMessage->GetNBatch();
-    ctx_params.n_threads            = this->currentMessage->GetNThreads();
+    if (n_batch > 0) {
+        ctx_params.n_batch = n_batch;  //
+    } else {
+        if (ctx_params.n_batch == 0) {
+            ctx_params.n_batch = ctx_params.n_ctx;  // https://github.com/ggml-org/llama.cpp/blob/7242dd96756472f90ba41db4e5ebb3969dfc7e7c/examples/simple-chat/simple-chat.cpp#L83C16-L83C23
+        }
+        this->currentMessage->SetNBatch(ctx_params.n_batch);
+    }
+    ctx_params.n_threads = this->currentMessage->GetNThreads();
 
-    wxLogInfo("Loading context: %s", this->currentMessage->GetModelPath().c_str());
+    wxLogInfo("Loading context for model: %s, n_batch: %d, n_ubatch: %d, n_ctx: %d", this->currentMessage->GetModelPath().c_str(), ctx_params.n_batch, ctx_params.n_ubatch, ctx_params.n_ctx);
     this->ctx = this->llama_init_from_model(this->model, ctx_params);
 
     if (!this->ctx) {
         {
-            this->currentMessage->SetStatusMessage("Failed to load context");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            this->UpdateCurrentSession();
+            REPORT_ERROR("Failed to load context");
             return false;
         }
     }
@@ -295,9 +318,10 @@ bool ApplicationLogic::loadContext() {
     // initialize the sampler
     this->smplr = llama_sampler_chain_init(llama_sampler_chain_default_params());
     llama_sampler_chain_add(this->smplr, llama_sampler_init_min_p(0.05f, 1));
-    llama_sampler_chain_add(this->smplr, llama_sampler_init_temp(0.8f));
-    llama_sampler_chain_add(this->smplr, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    llama_sampler_chain_add(this->smplr, llama_sampler_init_temp(0.75f));
+    llama_sampler_chain_add(this->smplr, llama_sampler_init_dist(1.0f));
 
+    wxLogInfo("Context loaded successfully.");
     return true;
 }
 
@@ -313,74 +337,101 @@ void ApplicationLogic::unloadContext() {
 }
 void ApplicationLogic::generateText() {
     std::lock_guard<std::mutex> lock(this->mutex);
-    if (this->model == nullptr) {
-        this->currentMessage->SetStatusMessage("Model not loaded");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
 
+    if (!this->model) {
+        REPORT_ERROR("Model not loaded");
         return;
     }
-    if (this->ctx == nullptr) {
-        this->currentMessage->SetStatusMessage("Context not loaded");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
-
+    if (!this->ctx) {
+        REPORT_ERROR("Context not loaded");
         return;
     }
-    if (this->smplr == nullptr) {
-        this->currentMessage->SetStatusMessage("Sampler not loaded");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
+    if (!this->smplr) {
+        REPORT_ERROR("Sampler not loaded");
         return;
     }
 
+    // Get the latest user prompt from llvmMessage
     std::string prompt = this->currentMessage->GetLatestUserPrompt();
-    // Tokenize the input prompt.
+
+    // Tokenize input prompt
     const bool is_first       = llama_kv_self_used_cells(this->ctx) == 0;
-    const int n_prompt_tokens = -this->llama_tokenize(this->vocab, prompt.c_str(), prompt.size(), NULL, 0, is_first, true);
+    const int n_prompt_tokens = -this->llama_tokenize(this->vocab, prompt.c_str(), prompt.size(), nullptr, 0, is_first, true);
+    const auto ctx_size       = llama_n_ctx(this->ctx);
+
+    wxLogInfo("n_prompt_tokens: %d  ctx_size: %d n_batch: %d", n_prompt_tokens, ctx_size, this->currentMessage->GetNBatch());
+    // Check if the number of tokens exceeds the batch size
+    if (n_prompt_tokens > ctx_size) {
+        REPORT_ERROR("Prompt too long for the batch size");
+        return;
+    }
 
     std::vector<llama_token> prompt_tokens(n_prompt_tokens);
     if (this->llama_tokenize(this->vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0) {
-        wxLogError("Failed to tokenize prompt");
-
-        this->currentMessage->SetStatusMessage("Failed to tokenize prompt");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
+        REPORT_ERROR("Failed to tokenize prompt");
         return;
     }
 
-    const char* tmpl = llama_model_chat_template(model, /* name */ nullptr);
-    this->messages.push_back({"user", strdup(prompt.c_str())});
+    if (this->tmpl == nullptr) {
+        this->FindAChatTemplate(this->tmpl);
+        if (tmpl == nullptr) {
+            REPORT_ERROR("Failed to find a chat template");
+            this->unloadContext();
+            this->unloadModel();
+            return;
+        }
+    }
+
+    // Format the message history
+    std::vector<char> formatted(1024);
+    auto messages = this->currentMessage->GetChatMessages();
+
     int new_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
-    if (new_len > (int)formatted.size()) {
+
+    if (new_len > static_cast<int>(formatted.size())) {
         formatted.resize(new_len);
         new_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
     }
+
     if (new_len < 0) {
-        wxLogError("Failed to apply the chat template");
-
-        this->currentMessage->SetStatusMessage("Failed to apply the chat template");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
-
+        REPORT_ERROR("Failed to apply the chat template");
         return;
     }
-    std::string formatted_prompt(formatted.begin() + prev_len, formatted.begin() + new_len);
+
+    std::string formatted_prompt(formatted.begin(), formatted.begin() + new_len);
     wxLogInfo("Formatted prompt: %s", formatted_prompt.c_str());
+
+    if (formatted_prompt.empty()) {
+        REPORT_ERROR("Failed to apply the chat template");
+        return;
+    }
+
+    // Generate response
     auto response = this->LlamaGenerate(formatted_prompt);
-    messages.push_back({"assistant", strdup(response.c_str())});
-    prev_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), false, nullptr, 0);
+    this->currentMessage->UpdateOrCreateAssistantAnswer(response);
+
+    messages     = this->currentMessage->GetChatMessages();  // regenerate the history
+    int prev_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), false, nullptr, 0);
     wxLogInfo("Generated response: %s", response.c_str());
+
     if (prev_len < 0) {
-        wxLogError("Failed to apply the chat template");
-
-        this->currentMessage->SetStatusMessage("Failed to apply the chat template");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
-
+        REPORT_ERROR("Failed to apply the chat template");
         return;
     }
 }
+
+// Utility function to report errors consistently
+void ApplicationLogic::ReportError(const std::string& message, std::string file, int line) {
+    if (isDEBUG) {
+        wxLogError("%s:%d: %s", file.c_str(), line, message.c_str());
+    } else {
+        wxLogError("%s", message.c_str());
+    }
+    this->currentMessage->SetStatusMessage(message);
+    this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
+    this->UpdateCurrentSession();
+}
+
 std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
     std::string response;
 
@@ -391,9 +442,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
     std::vector<llama_token> prompt_tokens(n_prompt_tokens);
 
     if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0) {
-        this->currentMessage->SetStatusMessage("Failed to tokenize the prompt");
-        this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-        this->UpdateCurrentSession();
+        REPORT_ERROR("Failed to tokenize prompt");
         return "";
     }
 
@@ -404,14 +453,38 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
         // check if we have enough space in the context to evaluate this batch
         int n_ctx      = llama_n_ctx(ctx);
         int n_ctx_used = llama_kv_self_used_cells(ctx);
+
         if (n_ctx_used + batch.n_tokens > n_ctx) {
-            wxLogError("Failed to evaluate the prompt");
+            int first_keep_tokens = 10;
+            int keep_tokens       = n_ctx / 2;
 
-            this->currentMessage->SetStatusMessage("Failed to evaluate the prompt");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            this->UpdateCurrentSession();
+            if (keep_tokens < first_keep_tokens + 10) {
+                keep_tokens = first_keep_tokens + 10;
+            }
 
-            return "";
+            // Keep only the first few and last few tokens
+            if ((int)prompt_tokens.size() > keep_tokens) {
+                std::vector<llama_token> trimmed_tokens;
+
+                // keep first N tokens
+                trimmed_tokens.insert(trimmed_tokens.end(),
+                                      prompt_tokens.begin(),
+                                      prompt_tokens.begin() + first_keep_tokens);
+
+                // Keep the last (keep_tokens - first_keep_tokens) tokens as well
+                trimmed_tokens.insert(trimmed_tokens.end(),
+                                      prompt_tokens.end() - (keep_tokens - first_keep_tokens),
+                                      prompt_tokens.end());
+
+                prompt_tokens = std::move(trimmed_tokens);
+            }
+
+            batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
+
+            wxLogWarning("Context truncated: keeping first %d and last %d tokens (total kept: %d)",
+                         first_keep_tokens,
+                         keep_tokens - first_keep_tokens,
+                         prompt_tokens.size());
         }
 
         if (llama_decode(ctx, batch)) {
@@ -421,7 +494,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
             this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
             this->UpdateCurrentSession();
 
-            return "";
+            return response;
         }
 
         // sample the next token
@@ -436,12 +509,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
         char buf[256];
         int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
         if (n < 0) {
-            wxLogError("Failed to convert the token to a string");
-
-            this->currentMessage->SetStatusMessage("Failed to convert the token to a string");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
-            this->UpdateCurrentSession();
-
+            REPORT_ERROR("Failed to convert the token to a string");
             return "";
         }
         std::string piece(buf, n);

@@ -40,6 +40,8 @@ if (wxWidgets_INCLUDE_DIRS)
     target_include_directories(${PROJECT_BINARY_NAME} PRIVATE ${wxWidgets_INCLUDE_DIRS})
 endif()
 
+target_include_directories(${PROJECT_BINARY_NAME} PUBLIC third_party/cmark-gfm/src third_party/cmark-gfm/extensions ${CMAKE_BINARY_DIR}/third_party/cmark-gfm/src)
+
 if (NOT WIN32)
     set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::webview wx::stc)
 else()
@@ -52,7 +54,7 @@ else()
     endif()
 endif()
 
-list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
+list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib ${CMARK_GFM_LIBRARIES})
 
 
 target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${APPDEPENDS})

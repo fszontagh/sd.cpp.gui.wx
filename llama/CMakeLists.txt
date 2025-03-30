@@ -44,7 +44,7 @@ target_include_directories(${LLAMA_BINARY_NAME} PRIVATE
         ${LLAMA_INCLUDE_DIR}
         ${GGML_INCLUDE_DIR}
 )
-
+target_compile_definitions(${LLAMA_BINARY_NAME} PRIVATE ${LLAMA_BINARY_NAME})
 set(bin_INSTALL_PATH_NSIS "bin")
 
 if(WIN32)

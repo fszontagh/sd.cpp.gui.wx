@@ -257,6 +257,21 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             event->SetString(_("Llama is down"));
             event->SetId(10000);
             wxQueueEvent(this, event);
+            //
+            if (this->chat_currentMessage != nullptr) {
+                // lock the chat mutex
+                {
+                    std::lock_guard<std::mutex> lock(this->chat_mutex);
+                    if (this->chat_currentMessage->GetStatusMessage().empty()) {
+                        this->chat_currentMessage->SetStatusMessage(_("LLama process died withour error"));
+                        this->m_chatStatus->SetLabel(this->chat_currentMessage->GetStatusMessage());
+                        for (auto& helper : this->processHelpers) {
+                            helper->clean();
+                            break;
+                        }
+                    }
+                }
+            }
             llamaRef->Restart();
         };
 
@@ -6360,15 +6375,75 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
         }
     }
     this->m_chatInput->SetValue(wxEmptyString);
+    this->m_chatInput->SetFocus();
 };
 void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
+    if (wxGetKeyState(WXK_SHIFT) || wxGetKeyState(WXK_CONTROL)) {
+        event.Skip();
+        return;
+    }
+
+    const wxString text = this->m_chatInput->GetValue();
+    if (!text.empty()) {
+        std::cout << "Sending message: " << text.ToStdString() << std::endl;
+        wxCommandEvent event(wxEVT_COMMAND_BUTTON_CLICKED, this->m_sendChat->GetId());
+        this->m_sendChat->GetEventHandler()->ProcessEvent(event);
+        return;
+    }
     event.Skip();
 };
 void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
     event.Skip();
+    const auto selection = this->m_languageModel->GetSelection();
 
-    this->m_chatInput->Enable(this->m_languageModel->GetSelection() > 0);
-    this->m_sendChat->Enable(this->m_languageModel->GetSelection() > 0);
+    if (selection == 0) {  // unload model
+        std::lock_guard<std::mutex> lock(this->chat_mutex);
+        this->m_languageModel->Disable();  // disable while extprocess unloads the model
+        if (this->chat_currentMessage == nullptr) {
+            this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
+            this->chat_currentMessage->SetId();
+        }
+        this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
+
+        this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::MODEL_UNLOAD);
+        this->chat_currentMessage->SetModelPath("");
+        this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
+
+        for (auto helper : this->processHelpers) {
+            if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
+                helper->write(this->chat_currentMessage->toString());
+                break;
+            }
+        }
+
+        return;
+    }  // unload model
+
+    // load the model... there is not need to disable controls, because the external process only read the new command when model load is finished...
+    auto data      = this->m_languageModel->GetClientData(selection);
+    auto modelinfo = reinterpret_cast<sd_gui_utils::ModelFileInfo*>(data);
+    if (!modelinfo) {
+        return;
+    }
+    this->m_languageModel->Disable();  // disable while extprocess loads the model
+    std::lock_guard<std::mutex> lock(this->chat_mutex);
+    if (this->chat_currentMessage == nullptr) {
+        this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
+        this->chat_currentMessage->SetId();
+    }
+    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
+
+    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::MODEL_LOAD);
+    this->chat_currentMessage->SetModelPath(modelinfo->path);
+    this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
+    this->m_chatStatus->SetLabel(wxString::Format(_("Loading model: %s"), modelinfo->name));
+
+    for (auto helper : this->processHelpers) {
+        if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
+            helper->write(this->chat_currentMessage->toString());
+            break;
+        }
+    }
 };
 void MainWindowUI::UpdateChatGui() {
     this->UpdateChatPanel(this->currentChatPanel);

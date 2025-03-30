@@ -2,6 +2,9 @@
 #define EXTPROCESS_APPLICATIONLOGIC_H
 
 #include "helpers/llvm.h"
+
+#define REPORT_ERROR(fmt, ...) ReportError(wxString::Format(fmt, ##__VA_ARGS__).ToStdString(), __FILE__, __LINE__)
+
 class ApplicationLogic {
 public:
     ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager);
@@ -19,6 +22,7 @@ private:
     llama_sampler* smplr                                      = nullptr;
     llama_context* ctx                                        = nullptr;
     llama_vocab* vocab                                        = nullptr;
+    const char* tmpl                                          = nullptr;
     std::shared_ptr<sd_gui_utils::llvmMessage> currentMessage = nullptr;
 
     // llama functions
@@ -49,6 +53,8 @@ private:
     using LlamaNCtx                      = int32_t (*)(const struct llama_context* ctx);
     using LlamaModelChatTemplate         = const char* (*)(const struct llama_model* model, const char* name);
     using LlamaChatApplyTemplate         = int32_t (*)(const char* tmpl, const struct llama_chat_message* chat, size_t n_msg, bool add_ass, char* buf, int32_t length);
+    using LlamaChatBuiltInTemplates      = int32_t (*)(const char** output, size_t len);
+    using LlamaModelMetaValStr           = int32_t (*)(const struct llama_model* model, const char* key, char* buf, size_t buf_size);
 
     LlamaBackendInit llama_backend_init                               = nullptr;
     GgmlBackendLoadAll ggml_backend_load_all                          = nullptr;
@@ -76,11 +82,11 @@ private:
     LlamaKvselfUsedCells llama_kv_self_used_cells                     = nullptr;
     LlamaNCtx llama_n_ctx                                             = nullptr;
     LlamaModelChatTemplate llama_model_chat_template                  = nullptr;
+    LlamaChatBuiltInTemplates llama_chat_builtin_templates            = nullptr;
+    LlamaModelMetaValStr llama_model_meta_val_str                     = nullptr;
     LlamaChatApplyTemplate llama_chat_apply_template                  = nullptr;
 
-    std::vector<llama_chat_message> messages = {};
-    std::vector<char> formatted              = {};
-    int prev_len                             = 0;
+    typedef std::vector<llama_chat_message> llama_message_list;
     std::mutex mutex;
     bool loadModel();
     void unloadModel();
@@ -88,8 +94,53 @@ private:
     void unloadContext();
     void generateText();
     void UpdateCurrentSession();
+    inline void FindAChatTemplate(const char*& tmpl) {
+        std::string template_str;
+
+        template_str = this->currentMessage->GetPromptTemplate();
+        if (!template_str.empty()) {
+            tmpl = template_str.c_str();
+            return;
+        }
+
+        const char* key = "tokenizer.chat_template";
+        char buf[1024];
+        int32_t len = llama_model_meta_val_str(this->model, key, buf, 1024);
+
+        if (len >= 0) {
+            tmpl = llama_model_chat_template(this->model, nullptr);
+            return;
+        }
+
+        if (tmpl == nullptr) {
+            std::vector<const char*> builtin_templates;
+            size_t num_templates = llama_chat_builtin_templates(nullptr, 0);
+            if (num_templates > 0) {
+                builtin_templates.resize(num_templates);
+                llama_chat_builtin_templates(builtin_templates.data(), num_templates);
+            }
+
+            for (const char* builtin_tmpl : builtin_templates) {
+                wxLogInfo("Built in template: %s", builtin_tmpl);
+                if (tmpl == nullptr) {
+                    tmpl = builtin_tmpl;
+                    return;
+                }
+            }
+        }
+    }
+
+    void ReportError(const std::string& message, std::string file = __FILE__, int line = __LINE__);
 
     std::string LlamaGenerate(const std::string& prompt);
+    inline void CleanUp() {
+        this->unloadModel();
+        this->unloadContext();
+        {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            this->currentMessage = nullptr;
+        }
+    }
 };
 
 #endif  // EXTPROCESS_APPLICATIONLOGIC_H

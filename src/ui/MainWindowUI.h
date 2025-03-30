@@ -285,8 +285,40 @@ private:
             return;
         }
 
+        const auto status_msg = this->chat_currentMessage->GetStatusMessage();
         if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::ERROR) {
-            this->writeLog(this->chat_currentMessage->GetStatusMessage(), true);
+            this->writeLog(status_msg, true);
+        }
+
+        if (this->m_chatStatus->GetLabel() != status_msg) {
+            this->m_chatStatus->SetLabel(status_msg);
+        }
+        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::MODEL_LOADED) {
+            if (status_msg.empty()) {
+                this->m_chatStatus->SetLabel(_("Model loaded"));
+                auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());
+                if (model != nullptr) {
+                    this->writeLog(wxString::Format(_("Llama model loaded: %s"), model.name), true);
+                }
+                this->m_languageModel->Enable();
+                this->m_chatInput->Enable();
+                this->m_sendChat->Enable();
+            }
+            return;
+        }
+        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::MODEL_UNLOADED) {
+            if (status_msg.empty()) {
+                this->m_chatStatus->SetLabel(_("Model unloaded"));
+                auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());
+                if (model != nullptr) {
+                    this->writeLog(wxString::Format(_("Llama model unloaded: %s"), model.name), true);
+                }
+                this->m_languageModel->SetSelection(0);  // ensure the first is selected
+                this->m_languageModel->Enable();
+                this->m_chatInput->Disable();
+                this->m_sendChat->Disable();
+            }
+            return;
         }
 
         auto* panelData = static_cast<PanelData*>(chatPanel->GetClientData());
@@ -298,7 +330,6 @@ private:
         }
 
         for (const auto& [id, msg] : this->chat_currentMessage->GetMessages()) {
-
             wxString htmlMessage = wxString::Format("<p>%s <b>%s</b> %s</p>",
                                                     sd_gui_utils::formatTimestamp(msg.updated_at),
                                                     (msg.sender == sd_gui_utils::llvmTextSender::USER) ? "User" : "Assistant",
@@ -316,15 +347,33 @@ private:
                 std::cout << "Update: " << id << std::endl;
                 it->second->SetPage(html, wxT("/"));
                 panelData->messageLastUpdates[id] = msg.updated_at;
+                panelData->scrolledWindow->Scroll(0, panelData->scrolledWindow->GetVirtualSize().GetHeight());
             } else {
                 wxWebView* newWebView = wxWebView::New(panelData->scrolledWindow, wxID_ANY);
                 newWebView->SetMinSize(wxSize(300, 100));
+                newWebView->Hide();
                 newWebView->SetPage(html, wxT("/"));
-                panelData->chatSizer->Add(newWebView, 0, wxEXPAND | wxALL, 5);
-                panelData->messageWebViews[id] = newWebView;
+                panelData->chatSizer->Add(newWebView, 0, wxEXPAND, 0);
+                panelData->messageWebViews[id]    = newWebView;
                 panelData->messageLastUpdates[id] = msg.updated_at;
                 std::cout << "Created: " << id << std::endl;
-                std::cout << "Content: " << html.ToStdString() << std::endl;
+                wxString jsGetHeight = "document.body.clientHeight.toString();";
+
+                newWebView->Bind(wxEVT_WEBVIEW_LOADED, [newWebView, jsGetHeight](wxWebViewEvent&) {
+                    wxString result;
+                    if (newWebView->RunScript(jsGetHeight, &result)) {
+                        long newHeight;
+                        if (result.ToLong(&newHeight) && newHeight > 0) {
+                            wxSize currentSize = newWebView->GetSize();
+                            newWebView->SetMinSize(wxSize(currentSize.GetWidth(), newHeight));
+                            newWebView->SetSize(wxSize(currentSize.GetWidth(), newHeight));
+                            if (!newWebView->IsShown()) {
+                                newWebView->Show();
+                            }
+                            newWebView->GetParent()->Layout();
+                        }
+                    }
+                });
             }
         }
 

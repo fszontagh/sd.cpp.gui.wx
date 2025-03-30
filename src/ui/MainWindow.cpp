@@ -948,6 +948,9 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 		m_notebook1302Index++;
 	}
 	m_llama = new wxPanel( m_notebook1302, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	wxBoxSizer* bSizer1150;
+	bSizer1150 = new wxBoxSizer( wxHORIZONTAL );
+
 	wxBoxSizer* bSizer111;
 	bSizer111 = new wxBoxSizer( wxVERTICAL );
 
@@ -972,7 +975,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer114->Fit( m_panel30 );
 	bSizer111->Add( m_panel30, 0, wxEXPAND | wxALL, 5 );
 
-	m_chatListBook = new wxListbook( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_RIGHT );
+	m_chatListBook = new wxListbook( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_TOP );
 	#ifdef __WXGTK__ // Small icon style not supported in GTK
 	wxListView* m_chatListBookListView = m_chatListBook->GetListView();
 	long m_chatListBookFlags = m_chatListBookListView->GetWindowStyleFlag();
@@ -984,6 +987,13 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	#endif
 
 	bSizer111->Add( m_chatListBook, 1, wxEXPAND | wxALL, 5 );
+
+	wxBoxSizer* bSizer1114;
+	bSizer1114 = new wxBoxSizer( wxVERTICAL );
+
+	m_chatStatus = new wxStaticText( m_llama, wxID_ANY, _("Please select a model"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_chatStatus->Wrap( -1 );
+	bSizer1114->Add( m_chatStatus, 0, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer1151;
 	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
@@ -1000,12 +1010,69 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1151->Add( m_sendChat, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	bSizer111->Add( bSizer1151, 0, wxEXPAND, 5 );
+	bSizer1114->Add( bSizer1151, 0, wxEXPAND, 5 );
 
 
-	m_llama->SetSizer( bSizer111 );
+	bSizer111->Add( bSizer1114, 0, wxEXPAND, 5 );
+
+
+	bSizer1150->Add( bSizer111, 1, wxEXPAND, 5 );
+
+	m_panel29 = new wxPanel( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panel29->SetMaxSize( wxSize( 300,-1 ) );
+
+	wxBoxSizer* bSizer118;
+	bSizer118 = new wxBoxSizer( wxVERTICAL );
+
+	m_staticText78 = new wxStaticText( m_panel29, wxID_ANY, _("Prompt Template"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText78->Wrap( -1 );
+	bSizer118->Add( m_staticText78, 0, wxALL|wxEXPAND, 5 );
+
+	m_chat_prompt_template = new wxTextCtrl( m_panel29, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
+	m_chat_prompt_template->SetMinSize( wxSize( -1,200 ) );
+
+	bSizer118->Add( m_chat_prompt_template, 0, wxALL|wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer119;
+	bSizer119 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText79 = new wxStaticText( m_panel29, wxID_ANY, _("Batch size"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText79->Wrap( -1 );
+	m_staticText79->SetMinSize( wxSize( 100,-1 ) );
+
+	bSizer119->Add( m_staticText79, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_chat_n_batch = new wxSpinCtrl( m_panel29, wxID_ANY, wxT("64"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 8192, 64 );
+	bSizer119->Add( m_chat_n_batch, 1, wxALL, 5 );
+
+
+	bSizer118->Add( bSizer119, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer1200;
+	bSizer1200 = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticText80 = new wxStaticText( m_panel29, wxID_ANY, _("Context size"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText80->Wrap( -1 );
+	m_staticText80->SetMinSize( wxSize( 100,-1 ) );
+
+	bSizer1200->Add( m_staticText80, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+
+	m_chat_n_ctx = new wxSpinCtrl( m_panel29, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1024, 12288, 4096 );
+	bSizer1200->Add( m_chat_n_ctx, 1, wxALL, 5 );
+
+
+	bSizer118->Add( bSizer1200, 0, wxEXPAND, 5 );
+
+
+	m_panel29->SetSizer( bSizer118 );
+	m_panel29->Layout();
+	bSizer118->Fit( m_panel29 );
+	bSizer1150->Add( m_panel29, 1, wxEXPAND | wxALL, 5 );
+
+
+	m_llama->SetSizer( bSizer1150 );
 	m_llama->Layout();
-	bSizer111->Fit( m_llama );
+	bSizer1150->Fit( m_llama );
 	m_notebook1302->AddPage( m_llama, _("Chat Assistant"), false );
 	m_notebook1302Bitmap = text_box_dots_png_to_wx_bitmap();
 	if ( m_notebook1302Bitmap.Ok() )
@@ -1101,6 +1168,8 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_promptAndFluxPanel = new wxScrolledWindow( m_panel31, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_THEME|wxHSCROLL|wxVSCROLL );
 	m_promptAndFluxPanel->SetScrollRate( 5, 5 );
+	m_promptAndFluxPanel->Hide();
+
 	wxBoxSizer* bSizer103;
 	bSizer103 = new wxBoxSizer( wxVERTICAL );
 

@@ -187,8 +187,16 @@ class mainUI : public wxFrame
 		wxStaticText* m_staticText731;
 		wxChoice* m_languageModel;
 		wxListbook* m_chatListBook;
+		wxStaticText* m_chatStatus;
 		wxTextCtrl* m_chatInput;
 		wxButton* m_sendChat;
+		wxPanel* m_panel29;
+		wxStaticText* m_staticText78;
+		wxTextCtrl* m_chat_prompt_template;
+		wxStaticText* m_staticText79;
+		wxSpinCtrl* m_chat_n_batch;
+		wxStaticText* m_staticText80;
+		wxSpinCtrl* m_chat_n_ctx;
 		wxPanel* m_models_panel;
 		wxTreeListCtrl* m_modelTreeList;
 		wxScrolledWindow* m_modelDetailsImageList;

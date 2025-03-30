@@ -49,14 +49,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    bool needToRun  = true;
+    bool needToRun      = true;
     uint64_t lastUpdate = 0;
     while (needToRun) {
         std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE_LLAMA]);
 
         if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE_LLAMA)) {
             if (std::strlen(buffer.get()) > 0) {
-                std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE_LLAMA);
+                std::string message = std::string(buffer.get(), std::strlen(buffer.get()));
+                if (message.empty()) {
+                    wxLogError("Got an empty message");
+                    continue;
+                }
 
                 if (message == "exit") {
                     wxLogWarning("Got exit command, exiting...");

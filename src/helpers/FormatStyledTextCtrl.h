@@ -1,6 +1,10 @@
 #ifndef STYLEWXSTYLEDTEXTCTRL_H
 #define STYLEWXSTYLEDTEXTCTRL_H
 
+#include "cmark-gfm-core-extensions.h"
+#include "cmark-gfm-extension_api.h"
+#include "cmark-gfm/registry.h"
+
 namespace sd_gui_utils {
 
     inline static std::string formatTimestamp(uint64_t timestamp) {
@@ -29,9 +33,15 @@ namespace sd_gui_utils {
 
         wxString css;
         css << "* {\n"
+            << "    font-size: 12px;\n"
             << "    background-color: rgb(" << bgColour.GetRed() << ", " << bgColour.GetGreen() << ", " << bgColour.GetBlue() << ");\n"
             << "    color: rgb(" << textColour.GetRed() << ", " << textColour.GetGreen() << ", " << textColour.GetBlue() << ");\n"
             << "    font-family: sans-serif;\n"
+            << "    margin: 0; padding:0;\n"
+            << "}\n"
+            << "html,body {\n"
+            << "    padding: 0;\n"
+            << "    margin: 0;\n"
             << "}\n"
             << "code, pre {\n"
             << "    background-color: rgb(" << highlightColour.GetRed() << ", " << highlightColour.GetGreen() << ", " << highlightColour.GetBlue() << ");\n"
@@ -55,87 +65,43 @@ namespace sd_gui_utils {
     }
 
     inline static wxString ConvertMarkdownToHtml(const wxString& markdown) {
-        wxString html = markdown;
+        const std::string md_string = std::string(markdown.utf8_str().data(), markdown.length());
 
-        // 1. Convert headers (Markdown: # Header, ## Subheader)
-        wxRegEx headerRegex(wxT("^(#+) (.+)$"));
-        wxString result;
-        result = markdown;
-        wxString processed;
-        wxString line;
-        wxString finalHtml;
+        const int options = CMARK_OPT_DEFAULT | CMARK_OPT_UNSAFE | CMARK_OPT_SMART | CMARK_OPT_GITHUB_PRE_LANG | CMARK_OPT_LIBERAL_HTML_TAG | CMARK_OPT_FOOTNOTES | CMARK_OPT_TABLE_PREFER_STYLE_ATTRIBUTES | CMARK_OPT_FULL_INFO_STRING;
 
-        wxArrayString lines;
-        wxStringTokenizer tokenizer(result, wxT("\n"));
+        cmark_parser* parser = cmark_parser_new(options);
 
-        while (tokenizer.HasMoreTokens()) {
-            line = tokenizer.GetNextToken();
+        cmark_gfm_core_extensions_ensure_registered();
+        const char* extensions[] = {
+            "table",
+            "strikethrough",
+            "autolink",
+            "tagfilter",
+            "tasklist",
+        };
 
-            if (headerRegex.Matches(line)) {
-                wxString headerLevel = headerRegex.GetMatch(line, 1);
-                wxString headerText  = headerRegex.GetMatch(line, 2);
-                processed            = wxString::Format("<h%d>%s</h%d>", headerLevel.Length(), headerText, headerLevel.Length());
+        for (const char* ext_name : extensions) {
+            cmark_syntax_extension* ext = cmark_find_syntax_extension(ext_name);
+            if (ext) {
+                cmark_parser_attach_syntax_extension(parser, ext);
             } else {
-                processed = line;
-            }
-
-            lines.Add(processed);
-        }
-
-        // Combine lines to the final html
-        finalHtml = wxJoin(lines, '\n');
-
-        // 2. Convert bold text (Markdown: **bold**)
-        wxRegEx boldRegex(wxT("\\*\\*(.+?)\\*\\*"));
-        boldRegex.ReplaceAll(&finalHtml, "<b>\\1</b>");
-
-        // 3. Convert italic text (Markdown: *italic*)
-        wxRegEx italicRegex(wxT("\\*(.+?)\\*"));
-        italicRegex.ReplaceAll(&finalHtml, "<i>\\1</i>");
-
-        // 4. Convert unordered lists (Markdown: - Item)
-        wxRegEx listRegex(wxT("^\\s*- (.+)$"));
-        listRegex.ReplaceAll(&finalHtml, "<ul><li>\\1</li></ul>");
-
-        // 5. Convert ordered lists (Markdown: 1. Item)
-        wxRegEx orderedListRegex(wxT("^\\s*\\d+\\. (.+)$"));
-        orderedListRegex.ReplaceAll(&finalHtml, "<ol><li>\\1</li></ol>");
-
-        // 6. Convert links (Markdown: [Link Text](url))
-        wxRegEx linkRegex(wxT("\\[([^\]]+)\\]\\(([^)]+)\\)"));
-        linkRegex.ReplaceAll(&finalHtml, "<a href=\"\\2\">\\1</a>");
-
-        // 7. Convert blockquotes (Markdown: > Blockquote)
-        wxRegEx blockquoteRegex(wxT("^> (.+)$"));
-        wxArrayString blockquoteLines;
-        tokenizer.SetString(finalHtml);
-        while (tokenizer.HasMoreTokens()) {
-            line = tokenizer.GetNextToken();
-            if (blockquoteRegex.Matches(line)) {
-                blockquoteLines.Add(wxString::Format("<blockquote>%s</blockquote>", blockquoteRegex.GetMatch(line, 1)));
-            } else {
-                blockquoteLines.Add(line);  // Non-blockquote lines are added without change
+                std::cerr << "No ext: " << ext_name << std::endl;
             }
         }
 
-        // Combine blockquote lines into final html
-        finalHtml = wxJoin(blockquoteLines, '\n');
+        cmark_node* root = cmark_parse_document(md_string.c_str(), md_string.size(), options);
+        char* html       = cmark_render_html(root, options, cmark_parser_get_syntax_extensions(parser));
 
-        // 8. Convert code blocks (Markdown: ```code```)
-        wxRegEx codeBlockRegex(wxT("```([^`]+)```"));
-        codeBlockRegex.ReplaceAll(&finalHtml, "<pre><code>$1</code></pre>");
-        // 9. Convert horizontal rules (Markdown: ---)
-        wxRegEx horizontalRuleRegex(wxT("^---$"));
-        horizontalRuleRegex.ReplaceAll(&finalHtml, "<hr/>");
-        // 10. Convert inline code (Markdown: `code`)
-        wxRegEx inlineCodeRegex(wxT("`([^`]+)`"));
-        inlineCodeRegex.ReplaceAll(&finalHtml, "<code>$1</code>");
-        // 11. Convert line breaks (Markdown: \n)
-        wxRegEx lineBreakRegex(wxT("\\n"));
-        lineBreakRegex.ReplaceAll(&finalHtml, "<br/>");
+        wxString wxHtmlOutput = wxString::FromUTF8(html);
 
-        return finalHtml;
+        cmark_node_free(root);
+
+        free(html);
+
+        cmark_parser_free(parser);
+        return wxHtmlOutput;
     }
+
     inline static void ConfigureTextCtrl(wxStyledTextCtrl* textCtrl) {
         if (!textCtrl) {
             return;
@@ -197,7 +163,7 @@ namespace sd_gui_utils {
                         };
                     };
                 </script>)";
-        return wxString::Format("<!DOCTYPE html>\n<html>\n<head>\n<style type=\"text/css\">%s</style>\n\n%s\n</head>\n<body>%s</body>\n</html>", GenerateSystemCSS().c_str(), script, message);
+        return wxString::Format("<!DOCTYPE html>\n<html>\n<head>\n<style type=\"text/css\">\n%s</style>\n\n%s\n</head>\n<body>%s<!--Original msg: \n\n%s--></body>\n</html>", GenerateSystemCSS().c_str(), script, nMessage, message);
     }
 
 };
