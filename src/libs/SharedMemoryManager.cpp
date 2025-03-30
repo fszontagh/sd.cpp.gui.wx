@@ -84,9 +84,6 @@ bool SharedMemoryManager::read(void* buffer, size_t size) {
         return false;
     }
     std::lock_guard<std::mutex> lock(mutex);
-    if (shmPtr == nullptr || shmPtr == MAP_FAILED) {
-        throw std::runtime_error("Invalid shared memory pointer.");
-    }
     std::memmove(buffer, shmPtr, size);
     return true;
 }

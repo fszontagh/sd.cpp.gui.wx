@@ -41,7 +41,7 @@ if (wxWidgets_INCLUDE_DIRS)
 endif()
 
 if (NOT WIN32)
-    set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::stc)
+    set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::webview wx::stc)
 else()
     set(APPDEPENDS wxWidgets::wxWidgets)
     if (MSVC)

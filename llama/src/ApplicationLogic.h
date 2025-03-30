@@ -81,6 +81,7 @@ private:
     std::vector<llama_chat_message> messages = {};
     std::vector<char> formatted              = {};
     int prev_len                             = 0;
+    std::mutex mutex;
     bool loadModel();
     void unloadModel();
     bool loadContext();

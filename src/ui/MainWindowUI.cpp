@@ -1383,145 +1383,18 @@ void MainWindowUI::OnPromptKeyDown(wxKeyEvent& event) {
         }
     }
 
-    // Szöveg módosítása és kijelölése
     obj->ChangeValue(text.Mid(0, from) + newText + text.Mid(to));
     obj->SetSelection(from, from + newText.Length());
 }
 void MainWindowUI::InitPrompts() {
-    this->m_prompt->SetWrapMode(wxSTC_WRAP_WHITESPACE);
-    this->m_prompt2->SetWrapMode(wxSTC_WRAP_WHITESPACE);
-    this->m_neg_prompt->SetWrapMode(wxSTC_WRAP_WHITESPACE);
-    this->m_neg_prompt2->SetWrapMode(wxSTC_WRAP_WHITESPACE);
+    std::vector<wxStyledTextCtrl*> textCtrls = {m_prompt, m_prompt2, m_neg_prompt, m_neg_prompt2};
 
-    this->m_prompt->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    this->m_prompt2->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    this->m_neg_prompt->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    this->m_neg_prompt2->StyleSetBackground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(wxSTC_STYLE_DEFAULT, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    // this->m_prompt->StyleSetForeground(wxSTC_STYLE_CONTROLCHAR, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    this->m_prompt->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-    this->m_prompt2->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    this->m_neg_prompt->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-    this->m_neg_prompt2->SetCaretForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
-
-    /* exists, but not implemented :(
-    wxTextAttr defStyle(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT), wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->SetDefaultStyle(defStyle);
-    this->m_prompt2->SetDefaultStyle(defStyle);
-    this->m_neg_prompt->SetDefaultStyle(defStyle);
-    this->m_neg_prompt2->SetDefaultStyle(defStyle);
-    */
-
-    // set lora styles
-    wxColour loraColor(50, 100, 150);
-    wxColour embeddingColor(50, 168, 143);
-    wxColour notFoundColor(245, 12, 70);
-    // set others styles, eg BREAK
-    wxColour othersColor(220, 220, 50);
-
-    auto loraFont      = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-    auto embeddingFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-    auto notfoundFont  = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-    auto othersFont    = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-
-    // loraFont.SetWeight(wxFONTWEIGHT_BOLD);
-    // embeddingFont.SetWeight(wxFONTWEIGHT_BOLD);
-    // othersFont.SetWeight(wxFONTWEIGHT_BOLD);
-    notfoundFont.SetStrikethrough(true);
-
-    // other keywords, eg: BREAK
-    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
-    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
-
-    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
-    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
-
-    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
-    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
-
-    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersFont);
-    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_OTHERS, othersColor);
-
-    // lora styles
-
-    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
-    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
-
-    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
-    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
-
-    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
-    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
-
-    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraFont);
-    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA, loraColor);
-
-    // embedding styls
-    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
-    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
-
-    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
-    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
-
-    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
-    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
-
-    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingFont);
-    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_EMBEDDING, embeddingColor);
-
-    // lora not found style
-    this->m_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
-    this->m_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
-
-    this->m_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
-    this->m_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
-
-    this->m_neg_prompt->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
-    this->m_neg_prompt->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
-
-    this->m_neg_prompt2->StyleSetFont(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notfoundFont);
-    this->m_neg_prompt2->StyleSetBackground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-    this->m_neg_prompt2->StyleSetForeground(+sd_gui_utils::GuiPromptStyles::STYLE_LORA_NOT_FOUND, notFoundColor);
-
-    this->m_prompt->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
-    this->m_prompt2->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
-    this->m_neg_prompt->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
-    this->m_neg_prompt2->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
-
-    this->m_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
-    this->m_prompt2->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
-    this->m_neg_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
-    this->m_neg_prompt2->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
-
-    this->m_prompt->SetKeyWords(0, wxT("BREAK"));
-
-    this->m_prompt->Bind(wxEVT_STC_AUTOCOMP_SELECTION, [this](wxStyledTextEvent&) {
-        this->m_autoCompJustCompleted = true;
-    });
+    for (auto* textCtrl : textCtrls) {
+        sd_gui_utils::ConfigureTextCtrl(textCtrl);
+        textCtrl->SetKeyWords(0, wxT("BREAK"));
+        textCtrl->Bind(wxEVT_STC_MODIFIED, &MainWindowUI::OnTextChanged, this);
+        textCtrl->Bind(wxEVT_STC_AUTOCOMP_SELECTION, &MainWindowUI::OnAutoCompSelection, this);
+    }
 }
 
 void MainWindowUI::onGenerate(wxCommandEvent& event) {

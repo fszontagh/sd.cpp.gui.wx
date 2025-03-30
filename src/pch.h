@@ -48,6 +48,7 @@
 #include "wx/dcbuffer.h"
 #include "wx/treelist.h"
 #include "wx/clipbrd.h"
+#include "wx/webview.h"
 #include "libs/json.hpp"
 
 #include "ver.hpp"
