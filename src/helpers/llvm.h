@@ -9,29 +9,29 @@ typedef std::vector<llama_chat_message> llama_message_list;
 namespace sd_gui_utils {
 
     enum class llvmstatus {
-        PENDING,
-        MODEL_LOADED,
-        MODEL_UNLOADED,
-        SUCCESS,
-        ERROR
+        LLVM_STATUS_PENDING,
+        LLVM_STATUS_MODEL_LOADED,
+        LLVM_STATUS_MODEL_UNLOADED,
+        LLVM_STATUS_SUCCESS,
+        LLVM_STATUS_ERROR
     };
 
     enum class llvmCommand {
-        MODEL_LOAD,
-        MODEL_UNLOAD,
-        GENERATE_TEXT,
-        GENERATE_TEXT_STREAM
+        LLVM_COMMAND_MODEL_LOAD,
+        LLVM_COMMAND_MODEL_UNLOAD,
+        LLVM_COMMAND_GENERATE_TEXT,
+        LLVM_COMMAND_GENERATE_TEXT_STREAM
     };
 
     enum class llvmTextSender {
-        USER,
-        ASSISTANT,
-        SYSTEM,
-        SENDER_NONE
+        LLVM_TEXT_SENDER_USER,
+        LLVM_TEXT_SENDER_ASSISTANT,
+        LLVM_TEXT_SENDER_SYSTEM,
+        LLVM_TEXT_SENDER_SENDER_NONE
     };
 
     struct llvmText {
-        llvmTextSender sender = sd_gui_utils::llvmTextSender::SENDER_NONE;
+        llvmTextSender sender = sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SENDER_NONE;
         std::string text      = "";
         uint64_t updated_at   = 0;
 
@@ -61,8 +61,8 @@ namespace sd_gui_utils {
         std::string title;
         std::string prompt_template;
 
-        llvmstatus status   = sd_gui_utils::llvmstatus::PENDING;
-        llvmCommand command = llvmCommand::MODEL_LOAD;
+        llvmstatus status   = sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING;
+        llvmCommand command = llvmCommand::LLVM_COMMAND_MODEL_LOAD;
 
         int ngl       = 4096;
         int n_ctx     = 0;  // 0 - load from model (trained batch size)
@@ -79,7 +79,7 @@ namespace sd_gui_utils {
 
         // Move constructor
         llvmMessage(sd_gui_utils::llvmMessage&& other) noexcept
-            : id(std::exchange(other.id, 0)), updated_at(std::exchange(other.updated_at, 0)), next_message_id(std::exchange(other.next_message_id, 1)), messages(std::move(other.messages)), model_path(std::move(other.model_path)), status_message(std::move(other.status_message)), title(std::move(other.title)), prompt_template(std::move(other.prompt_template)), status(std::exchange(other.status, llvmstatus::PENDING)), command(std::exchange(other.command, llvmCommand::MODEL_LOAD)), ngl(std::exchange(other.ngl, 4096)), n_ctx(std::exchange(other.n_ctx, 0)), n_batch(std::exchange(other.n_batch, 0)), n_threads(std::exchange(other.n_threads, 0)), mutex() {}
+            : id(std::exchange(other.id, 0)), updated_at(std::exchange(other.updated_at, 0)), next_message_id(std::exchange(other.next_message_id, 1)), messages(std::move(other.messages)), model_path(std::move(other.model_path)), status_message(std::move(other.status_message)), title(std::move(other.title)), prompt_template(std::move(other.prompt_template)), status(std::exchange(other.status, llvmstatus::LLVM_STATUS_PENDING)), command(std::exchange(other.command, llvmCommand::LLVM_COMMAND_MODEL_LOAD)), ngl(std::exchange(other.ngl, 4096)), n_ctx(std::exchange(other.n_ctx, 0)), n_batch(std::exchange(other.n_batch, 0)), n_threads(std::exchange(other.n_threads, 0)), mutex() {}
 
         // Move assignment operator
         llvmMessage& operator=(sd_gui_utils::llvmMessage&& other) noexcept {
@@ -92,8 +92,8 @@ namespace sd_gui_utils {
                 status_message  = std::move(other.status_message);
                 title           = std::move(other.title);
                 prompt_template = std::move(other.prompt_template);
-                status          = std::exchange(other.status, llvmstatus::PENDING);
-                command         = std::exchange(other.command, llvmCommand::MODEL_LOAD);
+                status          = std::exchange(other.status, llvmstatus::LLVM_STATUS_PENDING);
+                command         = std::exchange(other.command, llvmCommand::LLVM_COMMAND_MODEL_LOAD);
                 ngl             = std::exchange(other.ngl, 4096);
                 n_ctx           = std::exchange(other.n_ctx, 0);
                 n_batch         = std::exchange(other.n_batch, 0);

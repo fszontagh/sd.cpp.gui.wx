@@ -195,20 +195,20 @@ void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
     std::this_thread::sleep_for(std::chrono::milliseconds(LLAMA_SLEEP_TIME));
 
     switch (this->currentMessage->GetCommandType()) {
-        case sd_gui_utils::llvmCommand::MODEL_LOAD: {
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_LOAD: {
             if (!this->loadModel()) {
                 this->UpdateCurrentSession();
             } else {
-                this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::MODEL_LOADED);
+                this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_LOADED);
                 this->UpdateCurrentSession();
             }
         } break;
-        case sd_gui_utils::llvmCommand::MODEL_UNLOAD: {
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_UNLOAD: {
             this->unloadModel();
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::MODEL_UNLOADED);
+            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_UNLOADED);
             this->UpdateCurrentSession();
         } break;
-        case sd_gui_utils::llvmCommand::GENERATE_TEXT: {
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT: {
             wxLogInfo("CMD: GENERATE_TEXT");
             if (this->currentMessage->GetModelPath() != this->currentModelPath || !this->model) {
                 this->loadModel();
@@ -218,7 +218,7 @@ void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
             }
             this->generateText();
         } break;
-        case sd_gui_utils::llvmCommand::GENERATE_TEXT_STREAM: {
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT_STREAM: {
             // Handle stream case if needed
         } break;
     }
@@ -428,7 +428,7 @@ void ApplicationLogic::ReportError(const std::string& message, std::string file,
         wxLogError("%s", message.c_str());
     }
     this->currentMessage->SetStatusMessage(message);
-    this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
+    this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
     this->UpdateCurrentSession();
 }
 
@@ -491,7 +491,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
             wxLogError("Failed to decode the prompt");
 
             this->currentMessage->SetStatusMessage("Failed to decode the prompt");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::ERROR);
+            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
             this->UpdateCurrentSession();
 
             return response;

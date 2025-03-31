@@ -286,14 +286,14 @@ private:
         }
 
         const auto status_msg = this->chat_currentMessage->GetStatusMessage();
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::ERROR) {
+        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR) {
             this->writeLog(status_msg, true);
         }
 
         if (this->m_chatStatus->GetLabel() != status_msg) {
             this->m_chatStatus->SetLabel(status_msg);
         }
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::MODEL_LOADED) {
+        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_LOADED) {
             if (status_msg.empty()) {
                 this->m_chatStatus->SetLabel(_("Model loaded"));
                 auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());
@@ -306,7 +306,7 @@ private:
             }
             return;
         }
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::MODEL_UNLOADED) {
+        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_UNLOADED) {
             if (status_msg.empty()) {
                 this->m_chatStatus->SetLabel(_("Model unloaded"));
                 auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());

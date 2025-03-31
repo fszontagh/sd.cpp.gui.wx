@@ -6361,10 +6361,10 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
         this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
         this->chat_currentMessage->SetId();
     }
-    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
+    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING);
     this->chat_currentMessage->AppendUserPrompt(this->m_chatInput->GetValue().ToStdString());
 
-    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::GENERATE_TEXT);
+    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT);
     this->chat_currentMessage->SetModelPath(modelinfo->path);
     this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
@@ -6403,9 +6403,9 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
             this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
             this->chat_currentMessage->SetId();
         }
-        this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
+        this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING);
 
-        this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::MODEL_UNLOAD);
+        this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_UNLOAD);
         this->chat_currentMessage->SetModelPath("");
         this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
@@ -6431,9 +6431,9 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
         this->chat_currentMessage = std::make_shared<sd_gui_utils::llvmMessage>();
         this->chat_currentMessage->SetId();
     }
-    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::PENDING);
+    this->chat_currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING);
 
-    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::MODEL_LOAD);
+    this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_LOAD);
     this->chat_currentMessage->SetModelPath(modelinfo->path);
     this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
     this->m_chatStatus->SetLabel(wxString::Format(_("Loading model: %s"), modelinfo->name));

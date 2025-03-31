@@ -148,7 +148,7 @@ int sd_gui_utils::llvmMessage::GenerateId() {
 const std::string sd_gui_utils::llvmMessage::GetLatestUserPrompt() {
     std::lock_guard<std::mutex> lock(mutex);
     for (auto it = this->messages.rbegin(); it != this->messages.rend(); ++it) {
-        if (it->second.sender == llvmTextSender::USER) {
+        if (it->second.sender == llvmTextSender::LLVM_TEXT_SENDER_USER) {
             return it->second.text;
         }
     }
@@ -165,7 +165,7 @@ const sd_gui_utils::llvmText sd_gui_utils::llvmMessage::GetLatestMessage() {
 
 void sd_gui_utils::llvmMessage::AppendUserPrompt(const std::string& str) {
     std::lock_guard<std::mutex> lock(mutex);
-    auto t = llvmText{llvmTextSender::USER};
+    auto t = llvmText{llvmTextSender::LLVM_TEXT_SENDER_USER};
     t.UpdateText(str);
     this->messages[this->next_message_id++] = t;
     this->updated_at                        = this->GenerateId();
@@ -190,10 +190,10 @@ void sd_gui_utils::llvmMessage::UpdateOrCreateAssistantAnswer(const std::string&
     }
 
     auto last = this->messages.rbegin();
-    if (last->second.sender == llvmTextSender::ASSISTANT) {
+    if (last->second.sender == llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT) {
         last->second.UpdateText(str);
     } else {
-        auto t = llvmText{llvmTextSender::ASSISTANT};
+        auto t = llvmText{llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT};
         t.UpdateText(str);
         this->messages[this->next_message_id++] = t;
     }
