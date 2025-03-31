@@ -1,9 +1,7 @@
 #ifndef STYLEWXSTYLEDTEXTCTRL_H
 #define STYLEWXSTYLEDTEXTCTRL_H
 
-#include "cmark-gfm-core-extensions.h"
-#include "cmark-gfm-extension_api.h"
-#include "cmark-gfm/registry.h"
+#include <md4c-html.h>
 
 namespace sd_gui_utils {
 
@@ -66,40 +64,17 @@ namespace sd_gui_utils {
 
     inline static wxString ConvertMarkdownToHtml(const wxString& markdown) {
         const std::string md_string = std::string(markdown.utf8_str().data(), markdown.length());
+        std::string html_output;
 
-        const int options = CMARK_OPT_DEFAULT | CMARK_OPT_UNSAFE | CMARK_OPT_SMART | CMARK_OPT_GITHUB_PRE_LANG | CMARK_OPT_LIBERAL_HTML_TAG | CMARK_OPT_FOOTNOTES | CMARK_OPT_TABLE_PREFER_STYLE_ATTRIBUTES | CMARK_OPT_FULL_INFO_STRING;
+        int result = md_html(
+            markdown.c_str(), markdown.size(),
+            [](const MD_CHAR* data, MD_SIZE size, void* userdata) {
+                std::string* output = static_cast<std::string*>(userdata);
+                output->append(data, size);
+            },
+            &html_output, MD_DIALECT_GITHUB, 0);
 
-        cmark_parser* parser = cmark_parser_new(options);
-
-        cmark_gfm_core_extensions_ensure_registered();
-        const char* extensions[] = {
-            "table",
-            "strikethrough",
-            "autolink",
-            "tagfilter",
-            "tasklist",
-        };
-
-        for (const char* ext_name : extensions) {
-            cmark_syntax_extension* ext = cmark_find_syntax_extension(ext_name);
-            if (ext) {
-                cmark_parser_attach_syntax_extension(parser, ext);
-            } else {
-                std::cerr << "No ext: " << ext_name << std::endl;
-            }
-        }
-
-        cmark_node* root = cmark_parse_document(md_string.c_str(), md_string.size(), options);
-        char* html       = cmark_render_html(root, options, cmark_parser_get_syntax_extensions(parser));
-
-        wxString wxHtmlOutput = wxString::FromUTF8(html);
-
-        cmark_node_free(root);
-
-        free(html);
-
-        cmark_parser_free(parser);
-        return wxHtmlOutput;
+        return wxString::FromUTF8Unchecked(html_output.c_str());
     }
 
     inline static void ConfigureTextCtrl(wxStyledTextCtrl* textCtrl) {

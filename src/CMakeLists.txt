@@ -22,7 +22,7 @@ set(SOURCES
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
 target_precompile_headers(${PROJECT_BINARY_NAME} PRIVATE pch.h)
 
-add_dependencies(${PROJECT_BINARY_NAME} sockets_cpp po-compile)
+add_dependencies(${PROJECT_BINARY_NAME} sockets_cpp po-compile md4c)
 target_include_directories(${PROJECT_BINARY_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CpuFeatures_SOURCE_DIR}
@@ -40,7 +40,7 @@ if (wxWidgets_INCLUDE_DIRS)
     target_include_directories(${PROJECT_BINARY_NAME} PRIVATE ${wxWidgets_INCLUDE_DIRS})
 endif()
 
-target_include_directories(${PROJECT_BINARY_NAME} PUBLIC third_party/cmark-gfm/src third_party/cmark-gfm/extensions ${CMAKE_BINARY_DIR}/third_party/cmark-gfm/src)
+target_include_directories(${PROJECT_BINARY_NAME} PUBLIC ${MD4C_INCLUDE_DIR})
 
 if (NOT WIN32)
     set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::webview wx::stc)
@@ -54,7 +54,7 @@ else()
     endif()
 endif()
 
-list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib ${CMARK_GFM_LIBRARIES})
+list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib ${MD4C_LIBRARIES})
 
 
 target_link_libraries(${PROJECT_BINARY_NAME} PRIVATE ${APPDEPENDS})

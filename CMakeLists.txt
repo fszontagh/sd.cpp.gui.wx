@@ -20,7 +20,7 @@ option(SDGUI_SERVER "Build socket server" OFF)
 option(SDGUI_LLAMA_DISABLE "Disable llama.cpp" OFF)
 option(SDGUI_LOCAL_DISABLE "Disable local generation, this will disable the server component too" OFF)
 option(SDGUI_WINDOWLESS "Build without the main application" OFF)
-option(CMARK_GFM_PATH "Path to the cmark-gfm installation" "")
+
 
 if (SDGUI_LOCAL_DISABLE EQUAL ON)
     set(SDGUI_SERVER OFF)
@@ -122,7 +122,7 @@ if (NOT SDGUI_WINDOWLESS OR SDGUI_SERVER)
     include(cmake/wxWidgets.cmake)
     include(cmake/CpuFeatures.cmake)
     include(cmake/sockets-cpp.cmake)
-    include(cmake/cmark-gfm.cmake)
+    include(cmake/md4c.cmake)
 endif()
 
 
