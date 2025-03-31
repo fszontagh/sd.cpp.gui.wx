@@ -29,6 +29,17 @@ namespace sd_gui_utils {
         LLVM_TEXT_SENDER_SYSTEM,
         LLVM_TEXT_SENDER_SENDER_NONE
     };
+    inline const std::unordered_map<sd_gui_utils::llvmTextSender, std::string> llvmTextSenderMap = {
+        {sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_USER, "user"},
+        {sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT, "assistant"},
+        {sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SYSTEM, "system"},
+        {sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SENDER_NONE, "none"}};
+
+    inline const std::unordered_map<std::string, sd_gui_utils::llvmTextSender> llvmTextSenderMapReverse = {
+        {"user", sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_USER},
+        {"assistant", sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT},
+        {"system", sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SYSTEM},
+        {"none", sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SENDER_NONE}};
 
     struct llvmText {
         llvmTextSender sender = sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SENDER_NONE;
@@ -170,6 +181,5 @@ namespace sd_gui_utils {
                                                     next_message_id,
                                                     prompt_template);
     };
-
 };
 #endif  // LLVM_H

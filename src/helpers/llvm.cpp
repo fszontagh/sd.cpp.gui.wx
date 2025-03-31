@@ -217,7 +217,7 @@ llama_message_list sd_gui_utils::llvmMessage::GetChatMessages() {
     for (auto& [id, message] : this->messages) {
         llama_chat_message msg;
         msg.content = message.text.c_str();
-        msg.role    = (message.sender == llvmTextSender::USER) ? "user" : "assistant";
+        msg.role = sd_gui_utils::llvmTextSenderMap.at(message.sender).c_str();
         messages.emplace_back(msg);
     }
     return messages;

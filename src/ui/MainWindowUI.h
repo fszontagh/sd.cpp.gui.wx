@@ -332,7 +332,7 @@ private:
         for (const auto& [id, msg] : this->chat_currentMessage->GetMessages()) {
             wxString htmlMessage = wxString::Format("<p>%s <b>%s</b> %s</p>",
                                                     sd_gui_utils::formatTimestamp(msg.updated_at),
-                                                    (msg.sender == sd_gui_utils::llvmTextSender::USER) ? "User" : "Assistant",
+                                                    sd_gui_utils::llvmTextSenderMap.at(msg.sender),
                                                     msg.text);
 
             wxString html = sd_gui_utils::ChatMessageTemplate(htmlMessage);
