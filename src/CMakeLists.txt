@@ -17,6 +17,7 @@ set(SOURCES
     helpers/DataViewListManager.cpp
     helpers/ModelUiManager.cpp
     helpers/llvm.cpp
+    helpers/LlamaGuiHelper.cpp
 )
 
 add_executable(${PROJECT_BINARY_NAME} ${SOURCES})
@@ -45,7 +46,7 @@ target_include_directories(${PROJECT_BINARY_NAME} PUBLIC ${MD4C_INCLUDE_DIR})
 if (NOT WIN32)
     set(APPDEPENDS wx::base wx::core wx::xrc wx::richtext wx::webview wx::stc)
 else()
-    set(APPDEPENDS wxWidgets::wxWidgets)
+    set(APPDEPENDS wxWidgets::wxWidgets md4c::md4c-html)
     if (MSVC)
         set_target_properties(${PROJECT_BINARY_NAME} PROPERTIES
             COMPILE_FLAGS "/DwxUSE_RC_MANIFEST"

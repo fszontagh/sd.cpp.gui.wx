@@ -142,6 +142,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
                                                                              this->m_inpaintBrushSizeSlider->GetValue()));
 
     this->m_inpaintZoomSlider->SetLineSize(this->inpaintHelper->GetZoomStep());
+    this->llamaGuiHelper = std::make_shared<sd_gui_utils::LlamaGuiHelper>(this);
 
     this->InitPrompts();
 
@@ -216,7 +217,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
         } else {
             this->writeLog(wxString::Format(_("External process failed to start: %s"), processRef->GetFullCommand()));
         }
-        this->addChatPanel();
+
         // external process for stable diffusion
         // external process for llama
         wxArrayString llamaParams;
@@ -296,6 +297,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
 
         if (llamaRef->Start()) {
             this->writeLog(wxString::Format(_("Llama process just started: %s"), llamaRef->GetFullCommand()));
+            this->llamaGuiHelper->addChatPanel();
         } else {
             this->writeLog(wxString::Format(_("Llama process failed to start: %s"), llamaRef->GetFullCommand()));
         }
@@ -3915,7 +3917,10 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
     }
     // chat updated
     if (e.GetId() == 10001) {
-        this->UpdateChatGui();
+        {
+            std::lock_guard<std::mutex> lock(this->chat_mutex);
+            this->llamaGuiHelper->ProcessEvents();
+        }
         return;
     }
 
@@ -6368,6 +6373,11 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
     this->chat_currentMessage->SetModelPath(modelinfo->path);
     this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
+    const wxString prompt_template = this->m_chat_prompt_template->GetValue();
+    if (!prompt_template.empty() && prompt_template.Length() > 2) {
+        this->chat_currentMessage->SetPromptTemplate(prompt_template.ToStdString());
+    }
+
     for (auto helper : this->processHelpers) {
         if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
             helper->write(this->chat_currentMessage->toString());
@@ -6409,6 +6419,7 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
         this->chat_currentMessage->SetModelPath("");
         this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
+
         for (auto helper : this->processHelpers) {
             if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
                 helper->write(this->chat_currentMessage->toString());
@@ -6436,6 +6447,20 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
     this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_LOAD);
     this->chat_currentMessage->SetModelPath(modelinfo->path);
     this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
+
+
+    if (this->chat_currentMessage->Status(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED)) {
+        this->chat_currentMessage->SetNBatch(this->m_chat_n_batch->GetValue());
+        this->chat_currentMessage->SetNCtx(this->m_chat_n_ctx->GetValue());
+    }
+
+    const wxString user_template = this->m_chat_prompt_template->GetValue();
+
+    if (!user_template.empty()) {
+        this->chat_currentMessage->SetPromptTemplate(user_template.ToStdString());
+    }
+
+
     this->m_chatStatus->SetLabel(wxString::Format(_("Loading model: %s"), modelinfo->name));
 
     for (auto helper : this->processHelpers) {
@@ -6444,7 +6469,4 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
             break;
         }
     }
-};
-void MainWindowUI::UpdateChatGui() {
-    this->UpdateChatPanel(this->currentChatPanel);
 };

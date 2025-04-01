@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 
                     if (item.GetId() == 0) {
                         wxLogWarning("[EXTPROCESS] Got a wrong id: 0");
-                    } else if (item.GetUpdatedAt() != lastUpdate && item.GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING) {
+                    } else if (item.GetUpdatedAt() != lastUpdate && item.Status(sd_gui_utils::llvmstatus::LLVM_STATUS_PENDING)) {
                         sharedMemory->clear();
                         wxLogInfo("New message: %" PRIu64 " msg: %s\n", item.GetId(), j.dump(2));
                         lastUpdate = item.GetUpdatedAt();

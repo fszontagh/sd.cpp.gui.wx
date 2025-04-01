@@ -183,20 +183,14 @@ class mainUI : public wxFrame
 		wxFilePickerCtrl* m_imageInfoOpen;
 		wxBitmapButton* m_cleanImageInfo;
 		wxPanel* m_llama;
-		wxPanel* m_panel30;
-		wxStaticText* m_staticText731;
-		wxChoice* m_languageModel;
-		wxListbook* m_chatListBook;
-		wxStaticText* m_chatStatus;
-		wxTextCtrl* m_chatInput;
-		wxButton* m_sendChat;
+		wxSplitterWindow* m_splitter3;
 		wxPanel* m_panel29;
+		wxStaticText* m_staticText731;
+		wxScrolledWindow* m_scrolledWindow10;
 		wxStaticText* m_staticText78;
-		wxTextCtrl* m_chat_prompt_template;
 		wxStaticText* m_staticText79;
-		wxSpinCtrl* m_chat_n_batch;
 		wxStaticText* m_staticText80;
-		wxSpinCtrl* m_chat_n_ctx;
+		wxStaticText* m_staticText791;
 		wxPanel* m_models_panel;
 		wxTreeListCtrl* m_modelTreeList;
 		wxScrolledWindow* m_modelDetailsImageList;
@@ -392,6 +386,15 @@ class mainUI : public wxFrame
 		wxBoxSizer* bSizer117;
 		wxBoxSizer* imageInfoSizer;
 		wxBoxSizer* bSizer119;
+		wxChoice* m_languageModel;
+		wxListbook* m_chatListBook;
+		wxStaticText* m_chatStatus;
+		wxTextCtrl* m_chatInput;
+		wxButton* m_sendChat;
+		wxTextCtrl* m_chat_prompt_template;
+		wxSpinCtrl* m_chat_n_batch;
+		wxSpinCtrl* m_chat_n_ctx;
+		wxTreeListCtrl* m_chat_model_meta;
 		wxBoxSizer* bSizer891;
 		wxBoxSizer* bSizer1001;
 		wxPanel* m_fluxPanel;
@@ -404,6 +407,12 @@ class mainUI : public wxFrame
 		{
 			m_splitter4->SetSashPosition( 0 );
 			m_splitter4->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter4OnIdle ), NULL, this );
+		}
+
+		void m_splitter3OnIdle( wxIdleEvent& )
+		{
+			m_splitter3->SetSashPosition( 0 );
+			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 		}
 
 };

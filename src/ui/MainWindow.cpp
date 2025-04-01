@@ -951,31 +951,32 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1150;
 	bSizer1150 = new wxBoxSizer( wxHORIZONTAL );
 
+	m_splitter3 = new wxSplitterWindow( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+	m_splitter3->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
+
+	m_panel29 = new wxPanel( m_splitter3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer111;
 	bSizer111 = new wxBoxSizer( wxVERTICAL );
 
-	m_panel30 = new wxPanel( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	bSizer111->SetMinSize( wxSize( 500,-1 ) );
 	wxBoxSizer* bSizer114;
 	bSizer114 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText731 = new wxStaticText( m_panel30, wxID_ANY, _("Language model"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText731 = new wxStaticText( m_panel29, wxID_ANY, _("Language model"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText731->Wrap( -1 );
 	bSizer114->Add( m_staticText731, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 	wxArrayString m_languageModelChoices;
-	m_languageModel = new wxChoice( m_panel30, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_languageModelChoices, 0 );
+	m_languageModel = new wxChoice( m_panel29, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_languageModelChoices, 0 );
 	m_languageModel->SetSelection( 0 );
 	m_languageModel->Enable( false );
 
 	bSizer114->Add( m_languageModel, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
 
-	m_panel30->SetSizer( bSizer114 );
-	m_panel30->Layout();
-	bSizer114->Fit( m_panel30 );
-	bSizer111->Add( m_panel30, 0, wxEXPAND | wxALL, 5 );
+	bSizer111->Add( bSizer114, 0, wxEXPAND, 5 );
 
-	m_chatListBook = new wxListbook( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_TOP );
+	m_chatListBook = new wxListbook( m_panel29, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLB_TOP );
 	#ifdef __WXGTK__ // Small icon style not supported in GTK
 	wxListView* m_chatListBookListView = m_chatListBook->GetListView();
 	long m_chatListBookFlags = m_chatListBookListView->GetWindowStyleFlag();
@@ -991,20 +992,20 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	wxBoxSizer* bSizer1114;
 	bSizer1114 = new wxBoxSizer( wxVERTICAL );
 
-	m_chatStatus = new wxStaticText( m_llama, wxID_ANY, _("Please select a model"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_chatStatus = new wxStaticText( m_panel29, wxID_ANY, _("Please select a model"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_chatStatus->Wrap( -1 );
 	bSizer1114->Add( m_chatStatus, 0, wxALL|wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer1151;
 	bSizer1151 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_chatInput = new wxTextCtrl( m_llama, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_ENTER );
+	m_chatInput = new wxTextCtrl( m_panel29, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_PROCESS_ENTER );
 	m_chatInput->Enable( false );
 	m_chatInput->SetMinSize( wxSize( -1,60 ) );
 
 	bSizer1151->Add( m_chatInput, 1, wxALL|wxEXPAND, 5 );
 
-	m_sendChat = new wxButton( m_llama, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_sendChat = new wxButton( m_panel29, wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_sendChat->Enable( false );
 
 	bSizer1151->Add( m_sendChat, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
@@ -1016,58 +1017,79 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer111->Add( bSizer1114, 0, wxEXPAND, 5 );
 
 
-	bSizer1150->Add( bSizer111, 1, wxEXPAND, 5 );
-
-	m_panel29 = new wxPanel( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_panel29->SetMaxSize( wxSize( 300,-1 ) );
+	m_panel29->SetSizer( bSizer111 );
+	m_panel29->Layout();
+	bSizer111->Fit( m_panel29 );
+	m_scrolledWindow10 = new wxScrolledWindow( m_splitter3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
+	m_scrolledWindow10->SetScrollRate( 5, 5 );
+	m_scrolledWindow10->SetMaxSize( wxSize( 300,-1 ) );
 
 	wxBoxSizer* bSizer118;
 	bSizer118 = new wxBoxSizer( wxVERTICAL );
 
-	m_staticText78 = new wxStaticText( m_panel29, wxID_ANY, _("Prompt Template"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText78 = new wxStaticText( m_scrolledWindow10, wxID_ANY, _("Prompt Template"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
 	m_staticText78->Wrap( -1 );
 	bSizer118->Add( m_staticText78, 0, wxALL|wxEXPAND, 5 );
 
-	m_chat_prompt_template = new wxTextCtrl( m_panel29, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
+	m_chat_prompt_template = new wxTextCtrl( m_scrolledWindow10, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE );
+	m_chat_prompt_template->SetToolTip( _("Custom prompt template.\nPrimary for models which not stores template in their metadata.\nOnly supports simple Jinja format") );
+	m_chat_prompt_template->SetHelpText( _("Custom prompt template.\nPrimary for models which not stores template in their metadata.\nOnly supports simple Jinja format") );
 	m_chat_prompt_template->SetMinSize( wxSize( -1,200 ) );
 
 	bSizer118->Add( m_chat_prompt_template, 0, wxALL|wxEXPAND, 5 );
 
-	wxBoxSizer* bSizer119;
-	bSizer119 = new wxBoxSizer( wxHORIZONTAL );
+	wxBoxSizer* bSizer1192;
+	bSizer1192 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText79 = new wxStaticText( m_panel29, wxID_ANY, _("Batch size"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText79 = new wxStaticText( m_scrolledWindow10, wxID_ANY, _("Batch size"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText79->Wrap( -1 );
 	m_staticText79->SetMinSize( wxSize( 100,-1 ) );
 
-	bSizer119->Add( m_staticText79, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
+	bSizer1192->Add( m_staticText79, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_chat_n_batch = new wxSpinCtrl( m_panel29, wxID_ANY, wxT("64"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 8192, 64 );
-	bSizer119->Add( m_chat_n_batch, 1, wxALL, 5 );
+	m_chat_n_batch = new wxSpinCtrl( m_scrolledWindow10, wxID_ANY, wxT("99"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 8192, 99 );
+	bSizer1192->Add( m_chat_n_batch, 1, wxALL, 5 );
 
 
-	bSizer118->Add( bSizer119, 0, wxEXPAND, 5 );
+	bSizer118->Add( bSizer1192, 0, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer1200;
 	bSizer1200 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_staticText80 = new wxStaticText( m_panel29, wxID_ANY, _("Context size"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText80 = new wxStaticText( m_scrolledWindow10, wxID_ANY, _("Context size"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText80->Wrap( -1 );
 	m_staticText80->SetMinSize( wxSize( 100,-1 ) );
 
 	bSizer1200->Add( m_staticText80, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_chat_n_ctx = new wxSpinCtrl( m_panel29, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1024, 12288, 4096 );
+	m_chat_n_ctx = new wxSpinCtrl( m_scrolledWindow10, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1024, 12288, 4096 );
 	bSizer1200->Add( m_chat_n_ctx, 1, wxALL, 5 );
 
 
 	bSizer118->Add( bSizer1200, 0, wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer1191;
+	bSizer1191 = new wxBoxSizer( wxVERTICAL );
 
-	m_panel29->SetSizer( bSizer118 );
-	m_panel29->Layout();
-	bSizer118->Fit( m_panel29 );
-	bSizer1150->Add( m_panel29, 1, wxEXPAND | wxALL, 5 );
+	m_staticText791 = new wxStaticText( m_scrolledWindow10, wxID_ANY, _("Model's metadata"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL );
+	m_staticText791->Wrap( -1 );
+	bSizer1191->Add( m_staticText791, 0, wxALL|wxEXPAND, 5 );
+
+	m_chat_model_meta = new wxTreeListCtrl( m_scrolledWindow10, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTL_DEFAULT_STYLE );
+	m_chat_model_meta->AppendColumn( _("Key"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE|wxCOL_SORTABLE );
+	m_chat_model_meta->AppendColumn( _("Value"), wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, wxCOL_RESIZABLE );
+
+	bSizer1191->Add( m_chat_model_meta, 1, wxEXPAND | wxALL, 5 );
+
+
+	bSizer118->Add( bSizer1191, 1, wxEXPAND, 5 );
+
+
+	m_scrolledWindow10->SetSizer( bSizer118 );
+	m_scrolledWindow10->Layout();
+	bSizer118->Fit( m_scrolledWindow10 );
+	m_splitter3->SplitVertically( m_panel29, m_scrolledWindow10, 0 );
+	bSizer1150->Add( m_splitter3, 1, wxEXPAND, 5 );
 
 
 	m_llama->SetSizer( bSizer1150 );

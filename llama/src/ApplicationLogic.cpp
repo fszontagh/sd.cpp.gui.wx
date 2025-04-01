@@ -17,166 +17,42 @@ ApplicationLogic::~ApplicationLogic() {
 
 bool ApplicationLogic::loadLibrary() {
     try {
-        sd_dll.load();
+        this->sd_dll.load();
 
-        this->llama_model_meta_val_str = sd_dll.getFunction<LlamaModelMetaValStr>("llama_model_meta_val_str");
-        if (this->llama_model_meta_val_str == nullptr) {
-            wxLogError("Failed to load function: llama_model_meta_val_str");
-            return false;
-        }
-
-        this->llama_chat_builtin_templates = sd_dll.getFunction<LlamaChatBuiltInTemplates>("llama_chat_builtin_templates");
-        if (this->llama_chat_builtin_templates == nullptr) {
-            wxLogError("Failed to load function: llama_chat_builtin_templates");
-            return false;
-        }
-
-        this->llama_chat_apply_template = sd_dll.getFunction<LlamaChatApplyTemplate>("llama_chat_apply_template");
-        if (this->llama_chat_apply_template == nullptr) {
-            wxLogError("Failed to load function: llama_chat_apply_template");
-            return false;
-        }
-
-        this->llama_model_chat_template = sd_dll.getFunction<LlamaModelChatTemplate>("llama_model_chat_template");
-        if (this->llama_model_chat_template == nullptr) {
-            wxLogError("Failed to load function: llama_model_chat_template");
-            return false;
-        }
-
-        this->llama_kv_self_used_cells = sd_dll.getFunction<LlamaKvselfUsedCells>("llama_kv_self_used_cells");
-        if (this->llama_kv_self_used_cells == nullptr) {
-            wxLogError("Failed to load function: llama_kv_self_used_cells");
-            return false;
-        }
-        this->llama_n_ctx = sd_dll.getFunction<LlamaNCtx>("llama_n_ctx");
-        if (this->llama_n_ctx == nullptr) {
-            wxLogError("Failed to load function: llama_n_ctx");
-            return false;
-        }
-
-        this->llama_backend_init = sd_dll.getFunction<LlamaBackendInit>("llama_backend_init");
-        if (this->llama_backend_init == nullptr) {
-            wxLogError("Failed to load function: llama_backend_init");
-            return false;
-        }
-
-        this->ggml_backend_load_all = (GgmlBackendLoadAll)sd_dll.getFunction<GgmlBackendLoadAll>("ggml_backend_load_all");
-        if (this->ggml_backend_load_all == nullptr) {
-            wxLogError("Failed to load function: ggml_backend_load_all");
-            return false;
-        }
-
-        this->llama_init_from_model = sd_dll.getFunction<LlamaInitFromModelFunction>("llama_init_from_model");
-        if (this->llama_init_from_model == nullptr) {
-            wxLogError("Failed to load function: llama_init_from_model");
-            return false;
-        }
-        this->llama_free = sd_dll.getFunction<LlamaFreeFunction>("llama_free");
-        if (this->llama_free == nullptr) {
-            wxLogError("Failed to load function: llama_free");
-            return false;
-        }
-        this->llama_model_load_from_file = sd_dll.getFunction<LlamaModelLoadFromFile>("llama_model_load_from_file");
-        if (this->llama_model_load_from_file == nullptr) {
-            wxLogError("Failed to load function: llama_model_load_from_file");
-            return false;
-        }
-        this->llama_model_free = sd_dll.getFunction<LlamaModelFreeFunction>("llama_model_free");
-        if (this->llama_model_free == nullptr) {
-            wxLogError("Failed to load function: llama_model_free");
-            return false;
-        }
-        this->llama_backend_free = sd_dll.getFunction<LlamaBackendFreeFunction>("llama_backend_free");
-        if (this->llama_backend_free == nullptr) {
-            wxLogError("Failed to load function: llama_backend_free");
-            return false;
-        }
-        this->llama_sampler_chain_init = sd_dll.getFunction<LlamaSamplerChainInitFunction>("llama_sampler_chain_init");
-        if (this->llama_sampler_chain_init == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_chain_init");
-            return false;
-        }
-        this->llama_sampler_chain_default_params = sd_dll.getFunction<LlamaSamplerChainDefaultParams>("llama_sampler_chain_default_params");
-        if (this->llama_sampler_chain_default_params == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_chain_default_params");
-            return false;
-        }
-        this->llama_context_default_params = sd_dll.getFunction<LlamaContextDefaultParams>("llama_context_default_params");
-        if (this->llama_context_default_params == nullptr) {
-            wxLogError("Failed to load function: llama_context_default_params");
-            return false;
-        }
-        this->llama_model_default_params = sd_dll.getFunction<LlamaModelDefaultParams>("llama_model_default_params");
-        if (this->llama_model_default_params == nullptr) {
-            wxLogError("Failed to load function: llama_model_default_params");
-            return false;
-        }
-        this->llama_sampler_init_min_p = sd_dll.getFunction<LlamaSamplerInitMinP>("llama_sampler_init_min_p");
-        if (this->llama_sampler_init_min_p == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_init_min_p");
-            return false;
-        }
-        this->llama_sampler_chain_add = sd_dll.getFunction<LlamaSamplerChainAdd>("llama_sampler_chain_add");
-        if (this->llama_sampler_chain_add == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_chain_add");
-            return false;
-        }
-        this->llama_sampler_init_temp = sd_dll.getFunction<LlamaSamplerInitTemp>("llama_sampler_init_temp");
-        if (this->llama_sampler_init_temp == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_init_temp");
-            return false;
-        }
-        this->llama_sampler_init_dist = sd_dll.getFunction<LlamaSamplerInitDist>("llama_sampler_init_dist");
-        if (this->llama_sampler_init_dist == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_init_dist");
-            return false;
-        }
-        this->llama_sampler_free = sd_dll.getFunction<LlamaSamplerFree>("llama_sampler_free");
-        if (this->llama_sampler_free == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_free");
-            return false;
-        }
-
-        this->llama_model_get_vocab = sd_dll.getFunction<LlamaModelGetVocab>("llama_model_get_vocab");
-        if (this->llama_model_get_vocab == nullptr) {
-            wxLogError("Failed to load function: llama_model_get_vocab");
-            return false;
-        }
-
-        this->llama_batch_get_one = sd_dll.getFunction<LlamaBatchGetOne>("llama_batch_get_one");
-        if (this->llama_batch_get_one == nullptr) {
-            wxLogError("Failed to load function: llama_batch_get_one");
-            return false;
-        }
-
-        this->llama_tokenize = sd_dll.getFunction<LlamaTokenize>("llama_tokenize");
-        if (this->llama_tokenize == nullptr) {
-            wxLogError("Failed to load function: llama_tokenize");
-            return false;
-        }
-        this->llama_vocab_is_eog = sd_dll.getFunction<LlamaVocabIsEog>("llama_vocab_is_eog");
-        if (this->llama_vocab_is_eog == nullptr) {
-            wxLogError("Failed to load function: llama_vocab_is_eog");
-            return false;
-        }
-
-        this->llama_decode = sd_dll.getFunction<LlamaDecode>("llama_decode");
-        if (this->llama_decode == nullptr) {
-            wxLogError("Failed to load function: llama_decode");
-            return false;
-        }
-
-        this->llama_sampler_sample = sd_dll.getFunction<LlamaSamplerSample>("llama_sampler_sample");
-        if (this->llama_sampler_sample == nullptr) {
-            wxLogError("Failed to load function: llama_sampler_sample");
-            return false;
-        }
-
-        this->llama_token_to_piece = sd_dll.getFunction<LlamaTokenToPiece>("llama_token_to_piece");
-        if (this->llama_token_to_piece == nullptr) {
-            wxLogError("Failed to load function: llama_token_to_piece");
-            return false;
-        }
+        LOAD_LLAMA_FUNC(ggml_backend_load_all);
+        LOAD_LLAMA_FUNC(llama_backend_init);
+        LOAD_LLAMA_FUNC(llama_init_from_model);
+        LOAD_LLAMA_FUNC(llama_free);
+        LOAD_LLAMA_FUNC(llama_model_load_from_file);
+        LOAD_LLAMA_FUNC(llama_model_free);
+        LOAD_LLAMA_FUNC(llama_backend_free);
+        LOAD_LLAMA_FUNC(llama_sampler_chain_init);
+        LOAD_LLAMA_FUNC(llama_sampler_chain_default_params);
+        LOAD_LLAMA_FUNC(llama_context_default_params);
+        LOAD_LLAMA_FUNC(llama_model_default_params);
+        LOAD_LLAMA_FUNC(llama_sampler_init_min_p);
+        LOAD_LLAMA_FUNC(llama_sampler_chain_add);
+        LOAD_LLAMA_FUNC(llama_sampler_init_temp);
+        LOAD_LLAMA_FUNC(llama_sampler_init_dist);
+        LOAD_LLAMA_FUNC(llama_sampler_free);
+        LOAD_LLAMA_FUNC(llama_model_get_vocab);
+        LOAD_LLAMA_FUNC(llama_batch_get_one);
+        LOAD_LLAMA_FUNC(llama_tokenize);
+        LOAD_LLAMA_FUNC(llama_vocab_is_eog);
+        LOAD_LLAMA_FUNC(llama_decode);
+        LOAD_LLAMA_FUNC(llama_sampler_sample);
+        LOAD_LLAMA_FUNC(llama_token_to_piece);
+        LOAD_LLAMA_FUNC(llama_kv_self_used_cells);
+        LOAD_LLAMA_FUNC(llama_n_ctx);
+        LOAD_LLAMA_FUNC(llama_model_chat_template);
+        LOAD_LLAMA_FUNC(llama_chat_builtin_templates);
+        LOAD_LLAMA_FUNC(llama_model_meta_val_str);
+        LOAD_LLAMA_FUNC(llama_chat_apply_template);
+        LOAD_LLAMA_FUNC(llama_model_meta_key_by_index);
+        LOAD_LLAMA_FUNC(llama_model_meta_val_str_by_index);
+        LOAD_LLAMA_FUNC(llama_model_meta_count);
+        LOAD_LLAMA_FUNC(llama_model_desc);
+        LOAD_LLAMA_FUNC(llama_model_size);
         return true;
     } catch (const std::exception& e) {
         wxLogError("Failed to load lib: %s", e.what());
@@ -199,13 +75,14 @@ void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
             if (!this->loadModel()) {
                 this->UpdateCurrentSession();
             } else {
-                this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_LOADED);
+                this->currentMessage->SetStatus(sd_gui_utils::llvmModelStatus::LLVM_MODEL_STATUS_LOADED);
+                this->currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_LOAD);
                 this->UpdateCurrentSession();
             }
         } break;
         case sd_gui_utils::llvmCommand::LLVM_COMMAND_MODEL_UNLOAD: {
             this->unloadModel();
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_UNLOADED);
+            this->currentMessage->SetStatus(sd_gui_utils::llvmModelStatus::LLVM_MODEL_STATUS_UNLOADED);
             this->UpdateCurrentSession();
         } break;
         case sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT: {
@@ -221,6 +98,22 @@ void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
         case sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT_STREAM: {
             // Handle stream case if needed
         } break;
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_CTX_LOAD: {
+            this->loadContext();
+            if (this->ctx) {
+                this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_LOADED);
+            } else {
+                this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED);
+            }
+        } break;
+        case sd_gui_utils::llvmCommand::LLVM_COMMAND_CTX_UNLOAD: {
+            this->unloadContext();
+            if (this->ctx) {
+                this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_LOADED);
+            } else {
+                this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED);
+            }
+        } break;
     }
 }
 
@@ -228,6 +121,9 @@ bool ApplicationLogic::loadModel() {
     ggml_backend_load_all();
     // unload previous model if necessary
     if (this->model != nullptr && this->currentModelPath != this->currentMessage->GetModelPath()) {
+        if (this->ctx) {
+            this->unloadContext();
+        }
         this->unloadModel();
     }
     if (this->ctx) {
@@ -256,6 +152,31 @@ bool ApplicationLogic::loadModel() {
         }
         return false;
     }
+    this->currentMessage->ClearModelMeta();
+    // load meta data from the model
+    int32_t indexes = llama_model_meta_count(this->model);
+    for (int32_t i = 0; i < indexes; i++) {
+        int32_t key_size = llama_model_meta_key_by_index(this->model, i, nullptr, 0);
+        int32_t val_size = llama_model_meta_val_str_by_index(this->model, i, nullptr, 0);
+
+        if (key_size <= 0 || val_size <= 0) {
+            continue;
+        }
+
+        std::vector<char> key(key_size + 1, '\0');
+        std::vector<char> val(val_size + 1, '\0');
+
+        llama_model_meta_key_by_index(this->model, i, key.data(), key_size + 1);
+        llama_model_meta_val_str_by_index(this->model, i, val.data(), val_size + 1);
+        key[key_size] = '\0';
+        val[val_size] = '\0';
+
+        std::string key_str(key.data(), key_size);
+        std::string val_str(val.data(), val_size);
+
+        this->currentMessage->SetModelMeta(key_str, val_str);
+    }
+    wxLogInfo("Loaded %d meta data from model", indexes);
     return true;
 }
 
@@ -266,9 +187,12 @@ void ApplicationLogic::unloadModel() {
         this->modelLoaded      = false;
         this->currentModelPath = "";
     }
+    this->currentMessage->SetStatus(sd_gui_utils::llvmModelStatus::LLVM_MODEL_STATUS_UNLOADED);
 }
 
 bool ApplicationLogic::loadContext() {
+    this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_LOADING);
+    this->UpdateCurrentSession();
     if (!this->model) {
         {
             std::lock_guard<std::mutex> lock(this->mutex);
@@ -320,7 +244,8 @@ bool ApplicationLogic::loadContext() {
     llama_sampler_chain_add(this->smplr, llama_sampler_init_min_p(0.05f, 1));
     llama_sampler_chain_add(this->smplr, llama_sampler_init_temp(0.75f));
     llama_sampler_chain_add(this->smplr, llama_sampler_init_dist(1.0f));
-
+    this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_LOADED);
+    this->UpdateCurrentSession();
     wxLogInfo("Context loaded successfully.");
     return true;
 }
@@ -334,6 +259,7 @@ void ApplicationLogic::unloadContext() {
         this->llama_free(this->ctx);
         this->ctx = nullptr;
     }
+    this->currentMessage->SetStatus(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED);
 }
 void ApplicationLogic::generateText() {
     std::lock_guard<std::mutex> lock(this->mutex);
@@ -372,9 +298,9 @@ void ApplicationLogic::generateText() {
         return;
     }
 
-    if (this->tmpl == nullptr) {
-        this->FindAChatTemplate(this->tmpl);
-        if (tmpl == nullptr) {
+    if (this->tmpl.empty()) {
+        this->FindAChatTemplate();
+        if (this->tmpl.empty()) {
             REPORT_ERROR("Failed to find a chat template");
             this->unloadContext();
             this->unloadModel();
@@ -382,15 +308,24 @@ void ApplicationLogic::generateText() {
         }
     }
 
+    // check if template is a minja template
+    std::string formatted_prompt = "";
+
+    // const std::string minja = this->currentMessage->MessagesFromNinja(this->tmpl);
+    // if (!minja.empty()) {
+    //   formatted_prompt = minja;
+    //} else {
     // Format the message history
     std::vector<char> formatted(1024);
+    int new_len = -1;
+
     auto messages = this->currentMessage->GetChatMessages();
 
-    int new_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
+    new_len = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, formatted.data(), formatted.size());
 
     if (new_len > static_cast<int>(formatted.size())) {
         formatted.resize(new_len);
-        new_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), true, formatted.data(), formatted.size());
+        new_len = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, formatted.data(), formatted.size());
     }
 
     if (new_len < 0) {
@@ -398,7 +333,9 @@ void ApplicationLogic::generateText() {
         return;
     }
 
-    std::string formatted_prompt(formatted.begin(), formatted.begin() + new_len);
+    formatted_prompt = std::string(formatted.begin(), formatted.begin() + new_len);
+    //}
+
     wxLogInfo("Formatted prompt: %s", formatted_prompt.c_str());
 
     if (formatted_prompt.empty()) {
@@ -408,16 +345,9 @@ void ApplicationLogic::generateText() {
 
     // Generate response
     auto response = this->LlamaGenerate(formatted_prompt);
+
     this->currentMessage->UpdateOrCreateAssistantAnswer(response);
-
-    messages     = this->currentMessage->GetChatMessages();  // regenerate the history
-    int prev_len = llama_chat_apply_template(tmpl, messages.data(), messages.size(), false, nullptr, 0);
     wxLogInfo("Generated response: %s", response.c_str());
-
-    if (prev_len < 0) {
-        REPORT_ERROR("Failed to apply the chat template");
-        return;
-    }
 }
 
 // Utility function to report errors consistently
@@ -429,6 +359,8 @@ void ApplicationLogic::ReportError(const std::string& message, std::string file,
     }
     this->currentMessage->SetStatusMessage(message);
     this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
+    this->unloadContext();
+    this->unloadModel();
     this->UpdateCurrentSession();
 }
 
@@ -455,11 +387,11 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
         int n_ctx_used = llama_kv_self_used_cells(ctx);
 
         if (n_ctx_used + batch.n_tokens > n_ctx) {
-            int first_keep_tokens = 10;
-            int keep_tokens       = n_ctx / 2;
+            int first_keep_tokens = std::ceil(n_ctx * 0.2);
+            int keep_tokens       = n_ctx - batch.n_tokens;
 
-            if (keep_tokens < first_keep_tokens + 10) {
-                keep_tokens = first_keep_tokens + 10;
+            if (keep_tokens < first_keep_tokens) {
+                keep_tokens = first_keep_tokens;
             }
 
             // Keep only the first few and last few tokens
@@ -488,12 +420,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
         }
 
         if (llama_decode(ctx, batch)) {
-            wxLogError("Failed to decode the prompt");
-
-            this->currentMessage->SetStatusMessage("Failed to decode the prompt");
-            this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
-            this->UpdateCurrentSession();
-
+            REPORT_ERROR("Failed to decode the prompt");
             return response;
         }
 
@@ -525,5 +452,7 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
     return response;
 }
 void ApplicationLogic::UpdateCurrentSession() {
-    this->sharedMemoryManager->write(this->currentMessage->toString());
+    const auto msg = this->currentMessage->toString();
+    this->sharedMemoryManager->write(msg);
+    wxLogInfo("Sending: %s", msg.c_str());
 }

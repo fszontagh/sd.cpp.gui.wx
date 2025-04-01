@@ -49,6 +49,7 @@
 #include "wx/treelist.h"
 #include "wx/clipbrd.h"
 #include "wx/webview.h"
+#include "wx/dataview.h"
 #include "libs/json.hpp"
 
 #include "ver.hpp"
@@ -78,7 +79,7 @@
 #include "helpers/vcardinfo.hpp"
 #include "helpers/civitai.hpp"
 #include "helpers/llvm.h"
-
+#include "helpers/LlamaGuiHelper.hpp"
 
 #include "libs/SharedMemoryManager.h"
 #include "libs/subprocess.h"

@@ -141,6 +141,12 @@ public:
     void loadSamplerList();
     void loadTypeList();
 
+    void writeLog(const wxString& msg, bool writeIntoGui = true, bool debug = false);
+    void writeLog(const std::string& message);
+    std::shared_ptr<ModelInfo::Manager> ModelManager;
+    std::shared_ptr<sd_gui_utils::LlamaGuiHelper> llamaGuiHelper = nullptr;
+    std::shared_ptr<sd_gui_utils::llvmMessage> chat_currentMessage = nullptr;
+
 private:
     MainApp* mapp                                            = nullptr;
     std::unique_ptr<ModelUiManager> modelUiManager           = nullptr;
@@ -180,7 +186,6 @@ private:
     std::map<std::string, sd_gui_utils::generator_preset> Presets;
     std::map<std::string, sd_gui_utils::prompt_templates> PromptTemplates;
 
-    std::shared_ptr<ModelInfo::Manager> ModelManager;
     std::shared_ptr<QM::QueueManager> qmanager;
     std::mutex mutex;
     std::mutex logMutex;
@@ -193,7 +198,8 @@ private:
     wxBitmap ControlnetOrigPreviewBitmap;
     wxBitmap AppOrigPlaceHolderBitmap;
 
-    std::shared_ptr<sd_gui_utils::InPaintHelper> inpaintHelper = nullptr;
+    std::shared_ptr<sd_gui_utils::InPaintHelper> inpaintHelper   = nullptr;
+
 
     std::vector<sd_gui_utils::VoidHolder*> voids;
 
@@ -204,7 +210,6 @@ private:
     // external process
     // chat sessions
     std::mutex chat_mutex;
-    std::shared_ptr<sd_gui_utils::llvmMessage> chat_currentMessage = nullptr;
     // chat sessions
 
     sd_gui_utils::LastItemNotification lastItemNotification = {};
@@ -212,9 +217,6 @@ private:
     // std::ofstream logfile;
     wxFile logfile;
     std::unordered_map<wxString, wxString> lastImageInfoParams;
-
-    std::vector<wxPanel*> chatPanels;
-    wxPanel* currentChatPanel = nullptr;
 
     void OnCloseSettings(wxCloseEvent& event);
     void OnCloseCivitWindow(wxCloseEvent& event);
@@ -240,149 +242,10 @@ private:
     void ProcessStdOutEvent(const char* bytes, size_t n);
     void ProcessStdErrEvent(const char* bytes, size_t n);
     // external process callbacks
-    // chat updated event
-    void UpdateChatGui();
-    // chat update event
     void UpdateCurrentProgress(std::shared_ptr<QueueItem> item, const QueueEvents& event);
     void SetSchedulerByType(schedule_t schedule);
     void SetSamplerByType(sample_method_t sampler);
     void SetTypeByType(sd_type_t type);
-    // chat things
-    struct PanelData {
-        wxScrolledWindow* scrolledWindow;
-        wxBoxSizer* chatSizer;
-        std::shared_ptr<sd_gui_utils::llvmMessage> chatData = nullptr;
-        std::unordered_map<uint64_t, wxWebView*> messageWebViews;
-        std::unordered_map<uint64_t, uint64_t> messageLastUpdates;
-    };
-
-    inline void addChatPanel(const wxString& title = _("New Chat"), bool select = true) {
-        auto panel        = new wxPanel(this->m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-        wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-
-        auto scrolledWindow = new wxScrolledWindow(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
-        scrolledWindow->SetScrollRate(5, 5);
-
-        wxBoxSizer* chatSizer = new wxBoxSizer(wxVERTICAL);
-        scrolledWindow->SetSizer(chatSizer);
-        scrolledWindow->Layout();
-
-        sizer->Add(scrolledWindow, 1, wxEXPAND | wxALL, 5);
-        panel->SetSizer(sizer);
-        panel->Layout();
-
-        this->m_chatListBook->AddPage(panel, title, select);
-        this->currentChatPanel = panel;
-        this->chatPanels.push_back(panel);
-
-        auto* panelData = new PanelData{scrolledWindow, chatSizer, std::make_shared<sd_gui_utils::llvmMessage>()};
-        panel->SetClientData(panelData);
-    }
-
-    void UpdateChatPanel(wxPanel* chatPanel) {
-        std::lock_guard<std::mutex> lock(this->chat_mutex);
-        if (!chatPanel || !this->chat_currentMessage) {
-            return;
-        }
-
-        const auto status_msg = this->chat_currentMessage->GetStatusMessage();
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR) {
-            this->writeLog(status_msg, true);
-        }
-
-        if (this->m_chatStatus->GetLabel() != status_msg) {
-            this->m_chatStatus->SetLabel(status_msg);
-        }
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_LOADED) {
-            if (status_msg.empty()) {
-                this->m_chatStatus->SetLabel(_("Model loaded"));
-                auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());
-                if (model != nullptr) {
-                    this->writeLog(wxString::Format(_("Llama model loaded: %s"), model.name), true);
-                }
-                this->m_languageModel->Enable();
-                this->m_chatInput->Enable();
-                this->m_sendChat->Enable();
-            }
-            return;
-        }
-        if (this->chat_currentMessage->GetStatus() == sd_gui_utils::llvmstatus::LLVM_STATUS_MODEL_UNLOADED) {
-            if (status_msg.empty()) {
-                this->m_chatStatus->SetLabel(_("Model unloaded"));
-                auto model = this->ModelManager->getInfo(this->chat_currentMessage->GetModelPath());
-                if (model != nullptr) {
-                    this->writeLog(wxString::Format(_("Llama model unloaded: %s"), model.name), true);
-                }
-                this->m_languageModel->SetSelection(0);  // ensure the first is selected
-                this->m_languageModel->Enable();
-                this->m_chatInput->Disable();
-                this->m_sendChat->Disable();
-            }
-            return;
-        }
-
-        auto* panelData = static_cast<PanelData*>(chatPanel->GetClientData());
-        if (!panelData || !panelData->chatData)
-            return;
-
-        if (panelData->chatData->CheckUpdatedAt(this->chat_currentMessage->GetUpdatedAt())) {
-            return;
-        }
-
-        for (const auto& [id, msg] : this->chat_currentMessage->GetMessages()) {
-            wxString htmlMessage = wxString::Format("<p>%s <b>%s</b> %s</p>",
-                                                    sd_gui_utils::formatTimestamp(msg.updated_at),
-                                                    sd_gui_utils::llvmTextSenderMap.at(msg.sender),
-                                                    msg.text);
-
-            wxString html = sd_gui_utils::ChatMessageTemplate(htmlMessage);
-
-            auto it = panelData->messageWebViews.find(id);
-            if (it != panelData->messageWebViews.end()) {
-                if (panelData->messageLastUpdates.contains(id)) {
-                    if (panelData->messageLastUpdates[id] == msg.updated_at) {
-                        continue;
-                    }
-                }
-                std::cout << "Update: " << id << std::endl;
-                it->second->SetPage(html, wxT("/"));
-                panelData->messageLastUpdates[id] = msg.updated_at;
-                panelData->scrolledWindow->Scroll(0, panelData->scrolledWindow->GetVirtualSize().GetHeight());
-            } else {
-                wxWebView* newWebView = wxWebView::New(panelData->scrolledWindow, wxID_ANY);
-                newWebView->SetMinSize(wxSize(300, 100));
-                newWebView->Hide();
-                newWebView->SetPage(html, wxT("/"));
-                panelData->chatSizer->Add(newWebView, 0, wxEXPAND, 0);
-                panelData->messageWebViews[id]    = newWebView;
-                panelData->messageLastUpdates[id] = msg.updated_at;
-                std::cout << "Created: " << id << std::endl;
-                wxString jsGetHeight = "document.body.clientHeight.toString();";
-
-                newWebView->Bind(wxEVT_WEBVIEW_LOADED, [newWebView, jsGetHeight](wxWebViewEvent&) {
-                    wxString result;
-                    if (newWebView->RunScript(jsGetHeight, &result)) {
-                        long newHeight;
-                        if (result.ToLong(&newHeight) && newHeight > 0) {
-                            wxSize currentSize = newWebView->GetSize();
-                            newWebView->SetMinSize(wxSize(currentSize.GetWidth(), newHeight));
-                            newWebView->SetSize(wxSize(currentSize.GetWidth(), newHeight));
-                            if (!newWebView->IsShown()) {
-                                newWebView->Show();
-                            }
-                            newWebView->GetParent()->Layout();
-                        }
-                    }
-                });
-            }
-        }
-
-        panelData->chatSizer->Layout();
-        panelData->scrolledWindow->FitInside();
-    }
-
-    // chat things
-
     inline static size_t findLoraDistance(const wxString& text, size_t cursorPos) {
         const wxString pattern = "<lora:";
         wxString part          = text.SubString(0, cursorPos);
@@ -644,8 +507,6 @@ private:
 
     void initLog();
     void deInitLog();
-    void writeLog(const wxString& msg, bool writeIntoGui = true, bool debug = false);
-    void writeLog(const std::string& message);
 };
 
 #endif  // __MainWindowUI__
