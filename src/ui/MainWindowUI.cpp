@@ -6407,6 +6407,43 @@ void MainWindowUI::OnChatInputTextEnter(wxCommandEvent& event) {
     }
     event.Skip();
 };
+void MainWindowUI::OnChatInputKeyDown(wxKeyEvent& event) {
+    // check if ctrl + P pressed
+    if (event.ControlDown() && event.GetKeyCode() == 'P') {
+        this->llamaGuiHelper->PrintCurrentwebView();
+        event.Skip();
+    }
+
+    // this is not work's, just shows the non modified source
+    if (event.ControlDown() && event.GetKeyCode() == 'S') {
+        const auto content = this->llamaGuiHelper->GetCurrentWebviewSource();
+        if (content.empty()) {
+            event.Skip();
+            return;
+        }
+
+        // show a save file as.. dialog in the user's Documents directory and save the content as html file
+        wxString filename = wxFileSelector(
+            _("Save chat as HTML"),
+            wxStandardPaths::Get().GetDocumentsDir(),
+            wxString::Format("%s_chat_%" PRId64, wxString(PROJECT_NAME), wxDateTime::Now().GetTicks()),
+            wxT("html"),
+            "HTML files (*.html)|*.html",
+            wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+        if (filename.empty()) {
+            event.Skip();
+            return;
+        }
+        wxFile file;
+        if (file.Create(filename, true)) {
+            file.Write(content);
+            file.Close();
+        }
+        event.Skip();
+        return;
+    }
+    event.Skip();
+}
 void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
     event.Skip();
     const auto selection = this->m_languageModel->GetSelection();

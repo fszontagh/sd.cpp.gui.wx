@@ -26,6 +26,33 @@ namespace sd_gui_utils {
         void ChangeChatPanel(wxPanel* chatPanel);
         void ProcessEvents();
         void addChatPanel(const wxString& title = _("New Chat"), bool select = true);
+        inline const sd_gui_utils::LlamaGuiHelper::PanelData GetCurrentPanelData() {
+            if (!this->currentChatPanel) {
+                return {};
+            }
+            return *static_cast<sd_gui_utils::LlamaGuiHelper::PanelData*>(this->currentChatPanel->GetClientData());
+        };
+        inline void PrintCurrentwebView() {
+            if (!this->currentChatPanel) {
+                return;
+            }
+            auto panelData = static_cast<sd_gui_utils::LlamaGuiHelper::PanelData*>(this->currentChatPanel->GetClientData());
+            panelData->webView->Print();
+        }
+        inline const wxString GetCurrentWebviewSource() {
+            if (!this->currentChatPanel) {
+                return wxEmptyString;
+            }
+            auto panelData = static_cast<sd_gui_utils::LlamaGuiHelper::PanelData*>(this->currentChatPanel->GetClientData());
+            // panelData->webView->DeleteSelection();
+            // panelData->webView->SelectAll();
+            // const auto selection = panelData->webView->GetSelectedSource();
+            // panelData->webView->DeleteSelection();
+            // return panelData->webView->GetPageSource();
+            wxString output;
+            panelData->webView->RunScript(wxString("document.documentElement.outerHTML"), &output);
+            return output;
+        }
     };
 };
 

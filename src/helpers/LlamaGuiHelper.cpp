@@ -115,14 +115,8 @@ void sd_gui_utils::LlamaGuiHelper::addChatPanel(const wxString& title, bool sele
 
     auto* panelData = new PanelData{webView, this->parent->chat_currentMessage, {}};
     panel->SetClientData(panelData);
-    std::cout << "Chat panel added... " << std::endl;
-    // write into a /tmp/chat_messages.html the content of the html
-    const auto tmpFileName = "/tmp/chat_messages.html";
-    wxFile tmpFile;
-    tmpFile.Open(tmpFileName, wxFile::write);
-    tmpFile.Write(html);
-    tmpFile.Close();
-    std::cout << "Chat panel added, content saved into:  " << tmpFileName << std::endl;
+    const auto webviewInfo = webView->GetBackendVersionInfo();
+    std::cout << webviewInfo.ToString() << std::endl;
 };
 
 void sd_gui_utils::LlamaGuiHelper::ClearModelMetaInfo() {
@@ -198,6 +192,7 @@ void sd_gui_utils::LlamaGuiHelper::UpdateChat() {
                 if (msg.second.sender != sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_USER) {
                     text = sd_gui_utils::ConvertMarkdownToHtml(msg.second.text);
                 } else {
+                    text = sd_gui_utils::removeHTMLTags(text);
                     text = sd_gui_utils::nl2br(msg.second.text);
                 }
 

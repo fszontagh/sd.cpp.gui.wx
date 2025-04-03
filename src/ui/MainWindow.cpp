@@ -953,6 +953,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	m_splitter3 = new wxSplitterWindow( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
 	m_splitter3->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
+	m_splitter3->SetMinimumPaneSize( 200 );
 
 	m_panel29 = new wxPanel( m_splitter3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	wxBoxSizer* bSizer111;
@@ -1939,6 +1940,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_imageInfoOpen->Connect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
 	m_languageModel->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnLanguageModelSelect ), NULL, this );
+	m_chatInput->Connect( wxEVT_KEY_DOWN, wxKeyEventHandler( mainUI::OnChatInputKeyDown ), NULL, this );
 	m_chatInput->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
 	m_sendChat->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Connect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );
@@ -2077,6 +2079,7 @@ mainUI::~mainUI()
 	m_imageInfoOpen->Disconnect( wxEVT_COMMAND_FILEPICKER_CHANGED, wxFileDirPickerEventHandler( mainUI::OnImageInfoOpen ), NULL, this );
 	m_cleanImageInfo->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnCleanImageInfo ), NULL, this );
 	m_languageModel->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( mainUI::OnLanguageModelSelect ), NULL, this );
+	m_chatInput->Disconnect( wxEVT_KEY_DOWN, wxKeyEventHandler( mainUI::OnChatInputKeyDown ), NULL, this );
 	m_chatInput->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( mainUI::OnChatInputTextEnter ), NULL, this );
 	m_sendChat->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( mainUI::OnSendChat ), NULL, this );
 	m_modelTreeList->Disconnect( wxEVT_TREELIST_COLUMN_SORTED, wxTreeListEventHandler( mainUI::OnDataModelTreeColSorted ), NULL, this );

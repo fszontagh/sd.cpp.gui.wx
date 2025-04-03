@@ -35,15 +35,15 @@ namespace sd_gui_utils {
             << "html, body {\n"
             << "    padding: 0;\n"
             << "    margin: 0;\n"
-            << "    display: flex;\n"
-            << "    justify-content: center;\n"
             << "    background-color: rgb(" << bgColour.GetRed() << ", " << bgColour.GetGreen() << ", " << bgColour.GetBlue() << ");\n"
             << "    color: rgb(" << textColour.GetRed() << ", " << textColour.GetGreen() << ", " << textColour.GetBlue() << ");\n"
             << "    font-size: 12px;\n"
             << "    font-family: Arial, sans-serif;\n"
             << "}\n"
             << ".chat-container {\n"
+            << "    display: block;\n"
             << "    width: 100%;\n"
+            << "    height: 100%;\n"
             << "    padding: 0;\n"
             << "    margin: 0;\n"
             << "}\n"
@@ -52,9 +52,8 @@ namespace sd_gui_utils {
             << "    margin: 5px 0;\n"
             << "    border-radius: 5px;\n"
             << "    max-width: 80%;\n"
-            << "    min-width: 10%;\n"
+            << "    min-width: 30%;\n"
             << "    display: block;\n"
-            << "    border-radius: 5px;\n"
             << "    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n"
             << "    clear: both;\n"
             << "}\n"
@@ -70,11 +69,14 @@ namespace sd_gui_utils {
             << "    text-align: center;\n"
             << "    margin: 5px auto;\n"
             << "}\n"
-            << "code, pre {\n"
+            << "pre> code {\n"
             << "    background-color: rgb(" << highlightColour.GetRed() << ", " << highlightColour.GetGreen() << ", " << highlightColour.GetBlue() << ");\n"
-            << "    padding: 5px;\n"
-            << "    border-radius: 3px;\n"
+            << "    border: 1px solid rgb(" << borderColour.GetRed() << ", " << borderColour.GetGreen() << ", " << borderColour.GetBlue() << ");\n"
+            << "    padding: 4px;\n"
+            << "    display: inline-block;\n"
+            << "    border-radius: 8px;\n"
             << "    font-family: monospace;\n"
+            << "    word-wrap: normal;\n"
             << "}\n"
             << "hr {\n"
             << "    border: 1px solid rgb(" << borderColour.GetRed() << ", " << borderColour.GetGreen() << ", " << borderColour.GetBlue() << ");\n"
@@ -91,15 +93,17 @@ namespace sd_gui_utils {
         return css;
     }
 
+    inline static wxString removeHTMLTags(const wxString& input) {
+        wxString result = input;
+        wxRegEx tagPattern("(<[^>]*>)|(&[^;]*;)|([^<>]*)");
+        wxString replacementString = wxEmptyString;
+        tagPattern.ReplaceAll(&result, replacementString);
+        return result;
+    }
+
     inline static wxString nl2br(const wxString& input) {
-        wxString output;
-        for (size_t i = 0; i < input.size(); ++i) {
-            if (input[i] == '\n') {
-                output += "<br>";
-            } else {
-                output += input[i];
-            }
-        }
+        wxString output = input;
+        output.Replace(wxString("\n"), "<br/>", true);
         return output;
     }
 
@@ -200,16 +204,7 @@ namespace sd_gui_utils {
         //  nMessage.Replace("\n", "<br/>\n", true);
         const wxString script = R"(<script type="text/javascript">
 
-                    function escapeHTML(html) {
-                        const div = document.createElement('div');
-                        div.textContent = html;
-                        return div.innerHTML;
-                    }
-
                     function addMessage(role, content, id) {
-                        if (role == "user") {
-                            content = escapeHTML(content)
-                        }
                         const chatContainer = document.querySelector('.chat-container');
                         const newMessage = document.createElement('div');
                         newMessage.classList.add('message', role);
@@ -219,32 +214,22 @@ namespace sd_gui_utils {
                             <div class="content">${content}</div>
                         `;
                         chatContainer.appendChild(newMessage);
-                        window.scrollTo(0, document.body.scrollHeight);
+                        newMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
                     }
 
                     function updateMessageContent(id, newContent) {
                         const message = document.querySelector(`.message[data-id="${id}"]`);
                         if (message) {
                             message.querySelector('.content').innerHTML = newContent;
-                            window.scrollTo(0, document.body.scrollHeight);
+                            message.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
                     }
 
-
-                    document.addEventListener('contextmenu', function(event) {
-                        event.preventDefault();
-                    });
                     window.addEventListener('keydown', function(event) {
                         if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
                             event.preventDefault();
                         }
                     });
-                    window.onload = function() {
-                        history.pushState(null, null, window.location.href);
-                        window.onpopstate = function () {
-                            history.pushState(null, null, window.location.href);
-                        };
-                    };
 
                 </script>)";
         return wxString::Format("<!DOCTYPE html>\n<html>\n<head>\n<style type=\"text/css\">\n%s</style>\n\n%s\n</head>\n<body>\n<div class=\"chat-container\"></div></body>\n</html>", GenerateSystemCSS().c_str(), script);
