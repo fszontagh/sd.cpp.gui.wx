@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
                         appLogic.processMessage(item);
                     }
                 } catch (std::exception& e) {
-                    wxLogError("Cannot parse JSON message: %s", e.what());
+                    wxLogError("Cannot parse JSON message: %s (%s) %s:%d", e.what(), message, __FILE__, __LINE__);
                 }
             }
         } else {

@@ -60,6 +60,20 @@ bool ApplicationLogic::loadLibrary() {
     }
 }
 
+// Utility function to report errors consistently
+void ApplicationLogic::ReportError(const std::string& message, std::string file, int line) {
+    if (isDEBUG) {
+        wxLogError("%s:%d: %s", file.c_str(), line, message.c_str());
+    } else {
+        wxLogError("%s", message.c_str());
+    }
+    this->currentMessage->SetStatusMessage(message);
+    this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
+    this->unloadContext();
+    this->unloadModel();
+    this->UpdateCurrentSession();
+}
+
 void ApplicationLogic::processMessage(sd_gui_utils::llvmMessage& message) {
     if (!this->currentMessage) {
         this->currentMessage = std::make_shared<sd_gui_utils::llvmMessage>(std::move(message));
@@ -277,27 +291,6 @@ void ApplicationLogic::generateText() {
         return;
     }
 
-    // Get the latest user prompt from llvmMessage
-    std::string prompt = this->currentMessage->GetLatestUserPrompt();
-
-    // Tokenize input prompt
-    const bool is_first       = llama_kv_self_used_cells(this->ctx) == 0;
-    const int n_prompt_tokens = -this->llama_tokenize(this->vocab, prompt.c_str(), prompt.size(), nullptr, 0, is_first, true);
-    const auto ctx_size       = llama_n_ctx(this->ctx);
-
-    wxLogInfo("n_prompt_tokens: %d  ctx_size: %d n_batch: %d", n_prompt_tokens, ctx_size, this->currentMessage->GetNBatch());
-    // Check if the number of tokens exceeds the batch size
-    if (n_prompt_tokens > ctx_size) {
-        REPORT_ERROR("Prompt too long for the batch size");
-        return;
-    }
-
-    std::vector<llama_token> prompt_tokens(n_prompt_tokens);
-    if (this->llama_tokenize(this->vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0) {
-        REPORT_ERROR("Failed to tokenize prompt");
-        return;
-    }
-
     if (this->tmpl.empty()) {
         this->FindAChatTemplate();
         if (this->tmpl.empty()) {
@@ -307,136 +300,94 @@ void ApplicationLogic::generateText() {
             return;
         }
     }
+    wxLogInfo("Generating text with template: %s", this->tmpl.c_str());
 
-    // check if template is a minja template
-    std::string formatted_prompt = "";
+    const auto messages = this->currentMessage->GetChatMessages();
 
-    // const std::string minja = this->currentMessage->MessagesFromNinja(this->tmpl);
-    // if (!minja.empty()) {
-    //   formatted_prompt = minja;
-    //} else {
-    // Format the message history
-    std::vector<char> formatted(1024);
-    int new_len = -1;
+    wxLogInfo("Number of messages: %" PRIi64, messages.size());
 
-    auto messages = this->currentMessage->GetChatMessages();
-
-    new_len = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, formatted.data(), formatted.size());
-
-    if (new_len > static_cast<int>(formatted.size())) {
-        formatted.resize(new_len);
-        new_len = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, formatted.data(), formatted.size());
+    int newLen = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, this->formatted_messages.data(), this->formatted_messages.size());
+    if (newLen > static_cast<int>(this->formatted_messages.size())) {
+        // resize the output buffer `this->formatted_messages`
+        // and re-apply the chat template
+        this->formatted_messages.resize(newLen);
+        newLen = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, this->formatted_messages.data(), this->formatted_messages.size());
     }
-
-    if (new_len < 0) {
-        REPORT_ERROR("Failed to apply the chat template");
+    if (newLen < 0) {
+        REPORT_ERROR("Failed to apply chat template");
+        this->unloadContext();
+        this->unloadModel();
         return;
     }
 
-    formatted_prompt = std::string(formatted.begin(), formatted.begin() + new_len);
-    //}
+    wxLogInfo("Formatted messages size: %d", this->formatted_messages.size());
 
-    wxLogInfo("Formatted prompt: %s", formatted_prompt.c_str());
+    wxLogInfo("Prev len: %d, new len: %d", this->prevLen, newLen);
+    // only add the new chars
+    this->formatted_prompt.clear();
+    this->formatted_prompt.assign(this->formatted_messages.begin() + this->prevLen, this->formatted_messages.begin() + newLen);
 
-    if (formatted_prompt.empty()) {
-        REPORT_ERROR("Failed to apply the chat template");
+    // get the size first
+    const bool is_first    = llama_kv_self_used_cells(ctx) == 0;
+    const auto tokens_size = -llama_tokenize(this->vocab, this->formatted_prompt.data(), this->formatted_prompt.size(), nullptr, 0, is_first, true);
+    if (tokens_size < 0) {
+        REPORT_ERROR("Failed to tokenize. Tokens size: %d, prompt.size = %" PRIi64, tokens_size, this->formatted_prompt.size());
+        this->unloadContext();
+        this->unloadModel();
         return;
     }
+
+    this->promptTokens.resize(tokens_size);
+
+    if (llama_tokenize(this->vocab, this->formatted_prompt.data(), this->formatted_prompt.size(), this->promptTokens.data(), tokens_size, is_first, true) < 0) {
+        REPORT_ERROR("Failed to tokenize");
+        this->unloadContext();
+        this->unloadModel();
+        return;
+    }
+    wxLogInfo("New prompt's formatted tokens size: %" PRIi64, this->promptTokens.size());
 
     // Generate response
-    auto response = this->LlamaGenerate(formatted_prompt);
+    auto response = this->LlamaGenerate();
 
     this->currentMessage->UpdateOrCreateAssistantAnswer(response);
     wxLogInfo("Generated response: %s", response.c_str());
 }
 
-// Utility function to report errors consistently
-void ApplicationLogic::ReportError(const std::string& message, std::string file, int line) {
-    if (isDEBUG) {
-        wxLogError("%s:%d: %s", file.c_str(), line, message.c_str());
-    } else {
-        wxLogError("%s", message.c_str());
-    }
-    this->currentMessage->SetStatusMessage(message);
-    this->currentMessage->SetStatus(sd_gui_utils::llvmstatus::LLVM_STATUS_ERROR);
-    this->unloadContext();
-    this->unloadModel();
-    this->UpdateCurrentSession();
-}
-
-std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
+std::string ApplicationLogic::LlamaGenerate() {
     std::string response;
 
-    const bool is_first = llama_kv_self_used_cells(ctx) == 0;
-    wxLogInfo("Generating response for prompt: %s", prompt.c_str());
-    // tokenize the prompt
-    const int n_prompt_tokens = -llama_tokenize(vocab, prompt.c_str(), prompt.size(), NULL, 0, is_first, true);
-    std::vector<llama_token> prompt_tokens(n_prompt_tokens);
+    this->batch = llama_batch_get_one(this->promptTokens.data(), this->promptTokens.size());
 
-    if (llama_tokenize(vocab, prompt.c_str(), prompt.size(), prompt_tokens.data(), prompt_tokens.size(), is_first, true) < 0) {
-        REPORT_ERROR("Failed to tokenize prompt");
-        return "";
-    }
+    wxLogInfo("Batch n_tokens: %d", this->batch.n_tokens);
 
-    // prepare a batch for the prompt
-    llama_batch batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
-    llama_token new_token_id;
     while (true) {
-        // check if we have enough space in the context to evaluate this batch
         int n_ctx      = llama_n_ctx(ctx);
         int n_ctx_used = llama_kv_self_used_cells(ctx);
 
-        if (n_ctx_used + batch.n_tokens > n_ctx) {
-            int first_keep_tokens = std::ceil(n_ctx * 0.2);
-            int keep_tokens       = n_ctx - batch.n_tokens;
-
-            if (keep_tokens < first_keep_tokens) {
-                keep_tokens = first_keep_tokens;
-            }
-
-            // Keep only the first few and last few tokens
-            if ((int)prompt_tokens.size() > keep_tokens) {
-                std::vector<llama_token> trimmed_tokens;
-
-                // keep first N tokens
-                trimmed_tokens.insert(trimmed_tokens.end(),
-                                      prompt_tokens.begin(),
-                                      prompt_tokens.begin() + first_keep_tokens);
-
-                // Keep the last (keep_tokens - first_keep_tokens) tokens as well
-                trimmed_tokens.insert(trimmed_tokens.end(),
-                                      prompt_tokens.end() - (keep_tokens - first_keep_tokens),
-                                      prompt_tokens.end());
-
-                prompt_tokens = std::move(trimmed_tokens);
-            }
-
-            batch = llama_batch_get_one(prompt_tokens.data(), prompt_tokens.size());
-
-            wxLogWarning("Context truncated: keeping first %d and last %d tokens (total kept: %d)",
-                         first_keep_tokens,
-                         keep_tokens - first_keep_tokens,
-                         prompt_tokens.size());
-        }
-
-        if (llama_decode(ctx, batch)) {
-            REPORT_ERROR("Failed to decode the prompt");
+        if (n_ctx_used + this->promptTokens.size() >= n_ctx) {
+            wxLogWarning("Context full, stopping generation. Context used: %d, n_ctx: %d", n_ctx_used, n_ctx);
             return response;
         }
 
-        // sample the next token
-        new_token_id = llama_sampler_sample(this->smplr, ctx, -1);
+        // run the model
+        if (llama_decode(this->ctx, this->batch) < 0) {
+            REPORT_ERROR("Failed to decode");
+            return response;
+        }
 
-        // is it an end of generation?
-        if (llama_vocab_is_eog(vocab, new_token_id)) {
+        this->currToken = llama_sampler_sample(this->smplr, ctx, -1);
+        if (llama_vocab_is_eog(this->vocab, this->currToken)) {
             break;
         }
 
-        // convert the token to a string, print it and add it to the response
+        this->promptTokens.push_back(this->currToken);
+
+        // Convert the token to a string and add it to the response
         char buf[256];
-        int n = llama_token_to_piece(vocab, new_token_id, buf, sizeof(buf), 0, true);
+        int n = llama_token_to_piece(vocab, this->currToken, buf, sizeof(buf), 0, true);
         if (n < 0) {
-            REPORT_ERROR("Failed to convert the token to a string");
+            REPORT_ERROR("Failed to convert token to string");
             return "";
         }
         std::string piece(buf, n);
@@ -444,15 +395,32 @@ std::string ApplicationLogic::LlamaGenerate(const std::string& prompt) {
 
         this->currentMessage->UpdateOrCreateAssistantAnswer(piece);
         this->UpdateCurrentSession();
-
-        // prepare the next batch with the sampled token
-        batch = llama_batch_get_one(&new_token_id, 1);
+        this->batch = llama_batch_get_one(&this->currToken, 1);
     }
+
+    // Final batch processing if needed
+    if (!this->promptTokens.empty()) {
+        llama_batch batch = llama_batch_get_one(this->promptTokens.data(), this->promptTokens.size());
+        if (llama_decode(ctx, batch)) {
+            REPORT_ERROR("Failed to decode final batch of generated tokens");
+            return response;
+        }
+    }
+
+    const auto messages = this->currentMessage->GetChatMessages();
+    const auto plen     = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), false, nullptr, 0);
+    if (plen < 0) {
+        wxLogWarning("Failed to apply chat template on the end");
+        this->prevLen = 0;
+        return response;
+    }
+    this->prevLen = plen;
 
     return response;
 }
+
 void ApplicationLogic::UpdateCurrentSession() {
     const auto msg = this->currentMessage->toString();
     this->sharedMemoryManager->write(msg);
-    wxLogInfo("Sending: %s", msg.c_str());
+    // wxLogInfo("Sending: %s", msg.c_str());
 }

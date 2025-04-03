@@ -6371,7 +6371,12 @@ void MainWindowUI::OnSendChat(wxCommandEvent& event) {
 
     this->chat_currentMessage->SetCommandType(sd_gui_utils::llvmCommand::LLVM_COMMAND_GENERATE_TEXT);
     this->chat_currentMessage->SetModelPath(modelinfo->path);
-    this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
+
+    if (this->chat_currentMessage->Status(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED)) {
+        this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
+        this->chat_currentMessage->SetNCtx(this->m_chat_n_ctx->GetValue());
+        this->chat_currentMessage->SetNBatch(this->m_chat_n_batch->GetValue());
+    }
 
     const wxString prompt_template = this->m_chat_prompt_template->GetValue();
     if (!prompt_template.empty() && prompt_template.Length() > 2) {
@@ -6419,7 +6424,6 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
         this->chat_currentMessage->SetModelPath("");
         this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
-
         for (auto helper : this->processHelpers) {
             if (helper->IsAlive() && helper->GetProcessType() == ExternalProcessHelper::ProcessType::llama) {
                 helper->write(this->chat_currentMessage->toString());
@@ -6448,7 +6452,6 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
     this->chat_currentMessage->SetModelPath(modelinfo->path);
     this->chat_currentMessage->SetNThreads(this->mapp->cfg->n_threads);
 
-
     if (this->chat_currentMessage->Status(sd_gui_utils::llvmContextStatus::LLVM_CONTEXT_STATUS_UNLOADED)) {
         this->chat_currentMessage->SetNBatch(this->m_chat_n_batch->GetValue());
         this->chat_currentMessage->SetNCtx(this->m_chat_n_ctx->GetValue());
@@ -6459,7 +6462,6 @@ void MainWindowUI::OnLanguageModelSelect(wxCommandEvent& event) {
     if (!user_template.empty()) {
         this->chat_currentMessage->SetPromptTemplate(user_template.ToStdString());
     }
-
 
     this->m_chatStatus->SetLabel(wxString::Format(_("Loading model: %s"), modelinfo->name));
 

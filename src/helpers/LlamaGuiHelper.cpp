@@ -89,81 +89,23 @@ void sd_gui_utils::LlamaGuiHelper::ProcessEvents() {
         }
         return;
     }
-
-    this->UpdateChatPanel(this->currentChatPanel);
+    this->UpdateChat();
 };
-void sd_gui_utils::LlamaGuiHelper::UpdateChatPanel(wxPanel* chatPanel) {
-    auto* panelData = static_cast<PanelData*>(chatPanel->GetClientData());
-    if (!panelData || !panelData->chatData)
-        return;
 
-    if (panelData->chatData->CheckUpdatedAt(this->parent->chat_currentMessage->GetUpdatedAt())) {
-        return;
-    }
-
-    for (const auto& [id, msg] : this->parent->chat_currentMessage->GetMessages()) {
-        wxString htmlMessage = wxString::Format("<p>%s <b>%s</b> %s</p>",
-                                                sd_gui_utils::formatTimestamp(msg.updated_at),
-                                                sd_gui_utils::llvmTextSenderMap.at(msg.sender),
-                                                msg.text);
-
-        wxString html = sd_gui_utils::ChatMessageTemplate(htmlMessage);
-
-        auto it = panelData->messageWebViews.find(id);
-        if (it != panelData->messageWebViews.end()) {
-            if (panelData->messageLastUpdates.contains(id)) {
-                if (panelData->messageLastUpdates[id] == msg.updated_at) {
-                    continue;
-                }
-            }
-            std::cout << "Update: " << id << std::endl;
-            it->second->SetPage(html, wxT("/"));
-            panelData->messageLastUpdates[id] = msg.updated_at;
-            panelData->scrolledWindow->Scroll(0, panelData->scrolledWindow->GetVirtualSize().GetHeight());
-        } else {
-            wxWebView* newWebView = wxWebView::New(panelData->scrolledWindow, wxID_ANY);
-            newWebView->SetMinSize(wxSize(300, 100));
-            newWebView->Hide();
-            newWebView->SetPage(html, wxT("/"));
-            panelData->chatSizer->Add(newWebView, 0, wxEXPAND, 0);
-            panelData->messageWebViews[id]    = newWebView;
-            panelData->messageLastUpdates[id] = msg.updated_at;
-            std::cout << "Created: " << id << std::endl;
-            wxString jsGetHeight = "document.body.clientHeight.toString();";
-
-            newWebView->Bind(wxEVT_WEBVIEW_LOADED, [newWebView, jsGetHeight](wxWebViewEvent&) {
-                wxString result;
-                if (newWebView->RunScript(jsGetHeight, &result)) {
-                    long newHeight;
-                    if (result.ToLong(&newHeight) && newHeight > 0) {
-                        wxSize currentSize = newWebView->GetSize();
-                        newWebView->SetMinSize(wxSize(currentSize.GetWidth(), newHeight));
-                        newWebView->SetSize(wxSize(currentSize.GetWidth(), newHeight));
-                        if (!newWebView->IsShown()) {
-                            newWebView->Show();
-                        }
-                        newWebView->GetParent()->Layout();
-                    }
-                }
-            });
-        }
-    }
-
-    panelData->chatSizer->Layout();
-    panelData->scrolledWindow->FitInside();
-};
 void sd_gui_utils::LlamaGuiHelper::addChatPanel(const wxString& title, bool select) {
     auto panel        = new wxPanel(this->parent->m_chatListBook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-    auto scrolledWindow = new wxScrolledWindow(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL | wxVSCROLL);
-    scrolledWindow->SetScrollRate(5, 5);
+    auto* webView       = wxWebView::New(panel, wxID_ANY);
+    const wxString html = sd_gui_utils::ChatMessageTemplate();
+    webView->SetPage(html, wxT("/"));
+    webView->EnableContextMenu(false);
+    if (isDEBUG) {
+        webView->EnableAccessToDevTools(true);
+    }
+    webView->EnableHistory(false);
 
-    wxBoxSizer* chatSizer = new wxBoxSizer(wxVERTICAL);
-    scrolledWindow->SetSizer(chatSizer);
-    scrolledWindow->Layout();
-
-    sizer->Add(scrolledWindow, 1, wxEXPAND | wxALL, 5);
+    sizer->Add(webView, 1, wxEXPAND | wxALL, 0);
     panel->SetSizer(sizer);
     panel->Layout();
 
@@ -171,9 +113,18 @@ void sd_gui_utils::LlamaGuiHelper::addChatPanel(const wxString& title, bool sele
     this->currentChatPanel = panel;
     this->chatPanels.push_back(panel);
 
-    auto* panelData = new PanelData{scrolledWindow, chatSizer, std::make_shared<sd_gui_utils::llvmMessage>()};
+    auto* panelData = new PanelData{webView, this->parent->chat_currentMessage, {}};
     panel->SetClientData(panelData);
+    std::cout << "Chat panel added... " << std::endl;
+    // write into a /tmp/chat_messages.html the content of the html
+    const auto tmpFileName = "/tmp/chat_messages.html";
+    wxFile tmpFile;
+    tmpFile.Open(tmpFileName, wxFile::write);
+    tmpFile.Write(html);
+    tmpFile.Close();
+    std::cout << "Chat panel added, content saved into:  " << tmpFileName << std::endl;
 };
+
 void sd_gui_utils::LlamaGuiHelper::ClearModelMetaInfo() {
     auto treeView = this->parent->m_chat_model_meta;
     treeView->DeleteAllItems();
@@ -222,3 +173,47 @@ void sd_gui_utils::LlamaGuiHelper::InsertTreeItem(wxTreeListCtrl* treeView, wxTr
         }
     }
 }
+void sd_gui_utils::LlamaGuiHelper::UpdateChat() {
+    auto panelData = static_cast<PanelData*>(this->currentChatPanel->GetClientData());
+    if (!panelData || !panelData->webView) {
+        return;
+    }
+
+    if (panelData->chatData == nullptr) {
+        panelData->chatData = this->parent->chat_currentMessage;
+    }
+
+    for (const auto msg : this->parent->chat_currentMessage->GetMessages()) {
+        const wxString sender = sd_gui_utils::llvmTextSenderMap.at(msg.second.sender);
+        if (msg.second.text.empty()) {
+            continue;
+        }
+
+        if (panelData->messageLastUpdates.contains(msg.first)) {
+            if (panelData->messageLastUpdates[msg.first] != msg.second.updated_at) {
+                panelData->messageLastUpdates[msg.first] = msg.second.updated_at;
+
+                wxString text = msg.second.text;
+
+                if (msg.second.sender != sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_USER) {
+                    text = sd_gui_utils::ConvertMarkdownToHtml(msg.second.text);
+                } else {
+                    text = sd_gui_utils::nl2br(msg.second.text);
+                }
+
+                sd_gui_utils::UpdateChatMessage(panelData->webView, text, msg.first);
+                std::cout << "Updating message: " << msg.first << " sender: " << sender << std::endl;
+                return;
+            }
+        } else {
+            panelData->messageLastUpdates[msg.first] = msg.second.updated_at;
+
+            // there is no need markdown, just add the message
+            sd_gui_utils::AddMessage(panelData->webView, sender, msg.second.text, msg.first);
+            std::cout << "Adding message: " << msg.first << " sender: " << sender << std::endl;
+            return;
+        }
+    }
+
+    //
+};

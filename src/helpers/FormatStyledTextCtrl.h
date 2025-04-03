@@ -31,15 +31,44 @@ namespace sd_gui_utils {
 
         wxString css;
         css << "* {\n"
-            << "    font-size: 12px;\n"
-            << "    background-color: rgb(" << bgColour.GetRed() << ", " << bgColour.GetGreen() << ", " << bgColour.GetBlue() << ");\n"
-            << "    color: rgb(" << textColour.GetRed() << ", " << textColour.GetGreen() << ", " << textColour.GetBlue() << ");\n"
-            << "    font-family: sans-serif;\n"
-            << "    margin: 0; padding:0;\n"
             << "}\n"
-            << "html,body {\n"
+            << "html, body {\n"
             << "    padding: 0;\n"
             << "    margin: 0;\n"
+            << "    display: flex;\n"
+            << "    justify-content: center;\n"
+            << "    background-color: rgb(" << bgColour.GetRed() << ", " << bgColour.GetGreen() << ", " << bgColour.GetBlue() << ");\n"
+            << "    color: rgb(" << textColour.GetRed() << ", " << textColour.GetGreen() << ", " << textColour.GetBlue() << ");\n"
+            << "    font-size: 12px;\n"
+            << "    font-family: Arial, sans-serif;\n"
+            << "}\n"
+            << ".chat-container {\n"
+            << "    width: 100%;\n"
+            << "    padding: 0;\n"
+            << "    margin: 0;\n"
+            << "}\n"
+            << ".message {\n"
+            << "    padding: 8px 12px;\n"
+            << "    margin: 5px 0;\n"
+            << "    border-radius: 5px;\n"
+            << "    max-width: 80%;\n"
+            << "    min-width: 10%;\n"
+            << "    display: block;\n"
+            << "    border-radius: 5px;\n"
+            << "    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);\n"
+            << "    clear: both;\n"
+            << "}\n"
+            << ".assistant {\n"
+            << "    text-align: left;\n"
+            << "    float: left;\n"
+            << "}\n"
+            << ".user {\n"
+            << "    text-align: right;\n"
+            << "    float: right;\n"
+            << "}\n"
+            << ".system, .thinking {\n"
+            << "    text-align: center;\n"
+            << "    margin: 5px auto;\n"
             << "}\n"
             << "code, pre {\n"
             << "    background-color: rgb(" << highlightColour.GetRed() << ", " << highlightColour.GetGreen() << ", " << highlightColour.GetBlue() << ");\n"
@@ -60,6 +89,18 @@ namespace sd_gui_utils {
             << "}\n";
 
         return css;
+    }
+
+    inline static wxString nl2br(const wxString& input) {
+        wxString output;
+        for (size_t i = 0; i < input.size(); ++i) {
+            if (input[i] == '\n') {
+                output += "<br>";
+            } else {
+                output += input[i];
+            }
+        }
+        return output;
     }
 
     inline static wxString ConvertMarkdownToHtml(const wxString& markdown) {
@@ -118,11 +159,78 @@ namespace sd_gui_utils {
         }
     }
 
-    inline static wxString ChatMessageTemplate(const wxString& message) {
-        wxString nMessage = sd_gui_utils::ConvertMarkdownToHtml(message);
-        // replace all newline to <br/>\n
-        nMessage.Replace("\n", "<br/>\n", true);
-        const wxString script = R"(<script>
+    inline static wxString EscapeJavaScriptString(const wxString& input) {
+        wxString output = input;
+        output.Replace("\\", "\\\\");  // Escape backslash
+        output.Replace("'", "\\'");    // Escape single quote
+        output.Replace("\n", "\\n");   // Escape newline
+        output.Replace("\r", "\\r");   // Escape carriage return
+        return output;
+    }
+
+    inline static void UpdateChatMessage(wxWebView* webView, const wxString& message, uint64_t message_id) {
+        if (!webView) {
+            return;
+        }
+        wxString safeMessage = EscapeJavaScriptString(message);
+        wxString script      = wxString::Format("updateMessageContent(%" PRIi64 ", '%s');", message_id, safeMessage);
+        if (webView->RunScript(script)) {
+            std::cout << "Script executed successfully: " << script.ToStdString() << std::endl;
+        } else {
+            std::cout << "Script execution failed: " << script.ToStdString() << std::endl;
+        }
+    }
+
+    inline static void AddMessage(wxWebView* webView, const wxString& role, const wxString& content, uint64_t message_id) {
+        if (!webView) {
+            return;
+        }
+        wxString safeContent = EscapeJavaScriptString(content);
+        wxString script      = wxString::Format("addMessage('%s', '%s', %" PRIi64 ");", role, safeContent, message_id);
+        if (webView->RunScript(script)) {
+            std::cout << "Script executed successfully: " << script.ToStdString() << std::endl;
+        } else {
+            std::cout << "Script execution failed: " << script.ToStdString() << std::endl;
+        }
+    }
+
+    inline static wxString ChatMessageTemplate() {
+        // wxString nMessage = sd_gui_utils::ConvertMarkdownToHtml(message);
+        //  replace all newline to <br/>\n
+        //  nMessage.Replace("\n", "<br/>\n", true);
+        const wxString script = R"(<script type="text/javascript">
+
+                    function escapeHTML(html) {
+                        const div = document.createElement('div');
+                        div.textContent = html;
+                        return div.innerHTML;
+                    }
+
+                    function addMessage(role, content, id) {
+                        if (role == "user") {
+                            content = escapeHTML(content)
+                        }
+                        const chatContainer = document.querySelector('.chat-container');
+                        const newMessage = document.createElement('div');
+                        newMessage.classList.add('message', role);
+                        newMessage.setAttribute('data-id', id);
+                        newMessage.innerHTML = `
+                            <div class="title"></div>
+                            <div class="content">${content}</div>
+                        `;
+                        chatContainer.appendChild(newMessage);
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
+
+                    function updateMessageContent(id, newContent) {
+                        const message = document.querySelector(`.message[data-id="${id}"]`);
+                        if (message) {
+                            message.querySelector('.content').innerHTML = newContent;
+                            window.scrollTo(0, document.body.scrollHeight);
+                        }
+                    }
+
+
                     document.addEventListener('contextmenu', function(event) {
                         event.preventDefault();
                     });
@@ -137,8 +245,9 @@ namespace sd_gui_utils {
                             history.pushState(null, null, window.location.href);
                         };
                     };
+
                 </script>)";
-        return wxString::Format("<!DOCTYPE html>\n<html>\n<head>\n<style type=\"text/css\">\n%s</style>\n\n%s\n</head>\n<body>%s<!--Original msg: \n\n%s--></body>\n</html>", GenerateSystemCSS().c_str(), script, nMessage, message);
+        return wxString::Format("<!DOCTYPE html>\n<html>\n<head>\n<style type=\"text/css\">\n%s</style>\n\n%s\n</head>\n<body>\n<div class=\"chat-container\"></div></body>\n</html>", GenerateSystemCSS().c_str(), script);
     }
 
 };

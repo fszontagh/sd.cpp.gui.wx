@@ -24,16 +24,23 @@ public:
 
 private:
     SharedLibrary sd_dll;
-    std::string tempPath                                      = "";
-    std::shared_ptr<SharedMemoryManager> sharedMemoryManager  = nullptr;
-    std::atomic<bool> modelLoaded                             = {false};
-    std::string currentModelPath                              = "";
-    llama_model* model                                        = nullptr;
-    llama_sampler* smplr                                      = nullptr;
-    llama_context* ctx                                        = nullptr;
-    llama_vocab* vocab                                        = nullptr;
+    std::string tempPath                                     = "";
+    std::shared_ptr<SharedMemoryManager> sharedMemoryManager = nullptr;
+    std::atomic<bool> modelLoaded                            = {false};
+    std::string currentModelPath                             = "";
+    llama_model* model                                       = nullptr;
+    llama_sampler* smplr                                     = nullptr;
+    llama_context* ctx                                       = nullptr;
+    llama_vocab* vocab                                       = nullptr;
+    llama_token currToken;
+
     std::string tmpl                                          = "";
     std::shared_ptr<sd_gui_utils::llvmMessage> currentMessage = nullptr;
+    std::vector<char> formatted_messages                      = {};
+    std::vector<char> formatted_prompt                        = {};
+    std::vector<llama_token> promptTokens                     = {};
+    llama_batch batch;
+    int prevLen = 0;
 
     // llama functions
     DECLARE_LLAMA_FUNC(ggml_backend_load_all, void (*)());
@@ -94,31 +101,11 @@ private:
         if (!meta_value.empty()) {
             this->tmpl = meta_value;
         }
-        return;
-
-        // here maybe we can find the template by architecture??
-        /* if (tmpl == nullptr) {
-             std::vector<const char*> builtin_templates;
-             size_t num_templates = llama_chat_builtin_templates(nullptr, 0);
-             if (num_templates > 0) {
-                 builtin_templates.resize(num_templates);
-                 llama_chat_builtin_templates(builtin_templates.data(), num_templates);
-             }
-
-             for (const char* builtin_tmpl : builtin_templates) {
-                 wxLogInfo("Built in template: %s", builtin_tmpl);
-                 if (tmpl == nullptr) {
-                     tmpl = builtin_tmpl;
-                     return;
-                 }
-             }
-         }
-             */
     }
 
     void ReportError(const std::string& message, std::string file = __FILE__, int line = __LINE__);
 
-    std::string LlamaGenerate(const std::string& prompt);
+    std::string LlamaGenerate();
     inline void CleanUp() {
         this->unloadModel();
         this->unloadContext();
