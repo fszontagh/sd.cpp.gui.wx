@@ -182,7 +182,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
         this->processHelpers.push_back(processRef);
 
         processRef->onStart = [this, processRef]() {
-            this->writeLog(wxString::Format(_("External process started: %s"), processRef->GetFullCommand()));
+            this->writeLog(wxString::Format(_("Stable Diffusion process started: %s"), processRef->GetFullCommand()));
             auto* event = new wxThreadEvent();
             event->SetString(_("Stable diffusion is ready"));
             event->SetId(9999);
@@ -193,9 +193,9 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             if (restart) {
                 return;
             }
-            this->writeLog(_("Stable diffusion process stopped"));
+            this->writeLog(_("Stable Diffusion process stopped"));
             auto* event = new wxThreadEvent();
-            event->SetString(_("Stable Diffusion stopped"));
+            event->SetString(_("Stable Diffusion process stopped"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
