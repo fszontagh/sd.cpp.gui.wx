@@ -53,6 +53,12 @@ bool ApplicationLogic::loadLibrary() {
         LOAD_LLAMA_FUNC(llama_model_meta_count);
         LOAD_LLAMA_FUNC(llama_model_desc);
         LOAD_LLAMA_FUNC(llama_model_size);
+        LOAD_LLAMA_FUNC(llama_kv_self_clear);
+        LOAD_LLAMA_FUNC(llama_kv_self_seq_cp);
+        LOAD_LLAMA_FUNC(llama_kv_self_seq_add);
+        LOAD_LLAMA_FUNC(llama_kv_self_seq_rm);
+        LOAD_LLAMA_FUNC(llama_vocab_get_add_bos);
+
         return true;
     } catch (const std::exception& e) {
         wxLogError("Failed to load lib: %s", e.what());
@@ -191,6 +197,7 @@ bool ApplicationLogic::loadModel() {
         this->currentMessage->SetModelMeta(key_str, val_str);
     }
     wxLogInfo("Loaded %d meta data from model", indexes);
+
     return true;
 }
 
@@ -224,6 +231,7 @@ bool ApplicationLogic::loadContext() {
         }
         return false;
     }
+    this->add_bos_token = llama_vocab_get_add_bos(this->vocab);
 
     const auto n_batch = this->currentMessage->GetNBatch();
 
@@ -300,27 +308,19 @@ void ApplicationLogic::generateText() {
             return;
         }
     }
-    wxLogInfo("Generating text with template: %s", this->tmpl.c_str());
 
     const auto messages = this->currentMessage->GetChatMessages();
 
     wxLogInfo("Number of messages: %" PRIi64, messages.size());
 
-    int newLen = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, this->formatted_messages.data(), this->formatted_messages.size());
-    if (newLen > static_cast<int>(this->formatted_messages.size())) {
-        // resize the output buffer `this->formatted_messages`
-        // and re-apply the chat template
-        this->formatted_messages.resize(newLen);
-        newLen = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), true, this->formatted_messages.data(), this->formatted_messages.size());
-    }
+    const auto newLen = this->ApplyTemplate(this->tmpl, messages, this->formatted_messages);
+
     if (newLen < 0) {
         REPORT_ERROR("Failed to apply chat template");
         this->unloadContext();
         this->unloadModel();
         return;
     }
-
-    wxLogInfo("Formatted messages size: %d", this->formatted_messages.size());
 
     wxLogInfo("Prev len: %d, new len: %d", this->prevLen, newLen);
     // only add the new chars
@@ -351,7 +351,6 @@ void ApplicationLogic::generateText() {
     auto response = this->LlamaGenerate();
 
     this->currentMessage->UpdateOrCreateAssistantAnswer(response);
-    wxLogInfo("Generated response: %s", response.c_str());
 }
 
 std::string ApplicationLogic::LlamaGenerate() {
@@ -361,13 +360,26 @@ std::string ApplicationLogic::LlamaGenerate() {
 
     wxLogInfo("Batch n_tokens: %d", this->batch.n_tokens);
 
-    while (true) {
-        int n_ctx      = llama_n_ctx(ctx);
-        int n_ctx_used = llama_kv_self_used_cells(ctx);
+    std::vector<llama_token> generatedTokens;
+    int n_ctx      = llama_n_ctx(ctx);
+    int n_ctx_used = llama_kv_self_used_cells(ctx);
+    wxLogInfo("n_ctx: %d, n_ctx_used: %d", n_ctx, n_ctx_used);
 
-        if (n_ctx_used + this->promptTokens.size() >= n_ctx) {
-            wxLogWarning("Context full, stopping generation. Context used: %d, n_ctx: %d", n_ctx_used, n_ctx);
-            return response;
+    bool overflowed = false;
+    while (true) {
+        const int n_ctx      = llama_n_ctx(ctx);
+        const int n_ctx_used = llama_kv_self_used_cells(ctx);
+        const int n_keep     = static_cast<int>(std::round(n_ctx * 0.9)) + this->add_bos_token;
+        const int n_left     = n_ctx - n_ctx_used;
+        wxLogInfo("n_ctx: %d, n_ctx_used: %d", n_ctx, n_ctx_used);
+
+        if (n_ctx_used >= n_keep) {
+            const int n_discard = n_ctx - n_keep;
+            // copy the current context intpo another sequence
+            llama_kv_self_seq_cp(ctx, 0, 1, -1, -1);  // copy everything from current seq to tmp seq
+            llama_kv_self_seq_rm(ctx, 0, n_keep, n_keep + n_discard);
+            llama_kv_self_seq_add(ctx, 0, n_keep + n_discard, n_left, -n_discard);  // allign
+            overflowed = true;
         }
 
         // run the model
@@ -381,7 +393,7 @@ std::string ApplicationLogic::LlamaGenerate() {
             break;
         }
 
-        this->promptTokens.push_back(this->currToken);
+        generatedTokens.push_back(this->currToken);
 
         // Convert the token to a string and add it to the response
         char buf[256];
@@ -397,24 +409,22 @@ std::string ApplicationLogic::LlamaGenerate() {
         this->UpdateCurrentSession();
         this->batch = llama_batch_get_one(&this->currToken, 1);
     }
+    if (overflowed) {
+        llama_kv_self_seq_cp(ctx, 1, 0, 0, -1);
+        llama_kv_self_seq_rm(ctx, 1, -1, -1);
+        overflowed = false;
+    }
 
-    // Final batch processing if needed
-    if (!this->promptTokens.empty()) {
-        llama_batch batch = llama_batch_get_one(this->promptTokens.data(), this->promptTokens.size());
-        if (llama_decode(ctx, batch)) {
-            REPORT_ERROR("Failed to decode final batch of generated tokens");
-            return response;
+    if (this->prevLen == 0) {
+        const auto messages = this->currentMessage->GetChatMessages();
+        const auto plen     = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), false, nullptr, 0);
+        if (plen < 0) {
+            wxLogWarning("Failed to apply chat template on the end");
+            this->prevLen = 0;
+        } else {
+            this->prevLen = plen;
         }
     }
-
-    const auto messages = this->currentMessage->GetChatMessages();
-    const auto plen     = llama_chat_apply_template(this->tmpl.c_str(), messages.data(), messages.size(), false, nullptr, 0);
-    if (plen < 0) {
-        wxLogWarning("Failed to apply chat template on the end");
-        this->prevLen = 0;
-        return response;
-    }
-    this->prevLen = plen;
 
     return response;
 }

@@ -40,7 +40,8 @@ private:
     std::vector<char> formatted_prompt                        = {};
     std::vector<llama_token> promptTokens                     = {};
     llama_batch batch;
-    int prevLen = 0;
+    int prevLen        = 0;
+    bool add_bos_token = true;
 
     // llama functions
     DECLARE_LLAMA_FUNC(ggml_backend_load_all, void (*)());
@@ -77,6 +78,11 @@ private:
     DECLARE_LLAMA_FUNC(llama_model_meta_count, int32_t (*)(const llama_model* model));
     DECLARE_LLAMA_FUNC(llama_model_desc, int32_t (*)(const llama_model* model, char* buf, size_t buf_size));
     DECLARE_LLAMA_FUNC(llama_model_size, uint64_t (*)(const llama_model* model));
+    DECLARE_LLAMA_FUNC(llama_kv_self_clear, void (*)(struct llama_context* ctx));
+    DECLARE_LLAMA_FUNC(llama_kv_self_seq_cp, void (*)(struct llama_context* ctx, llama_seq_id seq_id_src, llama_seq_id seq_id_dst, llama_pos p0, llama_pos p1));
+    DECLARE_LLAMA_FUNC(llama_kv_self_seq_add, void (*)(struct llama_context* ctx, llama_seq_id seq_id, llama_pos p0, llama_pos p1, llama_pos delta));
+    DECLARE_LLAMA_FUNC(llama_kv_self_seq_rm, void (*)(struct llama_context* ctx, llama_seq_id seq_id, llama_pos p0, llama_pos p1));
+    DECLARE_LLAMA_FUNC(llama_vocab_get_add_bos, bool (*)(const struct llama_vocab* vocab));
 
     typedef std::vector<llama_chat_message> llama_message_list;
     std::mutex mutex;
@@ -113,6 +119,15 @@ private:
             std::lock_guard<std::mutex> lock(this->mutex);
             this->currentMessage = nullptr;
         }
+    }
+    inline int ApplyTemplate(const std::string& template_str, const std::vector<llama_chat_message> messages, std::vector<char>& buf) {
+        int newLen = llama_chat_apply_template(template_str.c_str(), messages.data(), messages.size(), true, buf.data(), buf.size());
+
+        if (newLen > static_cast<int>(buf.size())) {
+            buf.resize(newLen);
+            newLen = llama_chat_apply_template(template_str.c_str(), messages.data(), messages.size(), true, buf.data(), buf.size());
+        }
+        return newLen;
     }
 };
 

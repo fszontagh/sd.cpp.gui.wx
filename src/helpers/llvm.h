@@ -57,9 +57,18 @@ namespace sd_gui_utils {
         llvmTextSender sender = sd_gui_utils::llvmTextSender::LLVM_TEXT_SENDER_SENDER_NONE;
         std::string text      = "";
         uint64_t updated_at   = 0;
+        uint64_t id           = 0;
+        bool is_deleted       = false;
+        size_t tokens_size    = 0;
 
         void UpdateText(const std::string& str) {
             this->text.append(str);
+            this->updated_at = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   std::chrono::system_clock::now().time_since_epoch())
+                                   .count();
+        }
+        void Delete(bool deleted = true) {
+            this->is_deleted = deleted;
             this->updated_at = std::chrono::duration_cast<std::chrono::milliseconds>(
                                    std::chrono::system_clock::now().time_since_epoch())
                                    .count();
@@ -68,12 +77,15 @@ namespace sd_gui_utils {
             this->sender     = t.sender;
             this->text       = t.text;
             this->updated_at = t.updated_at;
+            this->is_deleted = t.is_deleted;
         }
     };
     inline void to_json(nlohmann ::json& nlohmann_json_j, const llvmText& nlohmann_json_t) {
         nlohmann_json_j["sender"]     = sd_gui_utils::llvmTextSenderMap.at(nlohmann_json_t.sender);
         nlohmann_json_j["text"]       = nlohmann_json_t.text;
         nlohmann_json_j["updated_at"] = nlohmann_json_t.updated_at;
+        nlohmann_json_j["id"]         = nlohmann_json_t.id;
+        nlohmann_json_j["is_deleted"] = nlohmann_json_t.is_deleted;
     }
     inline void from_json(const nlohmann ::json& nlohmann_json_j, llvmText& nlohmann_json_t) {
         const llvmText nlohmann_json_default_obj{};
@@ -81,6 +93,8 @@ namespace sd_gui_utils {
         nlohmann_json_t.sender     = sd_gui_utils::llvmTextSenderMapReverse.at(sender);
         nlohmann_json_t.text       = nlohmann_json_j.value("text", nlohmann_json_default_obj.text);
         nlohmann_json_t.updated_at = nlohmann_json_j.value("updated_at", nlohmann_json_default_obj.updated_at);
+        nlohmann_json_t.id         = nlohmann_json_j.value("id", nlohmann_json_default_obj.id);
+        nlohmann_json_t.is_deleted = nlohmann_json_j.value("is_deleted", nlohmann_json_default_obj.is_deleted);
     }
     struct llvmModel {
         sd_gui_utils::llvmModelStatus status    = sd_gui_utils::llvmModelStatus::LLVM_MODEL_STATUS_UNLOADED;
@@ -160,13 +174,13 @@ namespace sd_gui_utils {
 
         // Message management
         void Update(const sd_gui_utils::llvmMessage& other);
-        std::map<uint64_t, sd_gui_utils::llvmText> GetMessages();
-        void InsertMessage(const sd_gui_utils::llvmText& message, uint64_t id = 0);
+        std::map<uint64_t, sd_gui_utils::llvmText> GetMessages(int first = -1, int last = -1);
+        uint64_t InsertMessage(sd_gui_utils::llvmText& message, uint64_t id = 0);
         sd_gui_utils::llvmText GetMessage(uint64_t id);
         uint64_t GetNextMessageId();
         const sd_gui_utils::llvmText GetLatestMessage();
-        void UpdateOrCreateAssistantAnswer(const std::string& str);
-        void AppendUserPrompt(const std::string& str);
+        uint64_t UpdateOrCreateAssistantAnswer(const std::string& str);
+        uint64_t AppendUserPrompt(const std::string& str);
         const std::string GetLatestUserPrompt();
 
         // ID management
@@ -261,6 +275,20 @@ namespace sd_gui_utils {
                 return "";
             }
             return this->model.meta[key];
+        }
+        inline void RemoveMessages(std::vector<uint64_t> ids, std::function<bool(const sd_gui_utils::llvmText&)> callback = nullptr /* lambda callback*/) {
+            std::lock_guard<std::mutex> lock(mutex);
+            for (auto& id : ids) {
+                if (this->messages.find(id) == this->messages.end()) {
+                    continue;
+                }
+                if (!callback) {
+                    this->messages.at(id).Delete();
+                }
+                if (callback && callback(this->messages.at(id))) {
+                    this->messages.at(id).Delete();
+                }
+            }
         }
 #else
         [[nodiscard]]

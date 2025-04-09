@@ -177,8 +177,8 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             EPROCESS_BINARY_NAME,
             ExternalProcessHelper::ProcessType::diffuser,
             sdParams,
-            SHARED_MEMORY_PATH,
-            SHARED_MEMORY_SIZE);
+            SHARED_MEMORY_PATH_DIFFUSER,
+            SHARED_MEMORY_SIZE_DIFFUSER);
         this->processHelpers.push_back(processRef);
 
         processRef->onStart = [this, processRef]() {
@@ -3821,7 +3821,7 @@ void MainWindowUI::StartGeneration(std::shared_ptr<QueueItem> myJob) {
                     this->qmanager->SetStatus(QueueStatus::PENDING, myJob);
                     nlohmann::json j = myJob->ConvertToSharedMemory();
                     std::string msg  = j.dump();
-                    p->write(wxString(msg.data(), msg.size()));
+                    p->write(msg);
                 } catch (const std::exception& e) {
                     std::cerr << __FILE__ << ":" << __LINE__ << e.what() << std::endl;
                 }

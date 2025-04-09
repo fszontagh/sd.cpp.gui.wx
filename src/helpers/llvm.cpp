@@ -16,17 +16,53 @@ void sd_gui_utils::llvmMessage::Update(const llvmMessage& other) {
     this->next_message_id = other.next_message_id;
     this->prompt_template = other.prompt_template;
 }
-std::map<uint64_t, sd_gui_utils::llvmText> sd_gui_utils::llvmMessage::GetMessages() {
+std::map<uint64_t, sd_gui_utils::llvmText> sd_gui_utils::llvmMessage::GetMessages(int first, int last) {
     std::lock_guard<std::mutex> lock(mutex);
-    return this->messages;
+
+    std::vector<std::pair<uint64_t, sd_gui_utils::llvmText>> validMessages;
+
+    for (const auto& [id, message] : this->messages) {
+        if (!message.is_deleted) {
+            validMessages.emplace_back(id, message);
+        }
+    }
+
+    std::sort(validMessages.begin(), validMessages.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    size_t total = validMessages.size();
+    std::map<uint64_t, sd_gui_utils::llvmText> result;
+
+    if (total == 0) {
+        return result;
+    }
+
+    size_t first_count = (first > 0) ? std::min<size_t>(first, total) : 0;
+    size_t last_count  = (last > 0) ? std::min<size_t>(last, total) : 0;
+
+    size_t last_start = (last_count > 0) ? total - last_count : 0;
+
+    for (size_t i = 0; i < first_count; ++i) {
+        const auto& [id, msg] = validMessages[i];
+        result[id]            = msg;
+    }
+
+    for (size_t i = last_start; i < total; ++i) {
+        const auto& [id, msg] = validMessages[i];
+        result[id]            = msg;
+    }
+
+    return result;
 }
 
-void sd_gui_utils::llvmMessage::InsertMessage(const llvmText& message, uint64_t id) {
+uint64_t sd_gui_utils::llvmMessage::InsertMessage(llvmText& message, uint64_t id) {
     std::lock_guard<std::mutex> lock(mutex);
     if (id == 0) {
         id = this->next_message_id++;
     }
+    message.id         = id;
     this->messages[id] = message;
+    return id;
 }
 sd_gui_utils::llvmText sd_gui_utils::llvmMessage::GetMessage(uint64_t id) {
     std::lock_guard<std::mutex> lock(mutex);
@@ -130,7 +166,7 @@ int sd_gui_utils::llvmMessage::GetNBatch() {
 #ifdef stablediffusiongui_llama
 void sd_gui_utils::llvmMessage::SetStatusMessage(const std::string& msg) {
     std::lock_guard<std::mutex> lock(mutex);
-    if (this->status_message == msg)  {
+    if (this->status_message == msg) {
         return;
     }
     this->status_message = msg;
@@ -180,15 +216,17 @@ const sd_gui_utils::llvmText sd_gui_utils::llvmMessage::GetLatestMessage() {
     return this->messages.rbegin()->second;
 }
 
-void sd_gui_utils::llvmMessage::AppendUserPrompt(const std::string& str) {
+uint64_t sd_gui_utils::llvmMessage::AppendUserPrompt(const std::string& str) {
     std::lock_guard<std::mutex> lock(mutex);
     if (str.empty()) {
-        return;
+        return -1;
     }
     auto t = llvmText{llvmTextSender::LLVM_TEXT_SENDER_USER};
     t.UpdateText(str);
-    this->messages[this->next_message_id++] = t;
-    this->updated_at                        = this->GetCurrentUnixTimeStamp();
+    t.id                 = this->next_message_id++;
+    this->messages[t.id] = t;
+    this->updated_at     = this->GetCurrentUnixTimeStamp();
+    return t.id;
 }
 
 std::string sd_gui_utils::llvmMessage::toString(const int indent) {
@@ -202,23 +240,27 @@ std::string sd_gui_utils::llvmMessage::toString(const int indent) {
     }
 }
 
-void sd_gui_utils::llvmMessage::UpdateOrCreateAssistantAnswer(const std::string& str) {
+uint64_t sd_gui_utils::llvmMessage::UpdateOrCreateAssistantAnswer(const std::string& str) {
     std::lock_guard<std::mutex> lock(mutex);
-
+    uint64_t id = -1;
     if (this->messages.empty() || str.empty()) {
-        return;
+        return id;
     }
 
     auto last = this->messages.rbegin();
     if (last->second.sender == llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT) {
         last->second.UpdateText(str);
+        id = last->second.id;
     } else {
+        id     = this->next_message_id++;
         auto t = llvmText{llvmTextSender::LLVM_TEXT_SENDER_ASSISTANT};
         t.UpdateText(str);
-        this->messages[this->next_message_id++] = t;
+        t.id               = id;
+        this->messages[id] = t;
     }
 
     this->updated_at = this->GetCurrentUnixTimeStamp();
+    return id;
 };
 
 void sd_gui_utils::llvmMessage::SetPromptTemplate(const std::string& pt) {
@@ -242,6 +284,9 @@ llama_message_list sd_gui_utils::llvmMessage::GetChatMessages() {
 
     llama_message_list messages;
     for (auto& [id, message] : this->messages) {
+        if (message.is_deleted) {
+            continue;
+        }
         llama_chat_message msg;
         msg.content = message.text.c_str();
         msg.role    = sd_gui_utils::llvmTextSenderMap.at(message.sender).c_str();

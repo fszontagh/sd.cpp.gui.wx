@@ -1,7 +1,7 @@
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <dynamiclib_name> <targetlogfile.log> [shared_memory_path]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <dynamiclib_name> <targetlogfile.log> [SHARED_MEMORY_PATH_DIFFUSER]" << std::endl;
         return 1;
     }
 
@@ -24,17 +24,17 @@ int main(int argc, char* argv[]) {
     wxLogInfo("Logging initialized. Log file: %s", logFile.GetAbsolutePath());
     wxLog::SetLogLevel(wxLOG_Max);
 
-    std::string shared_memory_path = SHARED_MEMORY_PATH;
+    std::string shm_path = SHARED_MEMORY_PATH_DIFFUSER;
 
     if (argc > 3 && argv[3]) {
-        shared_memory_path = argv[3];
+        shm_path = argv[3];
     }
 
-    wxLogInfo("Starting with shared memory size: %d", SHARED_MEMORY_SIZE);
+    wxLogInfo("Starting with shared memory size: %d", SHARED_MEMORY_SIZE_DIFFUSER);
     std::shared_ptr<SharedMemoryManager> sharedMemory = nullptr;
 
     try {
-        sharedMemory = std::make_shared<SharedMemoryManager>(shared_memory_path.c_str(), SHARED_MEMORY_SIZE, false);
+        sharedMemory = std::make_shared<SharedMemoryManager>(shm_path.c_str(), SHARED_MEMORY_SIZE_DIFFUSER, false);
     } catch (const std::exception& e) {
         wxLogError("Failed to create SharedMemoryManager: %s", e.what());
         return 1;
@@ -55,12 +55,12 @@ int main(int argc, char* argv[]) {
     bool needToRun  = true;
     uint64_t lastId = 0;
     while (needToRun) {
-        std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE]);
+        std::unique_ptr<char[]> buffer(new char[SHARED_MEMORY_SIZE_DIFFUSER]);
 
-        if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE)) {
+        if (sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE_DIFFUSER)) {
             if (std::strlen(buffer.get()) > 0) {
                 appLogic.updateLastMessageTime();
-                std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE);
+                std::string message = std::string(buffer.get(), SHARED_MEMORY_SIZE_DIFFUSER);
 
                 if (message == "exit") {
                     wxLogWarning("Got exit command, exiting...");

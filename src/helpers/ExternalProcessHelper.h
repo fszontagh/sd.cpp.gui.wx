@@ -71,7 +71,8 @@ public:
             this->subprocess = nullptr;
         }
     }
-    [[nodiscard]] const wxString GetFullCommand() {        wxString command;
+    [[nodiscard]] const wxString GetFullCommand() {
+        wxString command;
         for (const auto& arg : this->command_line) {
             if (arg != nullptr) {
                 command += arg;
@@ -179,7 +180,7 @@ public:
         return msg;
     }
 
-    inline void write(const std::string &msg) {
+    inline void write(const std::string& msg) {
         size_t size = std::min(msg.size(), this->shmSize);
         this->sharedMemory->write(msg.c_str(), size);
     }
@@ -232,7 +233,7 @@ private:
         while (this->extProcessNeedToRun) {
             std::unique_ptr<char[]> buffer(new char[this->shmSize]);
 
-            this->sharedMemory->read(buffer.get(), SHARED_MEMORY_SIZE);
+            this->sharedMemory->read(buffer.get(), this->shmSize);
             size_t size = std::strlen(buffer.get());
             if (size > 0 && this->onShmMessage) {
                 auto const state = this->onShmMessage(buffer.get(), size);

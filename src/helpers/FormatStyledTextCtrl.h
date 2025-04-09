@@ -119,7 +119,7 @@ namespace sd_gui_utils {
             },
             &html_output, MD_DIALECT_GITHUB, 0);
 
-        return wxString::FromUTF8Unchecked(html_output.c_str());
+        return wxString(html_output.data(), html_output.size());
     }
 
     inline static void ConfigureTextCtrl(wxStyledTextCtrl* textCtrl) {
@@ -178,11 +178,7 @@ namespace sd_gui_utils {
         }
         wxString safeMessage = EscapeJavaScriptString(message);
         wxString script      = wxString::Format("updateMessageContent(%" PRIi64 ", '%s');", message_id, safeMessage);
-        if (webView->RunScript(script)) {
-            std::cout << "Script executed successfully: " << script.ToStdString() << std::endl;
-        } else {
-            std::cout << "Script execution failed: " << script.ToStdString() << std::endl;
-        }
+        webView->RunScriptAsync(script);  // we dont care if it success or not, just run it... The IE backend does not support async script execution.
     }
 
     inline static void AddMessage(wxWebView* webView, const wxString& role, const wxString& content, uint64_t message_id) {
@@ -191,9 +187,7 @@ namespace sd_gui_utils {
         }
         wxString safeContent = EscapeJavaScriptString(content);
         wxString script      = wxString::Format("addMessage('%s', '%s', %" PRIi64 ");", role, safeContent, message_id);
-        if (webView->RunScript(script)) {
-            std::cout << "Script executed successfully: " << script.ToStdString() << std::endl;
-        } else {
+        if (!webView->RunScript(script)) {
             std::cout << "Script execution failed: " << script.ToStdString() << std::endl;
         }
     }

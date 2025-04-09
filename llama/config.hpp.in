@@ -10,7 +10,7 @@ inline const char* LLAMA_BINARY_NAME = "@LLAMA_BINARY_NAME@.exe";
 inline const char* LLAMA_BINARY_NAME = "@LLAMA_BINARY_NAME@";
 #endif
 inline const char* SHARED_MEMORY_PATH_LLAMA         = "/@LLAMA_BINARY_NAME@";
-inline const unsigned int SHARED_MEMORY_SIZE_LLAMA  = @SHARED_MEMORY_SIZE@;
+inline const unsigned int SHARED_MEMORY_SIZE_LLAMA  = @SHARED_MEMORY_SIZE_LLAMA@;
 inline const unsigned int LLAMA_SLEEP_TIME = 500;
 inline const unsigned int LLAMA_STD_BUFFER = 10240;
 
