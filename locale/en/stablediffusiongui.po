@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: StableDiffusionGUI 0.1.9\n"
 "Report-Msgid-Bugs-To: sdgui@fsociety.hu\n"
 "POT-Creation-Date: 2025-04-09 20:57+0200\n"
-"PO-Revision-Date: 2025-03-01 15:57+0100\n"
+"PO-Revision-Date: 2025-04-09 21:01+0200\n"
 "Last-Translator: Ferenc Szontágh <szf@fsociety.hu>\n"
 "Language-Team: Hungarian <>\n"
 "Language: en_US\n"
@@ -54,24 +54,23 @@ msgid "deleted server"
 msgstr "deleted server"
 
 #: src/helpers/LlamaGuiHelper.cpp:54
-#, fuzzy, c-format
+#, c-format
 msgid "Llama model loaded: %s"
-msgstr "Model loaded: %s\n"
+msgstr "Llama model loaded: %s"
 
 #: src/helpers/LlamaGuiHelper.cpp:57
-#, fuzzy, c-format
+#, c-format
 msgid "Model loaded %s"
-msgstr "Model loaded: %s\n"
+msgstr "Model loaded %s"
 
 #: src/helpers/LlamaGuiHelper.cpp:77
-#, fuzzy
 msgid "Model unloaded"
-msgstr "Model loaded: %s\n"
+msgstr "Model unloaded"
 
 #: src/helpers/LlamaGuiHelper.cpp:80
-#, fuzzy, c-format
+#, c-format
 msgid "Llama model unloaded: %s"
-msgstr "Model loaded: %s\n"
+msgstr "Llama model unloaded: %s"
 
 #: src/helpers/ModelUiManager.cpp:25 src/helpers/ModelUiManager.cpp:187
 msgid "[F] "
@@ -473,23 +472,20 @@ msgid "Image info"
 msgstr "Image info"
 
 #: src/ui/MainWindow.cpp:967
-#, fuzzy
 msgid "Language model"
-msgstr "Language:"
+msgstr "Language model"
 
 #: src/ui/MainWindow.cpp:997
-#, fuzzy
 msgid "Please select a model"
-msgstr "Please select a local model!"
+msgstr "Please select a model"
 
 #: src/ui/MainWindow.cpp:1010
 msgid "Send"
-msgstr ""
+msgstr "Send"
 
 #: src/ui/MainWindow.cpp:1032
-#, fuzzy
 msgid "Prompt Template"
-msgstr "Prompt presets:"
+msgstr "Prompt Template"
 
 #: src/ui/MainWindow.cpp:1037 src/ui/MainWindow.cpp:1038
 msgid ""
@@ -497,33 +493,33 @@ msgid ""
 "Primary for models which not stores template in their metadata.\n"
 "Only supports simple Jinja format"
 msgstr ""
+"Custom prompt template.\n"
+"Primary for models which not stores template in their metadata.\n"
+"Only supports simple Jinja format"
 
 #: src/ui/MainWindow.cpp:1046
-#, fuzzy
 msgid "Batch size"
-msgstr "Batch:"
+msgstr "Batch size"
 
 #: src/ui/MainWindow.cpp:1061
-#, fuzzy
 msgid "Context size"
-msgstr "Controlnet image"
+msgstr "Context size"
 
 #: src/ui/MainWindow.cpp:1076
-#, fuzzy
 msgid "Model's metadata"
-msgstr "Models path"
+msgstr "Model's metadata"
 
 #: src/ui/MainWindow.cpp:1081
 msgid "Key"
-msgstr ""
+msgstr "Key"
 
 #: src/ui/MainWindow.cpp:1082
 msgid "Value"
-msgstr ""
+msgstr "Value"
 
 #: src/ui/MainWindow.cpp:1100
 msgid "Chat Assistant"
-msgstr ""
+msgstr "Chat Assistant"
 
 #: src/ui/MainWindow.cpp:1121 src/ui/MainWindow.cpp:2916
 #: src/ui/MainWindow.cpp:2946 src/ui/MainWindow.cpp:2993
@@ -871,9 +867,8 @@ msgid "Queue"
 msgstr "Queue"
 
 #: src/ui/MainWindow.cpp:2150
-#, fuzzy
 msgid "Llama models path"
-msgstr "Models path"
+msgstr "Llama models path"
 
 #: src/ui/MainWindow.cpp:2156 src/ui/MainWindow.cpp:2183
 #: src/ui/MainWindow.cpp:2207 src/ui/MainWindow.cpp:2231
@@ -1231,43 +1226,40 @@ msgid "File"
 msgstr "File"
 
 #: src/ui/MainWindow.cpp:3136
-#, fuzzy
 msgid "SD1x Models"
-msgstr "Models"
+msgstr "SD1x Models"
 
 #: src/ui/MainWindow.cpp:3138
 msgid "Realistic_Vision_V6.0_B1_noVAE"
-msgstr ""
+msgstr "Realistic_Vision_V6.0_B1_noVAE"
 
 #: src/ui/MainWindow.cpp:3142
 msgid "Fluently-v4-LCM"
-msgstr ""
+msgstr "Fluently-v4-LCM"
 
 #: src/ui/MainWindow.cpp:3150
-#, fuzzy
 msgid "SDXL models"
-msgstr "CN model"
+msgstr "SDXL models"
 
 #: src/ui/MainWindow.cpp:3152
 msgid "Juggernaut-XL-v9"
-msgstr ""
+msgstr "Juggernaut-XL-v9"
 
 #: src/ui/MainWindow.cpp:3159
 msgid "SD1x Loras"
-msgstr ""
+msgstr "SD1x Loras"
 
 #: src/ui/MainWindow.cpp:3165
 msgid "SDXL loras"
-msgstr ""
+msgstr "SDXL loras"
 
 #: src/ui/MainWindow.cpp:3171
 msgid "Presets"
 msgstr "Presets"
 
 #: src/ui/MainWindow.cpp:3177
-#, fuzzy
 msgid "Prompt styles"
-msgstr "Prompt presets:"
+msgstr "Prompt styles"
 
 #: src/ui/MainWindow.cpp:3182
 msgid ""
@@ -1277,6 +1269,11 @@ msgid ""
 "\n"
 "Please ensure you have enough storage before proceeding."
 msgstr ""
+"The download process may take a long time, depending on your internet speed "
+"and the selected models.\n"
+"Additionally, the models require a significant amount of disk space.\n"
+"\n"
+"Please ensure you have enough storage before proceeding."
 
 #: src/ui/MainWindow.h:403
 msgid "sd.cpp.gui"
@@ -1418,61 +1415,59 @@ msgstr ""
 "too: <a href=\"%s\">RealESRGAN_x4Plus</a>"
 
 #: src/ui/MainWindowUI.cpp:185
-#, fuzzy, c-format
+#, c-format
 msgid "Stable Diffusion process started: %s"
-msgstr "External process stopped"
+msgstr "Stable Diffusion process started: %s"
 
 #: src/ui/MainWindowUI.cpp:187
 msgid "Stable diffusion is ready"
-msgstr ""
+msgstr "Stable diffusion is ready"
 
 #: src/ui/MainWindowUI.cpp:196 src/ui/MainWindowUI.cpp:198
-#, fuzzy
 msgid "Stable Diffusion process stopped"
-msgstr "External process stopped"
+msgstr "Stable Diffusion process stopped"
 
 #: src/ui/MainWindowUI.cpp:216
 #, c-format
 msgid "Stable diffusion process just started: %s"
-msgstr ""
+msgstr "Stable diffusion process just started: %s"
 
 #: src/ui/MainWindowUI.cpp:218
 #, c-format
 msgid "Stable diffusion failed to start: %s"
-msgstr ""
+msgstr "Stable diffusion failed to start: %s"
 
 #: src/ui/MainWindowUI.cpp:237
-#, fuzzy, c-format
+#, c-format
 msgid "Llama process started: %s"
-msgstr "Model load started: %s\n"
+msgstr "Llama process started: %s"
 
 #: src/ui/MainWindowUI.cpp:239
-#, fuzzy
 msgid "Llama is ready"
-msgstr "Process is ready"
+msgstr "Llama is ready"
 
 #: src/ui/MainWindowUI.cpp:256
-#, fuzzy, c-format
+#, c-format
 msgid "Llama process stopped: %s"
-msgstr "External process stopped"
+msgstr "Llama process stopped: %s"
 
 #: src/ui/MainWindowUI.cpp:258
 msgid "Llama is down"
-msgstr ""
+msgstr "Llama is down"
 
 #: src/ui/MainWindowUI.cpp:267
 msgid "LLama process died withour error"
-msgstr ""
+msgstr "LLama process died withour error"
 
 #: src/ui/MainWindowUI.cpp:299
 #, c-format
 msgid "Llama process just started: %s"
-msgstr ""
+msgstr "Llama process just started: %s"
 
 #: src/ui/MainWindowUI.cpp:302
 #, c-format
 msgid "Llama process failed to start: %s"
-msgstr ""
+msgstr "Llama process failed to start: %s"
 
 #: src/ui/MainWindowUI.cpp:312
 msgid "Please wait to finish the currently running jobs!"
@@ -2031,13 +2026,12 @@ msgid "Upscaler image open: file not found: %s"
 msgstr "Upscaler image open: file not found: %s"
 
 #: src/ui/MainWindowUI.cpp:3812
-#, fuzzy
 msgid "Error accessing to the background process. Please try again"
-msgstr "Error accessing to the background process. Please try again."
+msgstr "Error accessing to the background process. Please try again"
 
 #: src/ui/MainWindowUI.cpp:3833
 msgid "Local diffusion is disabled"
-msgstr ""
+msgstr "Local diffusion is disabled"
 
 #: src/ui/MainWindowUI.cpp:3967
 #, c-format
@@ -2047,7 +2041,7 @@ msgstr "Job added to %s"
 #: src/ui/MainWindowUI.cpp:3978
 #, c-format
 msgid "Job status changed: %s job id: %<PRIu64> status: %s"
-msgstr ""
+msgstr "Job status changed: %s job id: %<PRIu64> status: %s"
 
 #: src/ui/MainWindowUI.cpp:4007
 #, c-format
@@ -2588,12 +2582,12 @@ msgstr "The resolution of the mask does not match the resolution of the image"
 
 #: src/ui/MainWindowUI.cpp:6427
 msgid "Save chat as HTML"
-msgstr ""
+msgstr "Save chat as HTML"
 
 #: src/ui/MainWindowUI.cpp:6503
-#, fuzzy, c-format
+#, c-format
 msgid "Loading model: %s"
-msgstr "Unknown mode: %s"
+msgstr "Loading model: %s"
 
 #: src/ui/MainWindowUI.h:290 src/ui/MainWindowUI.h:350
 msgid "Parentheses are not balanced!"
@@ -2950,3 +2944,4 @@ msgstr "Parentheses are not balanced!"
 #, c-format
 #~ msgid "Text2Img %s"
 #~ msgstr "Text2Img %s"
+
