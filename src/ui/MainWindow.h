@@ -412,7 +412,7 @@ class mainUI : public wxFrame
 
 		void m_splitter3OnIdle( wxIdleEvent& )
 		{
-			m_splitter3->SetSashPosition( 0 );
+			m_splitter3->SetSashPosition( -100 );
 			m_splitter3->Disconnect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 		}
 

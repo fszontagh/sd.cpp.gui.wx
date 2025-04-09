@@ -952,6 +952,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer1150 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_splitter3 = new wxSplitterWindow( m_llama, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_3D );
+	m_splitter3->SetSashGravity( 1 );
 	m_splitter3->Connect( wxEVT_IDLE, wxIdleEventHandler( mainUI::m_splitter3OnIdle ), NULL, this );
 	m_splitter3->SetMinimumPaneSize( 200 );
 
@@ -1023,7 +1024,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	bSizer111->Fit( m_panel29 );
 	m_scrolledWindow10 = new wxScrolledWindow( m_splitter3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
 	m_scrolledWindow10->SetScrollRate( 5, 5 );
-	m_scrolledWindow10->SetMaxSize( wxSize( 300,-1 ) );
+	m_scrolledWindow10->SetMinSize( wxSize( 300,-1 ) );
 
 	wxBoxSizer* bSizer118;
 	bSizer118 = new wxBoxSizer( wxVERTICAL );
@@ -1063,7 +1064,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 
 	bSizer1200->Add( m_staticText80, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5 );
 
-	m_chat_n_ctx = new wxSpinCtrl( m_scrolledWindow10, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1024, 12288, 4096 );
+	m_chat_n_ctx = new wxSpinCtrl( m_scrolledWindow10, wxID_ANY, wxT("2048"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1024, 49152, 4096 );
 	bSizer1200->Add( m_chat_n_ctx, 1, wxALL, 5 );
 
 
@@ -1089,7 +1090,7 @@ mainUI::mainUI( wxWindow* parent, wxWindowID id, const wxString& title, const wx
 	m_scrolledWindow10->SetSizer( bSizer118 );
 	m_scrolledWindow10->Layout();
 	bSizer118->Fit( m_scrolledWindow10 );
-	m_splitter3->SplitVertically( m_panel29, m_scrolledWindow10, 0 );
+	m_splitter3->SplitVertically( m_panel29, m_scrolledWindow10, -100 );
 	bSizer1150->Add( m_splitter3, 1, wxEXPAND, 5 );
 
 

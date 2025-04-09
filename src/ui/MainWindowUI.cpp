@@ -184,7 +184,7 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
         processRef->onStart = [this, processRef]() {
             this->writeLog(wxString::Format(_("External process started: %s"), processRef->GetFullCommand()));
             auto* event = new wxThreadEvent();
-            event->SetString(_("Process is ready"));
+            event->SetString(_("Stable diffusion is ready"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
@@ -193,9 +193,9 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
             if (restart) {
                 return;
             }
-            this->writeLog(_("External process stopped"));
+            this->writeLog(_("Stable diffusion process stopped"));
             auto* event = new wxThreadEvent();
-            event->SetString(_("External process stopped"));
+            event->SetString(_("Stable Diffusion stopped"));
             event->SetId(9999);
             wxQueueEvent(this, event);
         };
@@ -213,9 +213,9 @@ MainWindowUI::MainWindowUI(wxWindow* parent, const std::string& stablediffusionD
         };
 
         if (processRef->Start()) {
-            this->writeLog(wxString::Format(_("External process just started: %s"), processRef->GetFullCommand()));
+            this->writeLog(wxString::Format(_("Stable diffusion process just started: %s"), processRef->GetFullCommand()));
         } else {
-            this->writeLog(wxString::Format(_("External process failed to start: %s"), processRef->GetFullCommand()));
+            this->writeLog(wxString::Format(_("Stable diffusion failed to start: %s"), processRef->GetFullCommand()));
         }
 
         // external process for stable diffusion
