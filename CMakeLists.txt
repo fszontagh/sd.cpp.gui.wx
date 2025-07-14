@@ -42,17 +42,17 @@ endif()
 
 
 
-find_package(OpenSSL CONFIG QUIET)
+find_package(OpenSSL CONFIG)
 if (NOT OpenSSL_FOUND)
     find_package(OpenSSL REQUIRED)
 endif()
 
-find_package(CURL CONFIG QUIET)
+find_package(CURL CONFIG)
 if (NOT CURL_FOUND)
     find_package(CURL REQUIRED)
 endif()
 
-find_package(exiv2 CONFIG QUIET)
+find_package(exiv2 CONFIG)
 if (NOT exiv2_FOUND)
     find_package(exiv2 REQUIRED)
 endif()
