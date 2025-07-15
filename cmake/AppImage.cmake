@@ -9,27 +9,27 @@ set(APPIMGDEPENDS ${PROJECT_BINARY_NAME})
 list(APPEND APPIMGDEPENDS ${PROJECT_BINARY_NAME}_diffuser)
 
 if (SDGUI_AVX)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx)
+  list(APPEND APPIMGDEPENDS stable-diffusion_avx)
 endif()
 
 if (SDGUI_AVX2)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx2)
+  list(APPEND APPIMGDEPENDS stable-diffusion_avx2)
 endif()
 
 if(SDGUI_AVX512)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_avx512)
+  list(APPEND APPIMGDEPENDS stable-diffusion_avx512)
 endif()
 
 if(SDGUI_CUBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_cuda)
+  list(APPEND APPIMGDEPENDS stable-diffusion_cuda)
 endif()
 
 if(SDGUI_VULKAN)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_vulkan)
+  list(APPEND APPIMGDEPENDS stable-diffusion_vulkan)
 endif()
 
 if (SDGUI_HIPBLAS)
-  list(APPEND APPIMGDEPENDS stable_diffusion_cpp_hipblas)
+  list(APPEND APPIMGDEPENDS stable-diffusion_hipblas)
 endif()
 
 
@@ -45,7 +45,6 @@ add_custom_target(
 
 add_custom_command(
   TARGET AppImage POST_BUILD
-  MAIN_DEPENDENCY ${PROJECT_BINARY_NAME}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --prefix ${CMAKE_BINARY_DIR}/AppImageSource/usr --config ${CMAKE_BUILD_TYPE}
   COMMAND wget -q https://github.com/AppImageCommunity/pkg2appimage/releases/download/continuous/pkg2appimage--x86_64.AppImage -O ./pkg2appimage

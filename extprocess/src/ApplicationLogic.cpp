@@ -1,6 +1,5 @@
 #include "ApplicationLogic.h"
-
-
+#include "wx/filefn.h"
 
 ApplicationLogic::ApplicationLogic(const std::string& libName, std::shared_ptr<SharedMemoryManager>& sharedMemoryManager)
     : sd_dll(libName), sharedMemoryManager(sharedMemoryManager) {
@@ -10,6 +9,7 @@ ApplicationLogic::ApplicationLogic(const std::string& libName, std::shared_ptr<S
 #else
     this->tempPath = std::filesystem::temp_directory_path().string();
 #endif
+    sd_dll.addSearchPath(wxGetCwd().ToStdString());
 }
 
 ApplicationLogic::~ApplicationLogic() {

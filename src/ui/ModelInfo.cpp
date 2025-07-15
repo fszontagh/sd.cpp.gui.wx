@@ -435,7 +435,8 @@ wxString ModelInfo::Manager::GetFolderName(const wxString& model_path, const sd_
         this->folderGroups[group_full_path.GetFullPath()] = group_full_path;
     }
 
-    folderGroupName.Prepend(sd_gui_utils::dirtypes_str.at(type) + wxFileName::GetPathSeparator());
+    wxString fname = wxString::Format("%s%s", sd_gui_utils::dirtypes_str.at(type), wxString(wxFileName::GetPathSeparator()));
+    folderGroupName.Prepend(fname);
     if (server != nullptr) {
         folderGroupName.Prepend(server->GetName() + wxFileName::GetPathSeparator());
     } else {

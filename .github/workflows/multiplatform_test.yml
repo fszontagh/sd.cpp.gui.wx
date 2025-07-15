@@ -47,32 +47,32 @@ jobs:
         variant:
           - name: CPU avx
             cmake_flags: "-DSD_AVX=ON"
-            targets: "stable_diffusion_cpp_avx"
+            targets: "stable-diffusion_avx"
             cache-key: windows-avx
 
           - name: CPU avx2
             cmake_flags: "-DSD_AVX2=ON"
-            targets: "stable_diffusion_cpp_avx2"
+            targets: "stable-diffusion_avx2"
             cache-key: windows-avx2
 
           - name: CPU avx512
             cmake_flags: "-DSD_AVX512=ON"
-            targets: "stable_diffusion_cpp_avx512"
+            targets: "stable-diffusion_avx512"
             cache-key: windows-avx512
 
           - name: CUDA
             cmake_flags: "-DSD_CUDA=ON"
-            targets: "stable_diffusion_cpp_cuda"
+            targets: "stable-diffusion_cuda"
             cache-key: windows-cuda
 
           - name: VULKAN
             cmake_flags: "-DSD_VULKAN=ON"
-            targets: "stable_diffusion_cpp_vulkan"
+            targets: "stable-diffusion_vulkan"
             cache-key: windows-vulkan
 
 #          - name: HIPBLAS
 #            cmake_flags: "-DSD_HIPBLAS=ON"
-#            targets: "stable_diffusion_cpp_hipblas"
+#            targets: "stable-diffusion_hipblas"
 #            cache-key: windows-hipblas
     steps:
       - name: Check out code
@@ -329,18 +329,18 @@ jobs:
           cd build
           if [ "${{ matrix.variant }}" = "CPU" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_AVX=ON -DSD_AVX2=ON -DSD_AVX512=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_avx
-            cmake --build . --config Release --target stable_diffusion_cpp_avx2
-            cmake --build . --config Release --target stable_diffusion_cpp_avx512
+            cmake --build . --config Release --target stable-diffusion_avx
+            cmake --build . --config Release --target stable-diffusion_avx2
+            cmake --build . --config Release --target stable-diffusion_avx512
           elif [ "${{ matrix.variant }}" = "HIPBLAS" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_HIPBLAS=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_hipblas
+            cmake --build . --config Release --target stable-diffusion_hipblas
           elif [ "${{ matrix.variant }}" = "VULKAN" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_VULKAN=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_vulkan
+            cmake --build . --config Release --target stable-diffusion_vulkan
           elif [ "${{ matrix.variant }}" = "CUDA" ]; then
             cmake .. -DCMAKE_BUILD_TYPE=Release -DSD_CUDA=ON
-            cmake --build . --config Release --target stable_diffusion_cpp_cuda
+            cmake --build . --config Release --target stable-diffusion_cuda
           fi
 
 

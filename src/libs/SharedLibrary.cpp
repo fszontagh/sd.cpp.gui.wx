@@ -14,19 +14,38 @@ void SharedLibrary::load() {
         throw std::runtime_error("Library is already loaded.");
     }
 
+    std::vector<std::string> tryPaths;
+
+    if (std::filesystem::exists(libraryPath)) {
+        tryPaths.push_back(libraryPath);
+    }
+
+    for (const auto& path : searchPaths) {
+        std::filesystem::path fullPath = std::filesystem::path(path) / libraryPath;
+        if (std::filesystem::exists(fullPath)) {
+            tryPaths.push_back(fullPath.string());
+        }
+    }
+
+    tryPaths.push_back(libraryPath);
+
+    std::string lastError;
+
+    for (const auto& libpath : tryPaths) {
 #if defined(_WIN32) || defined(_WIN64)
-    std::string libname = libraryPath;
-    handle              = LoadLibraryA(libname.c_str());
-    if (!handle) {
-        throw std::runtime_error("Failed to load library: " + libraryPath);
-    }
+        handle = LoadLibraryA(libpath.c_str());
 #else
-    std::string libname = libraryPath;
-    handle              = dlopen(libname.c_str(), RTLD_LAZY);
-    if (!handle) {
-        throw std::runtime_error("Failed to load library: " + std::string(dlerror()));
-    }
+        handle = dlopen(libpath.c_str(), RTLD_LAZY);
 #endif
+        if (handle)
+            return;  // siker
+#if !defined(_WIN32)
+        lastError = dlerror();
+#endif
+    }
+
+    throw std::runtime_error("Failed to load library: " + libraryPath +
+                             "\nLast error: " + lastError);
 }
 
 void SharedLibrary::unload() {
@@ -46,4 +65,6 @@ void SharedLibrary::unload() {
 
     handle = nullptr;
 }
-
+void SharedLibrary::addSearchPath(const std::string& path) {
+    searchPaths.push_back(path);
+}

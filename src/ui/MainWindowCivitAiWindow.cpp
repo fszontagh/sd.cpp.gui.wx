@@ -2,6 +2,7 @@
 #include "../helpers/simplecurl.h"
 #include "ver.hpp"
 #include "wx/string.h"
+#include "wx/translation.h"
 
 MainWindowCivitAiWindow::MainWindowCivitAiWindow(wxWindow* parent)
     : CivitAiWindow(parent) {
@@ -695,7 +696,8 @@ void MainWindowCivitAiWindow::JsonToTable(std::string json_str) {
         }
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
-        this->m_statusBar2->SetStatusText(_("Error on parsing response: " + std::string(e.what())));
+        wxString statusText = wxString::Format(_("Error on parsing response: %s"), e.what());
+        this->m_statusBar2->SetStatusText(statusText);
         return;
     }
 }

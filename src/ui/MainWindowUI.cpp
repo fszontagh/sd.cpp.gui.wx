@@ -2513,7 +2513,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
         }
 
         if (taesd == nullptr) {
-            this->writeLog(_("Taesd file not found: " + item.params.taesd_path), true);
+            this->writeLog(wxString::Format(_("Taesd file not found: %s"), item.params.taesd_path), true);
             // TODO: search by hash if this is a remote job
         }
         if (taesd) {
@@ -2533,7 +2533,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
         std::filesystem::exists(item.params.vae_path)) {
         auto vae = this->ModelManager->getIntoPtr(item.params.vae_path);
         if (vae == nullptr) {
-            this->writeLog(_("Vae file not found: " + item.params.vae_path), true);
+            this->writeLog(wxString::Format(_("Vae file not found: %s"), item.params.vae_path), true);
         } else {
             for (int i = 0; i < this->m_vae->GetCount(); i++) {
                 auto vaeModel = this->m_vae->GetClientData(i);
@@ -2556,7 +2556,7 @@ void MainWindowUI::ChangeGuiFromQueueItem(QueueItem item) {
 
         auto controlnetModel = this->ModelManager->getIntoPtr(item.params.controlnet_path);
         if (controlnetModel == nullptr) {
-            this->writeLog(_("Controlnet file not found: " + item.params.controlnet_path), true);
+            this->writeLog(wxString::Format(_("Controlnet file not found: %s"), item.params.controlnet_path), true);
         } else {
             this->m_controlnetModels->SetStringSelection(controlnetModel->name);
         }
@@ -2825,6 +2825,7 @@ MainWindowUI::~MainWindowUI() {
         }
         delete threadPtr;
     }
+    this->threads.clear();
 
     for (auto& v : this->voids) {
         delete v;
@@ -3407,7 +3408,7 @@ void MainWindowUI::LoadFileList(sd_gui_utils::DirTypes type) {
         wxFileName file(entry);
 
         if (!file.FileExists()) {
-            this->writeLog("File not exists: " + file.GetAbsolutePath().utf8_string());
+            this->writeLog(wxString::Format(_("File not found: %s"), file.GetAbsolutePath().utf8_string()));
             continue;
         }
 
@@ -4278,7 +4279,7 @@ void MainWindowUI::OnThreadMessage(wxThreadEvent& e) {
         }
         auto packet = server->GetPacket(packetId);
         if (packet.isValid() == false) {
-            this->writeLog("Got invalid packet from server: " + server->GetName());
+            this->writeLog(wxString::Format(_("Got invalid packet from server: %s"), server->GetName()));
             return;
         }
         auto last_selected_model = this->mapp->config->Read("/model_list/last_selected_model", wxEmptyString);
@@ -5695,7 +5696,7 @@ void MainWindowUI::PrepareModelConvert(sd_gui_utils::ModelFileInfo* modelInfo) {
 
     std::string newType = this->m_type->GetStringSelection().utf8_string();
 
-    modelOut.SetName(modelOut.GetName() + "_" + newType);
+    modelOut.SetName(wxString::Format("%s_%s", modelOut.GetName(), newType));
     this->writeLog(wxString::Format(_("Converting model %s to %s"), modelIn.GetFullName(), modelOut.GetFullName()));
 
     std::shared_ptr<QueueItem> item = std::make_shared<QueueItem>();

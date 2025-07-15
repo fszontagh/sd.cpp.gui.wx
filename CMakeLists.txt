@@ -145,29 +145,30 @@ endif()
 
 
 if (SDGUI_AVX)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx)
+  list(APPEND APPDEPENDS stable-diffusion_avx)
 endif()
 
 if (SDGUI_AVX2)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx2)
+  list(APPEND APPDEPENDS stable-diffusion_avx2)
 endif()
 
 if(SDGUI_AVX512)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_avx512)
+  list(APPEND APPDEPENDS stable-diffusion_avx512)
 endif()
 
 if(SDGUI_CUBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_cuda)
+  list(APPEND APPDEPENDS stable-diffusion_cuda)
 endif()
 
 if(SDGUI_VULKAN)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_vulkan)
+  list(APPEND APPDEPENDS stable-diffusion_vulkan)
 endif()
 
 if (SDGUI_HIPBLAS)
-  list(APPEND APPDEPENDS stable_diffusion_cpp_hipblas)
+  list(APPEND APPDEPENDS stable-diffusion_hipblas)
 endif()
 
+link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 

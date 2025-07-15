@@ -113,12 +113,6 @@ if(NOT SD_HIPBLAS)
         message(STATUS "Detected CUDA Version: ${CUDA_MAJOR_VERSION}.${CUDA_MINOR_VERSION}.${CUDA_PATCH_VERSION}")
 
         if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-
-            #include(FindCUDA/select_compute_arch)
-            #CUDA_DETECT_INSTALLED_GPUS(INSTALLED_GPU_CCS_1)
-            #string(STRIP "${INSTALLED_GPU_CCS_1}" INSTALLED_GPU_CCS_2)
-            #string(REPLACE " " ";" INSTALLED_GPU_CCS_3 "${INSTALLED_GPU_CCS_2}")
-            #string(REPLACE "." "" CUDA_ARCH_LIST "${INSTALLED_GPU_CCS_3}")
             SET(CMAKE_CUDA_ARCHITECTURES "native")
             SET(GGMAL_NATIVE ON)
 
@@ -135,10 +129,9 @@ if(NOT SD_HIPBLAS)
         message(STATUS "CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
     endif()
 
-
     set(STATUS "SD_GIT_TAG: ${SD_GIT_TAG}")
         ExternalProject_Add(
-            stable_diffusion_cpp_${variant_name}
+            stable-diffusion_${variant_name}
             GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
             GIT_TAG ${SD_GIT_TAG}
             #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sdcpp_${variant_name}
@@ -169,7 +162,7 @@ endif()
 if(SD_HIPBLAS)
 
         ExternalProject_Add(
-            stable_diffusion_cpp_${variant_name}
+            stable-diffusion_${variant_name}
             GIT_REPOSITORY https://github.com/leejet/stable-diffusion.cpp.git
             CMAKE_GENERATOR Ninja
             GIT_TAG ${SD_GIT_TAG}
