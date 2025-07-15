@@ -168,7 +168,10 @@ if (SDGUI_HIPBLAS)
   list(APPEND APPDEPENDS stable-diffusion_hipblas)
 endif()
 
-link_directories(${CMAKE_CURRENT_BINARY_DIR})
+link_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR})
+
+# Explicitly add build directory to linker path
+target_link_directories(${PROJECT_BINARY_NAME} PRIVATE ${CMAKE_BINARY_DIR})
 
 list(APPEND APPDEPENDS CpuFeatures::cpu_features OpenSSL::Crypto CURL::libcurl exiv2lib)
 
