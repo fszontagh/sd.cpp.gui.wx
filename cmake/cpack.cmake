@@ -194,10 +194,21 @@ elseif(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ferenc Szontágh <szf@fsociety.hu>")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9)")
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_DEPENDS "libc6 (>= 2.29), libstdc++6 (>= 9), libgtk-3-0 (>= 3.9.10) | libgtk-4-1, libexiv2-27, libnotify4, openssl, curl, libudev1 (>= 183), libvulkan1, libx11-6, libstablediffusion-avx-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx2-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-avx512-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-cuda-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-hipblas-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION}) | libstablediffusion-vulkan-${SDCPP_VERSION} (=${CPACK_PACKAGE_VERSION}-${DISTRO_VERSION})")
-    if (DISTRO_VER GREATER 23)
-        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
-    else()
-        set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11 | libcudart11.0, libcublaslt11, libnvidia-compute-470 | libnvidia-compute-535 | libnvidia-compute-550 ")
+
+    
+    # Semi - auto detect available libnvidia-compute-* versions (Debian/Ubuntu-based distros)
+    if (UNIX AND NOT APPLE)
+        execute_process(
+            COMMAND bash -c "apt-cache search libnvidia-compute- | grep -Eo 'libnvidia-compute-[0-9]+' | sort -u | awk '{printf \"%s%s\", sep, \$0; sep=\" | \"}; END {print \"\"}'"
+            OUTPUT_VARIABLE AVAILABLE_NVIDIA_COMPUTE
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        if (DISTRO_VER GREATER 23)
+            set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas12, libcudart12, libcublaslt12, ${AVAILABLE_NVIDIA_COMPUTE}")
+        else()
+            set(CPACK_DEBIAN_LIBSDCPP_CUDA_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libcublas11, libcudart11 | libcudart11.0, libcublaslt11, ${AVAILABLE_NVIDIA_COMPUTE}")
+        endif()
     endif()
 
     set(CPACK_DEBIAN_STABLEDIFFUSIONGUI_PACKAGE_CONFLICTS "stablediffusiongui-server")
