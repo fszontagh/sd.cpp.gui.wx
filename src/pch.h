@@ -55,7 +55,7 @@
 #include "helpers/base64.h"
 #include "helpers/DirTypes.h"
 #include "helpers/formatbytes.hpp"
-#include "helpers/sd.hpp"
+#include "helpers/sd_enums.hpp"
 #include "sockets-cpp/TcpClient.h"
 #include "ui/ThreadEventTypes.hpp"
 #include "network/RemoteModelInfo.h"

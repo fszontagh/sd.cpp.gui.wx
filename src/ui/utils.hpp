@@ -941,7 +941,7 @@ namespace sd_gui_utils {
     };
 
     inline const std::unordered_map<sample_method_t, std::string> samplerSdWebuiNames = {
-        {sample_method_t::N_SAMPLE_METHODS, "Automatic"},
+        {sample_method_t::SAMPLE_METHOD_COUNT, "Automatic"},
         {sample_method_t::EULER, "Euler"},
         {sample_method_t::EULER_A, "Euler a"},
         {sample_method_t::DPM2, "DPM2"},
@@ -957,7 +957,7 @@ namespace sd_gui_utils {
     };
     inline const std::unordered_map<schedule_t, std::string> schedulerSdWebuiNames = {
         {schedule_t::DEFAULT, "Automatic"},
-        {schedule_t::N_SCHEDULES, "Automatic"},
+        {schedule_t::SCHEDULE_COUNT, "Automatic"},
         {schedule_t::DISCRETE, "Automatic"},  // there is not discrete in sdwebui forge
         {schedule_t::KARRAS, "Karras"},
         {schedule_t::EXPONENTIAL, "Exponential"},

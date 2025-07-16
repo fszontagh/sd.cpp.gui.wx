@@ -144,29 +144,9 @@ if (SD_SERVER)
 endif()
 
 
-if (SDGUI_AVX)
-  list(APPEND APPDEPENDS stable-diffusion_avx)
-endif()
-
-if (SDGUI_AVX2)
-  list(APPEND APPDEPENDS stable-diffusion_avx2)
-endif()
-
-if(SDGUI_AVX512)
-  list(APPEND APPDEPENDS stable-diffusion_avx512)
-endif()
-
-if(SDGUI_CUBLAS)
-  list(APPEND APPDEPENDS stable-diffusion_cuda)
-endif()
-
-if(SDGUI_VULKAN)
-  list(APPEND APPDEPENDS stable-diffusion_vulkan)
-endif()
-
-if (SDGUI_HIPBLAS)
-  list(APPEND APPDEPENDS stable-diffusion_hipblas)
-endif()
+# Note: GUI binary should NOT link to stable-diffusion library
+# The stable-diffusion library is only used by the extprocess/diffuser binary
+# which loads it dynamically at runtime
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_BINARY_DIR})
 

@@ -23,6 +23,14 @@ bool ApplicationLogic::loadLibrary() {
     try {
         sd_dll.load();
 
+        // Load new API functions
+        this->sdCtxParamsInitPtr = (SdCtxParamsInitFunction)sd_dll.getFunction<SdCtxParamsInitFunction>("sd_ctx_params_init");
+        if (this->sdCtxParamsInitPtr == nullptr) {
+            std::cerr << "Failed to load function: sd_ctx_params_init" << std::endl;
+            this->error = "Failed to load function: sd_ctx_params_init";
+            return false;
+        }
+
         this->freeSdCtxPtr = (FreeSdCtxFunction)sd_dll.getFunction<FreeSdCtxFunction>("free_sd_ctx");
         if (this->freeSdCtxPtr == nullptr) {
             std::cerr << "Failed to load function: free_sd_ctx" << std::endl;
@@ -30,17 +38,19 @@ bool ApplicationLogic::loadLibrary() {
             return false;
         }
 
-        this->txt2imgFuncPtr = (Txt2ImgFunction)sd_dll.getFunction<Txt2ImgFunction>("txt2img");
-        if (this->txt2imgFuncPtr == nullptr) {
-            std::cerr << "Failed to load function: txt2img" << std::endl;
-            this->error = "Failed to load function: txt2img";
+        // Load new API generate_image function
+        this->generateImageFuncPtr = (GenerateImageFunction)sd_dll.getFunction<GenerateImageFunction>("generate_image");
+        if (this->generateImageFuncPtr == nullptr) {
+            std::cerr << "Failed to load function: generate_image" << std::endl;
+            this->error = "Failed to load function: generate_image";
             return false;
         }
 
-        this->img2imgFuncPtr = (Img2ImgFunction)sd_dll.getFunction<Img2ImgFunction>("img2img");
-        if (this->img2imgFuncPtr == nullptr) {
-            std::cerr << "Failed to load function: img2img" << std::endl;
-            this->error = "Failed to load function: img2img";
+        // Load sd_img_gen_params_init for new API
+        this->sdImgGenParamsInitPtr = (SdImgGenParamsInitFunction)sd_dll.getFunction<SdImgGenParamsInitFunction>("sd_img_gen_params_init");
+        if (this->sdImgGenParamsInitPtr == nullptr) {
+            std::cerr << "Failed to load function: sd_img_gen_params_init" << std::endl;
+            this->error = "Failed to load function: sd_img_gen_params_init";
             return false;
         }
 
@@ -160,7 +170,7 @@ void ApplicationLogic::processMessage(QueueItem& item) {
     // handle the convert differently
     if (this->currentItem->mode == SDMode::CONVERT) {
         this->sendStatus(QueueStatus::RUNNING, QueueEvents::ITEM_GENERATION_STARTED, "", EPROCESS_SLEEP_TIME);
-        bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype);
+        bool status = this->convertFuncPtr(this->currentItem->params.model_path.c_str(), this->currentItem->params.vae_path.c_str(), this->currentItem->params.output_path.c_str(), this->currentItem->params.wtype, nullptr);
         if (status == false) {
             this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);
             this->currentItem = nullptr;
@@ -223,30 +233,41 @@ void ApplicationLogic::Txt2Img() {
             }
         }
 
-        results = txt2imgFuncPtr(
-            this->sd_ctx,
-            this->currentItem->params.prompt.c_str(),
-            this->currentItem->params.negative_prompt.c_str(),
-            this->currentItem->params.clip_skip,
-            this->currentItem->params.cfg_scale,
-            this->currentItem->params.guidance,
-            this->currentItem->params.eta,
-            this->currentItem->params.width,
-            this->currentItem->params.height,
-            this->currentItem->params.sample_method,
-            this->currentItem->params.sample_steps,
-            this->currentItem->params.seed,
-            this->currentItem->params.batch_count,
-            control_image,
-            this->currentItem->params.strength,
-            this->currentItem->params.style_ratio,
-            this->currentItem->params.normalize_input,
-            this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers.data(),
-            this->currentItem->params.skip_layers.size(),
-            this->currentItem->params.slg_scale,
-            this->currentItem->params.skip_layer_start,
-            this->currentItem->params.skip_layer_end);
+        // Use new API
+        sd_img_gen_params_t gen_params;
+        this->sdImgGenParamsInitPtr(&gen_params);
+
+        gen_params.prompt                      = this->currentItem->params.prompt.c_str();
+        gen_params.negative_prompt             = this->currentItem->params.negative_prompt.c_str();
+        gen_params.clip_skip                   = this->currentItem->params.clip_skip;
+        gen_params.guidance.txt_cfg            = this->currentItem->params.cfg_scale;
+        gen_params.guidance.img_cfg            = this->currentItem->params.guidance;
+        gen_params.guidance.min_cfg            = this->currentItem->params.min_cfg;
+        gen_params.guidance.distilled_guidance = 0.0f;
+        gen_params.guidance.slg.layers         = this->currentItem->params.skip_layers.data();
+        gen_params.guidance.slg.layer_count    = this->currentItem->params.skip_layers.size();
+        gen_params.guidance.slg.layer_start    = this->currentItem->params.skip_layer_start;
+        gen_params.guidance.slg.layer_end      = this->currentItem->params.skip_layer_end;
+        gen_params.guidance.slg.scale          = this->currentItem->params.slg_scale;
+        gen_params.init_image                  = {0, 0, 0, nullptr};
+        gen_params.ref_images                  = nullptr;
+        gen_params.ref_images_count            = 0;
+        gen_params.mask_image                  = {0, 0, 0, nullptr};
+        gen_params.width                       = this->currentItem->params.width;
+        gen_params.height                      = this->currentItem->params.height;
+        gen_params.sample_method               = this->currentItem->params.sample_method;
+        gen_params.sample_steps                = this->currentItem->params.sample_steps;
+        gen_params.eta                         = this->currentItem->params.eta;
+        gen_params.strength                    = this->currentItem->params.strength;
+        gen_params.seed                        = this->currentItem->params.seed;
+        gen_params.batch_count                 = this->currentItem->params.batch_count;
+        gen_params.control_cond                = control_image;
+        gen_params.control_strength            = this->currentItem->params.control_strength;
+        gen_params.style_strength              = this->currentItem->params.style_ratio;
+        gen_params.normalize_input             = this->currentItem->params.normalize_input;
+        gen_params.input_id_images_path        = this->currentItem->params.input_id_images_path.c_str();
+
+        results = this->generateImageFuncPtr(this->sd_ctx, &gen_params);
 
         // free up the control image
         control_image = NULL;
@@ -339,33 +360,41 @@ void ApplicationLogic::Img2img() {
             }
         }
 
-        results = this->img2imgFuncPtr(
-            this->sd_ctx,
-            input_image,
-            mask_image,
-            this->currentItem->params.prompt.c_str(),
-            this->currentItem->params.negative_prompt.c_str(),
-            this->currentItem->params.clip_skip,
-            this->currentItem->params.cfg_scale,
-            this->currentItem->params.guidance,
-            this->currentItem->params.eta,
-            this->currentItem->params.width,
-            this->currentItem->params.height,
-            this->currentItem->params.sample_method,
-            this->currentItem->params.sample_steps,
-            this->currentItem->params.strength,
-            this->currentItem->params.seed,
-            this->currentItem->params.batch_count,
-            control_image,
-            this->currentItem->params.control_strength,
-            this->currentItem->params.style_ratio,
-            this->currentItem->params.normalize_input,
-            this->currentItem->params.input_id_images_path.c_str(),
-            this->currentItem->params.skip_layers.data(),
-            this->currentItem->params.skip_layers.size(),
-            this->currentItem->params.slg_scale,
-            this->currentItem->params.skip_layer_start,
-            this->currentItem->params.skip_layer_end);
+        // Use new API
+        sd_img_gen_params_t gen_params;
+        this->sdImgGenParamsInitPtr(&gen_params);
+
+        gen_params.prompt                      = this->currentItem->params.prompt.c_str();
+        gen_params.negative_prompt             = this->currentItem->params.negative_prompt.c_str();
+        gen_params.clip_skip                   = this->currentItem->params.clip_skip;
+        gen_params.guidance.txt_cfg            = this->currentItem->params.cfg_scale;
+        gen_params.guidance.img_cfg            = this->currentItem->params.guidance;
+        gen_params.guidance.min_cfg            = this->currentItem->params.min_cfg;
+        gen_params.guidance.distilled_guidance = 0.0f;
+        gen_params.guidance.slg.layers         = this->currentItem->params.skip_layers.data();
+        gen_params.guidance.slg.layer_count    = this->currentItem->params.skip_layers.size();
+        gen_params.guidance.slg.layer_start    = this->currentItem->params.skip_layer_start;
+        gen_params.guidance.slg.layer_end      = this->currentItem->params.skip_layer_end;
+        gen_params.guidance.slg.scale          = this->currentItem->params.slg_scale;
+        gen_params.init_image                  = input_image;
+        gen_params.ref_images                  = nullptr;
+        gen_params.ref_images_count            = 0;
+        gen_params.mask_image                  = mask_image;
+        gen_params.width                       = this->currentItem->params.width;
+        gen_params.height                      = this->currentItem->params.height;
+        gen_params.sample_method               = this->currentItem->params.sample_method;
+        gen_params.sample_steps                = this->currentItem->params.sample_steps;
+        gen_params.eta                         = this->currentItem->params.eta;
+        gen_params.strength                    = this->currentItem->params.strength;
+        gen_params.seed                        = this->currentItem->params.seed;
+        gen_params.batch_count                 = this->currentItem->params.batch_count;
+        gen_params.control_cond                = control_image;
+        gen_params.control_strength            = this->currentItem->params.control_strength;
+        gen_params.style_strength              = this->currentItem->params.style_ratio;
+        gen_params.normalize_input             = this->currentItem->params.normalize_input;
+        gen_params.input_id_images_path        = this->currentItem->params.input_id_images_path.c_str();
+
+        results = this->generateImageFuncPtr(this->sd_ctx, &gen_params);
         // free up the control image
 
         stbi_image_free(input_image_buffer);
@@ -507,14 +536,14 @@ bool ApplicationLogic::loadSdModel() {
                     this->upscale_ctx = nullptr;
                 }
                 wxLogInfo("Loading upscaler model: %s", this->currentItem->params.esrgan_path.c_str());
-                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
+                this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
                 return this->upscale_ctx != NULL;
             }
             wxLogInfo("upscaler model is the same");
             return true;  // already loaded the model
         }
         wxLogInfo("Loading upscaler model: '%s'", this->currentItem->params.esrgan_path.c_str());
-        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads, this->currentItem->params.wtype);
+        this->upscale_ctx = this->newUpscalerCtxPtr(this->currentItem->params.esrgan_path.c_str(), this->currentItem->params.n_threads);
         return this->upscale_ctx != NULL;
     }
     if (this->currentItem->mode == SDMode::TXT2IMG || this->currentItem->mode == SDMode::IMG2IMG) {
@@ -659,29 +688,37 @@ bool ApplicationLogic::loadSdModel() {
                 this->upscale_ctx = nullptr;
             }
 
-            this->sd_ctx = this->newSdCtxFuncPtr(
-                this->currentItem->params.model_path.c_str(),
-                this->currentItem->params.clip_l_path.c_str(),
-                this->currentItem->params.clip_g_path.c_str(),
-                this->currentItem->params.t5xxl_path.c_str(),
-                this->currentItem->params.diffusion_model_path.c_str(),
-                this->currentItem->params.vae_path.c_str(),
-                this->currentItem->params.taesd_path.c_str(),
-                this->currentItem->params.controlnet_path.c_str(),
-                this->currentItem->params.lora_model_dir.c_str(),
-                this->currentItem->params.embeddings_path.c_str(),
-                this->currentItem->params.stacked_id_embeddings_path.c_str(),
-                vae_decode_only,  // vae decode only
-                this->currentItem->params.vae_tiling,
-                false,  // free params immediately
-                this->currentItem->params.n_threads,
-                this->currentItem->params.wtype,
-                this->currentItem->params.rng_type,
-                this->currentItem->params.schedule,
-                this->currentItem->params.clip_on_cpu,
-                this->currentItem->params.control_net_cpu,
-                this->currentItem->params.vae_on_cpu,
-                this->currentItem->params.diffusion_flash_attn);
+            // Use new API with sd_ctx_params_t
+            sd_ctx_params_t ctx_params;
+            this->sdCtxParamsInitPtr(&ctx_params);
+
+            ctx_params.model_path              = this->currentItem->params.model_path.c_str();
+            ctx_params.clip_l_path             = this->currentItem->params.clip_l_path.c_str();
+            ctx_params.clip_g_path             = this->currentItem->params.clip_g_path.c_str();
+            ctx_params.t5xxl_path              = this->currentItem->params.t5xxl_path.c_str();
+            ctx_params.diffusion_model_path    = this->currentItem->params.diffusion_model_path.c_str();
+            ctx_params.vae_path                = this->currentItem->params.vae_path.c_str();
+            ctx_params.taesd_path              = this->currentItem->params.taesd_path.c_str();
+            ctx_params.control_net_path        = this->currentItem->params.controlnet_path.c_str();
+            ctx_params.lora_model_dir          = this->currentItem->params.lora_model_dir.c_str();
+            ctx_params.embedding_dir           = this->currentItem->params.embeddings_path.c_str();
+            ctx_params.stacked_id_embed_dir    = this->currentItem->params.stacked_id_embeddings_path.c_str();
+            ctx_params.vae_decode_only         = vae_decode_only;
+            ctx_params.vae_tiling              = this->currentItem->params.vae_tiling;
+            ctx_params.free_params_immediately = false;
+            ctx_params.n_threads               = this->currentItem->params.n_threads;
+            ctx_params.wtype                   = this->currentItem->params.wtype;
+            ctx_params.rng_type                = this->currentItem->params.rng_type;
+            ctx_params.schedule                = this->currentItem->params.schedule;
+            ctx_params.keep_clip_on_cpu        = this->currentItem->params.clip_on_cpu;
+            ctx_params.keep_control_net_on_cpu = this->currentItem->params.control_net_cpu;
+            ctx_params.keep_vae_on_cpu         = this->currentItem->params.vae_on_cpu;
+            ctx_params.diffusion_flash_attn    = this->currentItem->params.diffusion_flash_attn;
+            ctx_params.chroma_use_dit_mask     = false;
+            ctx_params.chroma_use_t5_mask      = false;
+            ctx_params.chroma_t5_mask_pad      = 0;
+
+            this->sd_ctx = this->newSdCtxFuncPtr(&ctx_params);
 
             if (this->sd_ctx == NULL) {
                 return false;

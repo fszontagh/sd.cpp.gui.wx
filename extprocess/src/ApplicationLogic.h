@@ -105,15 +105,17 @@ private:
     upscaler_ctx_t* upscale_ctx                                = nullptr;
     std::shared_ptr<QueueItem> currentItem                     = nullptr;  //< shared pointer to current item>
     std::shared_ptr<QueueItem> lastItem                        = nullptr;  //< shared pointer to last item>
-    FreeSdCtxFunction freeSdCtxPtr                             = nullptr;
-    Txt2ImgFunction txt2imgFuncPtr                             = nullptr;
-    Img2ImgFunction img2imgFuncPtr                             = nullptr;
-    UpscalerFunction upscalerFuncPtr                           = nullptr;
+    // New API functions
+    SdCtxParamsInitFunction sdCtxParamsInitPtr                 = nullptr;
     NewSdCtxFunction newSdCtxFuncPtr                           = nullptr;
+    FreeSdCtxFunction freeSdCtxPtr                             = nullptr;
+    SdImgGenParamsInitFunction sdImgGenParamsInitPtr           = nullptr;
+    GenerateImageFunction generateImageFuncPtr                 = nullptr;
     NewUpscalerCtxFunction newUpscalerCtxPtr                   = nullptr;
+    FreeUpscalerCtxFunction freeUpscalerCtxPtr                 = nullptr;
+    UpscalerFunction upscalerFuncPtr                           = nullptr;
     ConvertFunction convertFuncPtr                             = nullptr;
     PreprocessCannyFunction preprocessCannyFuncPtr             = nullptr;
-    FreeUpscalerCtxFunction freeUpscalerCtxPtr                 = nullptr;
     SdSetProgressCallbackFunction sdSetProgressCallbackFuncPtr = nullptr;
     SdSetLogCallbackFunction sdSetLogCallbackFuncPtr           = nullptr;
     std::mutex itemMutex;
