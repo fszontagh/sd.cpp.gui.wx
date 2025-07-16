@@ -1,4 +1,4 @@
-find_package(CpuFeatures QUIET)
+find_package(CpuFeatures)
 
 if (NOT TARGET CpuFeatures::CpuFeatures)
 # CPU Features dependency

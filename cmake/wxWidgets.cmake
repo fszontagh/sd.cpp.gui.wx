@@ -22,9 +22,9 @@ if (NOT WIN32)
 
     if (NOT WXWIDGETS_EXTRA_PATH STREQUAL "")
         message(STATUS "Using extra search path: ${WXWIDGETS_EXTRA_PATH}")
-        find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET PATHS ${WXWIDGETS_EXTRA_PATH})
+        find_package(wxWidgets ${WXWIDGETS_VERSION} PATHS ${WXWIDGETS_EXTRA_PATH})
     else()
-        find_package(wxWidgets ${WXWIDGETS_VERSION} QUIET)
+        find_package(wxWidgets ${WXWIDGETS_VERSION})
     endif()
 
     if (wxWidgets_FOUND)
