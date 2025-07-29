@@ -988,6 +988,23 @@ void MainWindowUI::OnJobListItemSelection(wxDataViewEvent& event) {
 
     if (qitem != nullptr) {
         this->UpdateJobInfoDetailsFromJobQueueList(qitem);
+
+        // If this is an upscaler job, load the upscaler image and switch to the upscaler tab
+        if (qitem->mode == SDMode::UPSCALE && !qitem->image_info.empty()) {
+            // Find the original image (not the generated upscaled image)
+            for (const auto& img : qitem->image_info) {
+                if (sd_gui_utils::hasImageType(img.type, sd_gui_utils::ImageType::ORIGINAL)) {
+                    this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(img.target_filename));
+                    this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
+                    break;
+                }
+            }
+            // If no original image found, use the first image
+            if (this->m_upscaler_filepicker->GetPath().empty() && !qitem->image_info.empty()) {
+                this->onUpscaleImageOpen(wxString::FromUTF8Unchecked(qitem->image_info.front().target_filename));
+                this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_UPSCALER);
+            }
+        }
     }
 }
 
@@ -1564,11 +1581,20 @@ void MainWindowUI::onGenerate(wxCommandEvent& event) {
 
         wxImage initialImage;
         if (initialImage.LoadFile(item->initial_image)) {
-            sd_gui_utils::networks::ImageInfo info(sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE, item->initial_image);
-            info.width    = initialImage.GetWidth();
-            info.height   = initialImage.GetHeight();
-            info.md5_hash = sd_gui_utils::calculateMD5(item->initial_image);
+            // Create a copy of the initial image and save it to a specific location
+            wxFileName initialImageName(this->mapp->cfg->tmppath, wxString::Format("initial_image_%" PRIu64 "_%dx%d", this->qmanager->GetNextId(), initialImage.GetWidth(), initialImage.GetHeight()));
+            initialImageName.SetExt("png");
+            initialImage.SaveFile(initialImageName.GetAbsolutePath(), wxBITMAP_TYPE_PNG);
+
+            sd_gui_utils::networks::ImageInfo info(sd_gui_utils::networks::ImageType::INITIAL | sd_gui_utils::networks::ImageType::COPYABLE, initialImageName.GetAbsolutePath());
+            info.width           = initialImage.GetWidth();
+            info.height          = initialImage.GetHeight();
+            info.md5_hash        = sd_gui_utils::calculateMD5(initialImageName.GetAbsolutePath().ToStdString());
+            info.target_filename = initialImageName.GetAbsolutePath();
             item->image_info.emplace_back(info);
+
+            // Update the initial_image path to the copied image
+            item->initial_image = initialImageName.GetAbsolutePath();
         }
 
         if (errorlist.size() > 0) {
