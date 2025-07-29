@@ -479,6 +479,25 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         return "";
     }
 
+    // Validate image dimensions
+    if (image.width <= 0 || image.height <= 0) {
+        wxLogError("invalid image dimensions: %dx%d", image.width, image.height);
+        return "";
+    }
+
+    // Validate image data (check if all pixels are black/transparent)
+    bool allPixelsBlack = true;
+    for (int i = 0; i < image.width * image.height * 3; i++) {
+        if (image.data[i] != 0) {
+            allPixelsBlack = false;
+            break;
+        }
+    }
+    if (allPixelsBlack) {
+        wxLogError("image data is all black/transparent: %dx%d", image.width, image.height);
+        return "";
+    }
+
     if (!std::filesystem::exists(this->tempPath)) {
         wxLogError("temp directory does not exist: '%s'", this->tempPath.c_str());
         return "";
@@ -492,7 +511,21 @@ std::string ApplicationLogic::handleSdImage(sd_image_t& image) {
         wxLogError("stbi_write_png failed: '%s'", filename.c_str());
         return "";
     }
-    wxLogInfo("saved image to: '%s' size: %dx%d filesize: %" PRIu64, filename.c_str(), image.width, image.height, std::filesystem::file_size(filename));
+
+    // Verify that the file was actually written and has a reasonable size
+    if (!std::filesystem::exists(filename)) {
+        wxLogError("image file was not created: '%s'", filename.c_str());
+        return "";
+    }
+
+    auto filesize = std::filesystem::file_size(filename);
+    if (filesize == 0) {
+        wxLogError("image file is empty: '%s'", filename.c_str());
+        std::filesystem::remove(filename);
+        return "";
+    }
+
+    wxLogInfo("saved image to: '%s' size: %dx%d filesize: %" PRIu64, filename.c_str(), image.width, image.height, filesize);
     return filename;
 }
 

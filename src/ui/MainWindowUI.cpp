@@ -3752,6 +3752,11 @@ void MainWindowUI::onimg2ImgImageOpen(const wxString& file, bool forceResolution
         this->m_inpaintImageResolution->SetLabel(wxString::Format("%d x %d", img.GetWidth(), img.GetHeight()));
 
         this->readMetaDataFromImage(wxFileName(file), SDMode::IMG2IMG, true);
+        // If this image wasn't sent from the context menu, reset the tracking variables
+        if (!this->generatedImageSentToImg2Img || this->lastGeneratedImagePath != file) {
+            this->generatedImageSentToImg2Img = false;
+            this->lastGeneratedImagePath = "";
+        }
         this->CheckQueueButton();
     } else {
         wxMessageBox(_("Can not open image!"));
@@ -5090,6 +5095,9 @@ void MainWindowUI::AddContextMenuToJobImagePreview(wxStaticBitmap* bitmap, std::
                 } break;
                 case 3: {
                     this->onimg2ImgImageOpen(wxString::FromUTF8Unchecked(img.target_filename), true);
+                    // Mark that a generated image was sent to img2img
+                    this->generatedImageSentToImg2Img = true;
+                    this->lastGeneratedImagePath = wxString::FromUTF8Unchecked(img.target_filename);
                     this->m_notebook1302->SetSelection(+sd_gui_utils::GuiMainPanels::PANEL_IMG2IMG);
                 } break;
                 case 5: {
@@ -5314,6 +5322,24 @@ std::shared_ptr<QueueItem> MainWindowUI::handleSdImages(std::shared_ptr<QueueIte
         if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED)) {
             needExif.emplace_back(img);
             index++;
+        }
+
+        // If this is a generated image that was sent to img2img, mark it as INITIAL for subsequent jobs
+        if (sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::GENERATED) &&
+            sd_gui_utils::networks::hasImageType(img.type, sd_gui_utils::networks::ImageType::MOVEABLE)) {
+            // Check if this image is the one that was sent to img2img
+            if (this->generatedImageSentToImg2Img && this->lastGeneratedImagePath == img.target_filename) {
+                // Mark this generated image as INITIAL for subsequent jobs
+                img.type |= sd_gui_utils::networks::ImageType::INITIAL;
+                // Also update the item's initial_image path
+                item->initial_image = img.target_filename;
+                if (BUILD_TYPE == "Debug") {
+                    std::cout << "handleSdImages: marking generated image as INITIAL: " << img.target_filename << std::endl;
+                }
+                // Reset the tracking variables
+                this->generatedImageSentToImg2Img = false;
+                this->lastGeneratedImagePath = "";
+            }
         }
     }
 

@@ -197,6 +197,10 @@ private:
     wxString extprocessLastError;
     wxString extProcessLogFile;
 
+    // Track when a generated image is sent to img2img
+    bool generatedImageSentToImg2Img = false;
+    wxString lastGeneratedImagePath = "";
+
     sd_gui_utils::LastItemNotification lastItemNotification = {};
 
     // std::ofstream logfile;
