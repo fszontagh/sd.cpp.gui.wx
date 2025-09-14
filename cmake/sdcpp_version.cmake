@@ -1,1 +1,1 @@
-set(SDCPP_VERSION "eed97a5" CACHE STRING "Stable Diffusion C++ Version")
+set(SDCPP_VERSION "ddc4a18" CACHE STRING "Stable Diffusion C++ Version")
