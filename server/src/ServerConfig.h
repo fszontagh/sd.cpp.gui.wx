@@ -1,6 +1,7 @@
 #ifndef __SERVER_CONFIG_H
 #define __SERVER_CONFIG_H
 
+#include "wx/filename.h"
 enum class backend_type {
     AVX,
     AVX2,
@@ -63,15 +64,19 @@ struct ServerConfig {
     /// @brief Retrieves the absolute path to the server data directory.
     /// @return A string representing the absolute path to the directory where client info, jobs, and images are stored.
     const std::string GetServerDataPath() {
-        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator());
+        wxString path = this->data_path;
+        path.Append(wxFileName::GetPathSeparators());
+        auto p = wxFileName(path);
         return p.GetAbsolutePath().ToStdString();
     }
     const std::string GetJobsPath() {
-        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator() + "jobs" + wxFileName::GetPathSeparator());
+        const auto path = wxString::Format("{}{}jobs{}", this->data_path, wxFileName::GetPathSeparator(), "jobs", wxFileName::GetPathSeparator());
+        auto p          = wxFileName(path);
         return p.GetAbsolutePath().ToStdString();
     }
     const std::string GetClientDataPath() {
-        auto p = wxFileName(this->data_path + wxFileName::GetPathSeparator() + "clients" + wxFileName::GetPathSeparator());
+        const auto path = wxString::Format("{}{}clients{}", this->data_path, wxFileName::GetPathSeparator(), "clients", wxFileName::GetPathSeparator());
+        auto p          = wxFileName(path);
         return p.GetAbsolutePath().ToStdString();
     }
 };
