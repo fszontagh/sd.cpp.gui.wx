@@ -309,6 +309,10 @@ void ApplicationLogic::Img2img() {
         unsigned char* input_image_buffer   = NULL;
         unsigned char* control_image_buffer = NULL;
         unsigned char* mask_image_buffer    = NULL;
+        // Buffers for copies that will be passed to generate_image
+        unsigned char* input_image_buffer_copy   = NULL;
+        unsigned char* control_image_buffer_copy = NULL;
+        unsigned char* mask_image_buffer_copy    = NULL;
         sd_image_t input_image;
         sd_image_t* control_image = NULL;
         sd_image_t mask_image;
@@ -336,12 +340,24 @@ void ApplicationLogic::Img2img() {
             this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Missing input image");
             return;
         }
+        bool mask_from_file = false;
         if (this->currentItem->mask_image.length() > 0 && std::filesystem::exists(this->currentItem->mask_image)) {
             mask_image_buffer = stbi_load(this->currentItem->mask_image.c_str(), &input_w, &input_h, &input_c, 1);
             wxLogInfo(" - mask image loaded: %s width: %d height: %d channels: %d", this->currentItem->mask_image.c_str(), input_w, input_h, input_c);
+            mask_from_file = true;
         } else {
-            std::vector<uint8_t> arr(this->currentItem->params.width * this->currentItem->params.height, 255);
-            mask_image_buffer = arr.data();
+            // Allocate mask buffer with malloc instead of using vector to ensure proper ownership
+            size_t mask_size = this->currentItem->params.width * this->currentItem->params.height;
+            mask_image_buffer = (unsigned char*)malloc(mask_size);
+            if (mask_image_buffer == NULL) {
+                wxLogError("Failed to allocate memory for mask image buffer");
+                this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Memory allocation failed");
+                if (input_image_buffer) stbi_image_free(input_image_buffer);
+                if (control_image_buffer) stbi_image_free(control_image_buffer);
+                if (control_image) delete control_image;
+                return;
+            }
+            memset(mask_image_buffer, 255, mask_size);
         }
         mask_image = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, mask_image_buffer};
 
@@ -357,6 +373,67 @@ void ApplicationLogic::Img2img() {
                 this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Missing controlnet image");
                 return;
             }
+        }
+
+        // Create deep copies of image buffers before passing to generate_image
+        // The stable-diffusion library takes ownership and frees these buffers
+
+        // Copy input image buffer
+        size_t input_size = input_w * input_h * 3;
+        input_image_buffer_copy = (unsigned char*)malloc(input_size);
+        if (input_image_buffer_copy == NULL) {
+            wxLogError("Failed to allocate memory for input image buffer copy");
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Memory allocation failed");
+            if (input_image_buffer) stbi_image_free(input_image_buffer);
+            if (mask_image_buffer) {
+                if (mask_from_file) stbi_image_free(mask_image_buffer);
+                else free(mask_image_buffer);
+            }
+            if (control_image_buffer) stbi_image_free(control_image_buffer);
+            if (control_image) delete control_image;
+            return;
+        }
+        memcpy(input_image_buffer_copy, input_image_buffer, input_size);
+
+        // Copy mask image buffer
+        size_t mask_size = input_w * input_h * 3;
+        mask_image_buffer_copy = (unsigned char*)malloc(mask_size);
+        if (mask_image_buffer_copy == NULL) {
+            wxLogError("Failed to allocate memory for mask image buffer copy");
+            this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Memory allocation failed");
+            if (input_image_buffer) stbi_image_free(input_image_buffer);
+            if (input_image_buffer_copy) free(input_image_buffer_copy);
+            if (mask_image_buffer) {
+                if (mask_from_file) stbi_image_free(mask_image_buffer);
+                else free(mask_image_buffer);
+            }
+            if (control_image_buffer) stbi_image_free(control_image_buffer);
+            if (control_image) delete control_image;
+            return;
+        }
+        memcpy(mask_image_buffer_copy, mask_image_buffer, mask_size);
+
+        // Copy control image buffer if present
+        sd_image_t* control_image_copy = NULL;
+        if (control_image != NULL) {
+            size_t control_size = control_w * control_h * 3;
+            control_image_buffer_copy = (unsigned char*)malloc(control_size);
+            if (control_image_buffer_copy == NULL) {
+                wxLogError("Failed to allocate memory for control image buffer copy");
+                this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED, "Memory allocation failed");
+                if (input_image_buffer) stbi_image_free(input_image_buffer);
+                if (input_image_buffer_copy) free(input_image_buffer_copy);
+                if (mask_image_buffer) {
+                    if (mask_from_file) stbi_image_free(mask_image_buffer);
+                    else free(mask_image_buffer);
+                }
+                if (mask_image_buffer_copy) free(mask_image_buffer_copy);
+                if (control_image_buffer) stbi_image_free(control_image_buffer);
+                if (control_image) delete control_image;
+                return;
+            }
+            memcpy(control_image_buffer_copy, control_image_buffer, control_size);
+            control_image_copy = new sd_image_t{(uint32_t)control_w, (uint32_t)control_h, 3, control_image_buffer_copy};
         }
 
         // Use new API
@@ -377,30 +454,52 @@ void ApplicationLogic::Img2img() {
         gen_params.sample_params.sample_method            = this->currentItem->params.sample_method;
         gen_params.sample_params.sample_steps             = this->currentItem->params.sample_steps;
         gen_params.sample_params.eta                      = this->currentItem->params.eta;
-        gen_params.init_image                             = input_image;
+        // Use copied buffers for generate_image (which will take ownership and free them)
+        gen_params.init_image                             = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, input_image_buffer_copy};
         gen_params.ref_images                             = nullptr;
         gen_params.ref_images_count                       = 0;
-        gen_params.mask_image                             = mask_image;
+        gen_params.mask_image                             = sd_image_t{(uint32_t)input_w, (uint32_t)input_h, 3, mask_image_buffer_copy};
         gen_params.width                                  = this->currentItem->params.width;
         gen_params.height                                 = this->currentItem->params.height;
         gen_params.strength                               = this->currentItem->params.strength;
         gen_params.seed                                   = this->currentItem->params.seed;
         gen_params.batch_count                            = this->currentItem->params.batch_count;
-        gen_params.control_image                          = control_image ? *control_image : sd_image_t{0, 0, 0, nullptr};
+        gen_params.control_image                          = control_image_copy ? *control_image_copy : sd_image_t{0, 0, 0, nullptr};
         gen_params.control_strength            = this->currentItem->params.control_strength;
         gen_params.style_strength              = this->currentItem->params.style_ratio;
         gen_params.normalize_input             = this->currentItem->params.normalize_input;
         gen_params.input_id_images_path        = this->currentItem->params.input_id_images_path.c_str();
 
         results = this->generateImageFuncPtr(this->sd_ctx, &gen_params);
-        // free up the control image
 
-        stbi_image_free(input_image_buffer);
-        stbi_image_free(control_image_buffer);
-        stbi_image_free(mask_image_buffer);
+        // Free the original buffers (we retain ownership of these)
+        // The copied buffers are freed by generate_image internally
+        if (input_image_buffer) {
+            stbi_image_free(input_image_buffer);
+            input_image_buffer = NULL;
+        }
+        if (control_image_buffer) {
+            stbi_image_free(control_image_buffer);
+            control_image_buffer = NULL;
+        }
+        if (mask_image_buffer) {
+            if (mask_from_file) {
+                stbi_image_free(mask_image_buffer);
+            } else {
+                free(mask_image_buffer);
+            }
+            mask_image_buffer = NULL;
+        }
 
-        control_image = NULL;
-        delete control_image;
+        // Clean up control_image and control_image_copy structures (not the buffers themselves)
+        if (control_image) {
+            delete control_image;
+            control_image = NULL;
+        }
+        if (control_image_copy) {
+            delete control_image_copy;
+            control_image_copy = NULL;
+        }
 
         if (results == NULL) {
             this->sendStatus(QueueStatus::FAILED, QueueEvents::ITEM_FAILED);

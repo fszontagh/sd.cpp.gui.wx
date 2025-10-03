@@ -577,8 +577,17 @@ namespace sd_gui_utils {
         };
         config(wxConfigBase* config)
             : configBase(config) {
-            wxString datapath   = wxStandardPaths::Get().GetUserDataDir() + wxFileName::GetPathSeparator() + "sd_ui_data" + wxFileName::GetPathSeparator();
-            wxString imagespath = wxStandardPaths::Get().GetDocumentsDir() + wxFileName::GetPathSeparator() + "sd_ui_output" + wxFileName::GetPathSeparator();
+            const auto standardPaths = wxStandardPaths::Get();
+
+            wxString datapath = standardPaths.GetUserDataDir();
+            datapath.Append(wxFileName::GetPathSeparator());
+            datapath.Append("sd_ui_data");
+            datapath.Append(wxFileName::GetPathSeparator());
+
+            wxString imagespath = standardPaths.GetDocumentsDir();
+            imagespath.Append(wxFileName::GetPathSeparator());
+            imagespath.Append("sd_ui_output");
+            imagespath.Append(wxFileName::GetPathSeparator());
 
             wxString model_path = datapath;
             model_path.append("checkpoints");
@@ -953,8 +962,7 @@ namespace sd_gui_utils {
         {sample_method_t::IPNDM, "IPNDM"},
         {sample_method_t::IPNDM_V, "IPNDM_V"},
         {sample_method_t::DDIM_TRAILING, "DDIM Trailing"},
-        {sample_method_t::TCD, "TCD"}
-    };
+        {sample_method_t::TCD, "TCD"}};
     inline const std::unordered_map<schedule_t, std::string> schedulerSdWebuiNames = {
         {schedule_t::DEFAULT, "Automatic"},
         {schedule_t::SCHEDULE_COUNT, "Automatic"},
@@ -1026,7 +1034,6 @@ namespace sd_gui_utils {
             return result;
         }
 
-        wxArrayString seglist;
         wxString firstline = lines_in_reverse[0];
         wxStringTokenizer tokenizer(firstline, ",");
 
@@ -1208,9 +1215,6 @@ namespace sd_gui_utils {
         // Combine folder path and filename
         // wxFileName fullPath(folderPath, normalizedFilename, extension);
         wxFileName fullPath(normalizedFilename);
-
-        // Ensure the parent directory exists
-        wxString parentDir = fullPath.GetPath();
 
         // Check if the file exists and generate a unique filename
         wxString baseName = fullPath.GetName();  // Extract base name (e.g., "mi")
