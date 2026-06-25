@@ -1,4 +1,12 @@
 
+> [!IMPORTANT]
+> ## ⚠️ This repository is archived and no longer maintained.
+>
+> Development has moved to its successor:
+> ### 👉 [**stable-diffusion.cpp-restapi**](https://github.com/fszontagh/stable-diffusion.cpp-restapi)
+>
+> Please use the new project for the latest features, fixes, and support. This repository remains available for reference only.
+
 ## **sd.cpp.gui.wx - Stable Diffusion GUI**
 
 A cross-platform GUI for [Stable Diffusion C++](https://github.com/leejet/stable-diffusion.cpp), built using [wxWidgets](https://www.wxwidgets.org/).
